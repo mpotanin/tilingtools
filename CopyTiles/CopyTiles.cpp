@@ -16,7 +16,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (argc == 1)
 	{
-		wcout<<L"Usage:"<<endl;
+		wcout<<L"Usage: "<<endl;
 		wcout<<L"CopyTiles [-delete] [-from FromTilesFolder] [-to ToTilesFolder] [-border VectorBorderFile] [-type (jpg|png)][-zooms MinZoom-MaxZoom]"<<endl;
 		wcout<<L"Example 1 (copy tiles, default: type=jpg ):"<<endl;
 		wcout<<L"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg_tiles -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
