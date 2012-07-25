@@ -73,6 +73,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "..\tilingtools.config" "..\release\tilingtools.config"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -89,7 +92,7 @@
     <ClInclude Include="str.h" />
     <ClInclude Include="StringFuncs.h" />
     <ClInclude Include="TileName.h" />
-    <ClInclude Include="TilesContainer.h" />
+    <ClInclude Include="TileContainer.h" />
     <ClInclude Include="TilingFuncs.h" />
     <ClInclude Include="VectorBorder.h" />
     <ClInclude Include="VectorFile.h" />
@@ -105,7 +108,6 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="str.cpp" />
     <ClCompile Include="StringFuncs.cpp" />
-    <ClCompile Include="TilesContainer.cpp" />
     <ClCompile Include="TilingFuncs.cpp" />
     <ClCompile Include="VectorBorder.cpp" />
     <ClCompile Include="VectorFile.cpp" />

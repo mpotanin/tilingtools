@@ -48,9 +48,6 @@
     <ClInclude Include="TileName.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TilesContainer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TilingFuncs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -61,6 +58,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ConsoleUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TileContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -90,9 +90,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StringFuncs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TilesContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TilingFuncs.cpp">

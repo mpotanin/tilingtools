@@ -23,8 +23,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (argc == 1)
 	{
 		cout<<"Usage:\n";
-		//cout<<"ImageTillingShp <ImageFile> <TilesFolder> <TilesType> <EdgesTillingType (INTERSECTS|WITHIN|MARK)> <VectorFile> <BackGroundImage>\n";
-		cout<<"ImageBuilder [-tiles TilesFolder] [-zoom ZoomNum] [-type TilesType (jpg|png)] [-file FileName] [-border VectorFile | lon1,lat1,lon2,lat2,...] [-tab -wld -prj -xml -map -kml (georeference files)]\n";
+		//cout<<"ImageTillingShp <ImageFile> <TilesFolder> <TileType> <EdgesTillingType (INTERSECTS|WITHIN|MARK)> <VectorFile> <BackGroundImage>\n";
+		cout<<"ImageBuilder [-tiles TilesFolder] [-zoom ZoomNum] [-type TileType (jpg|png)] [-file FileName] [-border VectorFile | lon1,lat1,lon2,lat2,...] [-tab -wld -prj -xml -map -kml (georeference files)]\n";
 		cout<<"Example1:\n";
 		cout<<"ImageBuilder -tiles c:\\tiles\\irs -zoom 14 -file c:\\1.jpg -border 36.841,55.379,37.2666,55.389,37.517,55.183 -tab -map -xml -wld -kml"<<endl;
 		cout<<"Example2:\n";
@@ -33,7 +33,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-	wstring strTilesType		= ReadParameter(L"-type",argc,argv);		
+	wstring strTileType		= ReadParameter(L"-type",argc,argv);		
 	//strImageType = ReadParameter(L"-imageType",argc,argv);
 	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
 	//cout<<"AAa"<<strTilesFolder<<endl;
@@ -116,7 +116,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		//strImageFile	= L"I:\\GeoMixerTools\\test_data\\result_z14.jpg";
 		//strVectorFile	= L"I:\\GeoMixerTools\\test_data\\test_border\\test_border.tab";
 		/*
-		strTilesType		=	"png";
+		strTileType		=	"png";
 		strTilesFolder 	=	"I:\\moscow_166";
 		//strImageType	=	"irs";
 		//strVectorFile		=	"\\\\192.168.4.28\\vectors\\moscow_ikonos_mercator.mif";
@@ -277,7 +277,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (bWldFile)
 		{
 			wstring strWldExt = L".jgw";
-			if ((MakeLower(strTilesType) == L"png")||(MakeLower(strTilesType) == L".png")) strWldExt = L".pgw";
+			if ((MakeLower(strTileType) == L"png")||(MakeLower(strTileType) == L".png")) strWldExt = L".pgw";
 			wstring strWldFile = RemoveExtension(strImageFile)+strWldExt;
 			oGeoRef.WriteWldFile(oEnvelope.MinX,oEnvelope.MaxY,dResolution,strWldFile);
 			

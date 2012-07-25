@@ -13,7 +13,7 @@ void PrintHelp ()
 	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
 	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
 	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
-	wstring strTilesType		= MakeLower(ReadParameter(L"-tilesType",argc,argv));
+	wstring strTileType		= MakeLower(ReadParameter(L"-tileType",argc,argv));
 	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
 	wstring strProgressFile		= MakeLower(ReadParameter(L"-progress",argc,argv));
 	*/
@@ -42,6 +42,14 @@ void Exit()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	//float	out_val = int(MIN_IN + pow((min(max(MIN_IN,in_val),MAX_IN) - MIN_IN)/(MAX_IN-MIN_IN),gym)*(MAX_IN-MIN_IN) +0.5 );
+
+	//dooble	8 255
+
+	 //round(MIN_OUT + pow((min(max(MIN_IN,val_in),MAX_IN) - MIN_IN),gamma)*(MAX_OUT-MIN_IN))
+
+
+
 	if (!LoadGdal(argc,argv)) return 0;
 	GDALAllRegister();
 	OGRRegisterAll();
@@ -55,7 +63,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 	//KosmosnimkiTileName oTileName(L"E:\\TestData\\done\\S4I1L0_276225_120510_ch1-4_f32_merc_tiles",TIFF_TILE);
-	//TilesContainer oContainer(L"E:\\TestData\\done\\S4I1L0_276225_120510_ch1-4_f32_merc.tiles",&oTileName);
+	//TileContainer oContainer(L"E:\\TestData\\done\\S4I1L0_276225_120510_ch1-4_f32_merc.tiles",&oTileName);
 	//oContainer.unpackAllTiles();
 
 	//VectorFile::CreateTileGridFile(L"c:\\z2.shp",2,WORLD_MERCATOR);
@@ -78,7 +86,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
 	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
 	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
-	wstring strTilesType		= MakeLower(ReadParameter(L"-tilesType",argc,argv));
+	wstring strTileType			= MakeLower(ReadParameter(L"-tileType",argc,argv));
 	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
 	wstring strProgressFile		= MakeLower(ReadParameter(L"-progress",argc,argv));
 
@@ -94,12 +102,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strZoom = L"11";
 	//strInput = L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
 	//strInput = L"C:\\ik_po_426174_0050002_ch1-3_8bit_utm43_x4.tif";
-	//strInput	= L"C:\\Work\\users\\Anton\\1.tif";
+	//strInput	= L"C:\\Work\\users\\Anton\\scn_120719_Vrangel_island_SWA.tif";
+	//strInput	= L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
+
 
 	//strInput		= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43.tif";
 	//strVectorFile	= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43_cut.shp";
 	//strContainer	= L"container";
-	//strTilesType	= L"png";
+	//strTileType	= L"png";
 	//strProjType		= L"1";
 
 
@@ -133,8 +143,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	MercatorProjType mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
 								WORLD_MERCATOR : WEB_MERCATOR;
 
-	TileType tileType = ((strTilesType == L"") ||  (strTilesType == L"jpg") || (strTilesType == L"jpeg") || (strTilesType == L".jpg")) ?
-			JPEG_TILE : ((strTilesType == L"png") || (strTilesType == L".png")) ? PNG_TILE : TIFF_TILE;
+	TileType tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
+			JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
 
 
 

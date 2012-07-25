@@ -43,7 +43,7 @@ BOOL LoadGdal (int argc, _TCHAR* argv[])
 		if (n1<0&&n2<0) gdalPath = ReadGdalPathFromConfig(L"");
 		else gdalPath = ReadGdalPathFromConfig(strExePath.substr(0,max(n1,n2)));
 			
-		if ((gdalPath!=L"")&&((gdalPath[0]==L'.')||(gdalPath[0]==L'/')||(gdalPath[0]==L'\\'))) gdalPath = FromRelativeToFullPath(gdalPath,strExePath.substr(0,max(n1,n2)));
+		//if ((gdalPath!=L"")&&((gdalPath[0]==L'.')||(gdalPath[0]==L'/')||(gdalPath[0]==L'\\'))) gdalPath = FromRelativeToFullPath(gdalPath,strExePath.substr(0,max(n1,n2)));
 	}
 
 	//cout<<"gdalpath: "<<gdalPath<<endl;
@@ -80,32 +80,6 @@ BOOL LoadGdalDLLs (wstring gdalPath)
 	if (!b) return FALSE;
 	return TRUE;
 }
-
-wstring FromRelativeToFullPath	(wstring strRelativePath, wstring strBasePath)
-{
-
-	if ((strBasePath[strBasePath.length()-1]!=L'/')&&(strBasePath[strBasePath.length()-1]!=L'\\'))
-		strBasePath+=L"\\";
-	
-	while (strRelativePath[0]==L'/' || strRelativePath[0]==L'\\' || strRelativePath[0]==' '|| strRelativePath[0]=='.')
-	{
-		int n1 = strRelativePath.find(L'/');
-		int n2 = strRelativePath.find(L'\\');
-		if (n1<0 && n2<0) return L"";
-		if (n1<0) n1 = strRelativePath.length()+1;
-		if (n2<0) n2 = strRelativePath.length()+1;
-		strRelativePath = strRelativePath.substr(min(n1,n2)+1,strRelativePath.length()-min(n1,n2)-1);
-
-		n1 = strBasePath.rfind(L'/');
-		n2 = strBasePath.rfind(L'\\');
-		if (max(n1,n2)<0) return L"";
-		strBasePath = strBasePath.substr(0,max(n1,n2));
-	}
-
-	return CombinePathAndFile (strBasePath,strRelativePath);//S + L"\\" + strRelativePath;
-}
-
-
 
 wstring ReadGdalPathFromConfig (wstring strPath)
 {

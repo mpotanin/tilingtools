@@ -17,58 +17,43 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (argc == 1)
 	{
 		wcout<<L"Usage: "<<endl;
-		wcout<<L"CopyTiles [-delete] [-from FromTilesFolder] [-to ToTilesFolder] [-border VectorBorderFile] [-type (jpg|png)][-zooms MinZoom-MaxZoom]"<<endl;
-		wcout<<L"Example 1 (copy tiles, default: type=jpg ):"<<endl;
+		wcout<<L"CopyTiles [-from source folder or container file] [-to destination folder] [-border vector border] [-type (jpg|png)][-zooms MinZoom-MaxZoom][-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)]"<<endl;
+		wcout<<L"Example  (copy tiles, default: type=jpg, proj=0 ):"<<endl;
 		wcout<<L"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg_tiles -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
-		wcout<<endl;
-		wcout<<L"Example 2 (delete tiles):"<<endl;
-		wcout<<L"CopyTiles -delete -from c:\\all_tiles -border c:\\moscow_reg.shp -type png -zooms 6 14"<<endl;
-
 		return 0;
 	}
 
-	wstring	strFromTilesFolder;
-	wstring	strToTilesFolder;
-	wstring	strBorder;
-	wstring	strZooms;
+
 	int		nMinZoom = 0;
 	int		nMaxZoom;
-	wstring strTilesType;
-	//bool bDeleteTiles;
+	BOOL	bUseContainerFile;
+	wstring srcPath			= MakeLower(ReadParameter(L"-from",argc,argv));
+	wstring destPath		= MakeLower(ReadParameter(L"-to",argc,argv));
+	wstring borderFilePath	= MakeLower(ReadParameter(L"-border",argc,argv));
+	wstring strZooms		= MakeLower(ReadParameter(L"-zooms",argc,argv));
+	wstring strTileType		= MakeLower(ReadParameter(L"-type",argc,argv));
+	wstring strProjType		= MakeLower(ReadParameter(L"-proj",argc,argv));
 
-
-	/*
-	strFromTilesFolder	= "D:\\GeoMixerTools\\test_data\\image_cut_merc_tiles";
-	strToTilesFolder	= "D:\\GeoMixerTools\\test_data\\copy";
-	strBorder			= "D:\\GeoMixerTools\\test_data\\image_cut_merc.mif";
-	strZooms			= "14";
-	bDeleteTiles		= false;
-	//strTilesType		= "png";
-	*/
-
-	///*
-	BOOL	bDeleteTiles = (ReadParameter(L"-delete",argc,argv,TRUE)!=L"");
-
-	strFromTilesFolder	= ReadParameter(L"-from",argc,argv);
-	strToTilesFolder	= ReadParameter(L"-to",argc,argv);
-	strBorder			= ReadParameter(L"-border",argc,argv);
-	strZooms			= ReadParameter(L"-zooms",argc,argv);
-	strTilesType		= ReadParameter(L"-type",argc,argv);
+	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+	//destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\copy2";
+	//borderFilePath		= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+	//strZooms			= L"1-3";
+	//strProjType			= L"1";
 	//*/
 
-	if (strFromTilesFolder == L"")
+	if (srcPath == L"")
 	{
 		wcout<<L"Error: missing \"-from\" parameter"<<endl;
 		return 0;
 	}
 
-	if ((strToTilesFolder == L"")&&(!bDeleteTiles))
+	if (destPath == L"")
 	{
 		wcout<<L"Error: missing \"-to\" parameter"<<endl;
 		return 0;
 	}
 
-	if (strBorder == L"")
+	if (borderFilePath == L"")
 	{
 		wcout<<L"Error: missing \"-border\" parameter"<<endl;
 		return 0;
@@ -80,28 +65,30 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-	if (!FileExists(strFromTilesFolder))
+	if (!FileExists(srcPath))
 	{
-		wcout<<L"Error: can't find folder: "<<strFromTilesFolder<<endl;
+		wcout<<L"Error: can't find input folder or file: "<<srcPath<<endl;
 		return 0;
 	}
+
+	bUseContainerFile = IsDirectory(srcPath) ? FALSE : TRUE;
 	
-	if (strToTilesFolder!=L"")
+	if (destPath!=L"")
 	{
-		if (!FileExists(strToTilesFolder))
+		if (!FileExists(destPath))
 		{
-			if (!CreateDirectory(strToTilesFolder.c_str(),NULL))
+			if (!CreateDirectory(destPath.c_str(),NULL))
 			{
-				wcout<<L"Error: can't create folder: "<<strToTilesFolder<<endl;
+				wcout<<L"Error: can't create folder: "<<destPath<<endl;
 				return 0;
 			}
 		}
 	}
 	
 	
-	if (!FileExists(strBorder))
+	if (!FileExists(borderFilePath))
 	{
-		wcout<<L"Error: can't find file: "<<strBorder<<endl;
+		wcout<<L"Error: can't find file: "<<borderFilePath<<endl;
 		return 0;
 	}
 	
@@ -120,67 +107,58 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 	
-	/*
-		
-	for (int nZoom = nMinZoom; nZoom<=nMaxZoom;nZoom++)
+	TileType tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
+			JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
+
+
+
+	MercatorProjType mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
+								WORLD_MERCATOR : WEB_MERCATOR;
+	TileName		*poSrcTileName = NULL;
+	if (!bUseContainerFile)
 	{
-		wcout<<L"Zoom "<<nZoom<<L": ";//endl;
-		list<wstring> oTilesList;
-		wcout<<L"calculating number of tiles: ";
+		if (mercType == WORLD_MERCATOR)	poSrcTileName = new KosmosnimkiTileName(srcPath,tileType);
+		else							poSrcTileName = new StandardTileName(srcPath,tileType);
+	}
+	TileContainer	*poSrcTileContainer = NULL;
+	if (bUseContainerFile)	poSrcTileContainer = new TileContainerFile(srcPath);
+	else					poSrcTileContainer = new TileContainerFolder(poSrcTileName);				
+
+	TileName		*poDestTileName = NULL;
+	if (mercType == WORLD_MERCATOR)	poDestTileName = new KosmosnimkiTileName(destPath,tileType);
+	else							poDestTileName = new StandardTileName(destPath,tileType);
+	TileContainerFolder destTileContainer(poDestTileName); 
 	
-		VectorBorder	oVectorBorder;
-		if (!VectorFile::OpenAndCreatePolygonInMercator(strBorder,oVectorBorder))
-		{
-			wcout<<L"Error: can't read border polygon: "<<endl;
-			return 0;
-		}
-
-		//
-		//FindTilesByVectorBorder(new KosmosnimkiTileName(strFromTilesFolder,strTilesType),nZoom,false,oVectorBorder,oTilesList,strTilesType);
 		
-		FindTilesByVectorBorder(new StandardTileName(strFromTilesFolder,strTilesType),nZoom,false,oVectorBorder,oTilesList,strTilesType);
-		wcout<<oTilesList.size()<<L"  ";
-		int nTiles = 0;
-		int nBadTiles = 0;
-		if (oTilesList.size()!=0)
+	list<__int64> oTileList;
+	wcout<<L"calculating number of tiles ... ";
+	wcout<<poSrcTileContainer->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
+	if (oTileList.size()>0)
+	{
+		wcout<<"coping tiles: 0% ";
+		int tilesCopied = 0;
+		for (list<__int64>::iterator iter = oTileList.begin(); iter!=oTileList.end();iter++)
 		{
-			if (!bDeleteTiles) wcout<<L"copying tiles: ";
-			else if (strToTilesFolder!=L"") wcout<<L"moving tiles: ";
-			else wcout<<L"deleting tiles: ";
-			for (list<wstring>::iterator iter = oTilesList.begin();iter!=oTilesList.end();iter++)
+			int x,y,z;
+			BYTE	*tileData = NULL;
+			unsigned int		tileSize = 0;
+			if (poSrcTileContainer->tileXYZ((*iter),x,y,z))
 			{
-				BOOL bError = FALSE;
-				if (strToTilesFolder!=L"")
-				{
-					int x,y,z;
-
-					//KosmosnimkiTileName oTileName(strToTilesFolder,strTilesType);
-					StandardTileName		oTileName(strToTilesFolder,strTilesType);
-					oTileName.ExtractXYZFromTileName((*iter),z,x,y);
-					oTileName.CreateFolder(z,x,y);
-					if (!CopyFile((*iter).data(),oTileName.getFullTileName(z,x,y).data(),FALSE)) bError = true;
-				}
-				if (bDeleteTiles&&(!bError))
-				{
-					if (!DeleteFile((*iter).data())) bError = true;
-				}
-				
-				if (bError) nBadTiles++;
-				else nTiles++;
+				poSrcTileContainer->getTile(x,y,z,tileData,tileSize);
+				if (tileSize>0) 
+					if(destTileContainer.addTile(x,y,z,tileData,tileSize)) tilesCopied++;
+				delete[]tileData;
 			}
-			if (!bDeleteTiles)
-			{
-				wcout<<nTiles<<L" tiles copied"<<endl;
-			}
-			else if (strToTilesFolder!=L"") 
-			{
-				wcout<<nTiles<<L" tiles moved"<<endl;
-			}
-			else wcout<<nTiles<<L" tiles deleted"<<endl;
-			if (nBadTiles>0) wcout<<nBadTiles<<L" - bad tiles"<<endl;
+			PrintTilingProgress(oTileList.size(),tilesCopied);
 		}
 	}
-	*/
+
+	
+	delete(poSrcTileContainer);//->closeContainer();
+	//delete(poSrcTileContainer);
+	delete(poSrcTileName);
+	delete(poDestTileName);
+	//*/
 	return 0;
 }
 

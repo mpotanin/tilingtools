@@ -6,7 +6,7 @@
 #include "VectorFile.h"
 #include "PixelEnvelope.h"
 #include "GeometryFuncs.h"
-#include "TilesContainer.h"
+#include "TileContainer.h"
 
 static int TILE_SIZE = 256;
 
@@ -119,7 +119,7 @@ BOOL TilingFromBuffer (TilingParameters			&oParams,
 					   int						z,
 					   int						nTilesExpected, 
 					   int						&nTilesGenerated,
-					   TilesContainer			*tilesContainer);
+					   TileContainer			*tileContainer);
 					   //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL);
 /*
 BOOL TilingFromFile (	wstring				rasterFile,
@@ -129,7 +129,7 @@ BOOL TilingFromFile (	wstring				rasterFile,
 						int					nExpectedTiles,
 						int					&nGeneratedTiles,
 						wstring				&strLogResult,
-						TilesContainer		*tilesContainer);
+						TileContainer		*tileContainer);
 						//vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL);
 */
 
@@ -137,14 +137,14 @@ BOOL TilingFromFile (	wstring				rasterFile,
 BOOL BaseZoomTiling (TilingParameters		&oParams, 
 				   BundleOfRasterFiles *poBundle, 
 				   int nExpected, 
-				   TilesContainer		*tilesContainer);
+				   TileContainer		*tileContainer);
 				   //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL);
 */
 
 BOOL BaseZoomTiling2 (TilingParameters		&oParams, 
 				   BundleOfRasterFiles		*poBundle, 
 				   int nExpected, 
-				   TilesContainer			*tilesContainer);
+				   TileContainer			*tileContainer);
 
 
 //void* FindTileInCash (vector<pair<wstring,pair<void*,int>>> *tilesCash, wstring strTileName, int &n);
@@ -156,7 +156,7 @@ BOOL CreaterPyramidalTiles (VectorBorder	&oVectorBorder,
 						int &nExpectedTiles, 
 						int &nGeneratedTiles, 
 						BOOL		bOnlyCalculate, 
-						TilesContainer		*tilesContainer,
+						TileContainer		*tileContainer,
 						//vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL,						
 						int nJpegQuality	= 80
 						);
@@ -174,7 +174,7 @@ BOOL MakeZoomOutTile (VectorBorder			&oVectorBorder,
 					  int						&nExpectedTiles,
 					  int						&nGeneratedTiles,
 					  BOOL						bOnlyCalculate,
-					  TilesContainer			*tilesContainer,
+					  TileContainer			*tileContainer,
 					  //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL,
 					  int						nJpegQuality = 80);
 
