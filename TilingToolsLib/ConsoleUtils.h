@@ -7,7 +7,7 @@ BOOL	LoadGdal (int argc, _TCHAR* argv[]);
 
 ///*
 BOOL	LoadGdalDLLs (wstring gdalPath);
-wstring ReadGdalPathFromConfig (wstring strPath);
+wstring ReadGdalPathFromConfig (wstring configFilePath);
 wstring ReadParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagParam = FALSE);
 
 //*/

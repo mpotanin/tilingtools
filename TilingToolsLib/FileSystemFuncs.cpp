@@ -22,7 +22,8 @@ BOOL	WriteStringToFile (wstring strFileName, wstring strText)
 
 wstring	GetPath (wstring strFileName)
 {
-	return strFileName.substr(0,strFileName.find_last_of(L"/\\")+1);	
+	if (strFileName.find_last_of(L"/\\")>=0) return strFileName.substr(0,strFileName.find_last_of(L"/\\")+1);
+	else return L"";
 }
 
 BOOL FileExists (wstring strFile)
@@ -48,13 +49,41 @@ wstring	RemoveEndingSlash(wstring	folderName)
 	else return folderName;
 }
 
-
-wstring CombinePathAndFile (wstring strPath, wstring strFile)
+/*
+wstring _GetAbsolutePath (wstring strPath, wstring strFile)
 {
 	if (strPath.length()==0) return strFile;
 	
 	return RemoveEndingSlash(strPath) + L"\\"+strFile;
 }
+*/
+
+wstring		GetAbsolutePath (wstring basePath, wstring relativePath)
+{
+	basePath = RemoveEndingSlash(basePath);
+
+	
+	while (relativePath[0]==L'/' || relativePath[0]==L'\\' || relativePath[0]==' '|| relativePath[0]=='.')
+	{
+		int n1 = relativePath.find(L'/');
+		int n2 = relativePath.find(L'\\');
+		if (n1<0 && n2<0) return L"";
+		if (n1<0) n1 = relativePath.length()+1;
+		if (n2<0) n2 = relativePath.length()+1;
+		relativePath = relativePath.substr(min(n1,n2)+1,relativePath.length()-min(n1,n2)-1);
+
+		n1 = basePath.rfind(L'/');
+		n2 = basePath.rfind(L'\\');
+		if (max(n1,n2)<0) return L"";
+		basePath = basePath.substr(0,max(n1,n2));
+	}
+
+	return (basePath+L"\\" + relativePath);
+}
+
+
+
+
 
 wstring RemovePath(const wstring& strFileName)
 {
@@ -85,7 +114,7 @@ BOOL FindFilesInFolderByPattern (list<wstring> &oFilesList, wstring searchPatter
 	{
 		if (FindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 		{
-			oFilesList.push_back(CombinePathAndFile(GetPath(searchPattern),FindFileData.cFileName));
+			oFilesList.push_back(GetAbsolutePath(GetPath(searchPattern),FindFileData.cFileName));
 		}
 		if (!FindNextFile(hFind,&FindFileData)) break;
 	}
@@ -99,7 +128,7 @@ BOOL FindFilesInFolderByExtension (list<wstring> &oFilesList, wstring strFolder,
 	HANDLE hFind;
 	
 
-	hFind = FindFirstFile(CombinePathAndFile(strFolder,L"*").data(), &FindFileData);
+	hFind = FindFirstFile(GetAbsolutePath(strFolder,L"*").data(), &FindFileData);
 	
 	if (hFind == INVALID_HANDLE_VALUE) 
 	{
@@ -113,13 +142,13 @@ BOOL FindFilesInFolderByExtension (list<wstring> &oFilesList, wstring strFolder,
 			int n = MakeLower(FindFileData.cFileName).rfind(L"." + MakeLower(strExtension));
 			if (n>0)
 			{
-				oFilesList.push_back(CombinePathAndFile(strFolder,FindFileData.cFileName));
+				oFilesList.push_back(GetAbsolutePath(strFolder,FindFileData.cFileName));
 			}
 		}
 		else if (bRecursive)
 		{
 			wstring strTemp(FindFileData.cFileName);
-			if ((strTemp!=L".")&&(strTemp!=L".."))	FindFilesInFolderByExtension (oFilesList,CombinePathAndFile(strFolder,FindFileData.cFileName),strExtension,TRUE);
+			if ((strTemp!=L".")&&(strTemp!=L".."))	FindFilesInFolderByExtension (oFilesList,GetAbsolutePath(strFolder,FindFileData.cFileName),strExtension,TRUE);
 		}
 		if (!FindNextFile(hFind,&FindFileData)) break;
 	}

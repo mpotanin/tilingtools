@@ -42,6 +42,7 @@ void Exit()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+
 	//float	out_val = int(MIN_IN + pow((min(max(MIN_IN,in_val),MAX_IN) - MIN_IN)/(MAX_IN-MIN_IN),gym)*(MAX_IN-MIN_IN) +0.5 );
 
 	//dooble	8 255

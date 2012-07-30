@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include "str.h"
 
-wstring		CombinePathAndFile(wstring strPath, wstring strFile);
+//wstring		_GetAbsolutePath(wstring strPath, wstring strFile);
 wstring		RemovePath	(const wstring& strFileName);
 wstring		RemoveExtension(wstring& strFileName);
 wstring		GetPath(wstring strFileName);
@@ -15,4 +15,4 @@ BOOL		WriteStringToFile(wstring strFileName, wstring strText);
 BOOL		writeWLDFile	(wstring strFileName, double dULx, double dULy, double dRes);
 BOOL		SaveDataToFile	(wstring strFileName, void *pData, int size);
 BOOL		readDataFromFile(wstring fileName, BYTE *&pData, unsigned int &size);
-				
+wstring		GetAbsolutePath (wstring basePath, wstring relativePath);

@@ -7,9 +7,9 @@ void	SetEnvironmentVariables (wstring gdalPath)
 {
 	wstring strPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
 
-	wstring strBin = (L"PATH="+CombinePathAndFile(gdalPath,L"bins")+L";"+strPATH);
+	wstring strBin = (L"PATH="+GetAbsolutePath(gdalPath,L"bins")+L";"+strPATH);
 	//string strData = (L"GDAL_DATA="+(strFWTools+"\\data"));
-	wstring strData = (L"GDAL_DATA="+CombinePathAndFile(gdalPath,L"bins\\gdal-data"));
+	wstring strData = (L"GDAL_DATA="+GetAbsolutePath(gdalPath,L"bins\\gdal-data"));
 
 	//string strPython = (L"PYTHONPATH="+(strFWTools+"\\pymod"));
 	//string strProj = (L"PROJ_LIB="+(strFWTools+"\\proj_lib"));
@@ -33,17 +33,11 @@ BOOL LoadGdal (int argc, _TCHAR* argv[])
 	wstring gdalPath	= ReadParameter(L"-gdal",argc,argv);
 	if (gdalPath == L"")
 	{
-		TCHAR full_path[_MAX_PATH + 1];
-		GetModuleFileName(NULL,full_path,_MAX_PATH);
-		wstring strExePath(full_path);
-		//cout<<"EXE-path: "<<strExePath<<endl;
+		TCHAR exeFileName[_MAX_PATH + 1];
+		GetModuleFileName(NULL,exeFileName,_MAX_PATH);
 
-		int n1 = strExePath.rfind(L'\\');
-		int n2 = strExePath.rfind(L'/');
-		if (n1<0&&n2<0) gdalPath = ReadGdalPathFromConfig(L"");
-		else gdalPath = ReadGdalPathFromConfig(strExePath.substr(0,max(n1,n2)));
-			
-		//if ((gdalPath!=L"")&&((gdalPath[0]==L'.')||(gdalPath[0]==L'/')||(gdalPath[0]==L'\\'))) gdalPath = FromRelativeToFullPath(gdalPath,strExePath.substr(0,max(n1,n2)));
+		wstring strExeFileName(exeFileName);
+		gdalPath = ReadGdalPathFromConfig(GetPath(strExeFileName));
 	}
 
 	//cout<<"gdalpath: "<<gdalPath<<endl;
@@ -70,9 +64,9 @@ BOOL LoadGdal (int argc, _TCHAR* argv[])
 ///*
 BOOL LoadGdalDLLs (wstring gdalPath)
 {
-	//string strDll1 = CombinePathAndFile(gdalPath,L"bin\\gdal_fw.dll");
-	//string strDll2 = CombinePathAndFile(gdalPath,L"bin\\bgd.dll");
-	wstring strDll1 = CombinePathAndFile(gdalPath,L"bins\\gdal18.dll");
+	//string strDll1 = GetAbsolutePath(gdalPath,L"bin\\gdal_fw.dll");
+	//string strDll2 = GetAbsolutePath(gdalPath,L"bin\\bgd.dll");
+	wstring strDll1 = GetAbsolutePath(gdalPath,L"bins\\gdal18.dll");
 
 	//cout<<"gdal18.dll: "<<strDll1<<endl;
 	HMODULE b = LoadLibrary(strDll1.data());
@@ -81,28 +75,21 @@ BOOL LoadGdalDLLs (wstring gdalPath)
 	return TRUE;
 }
 
-wstring ReadGdalPathFromConfig (wstring strPath)
+wstring ReadGdalPathFromConfig (wstring configFilePath)
 {
 	//string	strV = "2.2.8";
 
-	wstring	strConfigFile;
-	wstring	strGdalPath;
+	
+
 	wstring	strGdalTag = L"<gdalpath>";
 	wstring	strGdalCloseTag = L"</gdalpath>";
 
-	//string	strGdalTag = "<fwtoolspath>";
-	//string	strGdalCloseTag = "</fwtoolspath>";
+	wstring	configFile = (configFilePath==L"") ? L"TilingTools.config" : GetAbsolutePath (configFilePath,L"TilingTools.config");
+
+	//cout<<"CONFIG: "<<configFile<<endl;
 
 
-	//string	strFWTools = "fwtools";
-	//strFWTools+=strV;
-	if (strPath==L"") strConfigFile = L"TilingTools.config";
-	else strConfigFile = CombinePathAndFile (strPath,L"TilingTools.config");
-
-	//cout<<"CONFIG: "<<strConfigFile<<endl;
-
-
-	FILE *fp = _wfopen(strConfigFile.data(),L"r");
+	FILE *fp = _wfopen(configFile.data(),L"r");
 	if (!fp) return L"";
 	wstring s;
 	_TCHAR c;
@@ -114,6 +101,8 @@ wstring ReadGdalPathFromConfig (wstring strPath)
 	if (n1<0) return L"";
 	int n2 = s.find(strGdalCloseTag);
 	if (n2<0) return L"";
+
+	wstring	strGdalPath;
 	strGdalPath = s.substr(n1+strGdalTag.length(),n2-n1-strGdalTag.length());
 	
 	while (strGdalPath[0]==L' ' || strGdalPath[0]==L'\n')
@@ -121,7 +110,7 @@ wstring ReadGdalPathFromConfig (wstring strPath)
 	while (strGdalPath[strGdalPath.length()-1]==L' ' || strGdalPath[strGdalPath.length()-1]==L'\n')
 		strGdalPath = strGdalPath.substr(0,strGdalPath.length()-1);
 	
-	return strGdalPath;
+	return GetAbsolutePath (configFilePath,strGdalPath);
 }
 
 

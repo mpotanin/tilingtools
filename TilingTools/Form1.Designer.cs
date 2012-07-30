@@ -90,7 +90,6 @@
             this.radioButton4 = new System.Windows.Forms.RadioButton();
             this.radioButton3 = new System.Windows.Forms.RadioButton();
             this.label2 = new System.Windows.Forms.Label();
-            this.checkBox3 = new System.Windows.Forms.CheckBox();
             this.button19 = new System.Windows.Forms.Button();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.ImageBuilder.SuspendLayout();
@@ -462,7 +461,6 @@
             this.ImageTiling.Controls.Add(this.panel3);
             this.ImageTiling.Controls.Add(this.panel2);
             this.ImageTiling.Controls.Add(this.panel1);
-            this.ImageTiling.Controls.Add(this.checkBox3);
             this.ImageTiling.Controls.Add(this.button19);
             this.ImageTiling.Location = new System.Drawing.Point(4, 22);
             this.ImageTiling.Name = "ImageTiling";
@@ -495,6 +493,7 @@
             this.radioButton2.Text = "folder";
             this.radioButton2.UseVisualStyleBackColor = true;
             this.radioButton2.CheckedChanged += new System.EventHandler(this.radioButton2_CheckedChanged);
+            this.radioButton2.Enabled = false;
             // 
             // radioButton1
             // 
@@ -735,18 +734,6 @@
             this.label2.TabIndex = 0;
             this.label2.Text = "Output format:";
             // 
-            // checkBox3
-            // 
-            this.checkBox3.AutoSize = true;
-            this.checkBox3.Checked = true;
-            this.checkBox3.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox3.Location = new System.Drawing.Point(7, 282);
-            this.checkBox3.Name = "checkBox3";
-            this.checkBox3.Size = new System.Drawing.Size(191, 17);
-            this.checkBox3.TabIndex = 31;
-            this.checkBox3.Text = "Automatically transform to Mercator";
-            this.checkBox3.UseVisualStyleBackColor = true;
-            // 
             // button19
             // 
             this.button19.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -788,7 +775,6 @@
             this.CopyTiles.ResumeLayout(false);
             this.CopyTiles.PerformLayout();
             this.ImageTiling.ResumeLayout(false);
-            this.ImageTiling.PerformLayout();
             this.panel6.ResumeLayout(false);
             this.panel6.PerformLayout();
             this.panel5.ResumeLayout(false);
@@ -843,7 +829,6 @@
         private System.Windows.Forms.TabPage ImageTiling;
         private System.Windows.Forms.Button button19;
         private System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.CheckBox checkBox3;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Panel panel1;

@@ -187,30 +187,52 @@ public:
 	{
 		this->tilesFolder	= tilesFolder;
 		this->tileType		= tileType;
+		this->nameTemplate	= L"";
+		//this->tileExtension = (tileType==JPEG_TILE) ? L"jpg" : (tileType==PNG_TILE) ? L"png" : L"tif";
+	}
+
+	StandardTileName (wstring tilesFolder, wstring nameTemplate)
+	{
+		this->tilesFolder	= tilesFolder;
+		this->nameTemplate	= nameTemplate;
 		//this->tileExtension = (tileType==JPEG_TILE) ? L"jpg" : (tileType==PNG_TILE) ? L"png" : L"tif";
 	}
 
 
 	wstring	getTileName (int nZoom, int nX, int nY)
 	{
-		swprintf(buf,L"%d\\%d\\%d_%d_%d.%s",nZoom,nX,nZoom,nX,nY,tileExtension(this->tileType).c_str());
+		if (nameTemplate==L"") swprintf(buf,L"%d\\%d\\%d_%d_%d.%s",nZoom,nX,nZoom,nX,nY,tileExtension(this->tileType).c_str());
+		else
+		{
+			wstring tileName = nameTemplate;
+			ReplaceAll(tileName,L"{z}",ConvertInt(nZoom));
+			ReplaceAll(tileName,L"{x}",ConvertInt(nZoom));
+			ReplaceAll(tileName,L"{z}",ConvertInt(nZoom));
+		}
+		//swprintf(buf,L"%d",nZoom);
+		//wstring strZoom = buf;
+		//wstring tileName = nameTemplate.replace(0,L"{z}",strZoom);
+
 		return buf;
 	}
 
 	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y)
 	{
-		strTileName = RemovePath(strTileName);
-		strTileName = RemoveExtension(strTileName);
-		int k;
+		if (nameTemplate==L"")
+		{
+			strTileName = RemovePath(strTileName);
+			strTileName = RemoveExtension(strTileName);
+			int k;
 	
-		wregex pattern(L"[0-9]{1,2}_[0-9]{1,7}_[0-9]{1,7}");
-		if (!regex_match(strTileName,pattern)) return FALSE;
+			wregex pattern(L"[0-9]{1,2}_[0-9]{1,7}_[0-9]{1,7}");
+			if (!regex_match(strTileName,pattern)) return FALSE;
+				
+			z = (int)_wtof(strTileName.substr(0,strTileName.find('_')).c_str());
+			strTileName = strTileName.substr(strTileName.find('_')+1);
 		
-		z = (int)_wtof(strTileName.substr(0,strTileName.find('_')).c_str());
-		strTileName = strTileName.substr(strTileName.find('_')+1);
-		
-		x = (int)_wtof(strTileName.substr(0,strTileName.find('_')).c_str());
-		y = (int)_wtof(strTileName.substr(strTileName.find('_')+1).c_str());
+			x = (int)_wtof(strTileName.substr(0,strTileName.find('_')).c_str());
+			y = (int)_wtof(strTileName.substr(strTileName.find('_')+1).c_str());
+		}
 
 		return TRUE;
 	}
@@ -218,23 +240,26 @@ public:
 
 	BOOL createFolder (int nZoom, int nX, int nY)
 	{
-		
-		swprintf(buf,L"%d",nZoom);
-		wstring str = CombinePathAndFile(this->tilesFolder, buf);
-		if (!FileExists(str))
-		{
-			if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
-		}
+		if (nameTemplate==L"")
+		{	
+			swprintf(buf,L"%d",nZoom);
+			wstring str = GetAbsolutePath(this->tilesFolder, buf);
+			if (!FileExists(str))
+			{
+				if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
+			}
 
-		swprintf(buf,L"%d",nX);
-		str = CombinePathAndFile(str,buf);
-		if (!FileExists(str))
-		{
-			if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
+			swprintf(buf,L"%d",nX);
+			str = GetAbsolutePath(str,buf);
+			if (!FileExists(str))
+			{
+				if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
+			}
 		}
-		
 		return TRUE;
 	}
+protected:
+	wstring	nameTemplate;
 
 	///////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////
@@ -302,14 +327,14 @@ public:
 		}
 
 		swprintf(buf,L"%d",nZoom);
-		wstring str = CombinePathAndFile(this->tilesFolder, buf);
+		wstring str = GetAbsolutePath(this->tilesFolder, buf);
 		if (!FileExists(str))
 		{
 			if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
 		}
 
 		swprintf(buf,L"%d",nX);
-		str = CombinePathAndFile(str,buf);
+		str = GetAbsolutePath(str,buf);
 		if (!FileExists(str))
 		{
 			if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	

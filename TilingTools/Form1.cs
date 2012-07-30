@@ -163,7 +163,7 @@ namespace TilingTools
             return "";
         }
 
-
+        /*
         public bool makeWarpingAndTiling(bool useFolder, bool useContainer, string input, string type, string vectorFile, string outputFolder, int minZoom, int maxZoom)
         {
                 string[]    inputImages;
@@ -229,7 +229,7 @@ namespace TilingTools
                 
                 return true;
         }
-
+        */
 
         public bool makeImageTiling(bool bFolder, bool useContainer, string strInput, bool bBundle, string strType, string strVectorBorder, string strOutputFolder, int minZoom, int maxZoom)
         {
@@ -237,7 +237,7 @@ namespace TilingTools
             string strTiling = " -file " + addDoubleQuotes(strInput);
             if (bBundle) strTiling += " -bundle ";
             if (strType != "") strTiling += " -type " + strType;
-            if ((minZoom > 0) && (maxZoom > 0)) strTiling += " -zooms " + (maxZoom - minZoom +1).ToString();
+            if ((minZoom > 0) && (maxZoom > 0)) strTiling += " -zoom " + (maxZoom).ToString();
             else if ((maxZoom == 0) && (minZoom > 0)) strTiling += " -minZoom " + minZoom.ToString();
 
 
@@ -273,7 +273,6 @@ namespace TilingTools
             string      vectorFile = textBox3.Text;
             string      outputFolder = textBox4.Text;
             string      strZooms = textBox7.Text;
-            bool        useWarp = checkBox3.Checked;
             bool        useContainer = radioButton3.Checked;  
 
             if (input == "")
@@ -292,8 +291,7 @@ namespace TilingTools
             }
 
           
-            if((!useWarp) || useBundle) makeImageTiling(useFolder,useContainer, input, useBundle, type, vectorFile, outputFolder,minZoom, maxZoom);
-            else makeWarpingAndTiling(useFolder,useContainer, input,type,vectorFile,outputFolder,minZoom,maxZoom);
+            makeImageTiling(useFolder,useContainer, input, useBundle, type, vectorFile, outputFolder,minZoom, maxZoom);
         }
 
         private void button6_Click(object sender, EventArgs e)
@@ -332,7 +330,8 @@ namespace TilingTools
             radioButton1.Checked = !radioButton2.Checked;
             label10.Enabled = radioButton2.Checked;
             comboBox3.Enabled = radioButton2.Checked;
-            checkBox1.Enabled = radioButton2.Checked;
+            checkBox1.Enabled = false;
+            //checkBox1.Enabled = radioButton2.Checked;
 
         }
 
