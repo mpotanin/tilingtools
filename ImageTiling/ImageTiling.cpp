@@ -6,29 +6,22 @@
 void PrintHelp ()
 {
 
-	/*
-	wstring strBundle			= ReadParameter(L"-bundle",argc,argv,TRUE);
-	wstring	strContainer		= ReadParameter(L"-container",argc,argv,TRUE);
-	wstring strZoom				= ReadParameter(L"-zoom",argc,argv);
-	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
-	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
-	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
-	wstring strTileType		= MakeLower(ReadParameter(L"-tileType",argc,argv));
-	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
-	wstring strProgressFile		= MakeLower(ReadParameter(L"-progress",argc,argv));
-	*/
-
 	cout<<"Usage:\n";
 	cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-minZoom pyramid min zoom]"; 
-	cout<<" [-container use container file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)]\n";
+	cout<<" [-container use container file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-template tile name template]\n";
 		
 	cout<<"\nEx.1 - image to simple tiles:\n";
 	cout<<"ImageTiling -file c:\\image.tif"<<endl;
-	cout<<"(default values: -tiles = c:\\image_tiles -minZoom=1 -proj=0)"<<endl;
+	cout<<"(default values: -tiles = c:\\image_tiles -minZoom=1 -proj=0 -template=kosmosnimki)"<<endl;
 	
 	cout<<"\nEx.2 - image to tiles packed in container:\n";
 	cout<<"ImageTiling -file c:\\image.tif -container"<<endl;
 	cout<<"(default values: -tiles = c:\\image.tiles -minZoom=1 -proj=0)"<<endl;
+
+	cout<<"\nEx.3 - image to tiles to simple tiles:\n";
+	cout<<"ImageTiling -file c:\\image.tif -container -template {z}\\{x}\\{z}_{x}_{y}.jpg"<<endl;
+	cout<<"(default values: -tiles = c:\\image.tiles -minZoom=1 -proj=0)"<<endl;
+
 }
 
 void Exit()
@@ -43,32 +36,10 @@ void Exit()
 int _tmain(int argc, _TCHAR* argv[])
 {
 
-	//float	out_val = int(MIN_IN + pow((min(max(MIN_IN,in_val),MAX_IN) - MIN_IN)/(MAX_IN-MIN_IN),gym)*(MAX_IN-MIN_IN) +0.5 );
-
-	//dooble	8 255
-
-	 //round(MIN_OUT + pow((min(max(MIN_IN,val_in),MAX_IN) - MIN_IN),gamma)*(MAX_OUT-MIN_IN))
-
-
 
 	if (!LoadGdal(argc,argv)) return 0;
 	GDALAllRegister();
 	OGRRegisterAll();
-
-	//wstring str = L"12_26857_--83.jpg";
-	//wregex pattern(L"[0-9]{1,2}_-{0,1}[0-9]{1,7}_-{0,1}[0-9]{1,7}.jpg");
-
-	//BOOL b = regex_match(str,pattern);
-
-	//b=b;
-
-
-	//KosmosnimkiTileName oTileName(L"E:\\TestData\\done\\S4I1L0_276225_120510_ch1-4_f32_merc_tiles",TIFF_TILE);
-	//TileContainer oContainer(L"E:\\TestData\\done\\S4I1L0_276225_120510_ch1-4_f32_merc.tiles",&oTileName);
-	//oContainer.unpackAllTiles();
-
-	//VectorFile::CreateTileGridFile(L"c:\\z2.shp",2,WORLD_MERCATOR);
-
 
 	if (argc == 1)
 	{
@@ -77,7 +48,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	
-	//обязательный параметр
+  
+  	//обязательный параметр
 	wstring strInput			= ReadParameter(L"-file",argc,argv);
 
 	//дополнительные параметры
@@ -89,7 +61,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
 	wstring strTileType			= MakeLower(ReadParameter(L"-tileType",argc,argv));
 	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
-	wstring strProgressFile		= MakeLower(ReadParameter(L"-progress",argc,argv));
+	wstring strTemplate			= MakeLower(ReadParameter(L"-template",argc,argv));
+
 
 
 	//скрытые параметры
@@ -98,11 +71,33 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring strShiftY			= ReadParameter(L"-shiftY",argc,argv);
 	wstring strPixelTiling		= ReadParameter(L"-pixel_tiling",argc,argv,TRUE);
 	wstring strBackground		= ReadParameter(L"-background",argc,argv);
-	
+	wstring strLogFile			= ReadParameter(L"-log_file",argc,argv);
+	wstring strCache			= ReadParameter(L"-cache",argc,argv);
 
-	//strZoom = L"11";
-	//strInput = L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
-	//strInput = L"C:\\ik_po_426174_0050002_ch1-3_8bit_utm43_x4.tif";
+
+	 
+	FILE *logFile = NULL;
+	if (strLogFile!=L"")
+	{
+		if((logFile = _wfreopen(strLogFile.c_str(), L"w", stdout)) == NULL)
+		{
+			wcout<<L"Error: can't open log file: "<<strLogFile<<endl;
+			exit(-1);
+		}
+	}
+
+
+
+	//strZoom		= L"14";
+	//strMinZoom	= L"11";
+	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+	//strTilesFolder	= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+	//strZoom			= L"8";
+	//strProjType		= L"1";
+	//strTemplate		= L"standard";
+	//strContainer	= L"-container";
+	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_utm43_x4.tif";
+	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_merc.tif";
 	//strInput	= L"C:\\Work\\users\\Anton\\scn_120719_Vrangel_island_SWA.tif";
 	//strInput	= L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
 
@@ -144,11 +139,29 @@ int _tmain(int argc, _TCHAR* argv[])
 	MercatorProjType mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
 								WORLD_MERCATOR : WEB_MERCATOR;
 
-	TileType tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
-			JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
 
+	if ( (strContainer==L"") && 
+		 (strTemplate!=L"") && 
+		 (strTemplate!=L"kosmosnimki") && 
+		 (strTemplate!=L"standard") 
+		)
+	{
+		if (!StandardTileName::validateTemplate(strTemplate)) return FALSE;
+	}
 
-
+	
+	TileType tileType;
+	if (strTileType==L"")
+	{
+		if ((strTemplate!=L"") && (strTemplate!=L"kosmosnimki") && (strTemplate!=L"standard"))
+			strTileType = strTemplate.substr(strTemplate.rfind(L".")+1,strTemplate.length()-strTemplate.rfind(L".")-1);
+		else
+			strTileType = L"jpg";
+	}
+	
+	tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
+					JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
+	
 	TilingParameters oParams(strInput,mercType,tileType);
 
 	if (strZoom != L"")		oParams.baseZoom = (int)_wtof(strZoom.c_str());
@@ -167,8 +180,12 @@ int _tmain(int argc, _TCHAR* argv[])
 				return FALSE;
 			}
 		}
-		if (mercType == WORLD_MERCATOR) oParams.poTileName = new KosmosnimkiTileName(strTilesFolder,tileType);
-		else oParams.poTileName = new StandardTileName(strTilesFolder,tileType); 
+		if ((strTemplate==L"") || (strTemplate==L"kosmosnimki"))
+			oParams.poTileName = new KosmosnimkiTileName(strTilesFolder,tileType);
+		else if (strTemplate==L"standard") 
+			oParams.poTileName = new StandardTileName(strTilesFolder,(L"{z}\\{x}\\{z}_{x}_{y}."+TileName::tileExtension(tileType)));
+		else 
+			oParams.poTileName = new StandardTileName(strTilesFolder,strTemplate);
 	}
 	else
 	{
@@ -179,9 +196,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	if ((strShiftX!=L"")) oParams.dShiftX=_wtof(strShiftX.c_str());
 	if ((strShiftY!=L"")) oParams.dShiftY=_wtof(strShiftY.c_str());
 
+	if (strCache!=L"") oParams.maxTilesInCache = _wtof(strCache.c_str());
+
+
 	MakeTiling(oParams);
 
-
+	if (logFile) fclose(logFile);
+	
 	//*/
 
 

@@ -91,8 +91,9 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="str.h" />
     <ClInclude Include="StringFuncs.h" />
+    <ClInclude Include="TileBuffer.h" />
     <ClInclude Include="TileName.h" />
-    <ClInclude Include="TileContainer.h" />
+    <ClInclude Include="TilePyramid.h" />
     <ClInclude Include="TilingFuncs.h" />
     <ClInclude Include="VectorBorder.h" />
     <ClInclude Include="VectorFile.h" />
@@ -108,6 +109,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="str.cpp" />
     <ClCompile Include="StringFuncs.cpp" />
+    <ClCompile Include="TileBuffer.cpp" />
     <ClCompile Include="TilingFuncs.cpp" />
     <ClCompile Include="VectorBorder.cpp" />
     <ClCompile Include="VectorFile.cpp" />

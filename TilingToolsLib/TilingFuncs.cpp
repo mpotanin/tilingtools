@@ -5,6 +5,7 @@
 const int MAX_BUFFER_TILES_WIDTH	= 32;
 //const int MAX_TILES_IN_CACHE = 100;
 const int MAX_TILES_IN_CACHE = 0xFFFF;
+//const int MAX_TILES_IN_CACHE = 0xF;
 
 //const int MAX_TILES_IN_CACHE = 1000;
 
@@ -25,6 +26,8 @@ BOOL PrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
 
 BOOL MakeTiling		(TilingParameters		&oParams)
 {
+
+
 	LONG t_ = time(0);
 	srand(t_%10000);
 	BundleOfRasterFiles		oBundle;
@@ -44,45 +47,46 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 		return FALSE;
 	}
 	
-	wcout<<L"Base zoom: calculating number of tiles ... ";
+	wcout<<L"Base zoom: calculating number of tiles: ";
 	int expectedTiles	= oBundle.calculateNumberOfTiles(baseZoom);	
 	wcout<<expectedTiles<<endl;
 
 	wcout<<L"making base zoom tiles: 0% ";
-	unsigned int adjustedMaxTilesInCash =	(oParams.tileType == JPEG_TILE) ? MAX_TILES_IN_CACHE	:
-											(oParams.tileType == PNG_TILE) ? MAX_TILES_IN_CACHE/3	: MAX_TILES_IN_CACHE/20;
+	unsigned int maxTilesInCache = (oParams.maxTilesInCache == 0) ? MAX_TILES_IN_CACHE : oParams.maxTilesInCache; 
+	unsigned int adjustedMaxTilesInCash =	(oParams.tileType == JPEG_TILE) ? maxTilesInCache	:
+											(oParams.tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
 	BOOL	useBuffer = (expectedTiles*1.36 <= adjustedMaxTilesInCash) ? true : false;
 	
 	
-	TileContainer	*poTileContainer =	NULL;
-	if (oParams.useContainer)	poTileContainer = new TileContainerFile(oBundle.getMercatorEnvelope(),baseZoom,useBuffer,oParams.containerFile,oParams.tileType,oParams.mercType);
-	else						poTileContainer = new TileContainerFolder(oParams.poTileName, useBuffer, oParams.tileType, oParams.mercType,oBundle.getMercatorEnvelope(),baseZoom);
+	TilePyramid	*poTilePyramid =	NULL;
+	if (oParams.useContainer)	poTilePyramid = new TileContainer(oBundle.getMercatorEnvelope(),baseZoom,useBuffer,oParams.containerFile,oParams.tileType,oParams.mercType);
+	else						poTilePyramid = new TileFolder(oParams.poTileName, useBuffer);
+		
 	
 	
-	
-	BaseZoomTiling2(oParams,&oBundle,expectedTiles,poTileContainer);
+	BaseZoomTiling2(oParams,&oBundle,expectedTiles,poTilePyramid);
 	wcout<<L" done."<<endl;
 
 	int minZoom = (oParams.minZoom <=0) ? 1 : oParams.minZoom;
 	if (minZoom == baseZoom) return TRUE;
 
 	wcout<<L"Pyramid tiles: ";//<<endl;
-	wcout<<L"calculating number of tiles ... ";
+	wcout<<L"calculating number of tiles: ";
 	VectorBorder	oVectorBorder;
 	oVectorBorder.InitByEnvelope(oBundle.getMercatorEnvelope());
 	int generatedTiles = 0;
 	expectedTiles = 0;
-	CreaterPyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTileContainer,oParams.nJpegQuality);
+	CreaterPyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTilePyramid,oParams.nJpegQuality);
 	wcout<<expectedTiles<<endl;
 	if (expectedTiles > 0) 
 	{
 		wcout<<L"making pyramid tiles: 0% ";
-		CreaterPyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTileContainer,oParams.nJpegQuality);
+		CreaterPyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTilePyramid,oParams.nJpegQuality);
 		wcout<<L" done."<<endl;
 	}
 
-	poTileContainer->closeContainer();
-	delete(poTileContainer);
+	poTilePyramid->close();
+	delete(poTilePyramid);
 
 	return TRUE;
 }
@@ -96,7 +100,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 					   int							z,
 					   int							nTilesExpected, 
 					   int							&nTilesGenerated,
-					   TileContainer				*tileContainer)
+					   TilePyramid				*tilePyramid)
 					   //vector<pair<wstring,pair<void*,int>>> *tilesCash)
 {  
 	for (int x = nX; x < nX+oBuffer.getBufferXSize()/TILE_SIZE; x += 1)
@@ -118,7 +122,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 			oTileBuffer.createBuffer(oBuffer.getBandsCount(), TILE_SIZE, TILE_SIZE, pData,oBuffer.getBufferDataType());
 			delete [] pData;
 		
-			if (tileContainer != NULL)
+			if (tilePyramid != NULL)
 			{
 				void *pData=NULL;
 				int size = 0;
@@ -137,7 +141,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 					default:
 						oTileBuffer.SaveToTiffData(pData,size);
 				}
-				tileContainer->addTile(x,y,z,(BYTE*)pData,size);
+				tilePyramid->addTile(z,x,y,(BYTE*)pData,size);
 				delete[]((BYTE*)pData);
 				nTilesGenerated++;
 			}
@@ -153,7 +157,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 BOOL BaseZoomTiling2	(TilingParameters		&oParams, 
 						BundleOfRasterFiles		*poBundle, 
 						int						nExpected, 
-						TileContainer			*tileContainer)
+						TilePyramid			*tilePyramid)
 {
 
 	//получить экстент бандла
@@ -203,7 +207,7 @@ BOOL BaseZoomTiling2	(TilingParameters		&oParams,
 									zoom,
 									nExpected,
 									generatedTiles,
-									tileContainer))
+									tilePyramid))
 			{
 				//
 			}
@@ -229,7 +233,7 @@ BOOL CreaterPyramidalTiles (VectorBorder		&oVectorBorder,
 					  int					&nExpectedTiles, 
 					  int					&nGeneratedTiles, 
 					  BOOL					bOnlyCalculate, 
-					  TileContainer		*tileContainer,
+					  TilePyramid		*tilePyramid,
 					  //vector<pair<wstring,pair<void*,int>>> *tilesCash,
 					  int					nJpegQuality
 					  )
@@ -238,7 +242,7 @@ BOOL CreaterPyramidalTiles (VectorBorder		&oVectorBorder,
 	RasterBuffer oBuffer;
 	BOOL b;
 
-	MakeZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tileContainer,nJpegQuality);
+	MakeZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 	//MakeZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);	
 	
 	//MakeZoomOutTile(oVectorBorder,1,-1,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
@@ -246,8 +250,8 @@ BOOL CreaterPyramidalTiles (VectorBorder		&oVectorBorder,
 	//MakeZoomOutTile(oVectorBorder,1,0,-1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
 	if (oVectorBorder.GetEnvelope().MaxX>-MercatorTileGrid::getULX())
 	{
-		MakeZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tileContainer,nJpegQuality);
-		MakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tileContainer,nJpegQuality);
+		MakeZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
+		MakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 		
 		//MakeZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
 		//MakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
@@ -272,7 +276,7 @@ BOOL MakeZoomOutTile (VectorBorder		&oVectorBorder,
 					  int				&nExpectedTiles, 
 					  int				&nGeneratedTiles, 
 					  BOOL				bOnlyCalculate, 
-					  TileContainer	*tileContainer, 
+					  TilePyramid	*tilePyramid, 
 					  int				nJpegQuality)
 {
 
@@ -282,13 +286,13 @@ BOOL MakeZoomOutTile (VectorBorder		&oVectorBorder,
 	{	
 		if (bOnlyCalculate) 
 		{
-			bBlackTile = (!tileContainer->tileExists(nX,nY,nCurrZoom));
+			bBlackTile = (!tilePyramid->tileExists(nCurrZoom,nX,nY));
 			return TRUE;
 		}
 	
 		unsigned int size	= 0;
 		BYTE		*pData	= NULL;
-		tileContainer->getTile(nX,nY,nCurrZoom,pData,size);
+		tilePyramid->getTile(nCurrZoom,nX,nY,pData,size);
 		bBlackTile = (size == 0) ? TRUE : FALSE;
 		if (!bBlackTile) 
 		{
@@ -321,7 +325,7 @@ BOOL MakeZoomOutTile (VectorBorder		&oVectorBorder,
 			for (int j=0;j<2;j++)
 			{
 				OGREnvelope oEnvelope = MercatorTileGrid::calcEnvelopeByTile(nCurrZoom+1,2*nX+j,2*nY+i);
-				if (oVectorBorder.Intersects(oEnvelope)) MakeZoomOutTile(oVectorBorder,nCurrZoom+1,2*nX+j,2*nY+i,nBaseZoom,nMinZoom,oParams,oBuffers[i*2+j],bBlackTiles[i*2+j],nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tileContainer,nJpegQuality);
+				if (oVectorBorder.Intersects(oEnvelope)) MakeZoomOutTile(oVectorBorder,nCurrZoom+1,2*nX+j,2*nY+i,nBaseZoom,nMinZoom,oParams,oBuffers[i*2+j],bBlackTiles[i*2+j],nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 				else bBlackTiles[i*2+j] = TRUE;
 			}
 		}
@@ -386,7 +390,7 @@ BOOL MakeZoomOutTile (VectorBorder		&oVectorBorder,
 			default:
 				oBuffer.SaveToTiffData(pData,size);
 		}
-		tileContainer->addTile(nX,nY,nCurrZoom,(BYTE*)pData,size);
+		tilePyramid->addTile(nCurrZoom,nX,nY,(BYTE*)pData,size);
 		delete[]((BYTE*)pData);
 		nGeneratedTiles++;
 		PrintTilingProgress(nExpectedTiles,nGeneratedTiles);

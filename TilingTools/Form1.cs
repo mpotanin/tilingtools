@@ -237,8 +237,8 @@ namespace TilingTools
             string strTiling = " -file " + addDoubleQuotes(strInput);
             if (bBundle) strTiling += " -bundle ";
             if (strType != "") strTiling += " -type " + strType;
-            if ((minZoom > 0) && (maxZoom > 0)) strTiling += " -zoom " + (maxZoom).ToString();
-            else if ((maxZoom == 0) && (minZoom > 0)) strTiling += " -minZoom " + minZoom.ToString();
+            if (maxZoom > 0) strTiling += " -zoom " + (maxZoom).ToString();
+            else if (minZoom > 0) strTiling += " -minZoom " + minZoom.ToString();
 
 
             if (useContainer) strTiling += " -container ";

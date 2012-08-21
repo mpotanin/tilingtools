@@ -137,7 +137,7 @@ BOOL FindFilesInFolderByExtension (list<wstring> &oFilesList, wstring strFolder,
 	
 	while (true)
 	{
-		if (FindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
+		if ((FindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)&&(FindFileData.dwFileAttributes!=48))
 		{
 			int n = MakeLower(FindFileData.cFileName).rfind(L"." + MakeLower(strExtension));
 			if (n>0)
@@ -191,6 +191,13 @@ BOOL	SaveDataToFile(wstring strFileName, void *pData, int size)
 	fclose(fp);
 	
 	return TRUE;
+}
+
+wstring		GetExtension (wstring path)
+{
+	int n = path.rfind(L'.');
+	if (n<0) return L"";
+	else return path.substr(n+1,path.size()-n-1);	
 }
 
 

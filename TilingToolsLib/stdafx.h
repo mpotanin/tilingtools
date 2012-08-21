@@ -16,6 +16,7 @@
 #include <tchar.h>
 #include <string>
 #include <list>
+#include <map>
 #include <iostream>
 #include <fstream>
 #include <regex>

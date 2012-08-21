@@ -6,7 +6,7 @@
 #include "VectorFile.h"
 #include "PixelEnvelope.h"
 #include "GeometryFuncs.h"
-#include "TileContainer.h"
+#include "TilePyramid.h"
 
 static int TILE_SIZE = 256;
 
@@ -36,6 +36,7 @@ public:
 	double					dShiftX;				//сдвиг по x
 	double					dShiftY;				//сдвиг по y
 	TileName				*poTileName;			//имена тайлов
+	int						maxTilesInCache;			//максимальное количество тайлов в оперативной памяти
 
 public:
 	static const int		DEFAULT_JPEG_QUALITY = 80;
@@ -54,22 +55,24 @@ public:
 		this->poTileName = NULL;
 		this->backgroundColor = NULL;
 		this->baseZoom	= 0;
+		this->maxTilesInCache	= 0;
 	}
 
 
 	TilingParameters& operator = (TilingParameters &oParams)
 	{
-		this->baseZoom		= baseZoom;
-		this->nJpegQuality	= oParams.nJpegQuality;
-		this->inputFile		= oParams.inputFile;
-		this->vectorFile	= oParams.vectorFile;
-		this->poTileName	= oParams.poTileName;
-		this->minZoom		= oParams.minZoom;
-		this->mercType		= oParams.mercType;
-		this->useContainer	= oParams.useContainer;
-		this->tileType		= oParams.tileType; 
-		this->dShiftX		= oParams.dShiftX;
-		this->dShiftY		= oParams.dShiftY;
+		this->baseZoom			= baseZoom;
+		this->nJpegQuality		= oParams.nJpegQuality;
+		this->inputFile			= oParams.inputFile;
+		this->vectorFile		= oParams.vectorFile;
+		this->poTileName		= oParams.poTileName;
+		this->minZoom			= oParams.minZoom;
+		this->mercType			= oParams.mercType;
+		this->useContainer		= oParams.useContainer;
+		this->tileType			= oParams.tileType; 
+		this->dShiftX			= oParams.dShiftX;
+		this->dShiftY			= oParams.dShiftY;
+		this->maxTilesInCache	= oParams.maxTilesInCache;
 
 		if (oParams.backgroundColor!=0)
 		{
@@ -80,26 +83,6 @@ public:
 
 		return (*this);
 	}
-/*
-public:
-
-
-	BOOL CheckParameters ()
-	{
-		if (!FileExists(this->rasterFile)) return FALSE;
-		//if (!FileExists(this->strTilesFolder)) return FALSE;
-		if (poTileName==NULL) return FALSE;
-		return TRUE;
-	};
-
-	~TilingParameters()
-	{
-
-	};
-protected:
-	_TCHAR buf[256];
-	*/
-
 };
 
 
@@ -119,62 +102,41 @@ BOOL TilingFromBuffer (TilingParameters			&oParams,
 					   int						z,
 					   int						nTilesExpected, 
 					   int						&nTilesGenerated,
-					   TileContainer			*tileContainer);
-					   //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL);
-/*
-BOOL TilingFromFile (	wstring				rasterFile,
-						wstring				vectorFile,	
-						TilingParameters	&oParams,
-						BundleOfRasterFiles		*poBundle,
-						int					nExpectedTiles,
-						int					&nGeneratedTiles,
-						wstring				&strLogResult,
-						TileContainer		*tileContainer);
-						//vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL);
-*/
-
-/*
-BOOL BaseZoomTiling (TilingParameters		&oParams, 
-				   BundleOfRasterFiles *poBundle, 
-				   int nExpected, 
-				   TileContainer		*tileContainer);
-				   //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL);
-*/
+					   TilePyramid			*tileContainer);
+	
 
 BOOL BaseZoomTiling2 (TilingParameters		&oParams, 
 				   BundleOfRasterFiles		*poBundle, 
 				   int nExpected, 
-				   TileContainer			*tileContainer);
+				   TilePyramid			*tileContainer);
 
 
-//void* FindTileInCash (vector<pair<wstring,pair<void*,int>>> *tilesCash, wstring strTileName, int &n);
 
 BOOL CreaterPyramidalTiles (VectorBorder	&oVectorBorder, 
-						int nBaseZoom, 
-						int nMinZoom, 
-						TilingParameters &oParams, 
-						int &nExpectedTiles, 
-						int &nGeneratedTiles, 
-						BOOL		bOnlyCalculate, 
-						TileContainer		*tileContainer,
-						//vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL,						
-						int nJpegQuality	= 80
+						int					nBaseZoom, 
+						int					nMinZoom, 
+						TilingParameters	&oParams, 
+						int					&nExpectedTiles, 
+						int					&nGeneratedTiles, 
+						BOOL				bOnlyCalculate, 
+						TilePyramid			*tilePyramid,
+						int					nJpegQuality	= 80
 						);
 
 
-BOOL MakeZoomOutTile (VectorBorder			&oVectorBorder,
+BOOL MakeZoomOutTile (VectorBorder				&oVectorBorder,
 					  int						nCurrZoom,
 					  int						nX,
 					  int						nY,
 					  int						nBaseZoom,
 					  int						nMinZoom,
-					  TilingParameters	&oParams,
+					  TilingParameters			&oParams,
 					  RasterBuffer				&oBuffer, 
 					  BOOL						&bBlackTile,
 					  int						&nExpectedTiles,
 					  int						&nGeneratedTiles,
 					  BOOL						bOnlyCalculate,
-					  TileContainer			*tileContainer,
+					  TilePyramid				*tilePyramid,
 					  //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL,
 					  int						nJpegQuality = 80);
 

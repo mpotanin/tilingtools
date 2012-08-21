@@ -13,8 +13,8 @@ wstring MakeLower(wstring str)
 void ReplaceAll(wstring	&str, const wstring	&from, const wstring	&to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        size_t end_pos = start_pos + from.length();
-        str.replace(start_pos, end_pos, to);
+        //size_t end_pos = start_pos + from.length();
+		str = str.replace(start_pos, from.length(), to);
         start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
     }
 }
