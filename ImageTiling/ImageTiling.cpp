@@ -47,7 +47,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-	
   
   	//обязательный параметр
 	wstring strInput			= ReadParameter(L"-file",argc,argv);
@@ -73,6 +72,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring strBackground		= ReadParameter(L"-background",argc,argv);
 	wstring strLogFile			= ReadParameter(L"-log_file",argc,argv);
 	wstring strCache			= ReadParameter(L"-cache",argc,argv);
+
+	if (argc == 2)				strInput	= argv[1];
+	
 
 
 	 

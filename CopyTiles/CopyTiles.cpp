@@ -51,12 +51,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 	///*
-	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\10";
-	//destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\po_411575_0010003.tiles";
-	//borderFilePath		= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+	//srcPath				= L"C:\\SCN1-e2350921_cut.tiles";
+	//destPath			= L"C:\\Mosaic_001";
+	//borderFilePath	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
 	//strZooms			= L"1-5";
-	//strProjType			= L"1";
-	//strSrcTemplate		= L"standard";
+	//strProjType		= L"1";
+	//strSrcTemplate	= L"standard";
 	//*/
 
 	if (srcPath == L"")
@@ -155,11 +155,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		if (bSrcContainerFile)
 		{
-			TileContainer oTileContainer(srcPath);
-			strTileType = TileName::tileExtension(oTileContainer.getTileType());
-			mercType	= oTileContainer.getProjType();
-			wcout<<L"Input container info: tileType="<<TileName::tileExtension(oTileContainer.getTileType());
-			wcout<<L", proj="<<(oTileContainer.getProjType()==WEB_MERCATOR)<<endl;
+			TileContainer *poSrcContainer	= TileContainer::openForReading(srcPath);
+			if (poSrcContainer==NULL)
+			{
+				wcout<<L"Can't read input file: "<<srcPath<<endl;
+				return 0;
+			}
+
+			strTileType = TileName::tileExtension(poSrcContainer->getTileType());
+			mercType	= poSrcContainer->getProjType();
+			wcout<<L"Input container info: tileType="<<TileName::tileExtension(poSrcContainer->getTileType());
+			wcout<<L", proj="<<(poSrcContainer->getProjType()==WEB_MERCATOR)<<endl;
+			delete(poSrcContainer);
 		}
 		else
 		{
@@ -188,7 +195,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	TilePyramid	*poSrcTilePyramid = NULL;
-	if (bSrcContainerFile)	poSrcTilePyramid = new TileContainer(srcPath);
+	if (bSrcContainerFile)	poSrcTilePyramid = TileContainer::openForReading(srcPath);
 	else					poSrcTilePyramid = new TileFolder(poSrcTileName, FALSE);				
 
 

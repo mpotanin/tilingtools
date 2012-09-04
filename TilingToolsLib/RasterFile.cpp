@@ -569,15 +569,34 @@ BOOL	RasterFile::getDefaultSpatialRef (OGRSpatialReference	&oSRS, MercatorProjTy
 
 OGREnvelope	RasterFile::getEnvelopeInMercator (MercatorProjType	mercType)
 {
+	const int numPoints = 100;
 	OGRSpatialReference oSRS;
 
-	if (!getSpatialRef(oSRS))
-		getDefaultSpatialRef(oSRS,mercType);
+	if (!getSpatialRef(oSRS)) getDefaultSpatialRef(oSRS,mercType);
 
-	VectorBorder	srcPolygon;
+	OGRLinearRing	oLR;
+	OGREnvelope		srcEnvelope = GetEnvelope();
+	oLR.addPoint(srcEnvelope.MinX,srcEnvelope.MaxY);
+	for (int i=1; i<numPoints;i++)
+		oLR.addPoint(srcEnvelope.MinX + i*(srcEnvelope.MaxX-srcEnvelope.MinX)/numPoints , srcEnvelope.MaxY);
+	
+	oLR.addPoint(srcEnvelope.MaxX,srcEnvelope.MaxY);
+	for (int i=1; i<numPoints;i++)
+		oLR.addPoint(srcEnvelope.MaxX,srcEnvelope.MaxY - i*(srcEnvelope.MaxY-srcEnvelope.MinY)/numPoints);
+
+	oLR.addPoint(srcEnvelope.MaxX,srcEnvelope.MinY);
+	for (int i=1; i<numPoints;i++)
+		oLR.addPoint(srcEnvelope.MaxX - i*(srcEnvelope.MaxX-srcEnvelope.MinX)/numPoints , srcEnvelope.MinY);
+	
+	oLR.addPoint(srcEnvelope.MinX,srcEnvelope.MinY);
+	for (int i=1; i<numPoints;i++)
+		oLR.addPoint(srcEnvelope.MinX,srcEnvelope.MinY + i*(srcEnvelope.MaxY-srcEnvelope.MinY)/numPoints);
+	oLR.closeRings();
+
+	OGRPolygon		oPoly;
+	oPoly.addRing(&oLR);
 	VectorBorder	mercPolygon;
-	srcPolygon.InitByEnvelope(GetEnvelope());
-	VectorFile::transformOGRPolygonToMerc(srcPolygon.GetOGRGeometry(),mercPolygon,mercType,&oSRS);
+	VectorFile::transformOGRPolygonToMerc(&oPoly,mercPolygon,mercType,&oSRS);
 	
 	return	mercPolygon.GetEnvelope();
 }

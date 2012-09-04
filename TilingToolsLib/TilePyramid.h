@@ -51,6 +51,7 @@ public:
 		init(tileBounds,useBuffer,containerFileName,tileType,mercType);
 	};
 
+
 	TileContainer	(	int					tileBounds[128], 
 						BOOL				useBuffer, 
 						wstring				containerFileName, 
@@ -60,51 +61,72 @@ public:
 		init(tileBounds,useBuffer,containerFileName,tileType,mercType);
 	};
 
-	TileContainer (wstring containerFileName)
+	TileContainer	() 
 	{
-		if (!(this->containerFileData = _wfopen(containerFileName.c_str(),L"rb")))
-		return;
-		sizes		= NULL;
-		offsets		= NULL;
+		this->maxTiles		= 0;
+		this->sizes			= NULL; 
+		this->offsets		= NULL;
+		this->poTileBuffer	= NULL;
+		this->USE_BUFFER	= FALSE;
+
+	};
+
+	static TileContainer* openForReading (wstring containerFileName)
+	{
+		TileContainer *poContainer = new TileContainer();
+
+
+		if (!(poContainer->containerFileData = _wfopen(containerFileName.c_str(),L"rb")))
+			return NULL;
 
 
 		BYTE	head[12];
-		fread(head,1,12,containerFileData);
-		this->MAX_TILES_IN_CONTAINER = 0;
-		this->mercType = (head[9] == 0) ? WORLD_MERCATOR : WEB_MERCATOR;
-		this->tileType = (head[11] == 0) ? JPEG_TILE : (head[11]==1) ? PNG_TILE : TIFF_TILE;
-		this->USE_BUFFER = FALSE;
-		this->poTileBuffer = NULL;
+		fread(head,1,12,poContainer->containerFileData);
+		if (!((head[0]=='G')&&(head[1]=='M')&&(head[2]=='T')&&(head[3]=='C'))) 
+		{
+			wcout<<L"Error: incorrect input tile container file: "<<containerFileName<<endl;
+			return NULL;
+		}
+		
+
+
+		poContainer->MAX_TILES_IN_CONTAINER = 0;
+		poContainer->mercType = (head[9] == 0) ? WORLD_MERCATOR : WEB_MERCATOR;
+		poContainer->tileType = (head[11] == 0) ? JPEG_TILE : (head[11]==1) ? PNG_TILE : TIFF_TILE;
+		poContainer->USE_BUFFER = FALSE;
+		poContainer->poTileBuffer = NULL;
 
 		BYTE bounds[512];
-		fread(bounds,1,512,containerFileData);
+		fread(bounds,1,512,poContainer->containerFileData);
 
-		maxTiles = 0;
+		poContainer->maxTiles = 0;
 		for (int i=0;i<32;i++)
 		{
-			minx[i] = *((int*)(&bounds[i*16]));
-			miny[i] = *((int*)(&bounds[i*16+4]));
-			maxx[i] = *((int*)(&bounds[i*16+8]));
-			maxy[i] = *((int*)(&bounds[i*16+12]));
-			if (maxx[i]>0) 	maxZoom = i;
-			maxTiles += (maxx[i]-minx[i])*(maxy[i]-miny[i]);
+			poContainer->minx[i] = *((int*)(&bounds[i*16]));
+			poContainer->miny[i] = *((int*)(&bounds[i*16+4]));
+			poContainer->maxx[i] = *((int*)(&bounds[i*16+8]));
+			poContainer->maxy[i] = *((int*)(&bounds[i*16+12]));
+			if (poContainer->maxx[i]>0) 	poContainer->maxZoom = i;
+			poContainer->maxTiles += (poContainer->maxx[i]-poContainer->minx[i])*(poContainer->maxy[i]-poContainer->miny[i]);
 		}
 
-		BYTE*			offset_size = new BYTE[maxTiles*13];
-		fread(offset_size,1,maxTiles*13,containerFileData);
+		BYTE*			offset_size = new BYTE[poContainer->maxTiles*13];
+		fread(offset_size,1,poContainer->maxTiles*13,poContainer->containerFileData);
 
 
-		sizes		= new unsigned int[maxTiles];
-		offsets		= new unsigned __int64[maxTiles];
+		poContainer->sizes		= new unsigned int[poContainer->maxTiles];
+		poContainer->offsets		= new unsigned __int64[poContainer->maxTiles];
 
-		for (int i=0; i<maxTiles;i++)
+		for (int i=0; i<poContainer->maxTiles;i++)
 		{
-			offsets[i]	= *((unsigned __int64*)(&offset_size[i*13]));
-			sizes[i]	= *((unsigned int*)(&offset_size[i*13+8]));
+			poContainer->offsets[i]	= *((unsigned __int64*)(&offset_size[i*13]));
+			poContainer->sizes[i]	= *((unsigned int*)(&offset_size[i*13+8]));
 		}
 
 		delete[]offset_size;
-	}
+		return poContainer;
+	};
+	
 
 	~TileContainer()
 	{
