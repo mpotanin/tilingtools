@@ -17,7 +17,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (argc == 1)
 	{
 		wcout<<L"Usage: "<<endl;
-		wcout<<L"CopyTiles [-from source folder or container file] [-to destination folder] [-border vector border] [-type (jpg|png)] [-zooms MinZoom-MaxZoom] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-src_template src folder tile name template] [-dest_template destination folder tile name template]\n"<<endl;
+		wcout<<L"CopyTiles [-from input folder or container] [-to destination folder or container] [-border vector border] [-type input tiles type (jpg|png|tif)] [-zooms MinZoom-MaxZoom] [-proj input tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-src_template source tile name template] [-dest_template destination tile name template]\n"<<endl;
 		wcout<<L"Example  (copy tiles, default: type=jpg, proj=0 ):"<<endl;
 		wcout<<L"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg_tiles -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
 		return 0;

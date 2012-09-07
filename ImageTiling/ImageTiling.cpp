@@ -8,19 +8,19 @@ void PrintHelp ()
 
 	cout<<"Usage:\n";
 	cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-minZoom pyramid min zoom]"; 
-	cout<<" [-container use container file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-template tile name template]\n";
+	cout<<" [-container write to container file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tileType jpg|png|tif] [-template tile name template]\n";
 		
 	cout<<"\nEx.1 - image to simple tiles:\n";
 	cout<<"ImageTiling -file c:\\image.tif"<<endl;
-	cout<<"(default values: -tiles = c:\\image_tiles -minZoom=1 -proj=0 -template=kosmosnimki)"<<endl;
+	cout<<"(default values: -tiles=c:\\image_tiles -minZoom=1 -proj=0 -template=kosmosnimki -tileType=jpg)"<<endl;
 	
 	cout<<"\nEx.2 - image to tiles packed in container:\n";
 	cout<<"ImageTiling -file c:\\image.tif -container"<<endl;
-	cout<<"(default values: -tiles = c:\\image.tiles -minZoom=1 -proj=0)"<<endl;
+	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
 
 	cout<<"\nEx.3 - image to tiles to simple tiles:\n";
 	cout<<"ImageTiling -file c:\\image.tif -container -template {z}\\{x}\\{z}_{x}_{y}.jpg"<<endl;
-	cout<<"(default values: -tiles = c:\\image.tiles -minZoom=1 -proj=0)"<<endl;
+	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
 
 }
 
