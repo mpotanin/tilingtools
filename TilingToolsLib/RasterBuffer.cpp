@@ -7,8 +7,8 @@ RasterBuffer::RasterBuffer(void)
 {
 	pData = NULL;	
 	pTable = NULL;
-	for (int i=0;i<3;i++)
-		backgroundColor[i] = 0;
+	bAlphaBand	= FALSE;
+	pNoDataValue = NULL;
 }
 
 
@@ -18,16 +18,25 @@ RasterBuffer::~RasterBuffer(void)
 }
 
 
-BOOL RasterBuffer::setBackgroundColor(int rgb[3])
+int* RasterBuffer::getNoDataValue()
 {
-	for (int i=0;i<3;i++)
-		backgroundColor[i] = rgb[i];
+	return this->pNoDataValue;
+}
+
+
+BOOL RasterBuffer::setNoDataValue(int noDataValue)
+{
+	this->pNoDataValue = new int[1];
+	this->pNoDataValue[0] = noDataValue;
 	return TRUE;
 }
 
 
+
 void RasterBuffer::clearBuffer()
 {
+	delete(pNoDataValue);
+	pNoDataValue = NULL;
 	if (pData!=NULL)
 	{
 		switch (dataType)
@@ -57,58 +66,96 @@ void RasterBuffer::clearBuffer()
 
 
 
-BOOL RasterBuffer::createBuffer	(int nBands_set,
-									int nBufferXSize_set,
-									int nBufferYSize_set,
-									void *pData_set,
-									GDALDataType dataType)
+BOOL RasterBuffer::createBuffer	(int			nBands,
+								 int			nXSize,
+								 int			nYSize,
+								 void			*pDataSrc,
+								 GDALDataType	dataType,
+								 int			*pNoDataValue,
+								 BOOL			bAlphaBand	
+								 )
 {
 	clearBuffer();
 
-	this->nBands		= nBands_set;
-	this->nBufferXSize	= nBufferXSize_set;
-	this->nBufferYSize	= nBufferYSize_set;
+	this->nBands		= nBands;
+	this->nXSize		= nXSize;
+	this->nYSize		= nYSize;
 	this->dataType		= dataType;
+	this->bAlphaBand	= bAlphaBand;
+	if (pNoDataValue) setNoDataValue(pNoDataValue[0]);
 
 	switch (dataType)
 	{
 		case GDT_Byte:
-				pData = new BYTE[nBands*nBufferXSize*nBufferYSize];
+				this->pData = new BYTE[nBands*nXSize*nYSize];
 				this->dataSize = 1;
 				break;
 		case GDT_UInt16:
-				pData = new unsigned __int16[nBands*nBufferXSize*nBufferYSize];
+				this->pData = new unsigned __int16[nBands*nXSize*nYSize];
 				this->dataSize = 2;
 				break;
 		case GDT_Int16:
-				pData = new __int16[nBands*nBufferXSize*nBufferYSize];
+				this->pData = new __int16[nBands*nXSize*nYSize];
 				this->dataSize = 3;
 				break;
 		case GDT_Float32:
-				pData = new float[nBands*nBufferXSize*nBufferYSize];
+				this->pData = new float[nBands*nXSize*nYSize];
 				this->dataSize = 4;
 				break;			
 		default:
 			return FALSE;
 	}
 
-	if (pData_set !=NULL)
-	{
-		memcpy(pData,pData_set,dataSize*nBands*nBufferXSize*nBufferYSize);
-	}
-	 return TRUE;
+	if (pDataSrc !=NULL)				memcpy(this->pData,pDataSrc,dataSize*nBands*nXSize*nYSize);
+	else	if (this->pNoDataValue) this->initByValue(this->pNoDataValue[0]);
+	else	this->initByValue(0);
+
+	return TRUE;
 }
 
 
-BOOL RasterBuffer::createBuffer		(RasterBuffer *pBuffer)
+BOOL RasterBuffer::createBuffer		(RasterBuffer *pSrcBuffer)
 {
-	if (!createBuffer(pBuffer->getBandsCount(),pBuffer->getBufferXSize(),pBuffer->getBufferYSize(),pBuffer->getBufferData(),pBuffer->getBufferDataType())) return FALSE;
+	if (!createBuffer(	pSrcBuffer->getBandsCount(),
+						pSrcBuffer->getXSize(),
+						pSrcBuffer->getYSize(),
+						pSrcBuffer->getDataRef(),
+						pSrcBuffer->getDataType(),
+						pSrcBuffer->pNoDataValue,						
+						pSrcBuffer->bAlphaBand
+						)) return FALSE;
 
-	if (pBuffer->pTable) this->setColorMeta(pBuffer->pTable);
-	for (int i=0;i<3;i++)
-		this->backgroundColor[i] = pBuffer->backgroundColor[i];
+	if (pSrcBuffer->pTable) this->setColorMeta(pSrcBuffer->pTable);
 	return TRUE;	
 }
+
+
+
+BOOL RasterBuffer::initByRGBColor	 (BYTE rgb[3])
+{
+	if (this->dataType != GDT_Byte) return FALSE;
+	if (this->pData == NULL) return FALSE;
+
+	BYTE *pDataByte = (BYTE*)pData;
+	__int64 n = this->nXSize*this->nYSize;
+	if (this->nBands < 3)
+	{
+		for (__int64 i = 0;i<n;i++)
+			pDataByte[i] = rgb[0];
+	}
+	else
+	{
+		for (__int64 i = 0;i<n;i++)
+		{
+			pDataByte[i]		= rgb[0];
+			pDataByte[i+n]		= rgb[1];
+			pDataByte[i+n+n]	= rgb[2];
+		}
+	}
+	return TRUE;
+}
+
+			
 
 BOOL	RasterBuffer::createBufferFromTiffData	(void *pDataSrc, int size)
 {
@@ -117,7 +164,11 @@ BOOL	RasterBuffer::createBufferFromTiffData	(void *pDataSrc, int size)
 	GDALDataset *poDS = (GDALDataset*) GDALOpen("/vsimem/tiffinmem",GA_ReadOnly);
 
 	createBuffer(poDS->GetRasterCount(),poDS->GetRasterXSize(),poDS->GetRasterYSize(),NULL,poDS->GetRasterBand(1)->GetRasterDataType());
-	poDS->RasterIO(GF_Read,0,0,nBufferXSize,nBufferXSize,pData,nBufferXSize,nBufferYSize,dataType,nBands,NULL,0,0,0); 
+	poDS->RasterIO(GF_Read,0,0,nXSize,nXSize,pData,nXSize,nYSize,dataType,nBands,NULL,0,0,0); 
+	int	isNoData;
+	int noDataValue = poDS->GetRasterBand(1)->GetNoDataValue(&isNoData);
+	if (isNoData) setNoDataValue(noDataValue);
+
 	GDALClose(poDS);
 	VSIUnlink("/vsimem/tiffinmem");
 	return TRUE;
@@ -144,10 +195,10 @@ BOOL	RasterBuffer::createBufferFromJpegData (void *pDataSrc, int size)
 		for (int i=0;i<im->sx;i++)
 		{
 			color = im->tpixels[j][i];
-			k = j*this->nBufferXSize+i;		
-			pDataB[k] = color>>16;
-			pDataB[n+ k] = (color%65536)>>8;
-			pDataB[n+ n+ k] = color%256;
+			k = j*this->nXSize+i;		
+			pDataB[k]		= (color>>16) & 0xff;
+			pDataB[n+ k]	= (color>>8) & 0xff;
+			pDataB[n+ n+ k] = color & 0xff;
 		}
 	}
 
@@ -162,7 +213,9 @@ BOOL	RasterBuffer::createBufferFromPngData (void *pDataSrc, int size)
 	gdImagePtr im;
 	if (!  (im =	gdImageCreateFromPngPtr(size, pDataSrc))) return FALSE;
 	
-	createBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
+	if (im->alphaBlendingFlag) createBuffer(4,im->sx,im->sy,NULL,GDT_Byte,NULL,TRUE);
+	else createBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
+
 	BYTE	*pDataB	= (BYTE*)pData;
 
 	int n = im->sx * im->sy;
@@ -172,10 +225,15 @@ BOOL	RasterBuffer::createBufferFromPngData (void *pDataSrc, int size)
 		for (int i=0;i<im->sx;i++)
 		{
 			color = im->tpixels[j][i];
-			k = j*this->nBufferXSize+i;		
-			pDataB[k] = color>>16;
-			pDataB[n+ k] = (color%65536)>>8;
-			pDataB[n+ n+ k] = color%256;
+			k = j*this->nXSize+i;
+			if (im->alphaBlendingFlag)
+			{
+				pDataB[n+ n + n + k] = ((color>>24) >=100) ? 100 : 0;
+				color = color & 0xffffff;
+			}
+			pDataB[k]		= (color>>16) & 0xff;
+			pDataB[n+ k]	= (color>>8) & 0xff;
+			pDataB[n+ n+ k] = color & 0xff;
 		}
 	}
 
@@ -224,18 +282,18 @@ BOOL	RasterBuffer::SaveBufferToFileAndData	(wstring fileName, void* &pDataDst, i
 
 BOOL RasterBuffer::convertFromPanToRGB ()
 {
-	if (this->nBufferXSize==0 || this->nBufferYSize == 0 || this->dataType != GDT_Byte) return FALSE;
+	if (this->nXSize==0 || this->nYSize == 0 || this->dataType != GDT_Byte) return FALSE;
 	if (this->nBands!=1)		return FALSE;
 	if (this->pData==NULL)	return FALSE;
 	
-	BYTE *pDataNew = new BYTE[3*this->nBufferXSize*this->nBufferYSize];
-	int n = this->nBufferXSize*this->nBufferYSize;
-	for (int j=0;j<this->nBufferYSize;j++)
+	BYTE *pDataNew = new BYTE[3*this->nXSize*this->nYSize];
+	int n = this->nXSize*this->nYSize;
+	for (int j=0;j<this->nYSize;j++)
 	{
-		for (int i=0;i<this->nBufferXSize;i++)
+		for (int i=0;i<this->nXSize;i++)
 		{
-			pDataNew[j*this->nBufferXSize+i + n + n] =
-				(pDataNew[j*this->nBufferXSize+i +n] = (pDataNew[j*this->nBufferXSize+i] = pDataNew[j*this->nBufferXSize+i]));
+			pDataNew[j*this->nXSize+i + n + n] =
+				(pDataNew[j*this->nXSize+i +n] = (pDataNew[j*this->nXSize+i] = pDataNew[j*this->nXSize+i]));
 		}
 	}
 	
@@ -251,15 +309,15 @@ BOOL	RasterBuffer::convertFromIndexToRGB ()
 {
 	if (this->pTable!=NULL)
 	{
-		int n = this->nBufferXSize*this->nBufferYSize;
+		int n = this->nXSize*this->nYSize;
 		BYTE *pDataNew = new BYTE[3*n];
 		int m;
 		const GDALColorEntry *pCEntry;
-		for (int i=0;i<this->nBufferXSize;i++)
+		for (int i=0;i<this->nXSize;i++)
 		{
-			for (int j=0;j<this->nBufferYSize;j++)
+			for (int j=0;j<this->nYSize;j++)
 			{
-				m = j*this->nBufferXSize+i;
+				m = j*this->nXSize+i;
 				pCEntry = pTable->GetColorEntry(((BYTE*)pData)[m]);
 				pDataNew[m] = pCEntry->c1;
 				pDataNew[m+n] = pCEntry->c2;
@@ -279,21 +337,18 @@ BOOL	RasterBuffer::convertFromIndexToRGB ()
 BOOL RasterBuffer::SaveToJpegData (int quality, void* &pDataDst, int &size)
 {
 	
-	if ((this->nBufferXSize ==0)||(this->nBufferYSize == 0)||(this->dataType!=GDT_Byte)) return FALSE;
-	gdImagePtr im	= gdImageCreateTrueColor(this->nBufferXSize,this->nBufferYSize);
+	if ((this->nXSize ==0)||(this->nYSize == 0)||(this->dataType!=GDT_Byte)) return FALSE;
+	gdImagePtr im	= gdImageCreateTrueColor(this->nXSize,this->nYSize);
 	
-	int n = this->nBufferXSize*this->nBufferYSize;
-	if (this->nBands == 1) n = 0;
+	int n = (this->nBands < 3) ? 0 : this->nXSize*this->nYSize;
 	int color = 0;
-	for (int j=0;j<this->nBufferYSize;j++)
+	BYTE	*pDataB = (BYTE*)pData;
+	for (int j=0;j<this->nYSize;j++)
 	{
-		for (int i=0;i<this->nBufferXSize;i++)
-		{
-			color = 65536*((BYTE*)pData)[j*this->nBufferXSize+i] + 256*((BYTE*)pData)[j*this->nBufferXSize+i+n]+((BYTE*)pData)[j*this->nBufferXSize+i+n+n];
-			im->tpixels[j][i] = color;
-		}
+		for (int i=0;i<this->nXSize;i++)
+			im->tpixels[j][i] = gdTrueColor(pDataB[j*this->nXSize+i],pDataB[j*this->nXSize+i+n],pDataB[j*this->nXSize+i+n+n]);
 	}
-	//int size =0;
+	
 	if (!(pDataDst = (BYTE*)gdImageJpegPtr(im,&size,quality)))
 	{
 		gdImageDestroy(im);
@@ -307,33 +362,60 @@ BOOL RasterBuffer::SaveToJpegData (int quality, void* &pDataDst, int &size)
 
 BOOL RasterBuffer::SaveToPng24Data (void* &pDataDst, int &size)
 {
-	if ((this->nBufferXSize ==0)||(this->nBufferYSize == 0)||(this->dataType!=GDT_Byte)) return FALSE;
+	if ((this->nXSize ==0)||(this->nYSize == 0)||(this->dataType!=GDT_Byte)) return FALSE;
 	
-	gdImagePtr im		= gdImageCreateTrueColor(this->nBufferXSize,this->nBufferYSize);
-	if (this->nBands==4)
-	{
-		//im->saveAlphaFlag=1;
-		im->alphaBlendingFlag = 1;
-	}
+	gdImagePtr im		= gdImageCreateTrueColor(this->nXSize,this->nYSize);
 	
-	int n = this->nBufferXSize*this->nBufferYSize;
-	if (this->nBands == 1) n = 0;
-	int color = 0;
-	for (int j=0;j<this->nBufferYSize;j++)
+	BYTE	*pDataByte	= (BYTE*)pData;
+	int n = (this->nBands == 3 || this->nBands == 4) ? 	this->nYSize*this->nXSize : 0;
+	int opaque = 0;
+
+	if ((this->nBands == 4) || (this->nBands == 2))
 	{
-		for (int i=0;i<this->nBufferXSize;i++)
+		im->alphaBlendingFlag	= 1;
+		im->saveAlphaFlag		= 1;
+		int n = (this->nBands == 4) ? 	this->nYSize*this->nXSize : 0;
+		int opaque = 0;
+		for (int j=0;j<this->nYSize;j++)
 		{
-			color = 65536*((BYTE*)pData)[j*this->nBufferXSize+i] + 256*((BYTE*)pData)[j*this->nBufferXSize+i+n]+((BYTE*)pData)[j*this->nBufferXSize+i+n+n];
-			if (this->nBands == 4)
-			{
-				color = gdTrueColorAlpha(((BYTE*)pData)[j*this->nBufferXSize+i],((BYTE*)pData)[j*this->nBufferXSize+i+n],((BYTE*)pData)[j*this->nBufferXSize+i+n+n],((BYTE*)pData)[j*this->nBufferXSize+i+n+n+n]);
-				//if (this->pData[j*this->nBufferXSize+i+n+n+n]==0) color	= gdTrueColorAlpha(255,255,255,127);
-				//else color = gdTrueColor(this->pData[j*this->nBufferXSize+i],this->pData[j*this->nBufferXSize+i+n],this->pData[j*this->nBufferXSize+i+n+n]);
-			}
-			else color = gdTrueColor(((BYTE*)pData)[j*this->nBufferXSize+i],((BYTE*)pData)[j*this->nBufferXSize+i+n],((BYTE*)pData)[j*this->nBufferXSize+i+n+n]);
-			im->tpixels[j][i] = color;
+			for (int i=0;i<this->nXSize;i++)
+				im->tpixels[j][i] = gdTrueColorAlpha(pDataByte[j*this->nXSize+i],
+									pDataByte[j*this->nXSize+i+n],
+									pDataByte[j*this->nXSize+i+n + n],
+									(pDataByte[j*this->nXSize+ i + n + n + this->nYSize*this->nXSize] >0) ? 127 : 0);
 		}
 	}
+	else if (this->pNoDataValue )	// ((this->nBands == 3) || (this->nBands == 1))
+	{
+		im->alphaBlendingFlag = 1;
+		im->saveAlphaFlag	= 1;
+		
+		for (int j=0;j<this->nYSize;j++)
+		{
+			for (int i=0;i<this->nXSize;i++)
+			{
+				opaque = (	(pDataByte[j*this->nXSize+i]			== this->pNoDataValue[0]) &&
+							(pDataByte[j*this->nXSize+ i + n]		== this->pNoDataValue[0]) &&
+							(pDataByte[j*this->nXSize + i + n +n]	== this->pNoDataValue[0])
+								) ? 127 : 0;
+				im->tpixels[j][i] = gdTrueColorAlpha(	pDataByte[j*this->nXSize+i],
+														pDataByte[j*this->nXSize+i+n],
+														pDataByte[j*this->nXSize+i+n+n],
+														opaque);
+			}
+		}
+	}
+	else // ((this->nBands == 3) || (this->nBands == 1))
+	{
+		im->alphaBlendingFlag	= 0;
+		im->saveAlphaFlag		= 0;
+		for (int j=0;j<this->nYSize;j++)
+		{
+			for (int i=0;i<this->nXSize;i++)
+				im->tpixels[j][i] = gdTrueColor(pDataByte[j*this->nXSize+i],pDataByte[j*this->nXSize+i+n],pDataByte[j*this->nXSize+i+n+n]);
+		}
+	}
+
 
 	if (!(pDataDst = (BYTE*)gdImagePngPtr(im,&size)))
 	{
@@ -345,15 +427,13 @@ BOOL RasterBuffer::SaveToPng24Data (void* &pDataDst, int &size)
 	return TRUE;
 }
 	
-
-
 BOOL RasterBuffer::SaveToPngData (void* &pDataDst, int &size)
 {
 
-	if ((this->nBufferXSize ==0)||(this->nBufferYSize == 0)||(this->dataType!=GDT_Byte)) return FALSE;
+	if ((this->nXSize ==0)||(this->nYSize == 0)||(this->dataType!=GDT_Byte)) return FALSE;
 	if (this->pTable==NULL) return SaveToPng24Data(pDataDst,size);
 	
-	gdImagePtr im	= gdImageCreate(this->nBufferXSize,this->nBufferYSize);
+	gdImagePtr im	= gdImageCreate(this->nXSize,this->nYSize);
 	im->colorsTotal = pTable->GetColorEntryCount();
 	for (int i=0;(i<im->colorsTotal)&&(i<gdMaxColors);i++)
 	{
@@ -365,11 +445,11 @@ BOOL RasterBuffer::SaveToPngData (void* &pDataDst, int &size)
 		im->open[i]		= 0;
 	}
 
-	for (int j=0;j<this->nBufferYSize;j++)
+	for (int j=0;j<this->nYSize;j++)
 	{
-		for (int i=0;i<this->nBufferXSize;i++)
+		for (int i=0;i<this->nXSize;i++)
 		{			
-			im->pixels[j][i] = ((BYTE*)pData)[j*this->nBufferXSize+i];
+			im->pixels[j][i] = ((BYTE*)pData)[j*this->nXSize+i];
 		}
 	}
 
@@ -389,13 +469,13 @@ BOOL	RasterBuffer::SaveToTiffData	(void* &pDataDst, int &size)
 	GDALDataset* poDS = (GDALDataset*)GDALCreate(
 		GDALGetDriverByName("GTiff"),
         "/vsimem/tiffinmem",
-		this->nBufferXSize,
-		this->nBufferYSize,
+		this->nXSize,
+		this->nYSize,
 		this->nBands,
 		this->dataType,
 		NULL
 		);
-	poDS->RasterIO(GF_Write,0,0,this->nBufferXSize,this->nBufferYSize,pData,this->nBufferXSize,this->nBufferYSize,dataType,nBands,NULL,0,0,0);
+	poDS->RasterIO(GF_Write,0,0,this->nXSize,this->nYSize,pData,this->nXSize,this->nYSize,dataType,nBands,NULL,0,0,0);
 	GDALFlushCache(poDS);
 	GDALClose(poDS);
 	vsi_l_offset length; 
@@ -413,28 +493,79 @@ BOOL	RasterBuffer::SaveToTiffData	(void* &pDataDst, int &size)
 }
 
 
+BOOL	RasterBuffer::isAnyNoDataPixel()
+{
+	if (this->pNoDataValue == NULL) return FALSE;
+	if (this->pData == NULL)		return FALSE;
+
+	switch (dataType)
+	{
+		case GDT_Byte:
+		{
+			BYTE t  = 1;
+			return isAnyNoDataPixel(t);
+		}
+		case GDT_UInt16:
+		{
+			unsigned __int16 t = 257;
+			return isAnyNoDataPixel(t);
+		}
+		case GDT_Int16:
+		{
+			__int16 t = -257;
+			return isAnyNoDataPixel(t);
+		}
+		case GDT_Float32:
+		{
+			float t = 1.1;
+			return isAnyNoDataPixel(t);
+		}
+		default:
+			return FALSE;
+	}
+	return FALSE;
+}
+
+
+template <typename T>	
+BOOL	RasterBuffer::isAnyNoDataPixel	(T type)
+{
+	int n = nXSize*nYSize;
+	T *pDataT = (T*)pData;
+	int i;
+	for (int k = 0;k<n;k++)
+	{
+		for (i=0;i<nBands;i++)
+			if (pDataT[k + i*n] != this->pNoDataValue[0]) break;
+		if (i==nBands) return TRUE; 
+	}
+	return FALSE;
+}
+
+
+
 /*
 BOOL  RasterBuffer::MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged)
 {
-	if ((this->getBufferXSize()!=oBackGround.getBufferXSize())||
-		(this->getBufferYSize()!=oBackGround.getBufferYSize())||
+	if ((this->getXSize()!=oBackGround.getXSize())||
+		(this->getYSize()!=oBackGround.getYSize())||
 		(this->nBands!=oBackGround.getBandsCount()))
 	{
 		return FALSE;
 	}
 
-	oMerged.createBuffer(this->nBands,this->nBufferXSize,this->nBufferYSize);
-	BYTE *pMergedData = (BYTE*)oMerged.getBufferData();
+	oMerged.createBuffer(this->nBands,this->nXSize,this->nYSize);
+	BYTE *pMergedData = (BYTE*)oMerged.getData();
 
-	memcpy(pMergedData,oBackGround.getBufferData(),this->nBufferXSize*this->nBufferYSize*this->nBands);
+	memcpy(pMergedData,oBackGround.getData(),this->nXSize*this->nYSize*this->nBands);
 
 	int k,s;
-	int n = this->nBufferXSize*this->nBufferYSize;
+	int n = this->nXSize*this->nYSize;
 
-	for (int i=0;i<this->nBufferYSize;i++)
+	for (int i=0;i<this->nYSize;i++)
 	{
-		int l = i*this->nBufferXSize;
-		for (int j=0;j<this->nBufferXSize;j++)
+		int l = i*this->nXSize;
+		for (int j=0;j<this->nXSize;j++)
 		{
 			s=0;
 			for (k=0;k<this->nBands;k++)
@@ -460,18 +591,18 @@ BOOL  RasterBuffer::MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMe
 /*
 BOOL	RasterBuffer::ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight)
 {
-	if ((this->nBufferXSize==0)||(this->nBufferYSize==0)) return FALSE;
+	if ((this->nXSize==0)||(this->nYSize==0)) return FALSE;
 	if (this->pTable!=NULL) convertFromIndexToRGB();
 
-	gdImagePtr im	= gdImageCreateTrueColor(this->nBufferXSize,this->nBufferYSize);
-	int n = this->nBufferXSize*this->nBufferYSize;
+	gdImagePtr im	= gdImageCreateTrueColor(this->nXSize,this->nYSize);
+	int n = this->nXSize*this->nYSize;
 	if (this->nBands==1) n =0;
 	int color = 0;
-	for (int j=0;j<this->nBufferYSize;j++)
+	for (int j=0;j<this->nYSize;j++)
 	{
-		for (int i=0;i<this->nBufferXSize;i++)
+		for (int i=0;i<this->nXSize;i++)
 		{
-			color = 65536*this->pData[j*this->nBufferXSize+i] + 256*this->pData[j*this->nBufferXSize+i+n]+this->pData[j*this->nBufferXSize+i+n+n];
+			color = 65536*this->pData[j*this->nXSize+i] + 256*this->pData[j*this->nXSize+i+n]+this->pData[j*this->nXSize+i+n+n];
 			im->tpixels[j][i] = color;
 		}
 	}
@@ -499,120 +630,29 @@ BOOL	RasterBuffer::ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight)
 	gdImageDestroy(im_out);
 	delete[]pData;
 	pData = pDataOut;
-	this->nBufferXSize = nNewWidth;
-	this->nBufferYSize = nNewHeight;
+	this->nXSize = nNewWidth;
+	this->nYSize = nNewHeight;
 
 	return TRUE;
 }
 */
 
 
-BOOL	RasterBuffer::createAlphaBand(int *rgb)
-{
-	if ( nBands!=3 || dataType!=GDT_Byte) return FALSE;
-	/*
-	if (strColor.length() != 6) return FALSE;
-	int rgb[3];
-	for (int i=0;i<3;i++)
-	{
-		rgb[i] = 0;
-		for (int j=0;j<2;j++)
-		{
-			switch (strColor[i*2+j])
-			{
-				case '0':
-					break;
-				case '1':
-					rgb[i]+= 16*(1-j) +j;
-					break;
-				case '2':
-					rgb[i]+=2*(16*(1-j) +j);
-					break;
-				case '3':
-					rgb[i]+=3*(16*(1-j) +j);
-					break;
-				case '4':
-					rgb[i]+=4*(16*(1-j) +j);
-					break;
-				case '5':
-					rgb[i]+=5*(16*(1-j) +j);
-					break;
-				case '6':
-					rgb[i]+=6*(16*(1-j) +j);
-					break;
-				case '7':
-					rgb[i]+=7*(16*(1-j) +j);
-					break;
-				case '8':
-					rgb[i]+=8*(16*(1-j) +j);
-					break;
-				case '9':
-					rgb[i]+=9*(16*(1-j) +j);
-					break;
-				case 'a':
-					rgb[i]+=10*(16*(1-j) +j);
-					break;
-				case 'b':
-					rgb[i]+=11*(16*(1-j) +j);
-					break;
-				case 'c':
-					rgb[i]+=12*(16*(1-j) +j);
-					break;
-				case 'd':
-					rgb[i]+=13*(16*(1-j) +j);
-					break;
-				case 'e':
-					rgb[i]+=14*(16*(1-j) +j);
-					break;
-				case 'f':
-					rgb[i]+=15*(16*(1-j) +j);
-					break;
-				default:
-					return FALSE;
-			}
-		}
-	}
-	*/
-	int n = this->nBufferXSize*this->nBufferYSize;
-	BYTE *pData_new = new BYTE[4*n];
-	for (int j=0;j<this->nBufferYSize;j++)
-	{
-		for (int i=0;i<this->nBufferXSize;i++)
-		{
-			if ((((BYTE*)pData)[j*nBufferXSize+i]==rgb[0])&&(((BYTE*)pData)[j*nBufferXSize+i+n]==rgb[1])&&(((BYTE*)pData)[j*nBufferXSize+i+n+n]==rgb[2]))
-				pData_new[j*nBufferXSize+i+n+n+n] = 0;	
-			else
-			{
-				pData_new[j*nBufferXSize+i]			= ((BYTE*)pData)[j*nBufferXSize+i];
-				pData_new[j*nBufferXSize+i+n]		= ((BYTE*)pData)[j*nBufferXSize+i+n];
-				pData_new[j*nBufferXSize+i+n+n]		= ((BYTE*)pData)[j*nBufferXSize+i+n+n];
-				pData_new[j*nBufferXSize+i+n+n+n]	= 1;
-			}
-		}
-	}
-
-
-	delete[]pData;
-	
-	this->nBands = 4;
-	pData = pData_new;
-	return TRUE;
-}
 
 /*
 BOOL RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue)
 {
 	if (pData==NULL) return FALSE;
-	if ((nLeft<0)||(nLeft+nWidth>this->nBufferXSize)) return FALSE;
-	if ((nTop<0)||(nTop+nHeight>this->nBufferYSize)) return FALSE;
+	if ((nLeft<0)||(nLeft+nWidth>this->nXSize)) return FALSE;
+	if ((nTop<0)||(nTop+nHeight>this->nYSize)) return FALSE;
 	
-	LONG n = nBufferXSize*nBufferYSize;
+	LONG n = nXSize*nYSize;
 
 	int n1,n2;
 	n1=0;
 	for (int j=nTop;j<nTop+nHeight;j++)
 	{	
-		n1=j*nBufferXSize;
+		n1=j*nXSize;
 		for (int i=nLeft;i<nLeft+nWidth;i++)
 		{
 			n2=0;			
@@ -627,7 +667,13 @@ BOOL RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LO
 }
 */
 
-BOOL RasterBuffer::initByNoDataValue(int nNoDataValue)
+BOOL RasterBuffer::initByNoDataValue(int noDataValue)
+{
+	setNoDataValue(noDataValue);
+	return initByValue(noDataValue);
+}
+
+BOOL RasterBuffer::initByValue(int value)
 {
 	if (pData==NULL) return FALSE;
 
@@ -636,22 +682,22 @@ BOOL RasterBuffer::initByNoDataValue(int nNoDataValue)
 		case GDT_Byte:
 		{
 			BYTE t  = 1;
-			return initByNoDataValue(t,nNoDataValue);
+			return initByValue(t,value);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return initByNoDataValue(t,nNoDataValue);
+			return initByValue(t,value);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return initByNoDataValue(t,nNoDataValue);
+			return initByValue(t,value);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return initByNoDataValue(t,nNoDataValue);
+			return initByValue(t,value);
 		}
 		default:
 			return NULL;
@@ -660,65 +706,68 @@ BOOL RasterBuffer::initByNoDataValue(int nNoDataValue)
 }
 
 template <typename T>
-BOOL RasterBuffer::initByNoDataValue(T type, int nNoDataValue)
+BOOL RasterBuffer::initByValue(T type, int value)
 {
 	if (pData==NULL) return FALSE;
 
-	unsigned __int64 n = nBands*nBufferXSize*nBufferYSize;
 	T *pDataT = (T*)pData;
-	for (unsigned __int64 i=0;i<n;i++)
-		pDataT[i]=nNoDataValue;
+	if (!this->bAlphaBand)
+	{
+		unsigned __int64 n = nBands*nXSize*nYSize;
+		for (unsigned __int64 i=0;i<n;i++)
+			pDataT[i]=value;
+	}
+	else
+	{
+		unsigned __int64 n = (nBands-1)*nXSize*nYSize;
+		for (unsigned __int64 i=0;i<n;i++)
+			pDataT[i]=value;
+		n = nBands*nXSize*nYSize;
+		for (unsigned __int64 i=(nBands-1)*nXSize*nYSize;i<n;i++)
+			pDataT[i]=100;
+
+	}
 	return TRUE;	
 }
 
-BOOL RasterBuffer::initByBackgroundColor()
-{
-	if (pData==NULL) return FALSE;
-	if (this->nBands != 3 || this->dataType != GDT_Byte) return FALSE;
-	LONG n = nBufferXSize*nBufferYSize;
-	for (int i = 0;i<3;i++)
-		for (int j=n*i;j<n*(i+1);j++)
-			((BYTE*)pData)[j] = backgroundColor[i];
 
-	return FALSE;
-}
 
 BOOL	RasterBuffer::stretchDataTo8Bit(double minVal, double maxVal)
 {
-	void *pDataNew = getBlockFromBuffer(0,0,nBufferXSize,nBufferYSize,TRUE,minVal,maxVal);
+	void *pDataNew = copyData(0,0,nXSize,nYSize,TRUE,minVal,maxVal);
 	int bands = nBands;
-	int width = nBufferXSize;
-	int height = nBufferYSize;
+	int width = nXSize;
+	int height = nYSize;
 	clearBuffer();
 	return createBuffer(bands,width,height,pDataNew,GDT_Byte);
 }
 
 
-void*	RasterBuffer::getBlockFromBuffer (int left, int top, int w, int h,  BOOL stretchTo8Bit, double min, double max)
+void*	RasterBuffer::copyData (int left, int top, int w, int h,  BOOL stretchTo8Bit, double min, double max)
 {
-	if (pData == NULL || this->nBufferXSize == 0 || this->nBufferYSize==0) return NULL;
+	if (pData == NULL || this->nXSize == 0 || this->nYSize==0) return NULL;
 	
 	switch (dataType)
 	{
 		case GDT_Byte:
 		{
 			BYTE t  = 1;
-			return getBlockFromBuffer(t,left,top,w,h);
+			return copyData(t,left,top,w,h);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return getBlockFromBuffer(t,left,top,w,h);
+			return copyData(t,left,top,w,h);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return getBlockFromBuffer(t,left,top,w,h);
+			return copyData(t,left,top,w,h);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return getBlockFromBuffer(t,left,top,w,h);
+			return copyData(t,left,top,w,h);
 		}
 		default:
 			return NULL;
@@ -728,11 +777,11 @@ void*	RasterBuffer::getBlockFromBuffer (int left, int top, int w, int h,  BOOL s
 
 ///*
 template <typename T>
-void*	RasterBuffer::getBlockFromBuffer (T type, int left, int top, int w, int h,  BOOL stretchTo8Bit, double minVal, double maxVal)
+void*	RasterBuffer::copyData (T type, int left, int top, int w, int h,  BOOL stretchTo8Bit, double minVal, double maxVal)
 {
 	if (nBands==0) return NULL;
 	int					n = w*h;
-	unsigned __int64	m = nBufferXSize*nBufferYSize;
+	unsigned __int64	m = nXSize*nYSize;
 	T				*pBlockT;
 	BYTE			*pBlockB;
 
@@ -748,10 +797,10 @@ void*	RasterBuffer::getBlockFromBuffer (T type, int left, int top, int w, int h,
 		{
 			for (int i=top;i<top+h;i++)
 			{
-				if (!stretchTo8Bit) pBlockT[n*k+(i-top)*w+j-left] = pDataT[m*k+i*nBufferXSize+j];
+				if (!stretchTo8Bit) pBlockT[n*k+(i-top)*w+j-left] = pDataT[m*k+i*nXSize+j];
 				else
 				{
-					d = max(min(pDataT[m*k+i*nBufferXSize+j],maxVal),minVal);
+					d = max(min(pDataT[m*k+i*nXSize+j],maxVal),minVal);
 					pBlockB[n*k+(i-top)*w+j-left] = (int)(0.5+255*((d-minVal)/(maxVal-minVal)));
 				}
 			}
@@ -763,7 +812,7 @@ void*	RasterBuffer::getBlockFromBuffer (T type, int left, int top, int w, int h,
 }
 //*/
 
-BOOL		RasterBuffer::createSimpleZoomOut	(RasterBuffer &oBufferDst)
+void*		RasterBuffer::getDataZoomedOut	()
 {
 	void *pDataZoomedOut;
 	switch (dataType)
@@ -771,50 +820,39 @@ BOOL		RasterBuffer::createSimpleZoomOut	(RasterBuffer &oBufferDst)
 		case GDT_Byte:
 		{
 			BYTE t = 1;
-			if (!createSimpleZoomOut(t,pDataZoomedOut)) return FALSE;
-			if(!oBufferDst.createBuffer(nBands,nBufferXSize/2,nBufferYSize/2,pDataZoomedOut,dataType)) return FALSE;
-			delete[]((BYTE*)pDataZoomedOut);
-			break;
+			return getDataZoomedOut(t);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			if (!createSimpleZoomOut(t,pDataZoomedOut)) return FALSE;
-			if(!oBufferDst.createBuffer(nBands,nBufferXSize/2,nBufferYSize/2,pDataZoomedOut,dataType)) return FALSE;
-			delete[]((BYTE*)pDataZoomedOut);
-			break;
+			return getDataZoomedOut(t);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			if (!createSimpleZoomOut(t,pDataZoomedOut)) return FALSE;
-			if(!oBufferDst.createBuffer(nBands,nBufferXSize/2,nBufferYSize/2,pDataZoomedOut,dataType)) return FALSE;
-			delete[]((BYTE*)pDataZoomedOut);
-			break;
+			return getDataZoomedOut(t);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			if (!createSimpleZoomOut(t,pDataZoomedOut)) return FALSE;
-			if(!oBufferDst.createBuffer(nBands,nBufferXSize/2,nBufferYSize/2,pDataZoomedOut,dataType)) return FALSE;
-			delete[]((BYTE*)pDataZoomedOut);
-			break;
+			return getDataZoomedOut(t);
 		}
 		default:
-			return FALSE;
+			return NULL;
 	}
-	return TRUE;
 }
 
 template<typename T>
-BOOL RasterBuffer::createSimpleZoomOut	(T type, void* &pDataDst)
+void* RasterBuffer::getDataZoomedOut	(T type)
 {
-	unsigned int a	= nBufferXSize*nBufferYSize/4;
-	unsigned w = nBufferXSize/2;
-	unsigned h = nBufferYSize/2;
-	T	*pDataDstT	= NULL;
-	if(! (pDataDstT = new T[nBands*a]) ) return FALSE;
-	
+	unsigned int a	= nXSize*nYSize/4;
+	unsigned w = nXSize/2;
+	unsigned h = nYSize/2;
+	T	*pZoomedOutData	= NULL;
+	if(! (pZoomedOutData = new T[nBands*a]) )
+	{
+		return NULL;
+	}
 	unsigned int m =0;
 	T	*pDataT		= (T*)pData;
 
@@ -824,17 +862,15 @@ BOOL RasterBuffer::createSimpleZoomOut	(T type, void* &pDataDst)
 		{
 			for (int j=0;j<w;j++)
 			{
-				pDataDstT[m + i*w + j] = (	pDataT[(m<<2) + (i<<1)*(nBufferXSize) + (j<<1)]+
-												pDataT[(m<<2) + ((i<<1)+1)*(nBufferXSize) + (j<<1)]+
-												pDataT[(m<<2) + (i<<1)*(nBufferXSize) + (j<<1) +1]+
-												pDataT[(m<<2) + ((i<<1)+1)*(nBufferXSize) + (j<<1) + 1])/4;
+				pZoomedOutData[m + i*w + j] = (	pDataT[(m<<2) + (i<<1)*(nXSize) + (j<<1)]+
+												pDataT[(m<<2) + ((i<<1)+1)*(nXSize) + (j<<1)]+
+												pDataT[(m<<2) + (i<<1)*(nXSize) + (j<<1) +1]+
+												pDataT[(m<<2) + ((i<<1)+1)*(nXSize) + (j<<1) + 1])/4;
 			}
 		}
 		m+=a;
 	}
-	//delete[]poData;
-	pDataDst = pDataDstT;
-	return TRUE;
+	return pZoomedOutData;
 }
 
 /*
@@ -845,20 +881,51 @@ BOOL	RasterBuffer::dataIO	(BOOL operationFlag,
 {
 	if (operationFlag==FALSE)
 	{
-		void *pData_ = getBlockFromBuffer(left,top,w,h);
+		void *pData_ = copyData(left,top,w,h);
 	}
 	else
 	{
-		return writeBlockToBuffer(left,top,w,h,pData,bands);
+		return setData(left,top,w,h,pData,bands);
 
 	}
 	return TRUE;
 }
 */
-
-BOOL	RasterBuffer::writeBlockToBuffer (int left, int top, int w, int h, void *pBlockData, int bands)
+BOOL	RasterBuffer::isAlphaBand()
 {
-	if (pData == NULL || this->nBufferXSize == 0 || this->nBufferYSize==0) return NULL;
+	return this->bAlphaBand;
+}
+
+BOOL	RasterBuffer::createAlphaBandByColor(BYTE	*pRGB)
+{
+	if ((this-pData == NULL) || (this->dataType!=GDT_Byte) || (this->nBands>3)) return FALSE;
+
+	int n = this->nXSize *this->nYSize;
+	BYTE	*pData_new = new BYTE[(this->nBands+1) * n];
+	memcpy(pData_new,pData,this->nBands * n);
+	int d = (this->nBands == 3) ? 1 : 0;
+
+	for (int i=0; i<this->nYSize; i++)
+	{
+		for (int j=0; j<this->nXSize; j++)
+			pData_new[i*nXSize + j + n + d*(n+n)] = (	(pData_new[i*nXSize + j] == pRGB[0] ) &&
+														(pData_new[i*nXSize + j + d*n] == pRGB[0 +d] ) &&
+														(pData_new[i*nXSize + j + d*(n+n)] == pRGB[0+d+d] ) ) 
+														? 100 : 0;
+	}
+	delete[]((BYTE*)pData);
+	pData = pData_new;
+	this->nBands++;
+	this->bAlphaBand = TRUE;
+	return TRUE;
+}
+
+//BOOL	RasterBuffer::createAlphaBandByValue(int	value);
+
+
+BOOL	RasterBuffer::setData (int left, int top, int w, int h, void *pBlockData, int bands)
+{
+	if (pData == NULL || this->nXSize == 0 || this->nYSize==0) return NULL;
 	bands = (bands==0) ? nBands : bands;
 
 	switch (dataType)
@@ -866,22 +933,22 @@ BOOL	RasterBuffer::writeBlockToBuffer (int left, int top, int w, int h, void *pB
 		case GDT_Byte:
 		{
 			BYTE t = 1;
-			return writeBlockToBuffer(t,left,top,w,h,pBlockData,bands);
+			return setData(t,left,top,w,h,pBlockData,bands);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return writeBlockToBuffer(t,left,top,w,h,pBlockData,bands);
+			return setData(t,left,top,w,h,pBlockData,bands);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return writeBlockToBuffer(t,left,top,w,h,pBlockData,bands);
+			return setData(t,left,top,w,h,pBlockData,bands);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return writeBlockToBuffer(t,left,top,w,h,pBlockData,bands);
+			return setData(t,left,top,w,h,pBlockData,bands);
 		}
 		default:
 			return FALSE;
@@ -891,12 +958,12 @@ BOOL	RasterBuffer::writeBlockToBuffer (int left, int top, int w, int h, void *pB
 
 ///*
 template <typename T>
-BOOL	RasterBuffer::writeBlockToBuffer (T type, int left, int top, int w, int h, void *pBlockData, int bands)
+BOOL	RasterBuffer::setData (T type, int left, int top, int w, int h, void *pBlockData, int bands)
 {
 	bands = (bands==0) ? nBands : bands;
 
 	int n = w*h;
-	int m = nBufferXSize*nBufferYSize;
+	int m = nXSize*nYSize;
 	T *pDataT = (T*)pData;
 	T *pBlockDataT = (T*)pBlockData;
 
@@ -905,7 +972,7 @@ BOOL	RasterBuffer::writeBlockToBuffer (T type, int left, int top, int w, int h, 
 	{
 		for (int j=left;j<left+w;j++)
 			for (int i=top;i<top+h;i++)
-				pDataT[m*k+i*nBufferXSize+j] = pBlockDataT[n*k+(i-top)*w + j-left];
+				pDataT[m*k+i*nXSize+j] = pBlockDataT[n*k+(i-top)*w + j-left];
 	}		
 
 	return TRUE;
@@ -914,7 +981,7 @@ BOOL	RasterBuffer::writeBlockToBuffer (T type, int left, int top, int w, int h, 
 //*/
 
 
-void* RasterBuffer::getBufferData()
+void* RasterBuffer::getDataRef()
 {
 	return pData;
 }
@@ -926,19 +993,19 @@ int	RasterBuffer::getBandsCount()
 }
 
 
-int RasterBuffer::getBufferXSize()
+int RasterBuffer::getXSize()
 {
-	return nBufferXSize;	
+	return nXSize;	
 }
 
 
-int RasterBuffer::getBufferYSize()
+int RasterBuffer::getYSize()
 {
-	return nBufferYSize;	
+	return nYSize;	
 }
 
 
-GDALDataType RasterBuffer::getBufferDataType()
+GDALDataType RasterBuffer::getDataType()
 {
 	return dataType;
 }

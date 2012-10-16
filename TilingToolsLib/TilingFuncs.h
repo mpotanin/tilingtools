@@ -30,7 +30,9 @@ public:
 	//wstring				imageType;				//разрешение входных файлов
 	wstring					containerFile;			//название файла-контейнера тайлов
 	bool					useContainer;			//писать тайлы в контейнер
-	int						*backgroundColor;		//фон тайлов
+	BYTE					*pBackgroundColor;		//RGB-цвет для заливки фона в тайлах
+	BYTE					*pTransparentColor;		//RGB-цвет для маски прозрачности
+	int						*pNoDataValue;			//значение для маски прозрачности
 
 	int						nJpegQuality;
 	double					dShiftX;				//сдвиг по x
@@ -53,35 +55,55 @@ public:
 		this->dShiftX = 0;
 		this->dShiftY = 0;
 		this->poTileName = NULL;
-		this->backgroundColor = NULL;
+		this->pBackgroundColor	= NULL;
+		this->pTransparentColor = NULL;
+		this->pNoDataValue		= NULL;
 		this->baseZoom	= 0;
+		this->minZoom	= 0;
 		this->maxTilesInCache	= 0;
 	}
 
 
-	TilingParameters& operator = (TilingParameters &oParams)
+	TilingParameters& operator = (TilingParameters &oSrcParams)
 	{
-		this->baseZoom			= baseZoom;
-		this->nJpegQuality		= oParams.nJpegQuality;
-		this->inputFile			= oParams.inputFile;
-		this->vectorFile		= oParams.vectorFile;
-		this->poTileName		= oParams.poTileName;
-		this->minZoom			= oParams.minZoom;
-		this->mercType			= oParams.mercType;
-		this->useContainer		= oParams.useContainer;
-		this->tileType			= oParams.tileType; 
-		this->dShiftX			= oParams.dShiftX;
-		this->dShiftY			= oParams.dShiftY;
-		this->maxTilesInCache	= oParams.maxTilesInCache;
+		this->baseZoom			= oSrcParams.baseZoom;
+		this->minZoom			= oSrcParams.minZoom;
+		this->nJpegQuality		= oSrcParams.nJpegQuality;
+		this->inputFile			= oSrcParams.inputFile;
+		this->vectorFile		= oSrcParams.vectorFile;
+		this->poTileName		= oSrcParams.poTileName;
+		this->minZoom			= oSrcParams.minZoom;
+		this->mercType			= oSrcParams.mercType;
+		this->useContainer		= oSrcParams.useContainer;
+		this->tileType			= oSrcParams.tileType; 
+		this->dShiftX			= oSrcParams.dShiftX;
+		this->dShiftY			= oSrcParams.dShiftY;
+		this->maxTilesInCache	= oSrcParams.maxTilesInCache;
 
-		if (oParams.backgroundColor!=0)
+		if (oSrcParams.pBackgroundColor!=NULL)
 		{
-			this->backgroundColor[0] = oParams.backgroundColor[0];
-			this->backgroundColor[1] = oParams.backgroundColor[1];
-			this->backgroundColor[2] = oParams.backgroundColor[2];
+			this->pBackgroundColor = new BYTE[3];
+			memcpy(this->pBackgroundColor,oSrcParams.pBackgroundColor,3);
 		}
 
+		if (oSrcParams.pTransparentColor!=NULL)
+		{
+			this->pBackgroundColor = new BYTE[3];
+			memcpy(this->pTransparentColor,oSrcParams.pTransparentColor,3);
+		}
+
+		if (oSrcParams.pNoDataValue !=NULL)
+		{
+			this->pNoDataValue = new int[1];
+			this->pNoDataValue[0] = oSrcParams.pNoDataValue[0];
+		}
 		return (*this);
+	}
+	~TilingParameters ()
+	{
+		delete(pBackgroundColor);
+		delete(pTransparentColor);
+		delete(pNoDataValue);		
 	}
 };
 
@@ -112,7 +134,7 @@ BOOL BaseZoomTiling2 (TilingParameters		&oParams,
 
 
 
-BOOL CreaterPyramidalTiles (VectorBorder	&oVectorBorder, 
+BOOL CreatePyramidalTiles (VectorBorder	&oVectorBorder, 
 						int					nBaseZoom, 
 						int					nMinZoom, 
 						TilingParameters	&oParams, 
@@ -124,7 +146,7 @@ BOOL CreaterPyramidalTiles (VectorBorder	&oVectorBorder,
 						);
 
 
-BOOL MakeZoomOutTile (VectorBorder				&oVectorBorder,
+BOOL CreateZoomOutTile (VectorBorder				&oVectorBorder,
 					  int						nCurrZoom,
 					  int						nX,
 					  int						nY,
@@ -132,13 +154,16 @@ BOOL MakeZoomOutTile (VectorBorder				&oVectorBorder,
 					  int						nMinZoom,
 					  TilingParameters			&oParams,
 					  RasterBuffer				&oBuffer, 
-					  BOOL						&bBlackTile,
 					  int						&nExpectedTiles,
 					  int						&nGeneratedTiles,
 					  BOOL						bOnlyCalculate,
 					  TilePyramid				*tilePyramid,
-					  //vector<pair<wstring,pair<void*,int>>> *tilesCash = NULL,
 					  int						nJpegQuality = 80);
+
+BOOL ZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], 
+						BOOL quarterTileExists[4], 
+						RasterBuffer &zoomOutTileBuffer); 
+
 
 
 

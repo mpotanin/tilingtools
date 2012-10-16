@@ -51,7 +51,7 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 	int expectedTiles	= oBundle.calculateNumberOfTiles(baseZoom);	
 	wcout<<expectedTiles<<endl;
 
-	wcout<<L"making base zoom tiles: 0% ";
+	wcout<<L"0% ";
 	unsigned int maxTilesInCache = (oParams.maxTilesInCache == 0) ? MAX_TILES_IN_CACHE : oParams.maxTilesInCache; 
 	unsigned int adjustedMaxTilesInCash =	(oParams.tileType == JPEG_TILE) ? maxTilesInCache	:
 											(oParams.tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
@@ -76,12 +76,12 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 	oVectorBorder.InitByEnvelope(oBundle.getMercatorEnvelope());
 	int generatedTiles = 0;
 	expectedTiles = 0;
-	CreaterPyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTilePyramid,oParams.nJpegQuality);
+	CreatePyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTilePyramid,oParams.nJpegQuality);
 	wcout<<expectedTiles<<endl;
 	if (expectedTiles > 0) 
 	{
-		wcout<<L"making pyramid tiles: 0% ";
-		CreaterPyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTilePyramid,oParams.nJpegQuality);
+		wcout<<L"0% ";
+		CreatePyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTilePyramid,oParams.nJpegQuality);
 		wcout<<L" done."<<endl;
 	}
 
@@ -101,29 +101,31 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 					   int							nTilesExpected, 
 					   int							&nTilesGenerated,
 					   TilePyramid				*tilePyramid)
-					   //vector<pair<wstring,pair<void*,int>>> *tilesCash)
 {  
-	for (int x = nX; x < nX+oBuffer.getBufferXSize()/TILE_SIZE; x += 1)
+	for (int x = nX; x < nX+oBuffer.getXSize()/TILE_SIZE; x += 1)
 	{
-		for (int y = nY; y < nY+oBuffer.getBufferYSize()/TILE_SIZE; y += 1)
+		for (int y = nY; y < nY+oBuffer.getYSize()/TILE_SIZE; y += 1)
 		{	
 			OGREnvelope oTileEnvelope = MercatorTileGrid::calcEnvelopeByTile(z,x,y);
 			if (!poBundle->intersects(oTileEnvelope)) continue;
 			
 
 			RasterBuffer oTileBuffer;
-			if (oParams.backgroundColor)
-				oTileBuffer.setBackgroundColor(oParams.backgroundColor);
-			BYTE *pData = (BYTE*)oBuffer.getBlockFromBuffer(
-				(x-nX)*TILE_SIZE,
-				(y-nY)*TILE_SIZE,
-				TILE_SIZE,
-				TILE_SIZE);
-			oTileBuffer.createBuffer(oBuffer.getBandsCount(), TILE_SIZE, TILE_SIZE, pData,oBuffer.getBufferDataType());
-			delete [] pData;
-		
+			
+			void *tileData = oBuffer.copyData((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
+			oTileBuffer.createBuffer(	oBuffer.getBandsCount(),
+											TILE_SIZE,
+											TILE_SIZE,
+											tileData,
+											oBuffer.getDataType(),
+											oBuffer.getNoDataValue(),
+											oBuffer.isAlphaBand());
+			delete[]tileData;
+			
+
 			if (tilePyramid != NULL)
 			{
+				
 				void *pData=NULL;
 				int size = 0;
 				switch (oParams.tileType)
@@ -177,21 +179,27 @@ BOOL BaseZoomTiling2	(TilingParameters		&oParams,
 	MercatorTileGrid::calcTileRange(poBundle->getMercatorEnvelope(),zoom,minx,miny,maxx,maxy);
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=MAX_BUFFER_TILES_WIDTH)
 	{
-		int curr_max_x = (curr_min_x + MAX_BUFFER_TILES_WIDTH - 1 > maxx) ? maxx :  curr_min_x + MAX_BUFFER_TILES_WIDTH - 1;
+		int curr_max_x =	(curr_min_x + MAX_BUFFER_TILES_WIDTH - 1 > maxx) ? 
+							maxx :  
+							curr_min_x + MAX_BUFFER_TILES_WIDTH - 1;
 		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=MAX_BUFFER_TILES_WIDTH)
 		{
-			int curr_max_y = (curr_min_y + MAX_BUFFER_TILES_WIDTH - 1 > maxy) ? maxy :  curr_min_y + MAX_BUFFER_TILES_WIDTH - 1;
+			int curr_max_y =	(curr_min_y + MAX_BUFFER_TILES_WIDTH - 1 > maxy) ? 
+								maxy :  
+								curr_min_y + MAX_BUFFER_TILES_WIDTH - 1;
+			
 			OGREnvelope bufferEnvelope = MercatorTileGrid::calcEnvelopeByTileRange(zoom,curr_min_x,curr_min_y,curr_max_x,curr_max_y);//?
 			if (!poBundle->intersects(bufferEnvelope)) continue;
-
 			RasterBuffer mercBuffer;
-			
-			if (!poBundle->warpMercToBuffer(zoom,bufferEnvelope,mercBuffer))
+			if (!poBundle->warpMercToBuffer(zoom,bufferEnvelope,mercBuffer,oParams.pNoDataValue,oParams.pBackgroundColor))
 			{
-				//
+				wcout<<L"Error: BaseZoomTiling: warping to merc fail"<<endl;
+				return FALSE;
 			}
+
+			if ( oParams.pTransparentColor != NULL ) mercBuffer.createAlphaBandByColor(oParams.pTransparentColor);
 			
-			if ((oParams.tileType == JPEG_TILE || oParams.tileType == PNG_TILE)&&(mercBuffer.getBufferDataType()!=GDT_Byte))
+			if ((oParams.tileType == JPEG_TILE || oParams.tileType == PNG_TILE)&&(mercBuffer.getDataType()!=GDT_Byte))
 			{
 				if (!mercBuffer.stretchDataTo8Bit(0,255))
 				{
@@ -209,169 +217,132 @@ BOOL BaseZoomTiling2	(TilingParameters		&oParams,
 									generatedTiles,
 									tilePyramid))
 			{
-				//
+				wcout<<L"Error: BaseZoomTiling: TilingFromBuffer fail"<<endl;
+				return FALSE;
 			}
-			//TilingFromBuffer
 		}
 	}
-
-
-
-
-
-	//MercatorTileGrid::
-	
 
 	return TRUE;
 }
 
 
-BOOL CreaterPyramidalTiles (VectorBorder		&oVectorBorder, 
-					  int					nBaseZoom, 
-					  int					nMinZoom, 
-					  TilingParameters		&oParams, 
-					  int					&nExpectedTiles, 
-					  int					&nGeneratedTiles, 
-					  BOOL					bOnlyCalculate, 
-					  TilePyramid		*tilePyramid,
-					  //vector<pair<wstring,pair<void*,int>>> *tilesCash,
-					  int					nJpegQuality
-					  )
+BOOL CreatePyramidalTiles (VectorBorder		&oVectorBorder, 
+						  int					nBaseZoom, 
+						  int					nMinZoom, 
+						  TilingParameters		&oParams, 
+						  int					&nExpectedTiles, 
+						  int					&nGeneratedTiles, 
+						  BOOL					bOnlyCalculate, 
+						  TilePyramid			*tilePyramid,
+						  int					nJpegQuality
+						  )
 {
 
 	RasterBuffer oBuffer;
 	BOOL b;
 
-	MakeZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
-	//MakeZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);	
-	
-	//MakeZoomOutTile(oVectorBorder,1,-1,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
-	//MakeZoomOutTile(oVectorBorder,1,-1,-1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
-	//MakeZoomOutTile(oVectorBorder,1,0,-1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
+	CreateZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 	if (oVectorBorder.GetEnvelope().MaxX>-MercatorTileGrid::getULX())
 	{
-		MakeZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
-		MakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
-		
-		//MakeZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
-		//MakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,b,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilesCash,nJpegQuality);
+		CreateZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
+		CreateZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 	}
 
 	return TRUE;
 }
-//*/
 
-
-
-
-BOOL MakeZoomOutTile (VectorBorder		&oVectorBorder, 
+BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder, 
 					  int				nCurrZoom, 
 					  int				nX, 
 					  int				nY, 
 					  int				nBaseZoom, 
 					  int				nMinZoom, 
 					  TilingParameters	&oParams, 
-					  RasterBuffer		&oBuffer,  
-					  BOOL				&bBlackTile, 
+					  RasterBuffer		&oTileBuffer,  
 					  int				&nExpectedTiles, 
 					  int				&nGeneratedTiles, 
 					  BOOL				bOnlyCalculate, 
-					  TilePyramid	*tilePyramid, 
+					  TilePyramid		*tilePyramid, 
 					  int				nJpegQuality)
 {
 
 	int start;
-
 	if (nCurrZoom==nBaseZoom)
 	{	
-		if (bOnlyCalculate) 
-		{
-			bBlackTile = (!tilePyramid->tileExists(nCurrZoom,nX,nY));
-			return TRUE;
-		}
-	
+		if (!tilePyramid->tileExists(nCurrZoom,nX,nY)) return FALSE;
+		if (bOnlyCalculate) return TRUE;
+
 		unsigned int size	= 0;
 		BYTE		*pData	= NULL;
 		tilePyramid->getTile(nCurrZoom,nX,nY,pData,size);
-		bBlackTile = (size == 0) ? TRUE : FALSE;
-		if (!bBlackTile) 
+		if (size ==0) return FALSE;
+		switch (oParams.tileType)
 		{
-			switch (oParams.tileType)
-			{
-				case JPEG_TILE:
+			case JPEG_TILE:
+				{
+					if(!oTileBuffer.createBufferFromJpegData(pData,size))
 					{
-						oBuffer.createBufferFromJpegData(pData,size);;
-						break;
+						wcout<<L"Error: reading jpeg-data from cache"<<endl;
+						return FALSE;
 					}
-				case PNG_TILE:
-					{
-						oBuffer.createBufferFromPngData(pData,size);
-						break;
-					}
-				default:
-					oBuffer.createBufferFromTiffData(pData,size);
-			}
-			delete[]((BYTE*)pData);
+					break;
+				}
+			case PNG_TILE:
+				{
+					oTileBuffer.createBufferFromPngData(pData,size);
+					break;
+				}
+			default:
+				oTileBuffer.createBufferFromTiffData(pData,size);
 		}
+		delete[]((BYTE*)pData);
+	
 		return TRUE;
 	}
 	else
 	{
-		RasterBuffer oBuffers[4];
-		BOOL bBlackTiles[4];
-		
+		RasterBuffer	quarterTileBuffer[4];
+		BOOL			quarterTileExists[4];
+
 		for (int i=0;i<2;i++)
 		{
 			for (int j=0;j<2;j++)
 			{
 				OGREnvelope oEnvelope = MercatorTileGrid::calcEnvelopeByTile(nCurrZoom+1,2*nX+j,2*nY+i);
-				if (oVectorBorder.Intersects(oEnvelope)) MakeZoomOutTile(oVectorBorder,nCurrZoom+1,2*nX+j,2*nY+i,nBaseZoom,nMinZoom,oParams,oBuffers[i*2+j],bBlackTiles[i*2+j],nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
-				else bBlackTiles[i*2+j] = TRUE;
+				if (oVectorBorder.Intersects(oEnvelope)) 
+					quarterTileExists[i*2+j] = CreateZoomOutTile(oVectorBorder,
+															nCurrZoom+1,
+															2*nX+j,
+															2*nY+i,
+															nBaseZoom,
+															nMinZoom,
+															oParams,quarterTileBuffer[i*2+j],
+															nExpectedTiles,
+															nGeneratedTiles,
+															bOnlyCalculate,
+															tilePyramid,
+															nJpegQuality);
+				else quarterTileExists[i*2+j] = FALSE;
 			}
 		}
-		if (nCurrZoom < nMinZoom) return TRUE;
-
-		int bands;
-		GDALDataType gDT;
-		bBlackTile	= TRUE;
-		for (int i=0;i<4;i++)
-		{
-			if (!bBlackTiles[i])
-			{
-				bands		= oBuffers[i].getBandsCount();
-				gDT			= oBuffers[i].getBufferDataType();
-				bBlackTile	= FALSE;
-			}
-		}
-
-		if (bBlackTile) return TRUE;
 		
+		if (nCurrZoom < nMinZoom)		return FALSE;
+		if ((!quarterTileExists[0])&&
+			(!quarterTileExists[1])&&
+			(!quarterTileExists[2])&&
+			(!quarterTileExists[3]) )	return FALSE;
+	
 		if (bOnlyCalculate)
 		{
 			nExpectedTiles++;
 			return TRUE;
 		}
-				
-		for (int i=0;i<4;i++)
-		{
-			if (bBlackTiles[i])
-			{
-				oBuffers[i].createBuffer(	bands,
-											TILE_SIZE,
-											TILE_SIZE,
-											NULL,
-											gDT);
-				oBuffers[i].initByNoDataValue();
-			}
-		}
 
-		oBuffer.createBuffer(	bands,TILE_SIZE,TILE_SIZE,NULL,gDT);
-		for (int i=0;i<4;i++)
-		{
-			RasterBuffer	zoomedOutBuffer;
-			oBuffers[i].createSimpleZoomOut(zoomedOutBuffer);
-			oBuffer.writeBlockToBuffer((i%2)*TILE_SIZE/2,(i/2)*TILE_SIZE/2,TILE_SIZE/2,TILE_SIZE/2,zoomedOutBuffer.getBufferData());
-		}
+		if (!ZoomOutTileBuffer(quarterTileBuffer,quarterTileExists, oTileBuffer)) return FALSE;
+		
+	
+
 
 		void *pData=NULL;
 		int size = 0;
@@ -379,21 +350,59 @@ BOOL MakeZoomOutTile (VectorBorder		&oVectorBorder,
 		{
 			case JPEG_TILE:
 				{
-					oBuffer.SaveToJpegData(85,pData,size);
+					oTileBuffer.SaveToJpegData(85,pData,size);
 					break;
 				}
 			case PNG_TILE:
 				{
-					oBuffer.SaveToPng24Data(pData,size);
+					oTileBuffer.SaveToPng24Data(pData,size);
 					break;
 				}
 			default:
-				oBuffer.SaveToTiffData(pData,size);
+				oTileBuffer.SaveToTiffData(pData,size);
 		}
 		tilePyramid->addTile(nCurrZoom,nX,nY,(BYTE*)pData,size);
 		delete[]((BYTE*)pData);
 		nGeneratedTiles++;
 		PrintTilingProgress(nExpectedTiles,nGeneratedTiles);
+	}
+
+	return TRUE;
+}
+
+
+
+
+
+BOOL ZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], BOOL quarterTileExists[4], RasterBuffer &zoomOutTileBuffer) 
+{
+	int i;
+	for (i = 0; i<4;i++)
+		if (quarterTileExists[i]) break;
+	if (i==4) return FALSE;
+	
+	int bands;
+	GDALDataType gDT;
+	
+	zoomOutTileBuffer.createBuffer(srcQuarterTile[i].getBandsCount(),
+									TILE_SIZE,
+									TILE_SIZE,
+									NULL,
+									srcQuarterTile[i].getDataType(),
+									srcQuarterTile[i].getNoDataValue(),
+									srcQuarterTile[i].isAlphaBand());
+	for (int n=0;n<4;n++)
+	{
+		if (quarterTileExists[n])
+		{
+			void *pZoomedData = srcQuarterTile[n].getDataZoomedOut();
+			zoomOutTileBuffer.setData(	(n%2)*TILE_SIZE/2,
+									(n/2)*TILE_SIZE/2,
+									TILE_SIZE/2,
+									TILE_SIZE/2,
+									pZoomedData);
+			delete[]pZoomedData;
+		}
 	}
 
 	return TRUE;

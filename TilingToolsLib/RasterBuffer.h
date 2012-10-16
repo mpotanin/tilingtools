@@ -13,25 +13,30 @@ public:
 
 	void	clearBuffer();
 
-	BOOL			createBuffer	(int nBands_set,
-									 int nBufferXSize_set,
-									 int nBufferYSize_set,
-									 void *pData_set = NULL,
-									 GDALDataType	dataType = GDT_Byte
+	BOOL			createBuffer	(int			nBands,
+									 int			nXSize,
+									 int			nYSize,
+									 void			*pDataSrc				= NULL,
+									 GDALDataType	dataType				= GDT_Byte,
+									 int			*pNoDataValue			= NULL,
+									 BOOL			bAlphaBand				= FALSE	
 									 );
 
-
-	BOOL			createBuffer				(RasterBuffer *pBuffer);
+	BOOL			createBuffer				(RasterBuffer *pSrcBuffer);
 	BOOL			createBufferFromJpegData	(void *pDataSrc, int size);
 	BOOL			createBufferFromPngData		(void *pDataSrc, int size);
 	BOOL			createBufferFromTiffData	(void *pDataSrc, int size);
 
-	BOOL			setBackgroundColor(int rgb[3]);
+	BOOL			setNoDataValue(int noDataValue = 0);
+	int*			getNoDataValue		();
+
 
 	BOOL			SaveToPngData	(void* &pDataDst, int &size);
 	BOOL			SaveToPng24Data	(void* &pDataDst, int &size);
 	BOOL			SaveToJpegData	(int quality, void* &pDataDst, int &size);
 	BOOL			SaveToTiffData	(void* &pDataDst, int &size);
+
+	BOOL			isAnyNoDataPixel			();
 
 	BOOL			SaveBufferToFile		(wstring fileName, int quality = 80);
 	BOOL			SaveBufferToFileAndData	(wstring fileName, void* &pDataDest, int &size, int quality = 80);
@@ -39,60 +44,53 @@ public:
 	//BOOL			ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight);
 	//BOOL			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
 
-	BOOL			createAlphaBand(int *rgb);
-
 	//BOOL			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
-	BOOL			initByNoDataValue(int nNoDataValue = 0);	
-	BOOL			initByBackgroundColor();
-	
-	void*			getBlockFromBuffer	(int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
-	
-	BOOL			writeBlockToBuffer	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
-	/*
-	BOOL			dataIO	(BOOL operationFlag, int left, int top, int w, int h, void *pData, 
-							int bands = 0, BOOL stretchTo8Bit = FALSE, double min = 0, double max = 0);
-	*/
+	BOOL			initByRGBColor	 (BYTE rgb[3]);
+	BOOL			initByValue(int value = 0);	
+	BOOL			initByNoDataValue(int noDataValue = 0);
 
-	BOOL			createSimpleZoomOut	(RasterBuffer &oBufferDst);	
-
-		
+	void*			copyData	(int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+	BOOL			setData	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
+	void*			getDataZoomedOut	();	
 	BOOL			convertFromIndexToRGB ();
 	BOOL			convertFromPanToRGB();
+	BOOL			createAlphaBandByColor(BYTE	*pRGB);
+	BOOL			isAlphaBand();
+	//BOOL			createAlphaBandByValue(int	value);
 
 public:
 	BOOL			stretchDataTo8Bit(double minVal, double maxVal);
-	void*			getBufferData();
+	void*			getDataRef();
 	int				getBandsCount();
-	int				getBufferXSize();
-	int				getBufferYSize();
-	GDALDataType	getBufferDataType();
+	int				getXSize();
+	int				getYSize();
+	GDALDataType	getDataType();
 	GDALColorTable*	getColorMeta ();
 	BOOL			setColorMeta (GDALColorTable *pTable);
 
 protected:
-	template <typename T>	BOOL			initByNoDataValue	(T type, int noDataValue);
-	template <typename T>	void*			getBlockFromBuffer	(T type, int left, int top, int w, int h,  BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
-	template <typename T>	BOOL			writeBlockToBuffer	(T type, int left, int top, int w, int h, void *pBlockData, int bands = 0);
-	template <typename T>	BOOL			createSimpleZoomOut	(T type, void* &pDataDst);
+	//void									initAlphaBand();
+	template <typename T>	BOOL			isAnyNoDataPixel	(T type);
+	template <typename T>	BOOL			initByValue	(T type, int value);
+	template <typename T>	void*			copyData	(T type, int left, int top, int w, int h,  BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+	template <typename T>	BOOL			setData	(T type, int left, int top, int w, int h, void *pBlockData, int bands = 0);
+	template <typename T>	void*			getDataZoomedOut	(T type);
 
-
+	BOOL			bAlphaBand;
 	void			*pData;
 	GDALDataType	dataType;
 	int				dataSize;
 	 
 	
-	int nBands;
-	int nBufferXSize;
-	int nBufferYSize;
-
-public:
-	static const int ZeroColor = 125;
+	int				nBands;
+	int				nXSize;
+	int				nYSize;
 
 protected:
 	GDALColorTable	*pTable;
 
 protected:
-	int backgroundColor[3];
+	int				*pNoDataValue;			
 	
 
 

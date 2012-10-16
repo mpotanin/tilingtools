@@ -14,13 +14,13 @@ void PrintHelp ()
 	cout<<"ImageTiling -file c:\\image.tif"<<endl;
 	cout<<"(default values: -tiles=c:\\image_tiles -minZoom=1 -proj=0 -template=kosmosnimki -tileType=jpg)"<<endl;
 	
-	cout<<"\nEx.2 - image to tiles packed in container:\n";
+	cout<<"\nEx.2 - image to tiles packed into geomixer container:\n";
 	cout<<"ImageTiling -file c:\\image.tif -container"<<endl;
 	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
 
-	cout<<"\nEx.3 - image to tiles to simple tiles:\n";
-	cout<<"ImageTiling -file c:\\image.tif -container -template {z}\\{x}\\{z}_{x}_{y}.jpg"<<endl;
-	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
+	cout<<"\nEx.3 - tiling folder of images:\n";
+	cout<<"ImageTiling -file c:\\images\\*.tif -container -template {z}\\{x}\\{z}_{x}_{y}.jpg"<<endl;
+	cout<<"(default values: -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
 
 }
 
@@ -32,52 +32,27 @@ void Exit()
 }
 
 
-
-int _tmain(int argc, _TCHAR* argv[])
+int CheckArgsAndCallTiling (	wstring strInput,
+								wstring	strContainer,		
+								wstring strZoom,
+								wstring strMinZoom,
+								wstring strVectorFile,
+								wstring strTilesFolder,
+								wstring strTileType,
+								wstring strProjType,
+								wstring strTemplate,
+								wstring strNoData,
+								wstring strTranspColor,
+								wstring strEdges,
+								wstring strShiftX,
+								wstring strShiftY,
+								wstring strPixelTiling,
+								wstring strBackground,
+								wstring strLogFile,
+								wstring strCache)
 {
 
 
-	if (!LoadGdal(argc,argv)) return 0;
-	GDALAllRegister();
-	OGRRegisterAll();
-
-	if (argc == 1)
-	{
-		PrintHelp();
-		return 0;
-	}
-
-  
-  	//обязательный параметр
-	wstring strInput			= ReadParameter(L"-file",argc,argv);
-
-	//дополнительные параметры
-	wstring strBundle			= ReadParameter(L"-bundle",argc,argv,TRUE);
-	wstring	strContainer		= ReadParameter(L"-container",argc,argv,TRUE);
-	wstring strZoom				= ReadParameter(L"-zoom",argc,argv);
-	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
-	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
-	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
-	wstring strTileType			= MakeLower(ReadParameter(L"-tileType",argc,argv));
-	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
-	wstring strTemplate			= MakeLower(ReadParameter(L"-template",argc,argv));
-
-
-
-	//скрытые параметры
-	wstring strEdges			= ReadParameter(L"-edges",argc,argv);
-	wstring strShiftX			= ReadParameter(L"-shiftX",argc,argv);
-	wstring strShiftY			= ReadParameter(L"-shiftY",argc,argv);
-	wstring strPixelTiling		= ReadParameter(L"-pixel_tiling",argc,argv,TRUE);
-	wstring strBackground		= ReadParameter(L"-background",argc,argv);
-	wstring strLogFile			= ReadParameter(L"-log_file",argc,argv);
-	wstring strCache			= ReadParameter(L"-cache",argc,argv);
-
-	if (argc == 2)				strInput	= argv[1];
-	
-
-
-	 
 	FILE *logFile = NULL;
 	if (strLogFile!=L"")
 	{
@@ -89,26 +64,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 
-
-	//strZoom		= L"14";
-	//strMinZoom	= L"11";
-	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-	//strTilesFolder	= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
-	//strZoom			= L"8";
-	//strProjType		= L"1";
-	//strTemplate		= L"standard";
-	//strContainer	= L"-container";
-	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_utm43_x4.tif";
-	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_merc.tif";
-	//strInput	= L"C:\\Work\\users\\Anton\\scn_120719_Vrangel_island_SWA.tif";
-	//strInput	= L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
-
-
-	//strInput		= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43.tif";
-	//strVectorFile	= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43_cut.shp";
-	//strContainer	= L"container";
-	//strTileType	= L"png";
-	//strProjType		= L"1";
 
 
 	//проверяем входной файл(ы)
@@ -200,61 +155,144 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (strCache!=L"") oParams.maxTilesInCache = _wtof(strCache.c_str());
 
+	if (strNoData!=L"")
+	{
+		oParams.pNoDataValue = new int[1];
+		oParams.pNoDataValue[0] = _wtof(strNoData.c_str());
+	}
+
+	if (strTranspColor!=L"")
+	{
+		BYTE	rgb[3];
+		if (!ConvertStringToRGB(strTranspColor,rgb))
+		{
+			wcout<<L"Error: bad value of parameter: \"-no_data_rgb\""<<endl;
+			return FALSE;
+		}
+		oParams.pTransparentColor = new BYTE[3];
+		memcpy(oParams.pTransparentColor,rgb,3);
+	}
+
 
 	MakeTiling(oParams);
-
 	if (logFile) fclose(logFile);
 	
+	return 1;
+}
+
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	if (!LoadGdal(argc,argv)) return 0;
+	GDALAllRegister();
+	OGRRegisterAll();
+
+	if (argc == 1)
+	{
+		PrintHelp();
+		return 0;
+	}
+
+ 
+  	//обязательный параметр
+	wstring strInput			= ReadParameter(L"-file",argc,argv);
+
+	//дополнительные параметры
+	wstring strBundle			= ReadParameter(L"-bundle",argc,argv,TRUE);
+	wstring	strContainer		= ReadParameter(L"-container",argc,argv,TRUE);
+	wstring strZoom				= ReadParameter(L"-zoom",argc,argv);
+	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
+	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
+	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
+	wstring strTileType			= MakeLower(ReadParameter(L"-tileType",argc,argv));
+	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
+	wstring strTemplate			= MakeLower(ReadParameter(L"-template",argc,argv));
+	wstring strNoData			= MakeLower(ReadParameter(L"-no_data",argc,argv));
+	wstring strTranspColor		= MakeLower(ReadParameter(L"-no_data_rgb",argc,argv));
+
+	//скрытые параметры
+	wstring strEdges			= ReadParameter(L"-edges",argc,argv);
+	wstring strShiftX			= ReadParameter(L"-shiftX",argc,argv);
+	wstring strShiftY			= ReadParameter(L"-shiftY",argc,argv);
+	wstring strPixelTiling		= ReadParameter(L"-pixel_tiling",argc,argv,TRUE);
+	wstring strBackground		= ReadParameter(L"-background",argc,argv);
+	wstring strLogFile			= ReadParameter(L"-log_file",argc,argv);
+	wstring strCache			= ReadParameter(L"-cache",argc,argv);
+	//wstring	strN
+
+	if (argc == 2)				strInput	= argv[1];
+	wcout<<endl;
+
+
+	//strInput		= L"C:\\Work\\Projects_1\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+	 ///*
+	//strZoom		= L"14";
+	//strMinZoom	= L"11";
+	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+	//strTranspColor	= L"0 0 0";
+	//strTileType		= L"png";
+	//strZoom			= L"8";
+	//strVectorFile	= L"c:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+	//strTilesFolder	= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+	//strProjType		= L"1";
+	//strTemplate		= L"standard";
+	//strContainer	= L"-container";
 	//*/
 
-
-	///*
-	//strImageFile = "I:\\GeoMixerTools\\test_data\\image_cut_merc.img";
-	//strBundle = "-bundle";
-	//strImagesFolder = "I:\\GeoMixerTools\\test_data\\Spot";
-	//strVectorFile	= "\\\\192.168.4.28\\spot10-khabar_evr\\SPOT10\\VECTOR\\XABAROVSK.mif";
-	//strImagesType	= "jpg";
-	//strTilesFolder = "I:\\temp\\khabarovsk_tiles";
-	//strVectorFile = "I:\\GeoMixerTools\\test_data\\image_cut.mif";
-	//*/
-
-	/*
-	if ((strBundle!=L"") || (strImagesFolder==L""))
-	{
-		CheckParamsAndMakeTiling(strImagesFolder,strImageFile,strVectorFile,strContainer,strTilesFolder,strZooms,strMinZoom,strEdges,strShiftX,strShiftY,strImagesType,strBackground);
-	}
-	else
-	{
-		if (!FileExists(strImagesFolder))
-		{
-			wcout<<L"Error: folder: "<<strImagesFolder<<L" doesn't exist"<<endl;
-			return 0;
-		}
-				
-		if (strImagesType==L"") strImagesType = L".tif";
-		list<wstring> strFilesList;
-
-		if (!FindAllFilesInFolderByExtension(strFilesList,strImagesFolder,strImagesType))
-		{
-			wcout<<L"Error: no images of type "<<strImagesType<<L" in the folder "<<strImagesFolder<<endl;
-			return 0;
-		}
-		
-		if (strFilesList.size()==0)
-		{
-			wcout<<L"Error: no images of type "<<strImagesType<<L" in the folder "<<strImagesFolder<<endl;
-			return 0;
-		}
-		
-		for (list<wstring>::iterator iter = strFilesList.begin();iter!=strFilesList.end();iter++)
-		{
-			wcout<<(*iter)<<endl;
-			CheckParamsAndMakeTiling(L"",(*iter),strVectorFile,strContainer,strTilesFolder,strZooms,strMinZoom,strEdges,strShiftX,strShiftY,strImagesType,strBackground);
-			wcout<<endl<<endl;
-		}
-	}
-	*/
 	
-	return 0;
+	//strTilesFolder	= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+	//strZoom			= L"8";
+	//strProjType		= L"1";
+	//strTemplate		= L"standard";
+	//strContainer	= L"-container";
+	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_utm43_x4.tif";
+	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_merc.tif";
+	//strInput	= L"C:\\Work\\users\\Anton\\scn_120719_Vrangel_island_SWA.tif";
+	//strInput	= L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
+
+
+	//strInput		= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43.tif";
+	//strVectorFile	= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43_cut.shp";
+	//strContainer	= L"container";
+	//strTileType	= L"png";
+	//strProjType		= L"1";
+
+	std::list<wstring> input_files;
+	if (!FindFilesInFolderByPattern (input_files,strInput))
+	{
+		wcout<<L"Can't find input files by pattern: "<<strInput<<endl;
+		return 0;
+	}
+
+
+	for (std::list<wstring>::iterator iter = input_files.begin(); iter!=input_files.end();iter++)
+	{
+		wcout<<L"Tiling file: "<<(*iter)<<endl;
+		if (input_files.size()>1)
+			strVectorFile = VectorFile::GetVectorFileByRasterFileName(*iter);
+		
+		CheckArgsAndCallTiling (	(*iter),
+									strContainer,		
+									strZoom,
+									strMinZoom,
+									strVectorFile,
+									strTilesFolder,
+									strTileType,
+									strProjType,
+									strTemplate,
+									strNoData,
+									strTranspColor,
+									strEdges,
+									strShiftX,
+									strShiftY,
+									strPixelTiling,
+									strBackground,
+									strLogFile,
+									strCache);
+		wcout<<endl;
+	}
+
+	return 1;
+	
 }
 

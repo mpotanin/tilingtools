@@ -238,6 +238,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	list<__int64> oTileList;
 	wcout<<L"calculating number of tiles: ";
 	wcout<<poSrcTilePyramid->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
+	
 	if (oTileList.size()>0)
 	{
 		wcout<<"coping tiles: 0% ";

@@ -122,9 +122,17 @@ BOOL RasterFile::init(wstring strRasterFile, BOOL isGeoReferenced, double dShift
 		return FALSE;
 	}
 
+	this->m_nBands	= m_poDataset->GetRasterCount();
+	if (this->m_nBands==0) 
+	{
+		wcout<<L"Error: RasterFile::init: can't read raster bands from file: "<<strRasterFile<<endl;
+		return FALSE;
+	}
+
 	this->m_nHeight = m_poDataset->GetRasterYSize();
 	this->m_nWidth	= m_poDataset->GetRasterXSize();
-	this->m_nBands	= m_poDataset->GetRasterCount();
+	
+	this->m_nNoDataValue = m_poDataset->GetRasterBand(1)->GetNoDataValue(&this->m_bNoDataValueDefined);
 
 
 	/*
@@ -236,16 +244,12 @@ BOOL RasterFile::getToBuffer(RasterBuffer &oImageBuffer,
 
 	if ((nWidth_adjust<nWidth)||(nHeight_adjust<nHeight)) 
 	{	
-		if (backgroundColorDefined) 
-		{
-			oImageBuffer.setBackgroundColor(backgroundColor);
-			oImageBuffer.initByBackgroundColor();
-		}
-		else oImageBuffer.initByNoDataValue();
+		if (m_bNoDataValueDefined) oImageBuffer.initByNoDataValue(this->m_nNoDataValue);
+		else oImageBuffer.initByValue(0);
 	}
 	if ((nWidth_adjust>0)&&(nHeight_adjust>0))
 	{
-		void *pData = oImageBuffer.getBufferData();
+		void *pData = oImageBuffer.getDataRef();
 		
 		if (nWidth_adjust<nWidth)
 		{
@@ -314,6 +318,12 @@ BOOL	RasterFile::getMinMaxPixelValues (double &minVal, double &maxVal)
 	return TRUE;
 }
 
+BOOL RasterFile::getNoDataValue (int *pNoDataValue)
+{
+	if (! this->m_bNoDataValueDefined) return FALSE;
+	(*pNoDataValue) = this->m_nNoDataValue;
+	return TRUE;
+}
 
 
 BOOL RasterFile::writeWLDFile (wstring strRasterFile, double dULx, double dULy, double dRes)
@@ -373,8 +383,6 @@ RasterFile::RasterFile()
 	//m_strImageFormat	= L"";
 	m_isGeoReferenced = FALSE;
 	m_nNoDataValue = 0;
-	backgroundColorDefined = FALSE;
-
 }
 
 RasterFile::RasterFile(wstring strRasterFile, BOOL isGeoReferenced)
@@ -392,8 +400,7 @@ RasterFile::RasterFile(wstring strRasterFile, BOOL isGeoReferenced)
 	//m_strImageFormat	= L"";
 	m_isGeoReferenced = FALSE;
 	m_nNoDataValue = 0;
-	backgroundColorDefined = FALSE;
-
+	
 	init(strRasterFile,isGeoReferenced);
 }
 
@@ -492,7 +499,7 @@ BOOL RasterFile::createTifFileInMercatorProjection (wstring fileName, int width,
 		delete[]data;
 	}
 	
-	//if (CE_Failure	== poDataset->RasterIO(GF_Write,0,0,oImageBuffer.getBufferXSize(),oImageBuffer.getBufferYSize(),(BYTE*)oImageBuffer.getBufferData(),oImageBuffer.getBufferXSize(),oImageBuffer.getBufferYSize(),GDT_Byte,oImageBuffer.getBandsCount(),NULL,0,0,0))
+	//if (CE_Failure	== poDataset->RasterIO(GF_Write,0,0,oImageBuffer.getXSize(),oImageBuffer.getYSize(),(BYTE*)oImageBuffer.getData(),oImageBuffer.getXSize(),oImageBuffer.getYSize(),GDT_Byte,oImageBuffer.getBandsCount(),NULL,0,0,0))
 	//{
 	//	GDALClose(poDataset);
 	//	return FALSE;
@@ -602,14 +609,7 @@ OGREnvelope	RasterFile::getEnvelopeInMercator (MercatorProjType	mercType)
 }
 
 
-BOOL RasterFile::setBackgroundColor (int rgb[3])
-{
 
-	backgroundColorDefined = TRUE;
-	for (int i=0;i<3;i++)
-		backgroundColor[i] = rgb[i];
-	return TRUE;
-}
 
 /*
 
@@ -636,12 +636,12 @@ BOOL RasterFile::GenerateImage (RasterBuffer &oImageBuffer,
 		(strImageFormat== this->FORMAT_HFA)||
 		(strImageFormat == this->FORMAT_GTIFF))
 	{
-		GDALDataset	*poData = poDriver->Create(strRasterFileUTF8.c_str(),oImageBuffer.getBufferXSize(),oImageBuffer.getBufferYSize(),
+		GDALDataset	*poData = poDriver->Create(strRasterFileUTF8.c_str(),oImageBuffer.getXSize(),oImageBuffer.getYSize(),
 							oImageBuffer.getBandsCount(),GDT_Byte,NULL);
 		if (poData == NULL) return FALSE;
 
 		//if (CE_Failure == m_poDataset->RasterIO(GF_Read,nXOff_adjust,nYOff_adjust,nWidth_adjust,nHeight_adjust,pData,nBufferXSize_adjust,nBufferYSize_adjust,GDT_Byte,m_nBands,NULL,0,nWidth,nHeight*nWidth))
-		if (CE_Failure	== poData->RasterIO(GF_Write,0,0,oImageBuffer.getBufferXSize(),oImageBuffer.getBufferYSize(),(BYTE*)oImageBuffer.getBufferData(),oImageBuffer.getBufferXSize(),oImageBuffer.getBufferYSize(),GDT_Byte,oImageBuffer.getBandsCount(),NULL,0,0,0))
+		if (CE_Failure	== poData->RasterIO(GF_Write,0,0,oImageBuffer.getXSize(),oImageBuffer.getYSize(),(BYTE*)oImageBuffer.getData(),oImageBuffer.getXSize(),oImageBuffer.getYSize(),GDT_Byte,oImageBuffer.getBandsCount(),NULL,0,0,0))
 		{
 			GDALClose(poData);
 			return FALSE;
@@ -675,7 +675,7 @@ BOOL RasterFile::cutToBufferByVectorBorder	(VectorBorder		&oVectorBorder,
 			//strError+="Zero intersection - empty or bad area";
 			//throw ERROR;
 			oBuffer.createBuffer(this->m_nBands,this->m_nHeight,this->m_nWidth);
-			oBuffer.initByNoDataValue(Zero);
+			oBuffer.initByValue(Zero);
 			return FALSE;
 		};
 	}
@@ -698,7 +698,7 @@ BOOL RasterFile::cutToBufferByVectorBorder	(VectorBorder		&oVectorBorder,
 	};
 	
 
-	BYTE	*pData = (BYTE*)oBuffer.getBufferData();
+	BYTE	*pData = (BYTE*)oBuffer.getData();
 	int		nBands = oBuffer.getBandsCount();
 	list<double>	PointsIntersection;
 
@@ -811,15 +811,15 @@ BOOL RasterFile::MergeTilesByVectorBorder(	RasterFile			&oBackGroundImage,
 		this->cutToBufferByVectorBorder(oVectorBorder,oFore,min_x,min_y,max_x,max_y,RasterBuffer::ZeroColor);
 		
 
-		int n_width = oBack.getBufferXSize(), n_height = oBack.getBufferYSize();
+		int n_width = oBack.getXSize(), n_height = oBack.getYSize();
 		//RasterBuffer oBuffer;
 		oBuffer.createBuffer(oBack.getBandsCount(),n_width,n_height);
-		memcpy(oBuffer.getBufferData(),oBack.getBufferData(),oBack.getBandsCount()*n_width*n_height);
+		memcpy(oBuffer.getData(),oBack.getData(),oBack.getBandsCount()*n_width*n_height);
 		
 		//if (!((min_x==4419584)&&(max_y==5965824)))
 		//{
-			BYTE *pData = (BYTE*)oBuffer.getBufferData();
-			BYTE *pForeData = (BYTE*)oFore.getBufferData();
+			BYTE *pData = (BYTE*)oBuffer.getData();
+			BYTE *pForeData = (BYTE*)oFore.getData();
 			int n = n_width*n_height;
 
 			for (int i=0;i<n_height;i++)
@@ -1174,7 +1174,7 @@ BOOL	BundleOfRasterFiles::createBundleBorder (VectorBorder &border)
 
 
 //ToDo
-BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer)
+BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
 {
 	//создать виртуальный растр по oMercEnvelope и zoom
 	//создать объект GDALWarpOptions 
@@ -1254,9 +1254,9 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	outputSRS.exportToWkt( &pszDstWKT );
 
 	poVrtDS->SetProjection(pszDstWKT);
-	oBuffer.createBuffer(poSrcDS->GetRasterCount(),bufWidth,bufHeight,NULL,eDT);
-	//poVrtDS->RasterIO(	GF_Write,0,0,bufWidth,bufHeight,oBuffer.getBufferData(),
-	//					bufWidth,bufHeight,oBuffer.getBufferDataType(),
+
+	//poVrtDS->RasterIO(	GF_Write,0,0,bufWidth,bufHeight,oBuffer.getData(),
+	//					bufWidth,bufHeight,oBuffer.getDataType(),
 	//					oBuffer.getBandsCount(),NULL,0,0,0);
 	//GDALFlushCache(poVrtDS);
 
@@ -1298,10 +1298,16 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	OGRFree(pszDstWKT);
 	OGRFree(pszSrcWKT);
 	//GDALClose( poSrcDS );
-	
-	oBuffer.createBuffer(bands,bufWidth,bufHeight,NULL,eDT);
-	poVrtDS->RasterIO(	GF_Read,0,0,bufWidth,bufHeight,oBuffer.getBufferData(),
-						bufWidth,bufHeight,oBuffer.getBufferDataType(),
+
+	oBuffer.createBuffer(bands,bufWidth,bufHeight,NULL,eDT,pNoDataValue);
+	int noDataValueFromFile = 0;
+	if	(pNoDataValue) oBuffer.initByNoDataValue(pNoDataValue[0]);
+	else if (pDefaultColor) oBuffer.initByRGBColor(pDefaultColor); 
+	else if (inputRF.getNoDataValue(&noDataValueFromFile)) oBuffer.initByNoDataValue(noDataValueFromFile);
+
+	 
+	poVrtDS->RasterIO(	GF_Read,0,0,bufWidth,bufHeight,oBuffer.getDataRef(),
+						bufWidth,bufHeight,oBuffer.getDataType(),
 						oBuffer.getBandsCount(),NULL,0,0,0);
 	//GDALFlushCache(poVrtDS);
 	GDALClose(poVrtDS);

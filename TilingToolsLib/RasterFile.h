@@ -61,7 +61,7 @@ public:
 								double max_x,
 								double min_y
 								);
-	
+	BOOL	getNoDataValue (int *pNoDataValue);
 
 
 protected:
@@ -153,10 +153,7 @@ protected:
 	double	m_dULx;
 	double	m_dULy;
 	int		m_nNoDataValue;
-	int		backgroundColor[3];
-	bool	backgroundColorDefined; 
-
-
+	BOOL	m_bNoDataValueDefined;
 };
 
 int _stdcall PrintNoProgress ( double, const char*,void*);
@@ -178,7 +175,7 @@ public:
 	OGREnvelope		getMercatorEnvelope();
 	int				calculateNumberOfTiles (int zoom);
 	int				calculateBestMercZoom();
-	BOOL			warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer);
+	BOOL			warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
 
 	list<wstring>	GetFilesList();
 	list<wstring>	getFilesListByEnvelope(OGREnvelope mercatorEnvelope);

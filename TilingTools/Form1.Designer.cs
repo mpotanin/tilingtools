@@ -92,6 +92,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.button19 = new System.Windows.Forms.Button();
             this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.colorDialog1 = new System.Windows.Forms.ColorDialog();
             this.ImageBuilder.SuspendLayout();
             this.CopyTiles.SuspendLayout();
             this.ImageTiling.SuspendLayout();
@@ -486,6 +487,7 @@
             // radioButton2
             // 
             this.radioButton2.AutoSize = true;
+            this.radioButton2.Enabled = false;
             this.radioButton2.Location = new System.Drawing.Point(86, 4);
             this.radioButton2.Name = "radioButton2";
             this.radioButton2.Size = new System.Drawing.Size(51, 17);
@@ -493,7 +495,6 @@
             this.radioButton2.Text = "folder";
             this.radioButton2.UseVisualStyleBackColor = true;
             this.radioButton2.CheckedChanged += new System.EventHandler(this.radioButton2_CheckedChanged);
-            this.radioButton2.Enabled = false;
             // 
             // radioButton1
             // 
@@ -557,10 +558,11 @@
             this.checkBox1.Enabled = false;
             this.checkBox1.Location = new System.Drawing.Point(302, 4);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(59, 17);
+            this.checkBox1.Size = new System.Drawing.Size(60, 17);
             this.checkBox1.TabIndex = 27;
-            this.checkBox1.Text = "Bundle";
+            this.checkBox1.Text = "Mosaic";
             this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
             // comboBox3
             // 
@@ -858,6 +860,7 @@
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.TextBox textBox6;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.ColorDialog colorDialog1;
 
     }
 }

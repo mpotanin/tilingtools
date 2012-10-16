@@ -21,6 +21,8 @@
 #include <fstream>
 #include <regex>
 #include <math.h>
+#include <cstdlib>
+
 
 //const int BANDS = 3;
 //const int JPEG_QUALITY = 75;

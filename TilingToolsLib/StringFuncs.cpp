@@ -1,4 +1,5 @@
 #include "StringFuncs.h"
+#include "str.h"
 
 
 wstring MakeLower(wstring str)
@@ -9,6 +10,7 @@ wstring MakeLower(wstring str)
 	return strLower;
 
 }
+
 
 void ReplaceAll(wstring	&str, const wstring	&from, const wstring	&to) {
     size_t start_pos = 0;
@@ -27,67 +29,32 @@ wstring ConvertInt(int number)
 }
 
 
-BOOL	ConvertColorFromStringToRGB (wstring strColor, int rgb[3])
+BOOL	ConvertStringToRGB (wstring strColor, BYTE rgb[3])
 {
-	if (strColor.length()!=6) return FALSE;
-	for (int i=0;i<3;i++)
+	strColor = MakeLower(strColor);
+	wregex rgbDecPattern(L"([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");
+	wregex rgbHexPattern(L"[0-9,a,b,c,d,e,f]{6}");
+	
+	if (regex_match(strColor,rgbDecPattern))
 	{
-		rgb[i] = 0;
-		for (int j=0;j<2;j++)
-		{
-			switch (strColor[i*2+j])
-			{
-				case '0':
-					break;
-				case '1':
-					rgb[i]+= 16*(1-j) +j;
-					break;
-				case '2':
-					rgb[i]+=2*(16*(1-j) +j);
-					break;
-				case '3':
-					rgb[i]+=3*(16*(1-j) +j);
-					break;
-				case '4':
-					rgb[i]+=4*(16*(1-j) +j);
-					break;
-				case '5':
-					rgb[i]+=5*(16*(1-j) +j);
-					break;
-				case '6':
-					rgb[i]+=6*(16*(1-j) +j);
-					break;
-				case '7':
-					rgb[i]+=7*(16*(1-j) +j);
-					break;
-				case '8':
-					rgb[i]+=8*(16*(1-j) +j);
-					break;
-				case '9':
-					rgb[i]+=9*(16*(1-j) +j);
-					break;
-				case 'a':
-					rgb[i]+=10*(16*(1-j) +j);
-					break;
-				case 'b':
-					rgb[i]+=11*(16*(1-j) +j);
-					break;
-				case 'c':
-					rgb[i]+=12*(16*(1-j) +j);
-					break;
-				case 'd':
-					rgb[i]+=13*(16*(1-j) +j);
-					break;
-				case 'e':
-					rgb[i]+=14*(16*(1-j) +j);
-					break;
-				case 'f':
-					rgb[i]+=15*(16*(1-j) +j);
-					break;
-				default:
-					return FALSE;
-			}
-		}
+		match_results<wstring::const_iterator> mr;
+		regex_search(strColor, mr, rgbDecPattern);
+
+		for (int i=1;i<4;i++)
+			rgb[i-1] = (int)_wtof(mr[i].str().c_str());
+		return TRUE;
 	}
-	return TRUE;
+	else if (regex_match(strColor,rgbHexPattern))
+	{
+		char * p;
+		string		strColorUTF8;
+		wstrToUtf8(strColorUTF8,strColor);
+		unsigned int nColor =  strtol( strColorUTF8.c_str(), & p, 16 );
+		rgb[0] = nColor>>16;
+		rgb[1] = (nColor>>8)%256;
+		rgb[2] = nColor%256;
+		return TRUE;
+	}
+	return FALSE;
+
 }
