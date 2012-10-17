@@ -261,7 +261,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (!FindFilesInFolderByPattern (input_files,strInput))
 	{
 		wcout<<L"Can't find input files by pattern: "<<strInput<<endl;
-		return 0;
+		return 1;
 	}
 
 
@@ -292,7 +292,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		wcout<<endl;
 	}
 
-	return 1;
+	return 0;
 	
 }
 
