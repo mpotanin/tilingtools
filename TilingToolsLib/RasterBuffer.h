@@ -2,7 +2,7 @@
 #ifndef IMAGE_BUFFER_H
 #define IMAGE_BUFFER_H
 #include "stdafx.h"
-#include "VectorFile.h"
+
 
 
 class RasterBuffer

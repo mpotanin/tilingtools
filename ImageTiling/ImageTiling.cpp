@@ -63,33 +63,20 @@ int CheckArgsAndCallTiling (	wstring strInput,
 		}
 	}
 
-
-
-
-	//проверяем входной файл(ы)
+	//проверяем входной файл или директорию
 	if (strInput == L"")
 	{
 		cout<<L"Error: missing \"-file\" parameter"<<endl;
 		return 0;
 	}
+	
+
 	list<wstring> inputFiles;
-	int n = strInput.find(L'*');
-	if (n <0) 
+	FindFilesInFolderByPattern(inputFiles,strInput);
+	if (inputFiles.size()==0)
 	{
-		if (!FileExists(strInput))
-		{
-			cout<<L"Error: can't open input file: "<<strInput<<endl;
-			return 0;
-		}
-	}
-	else
-	{
-		FindFilesInFolderByPattern(inputFiles,strInput);
-		if (inputFiles.size()==0)
-		{
-			cout<<L"Error: can't find input files by pattern: "<<strInput<<endl;
-			return 0;
-		}
+		cout<<L"Error: can't find input files by path: "<<strInput<<endl;
+		return 0;
 	}
 
 	//синициализируем обязательные параметры для тайлинга
@@ -198,7 +185,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring strInput			= ReadParameter(L"-file",argc,argv);
 
 	//дополнительные параметры
-	wstring strBundle			= ReadParameter(L"-bundle",argc,argv,TRUE);
+	wstring strMosaic			= ReadParameter(L"-mosaic",argc,argv,TRUE);
 	wstring	strContainer		= ReadParameter(L"-container",argc,argv,TRUE);
 	wstring strZoom				= ReadParameter(L"-zoom",argc,argv);
 	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
@@ -223,17 +210,20 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (argc == 2)				strInput	= argv[1];
 	wcout<<endl;
 
+		//проверяем входной файл(ы)
 
-	//strInput		= L"C:\\Work\\Projects_1\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+	//strMosaic		= L"-mosaic";
+	//strInput		= L"E:\\Mosaic_rgbfusion_Ussuriysk02.tif";
+	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\Arctic_r06c03.2012193.terra.250m.jpg";
 	 ///*
-	//strZoom		= L"14";
+	//strZoom		= L"8";
 	//strMinZoom	= L"11";
 	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
 	//strTranspColor	= L"0 0 0";
 	//strTileType		= L"png";
 	//strZoom			= L"8";
-	//strVectorFile	= L"c:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
-	//strTilesFolder	= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+	//strVectorFile	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+	//strTilesFolder	= L"C:\\New\\spot4_tiles";
 	//strProjType		= L"1";
 	//strTemplate		= L"standard";
 	//strContainer	= L"-container";
@@ -257,21 +247,53 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strTileType	= L"png";
 	//strProjType		= L"1";
 
-	std::list<wstring> input_files;
-	if (!FindFilesInFolderByPattern (input_files,strInput))
+	if (strInput == L"")
 	{
-		wcout<<L"Can't find input files by pattern: "<<strInput<<endl;
-		return 1;
+		cout<<L"Error: missing \"-file\" parameter"<<endl;
+		return 0;
 	}
 
 
-	for (std::list<wstring>::iterator iter = input_files.begin(); iter!=input_files.end();iter++)
+	if (strMosaic==L"")
 	{
-		wcout<<L"Tiling file: "<<(*iter)<<endl;
-		if (input_files.size()>1)
-			strVectorFile = VectorFile::GetVectorFileByRasterFileName(*iter);
+		std::list<wstring> input_files;
+		if (!FindFilesInFolderByPattern (input_files,strInput))
+		{
+			wcout<<L"Can't find input files by pattern: "<<strInput<<endl;
+			return 1;
+		}
+
+
+		for (std::list<wstring>::iterator iter = input_files.begin(); iter!=input_files.end();iter++)
+		{
+			wcout<<L"Tiling file: "<<(*iter)<<endl;
+			if (input_files.size()>1)
+				strVectorFile = VectorBorder::getVectorFileNameByRasterFileName(*iter);
 		
-		CheckArgsAndCallTiling (	(*iter),
+			CheckArgsAndCallTiling (	(*iter),
+										strContainer,		
+										strZoom,
+										strMinZoom,
+										strVectorFile,
+										strTilesFolder,
+										strTileType,
+										strProjType,
+										strTemplate,
+										strNoData,
+										strTranspColor,
+										strEdges,
+										strShiftX,
+										strShiftY,
+										strPixelTiling,
+										strBackground,
+										strLogFile,
+										strCache);
+			wcout<<endl;
+		}
+	}
+	else
+	{
+		CheckArgsAndCallTiling (	strInput,
 									strContainer,		
 									strZoom,
 									strMinZoom,
@@ -289,7 +311,6 @@ int _tmain(int argc, _TCHAR* argv[])
 									strBackground,
 									strLogFile,
 									strCache);
-		wcout<<endl;
 	}
 
 	return 0;

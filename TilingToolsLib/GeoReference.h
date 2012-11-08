@@ -6,8 +6,6 @@
 //#include "TileName.h"
 //#include "RasterFile.h"
 //#include "VectorFile.h"
-#include "FileSystemFuncs.h"
-#include "str.h"
 
 
 

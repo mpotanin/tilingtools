@@ -11,6 +11,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	if (!LoadGdal(argc,argv)) return 0;
 	GDALAllRegister();
+	OGRRegisterAll();
 
 
 
@@ -51,12 +52,18 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 	///*
-	//srcPath				= L"C:\\SCN1-e2350921_cut.tiles";
-	//destPath			= L"C:\\Mosaic_001";
-	//borderFilePath	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+	//C:\Work\Projects\TilingTools\Release\copytiles -from C:\Work\Projects\TilingTools\autotest\result\Arctic_r06c03.2012193.terra.250m_tiles -to C:\Work\Projects\TilingTools\autotest\result\copy4 -border C:\Work\Projects\TilingTools\autotest\border_arctic\markers.tab -zooms 1-6
+	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\Arctic_r06c03.2012193.terra.250m_tiles";
+	
+	
+	//destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\copy2";
+	//borderFilePath	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border_arctic\\markers.tab";
 	//strZooms			= L"1-5";
 	//strProjType		= L"1";
+	//strDestTemplate	= L"standard";
 	//strSrcTemplate	= L"standard";
+	//strTileType		= L"png";
 	//*/
 
 	if (srcPath == L"")
@@ -137,7 +144,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	MercatorProjType mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
 								WORLD_MERCATOR : WEB_MERCATOR;
 
-	if ((strDestTemplate!=L"") && 
+	if ((strDestTemplate!=L"") &&  
 		(strDestTemplate!=L"standard")&&
 		(strDestTemplate!=L"kosmosnimki"))
 		if (!StandardTileName::validateTemplate(strDestTemplate)) return FALSE;
@@ -228,7 +235,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				wcout<<L"Error: no tiles found in "<<srcPath<<endl;
 				return 0;
 			}
-			poDestTilePyramid = new TileContainer(tileBounds,TRUE,destPath,tileType,mercType);//Folder(poDestTileName,FALSE); 
+			poDestTilePyramid = new TileContainer(tileBounds,FALSE,destPath,tileType,mercType);//Folder(poDestTileName,FALSE); 
 		}
 	}
 	

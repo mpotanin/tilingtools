@@ -14,7 +14,6 @@ OGREnvelope	CombineEnvelopes			(OGREnvelope	&oEnvelope1,OGREnvelope	&oEnvelope2)
 OGREnvelope	InetersectEnvelopes			(OGREnvelope	&oEnvelope1,OGREnvelope	&oEnvelope2);
 double		CalcAreaOfEnvelope			(OGREnvelope	oEnvelope);
 OGREnvelope	CreateEnvelope				(double minx,double miny,double maxx,double maxy);
-BOOL		GeometryToArrayOfPolygons	(OGRGeometry *poGeometry, int &n, OGRPolygon** &poPolygons);
-BOOL		GeometryToArrayOfRings		(OGRGeometry *poGeometry, int &n, OGRLinearRing** &poRings);
+
 
 #endif

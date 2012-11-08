@@ -3,11 +3,51 @@
 #ifndef		VectorBorder_H
 #define		VectorBorder_H 
 #include "stdafx.h"
+#include "GeometryFuncs.h"
+#include "str.h"
+#include "TileName.h"
 
 class VectorBorder
 {
 public:
+	static VectorBorder*		createFromVectorFile				(wstring vectorFilePath, MercatorProjType	mercType);
+	static wstring				getVectorFileNameByRasterFileName	(wstring strRasterFile);
+	static OGRPolygon*			createOGRPolygonByOGREnvelope		(OGREnvelope envelope);
+	static BOOL					adjustFor180DegreeIntersection		(OGRGeometry		*poMercGeometry);
 
+
+	VectorBorder();
+	VectorBorder(OGREnvelope mercEnvelope, MercatorProjType	mercType);
+	~VectorBorder();
+	
+
+public:
+	//BOOL						initByMercEnvelope (OGREnvelope envelope);
+	BOOL						intersects(OGREnvelope &envelope);
+	BOOL						intersects(int tile_z, int tile_x, int tile_y);
+	OGRGeometry*				getOGRGeometryRef();
+	OGRGeometry*				getOGRGeometryTransformed (OGRSpatialReference *poOutputSRS);
+	OGREnvelope					getEnvelope ();
+
+
+protected:
+	OGRGeometry					*m_poGeometry;
+	MercatorProjType			mercType;
+
+
+protected:
+	static OGRMultiPolygon*		readMultiPolygonFromOGRDataSource	(OGRDataSource		*poDS); 
+	
+
+};
+
+#endif
+
+
+
+/*
+public:
+	int						Intersects(double min_x, double min_y, double max_x, double max_y);
 	VectorBorder(OGREnvelope	&oEnvelope);
 	VectorBorder(VectorBorder	*poBorder);
 	VectorBorder(OGRGeometry	*poGeometry);
@@ -15,15 +55,13 @@ public:
 	
 	VectorBorder& operator=(VectorBorder &border)
 	{
-		InitByOGRGeometry(border.GetOGRGeometry());
+		InitByOGRGeometry(border.getOGRGeometryRef());
 		return *this;
 	}
 	
 	OGREnvelope GetEnvelope ();
 	
-	BOOL		IsInitialized(); 
-
-	BOOL		InitByPoints (int nNumOfPoints, double *dblPoints);
+	
 	BOOL		InitByEnvelope (OGREnvelope oEnvelope);
 	BOOL		InitByOGRGeometry (OGRGeometry *poGeometry_set);
 
@@ -38,12 +76,9 @@ public:
 	
 	int Contains(double min_x, double min_y, double max_x, double max_y);
 
-	int Intersects(double min_x, double min_y, double max_x, double max_y);
-
 	int OnEdge(double min_x, double min_y, double max_x, double max_y);
 
 	int Contains(OGREnvelope &oEnvelope);
-	int Intersects(OGREnvelope &oEnvelope);
 	int OnEdge(OGREnvelope &oEnvelope);
 
 	double	GetArea();
@@ -58,7 +93,6 @@ public:
 
 	~VectorBorder(void);
 
-	OGRGeometry*	GetOGRGeometry();
 
 	BOOL Buffer (double dfDist);
 
@@ -71,9 +105,4 @@ protected:
 	void makePolygon (int n, double *arr,OGRPolygon	*poPolygon);
 
 	void makePolygon (double min_x, double min_y, double max_x, double max_y, OGRPolygon	*poPolygon);
-
-protected:
-	OGRGeometry			*m_poGeometry;
-};
-
-#endif
+*/

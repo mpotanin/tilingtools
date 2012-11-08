@@ -2,11 +2,8 @@
 
 #include "stdafx.h"
 #include "TileName.h"
-#include "RasterFile.h"
-#include "VectorFile.h"
-#include "PixelEnvelope.h"
-#include "GeometryFuncs.h"
 #include "TilePyramid.h"
+#include "RasterFile.h"
 
 static int TILE_SIZE = 256;
 
@@ -16,7 +13,7 @@ class TilingParameters
 {
 //обязательные параметры
 public:
-	wstring					inputFile;				//входной файл
+	wstring					inputPath;				//входной файл или шаблон имени файла
 	MercatorProjType		mercType;				//тип Меркатора
 	TileType				tileType;				//тип тайлов
 	
@@ -26,8 +23,6 @@ public:
 	int						baseZoom;				//максимальный (базовый зум)
 	int						minZoom;				//минимальный зум
 	wstring					vectorFile;				//векторная граница
-	//wstring				imagesFolder;			//входная директория
-	//wstring				imageType;				//разрешение входных файлов
 	wstring					containerFile;			//название файла-контейнера тайлов
 	bool					useContainer;			//писать тайлы в контейнер
 	BYTE					*pBackgroundColor;		//RGB-цвет для заливки фона в тайлах
@@ -44,9 +39,9 @@ public:
 	static const int		DEFAULT_JPEG_QUALITY = 80;
 
 public:
-	TilingParameters(wstring inputFile, MercatorProjType mercType, TileType tileType)
+	TilingParameters(wstring inputPath, MercatorProjType mercType, TileType tileType)
 	{
-		this->inputFile = inputFile;
+		this->inputPath = inputPath;
 		this->mercType	= mercType;
 		this->tileType	= tileType;
 		
@@ -69,7 +64,7 @@ public:
 		this->baseZoom			= oSrcParams.baseZoom;
 		this->minZoom			= oSrcParams.minZoom;
 		this->nJpegQuality		= oSrcParams.nJpegQuality;
-		this->inputFile			= oSrcParams.inputFile;
+		this->inputPath			= oSrcParams.inputPath;
 		this->vectorFile		= oSrcParams.vectorFile;
 		this->poTileName		= oSrcParams.poTileName;
 		this->minZoom			= oSrcParams.minZoom;

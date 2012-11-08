@@ -56,7 +56,7 @@ double		CalcAreaOfEnvelope (OGREnvelope	oEnvelope)
 	return ((oEnvelope.MaxX-oEnvelope.MinX)*(oEnvelope.MaxY-oEnvelope.MinY));
 }
 
-
+/*
 BOOL GeometryToArrayOfRings (OGRGeometry *poGeometry, int &n, OGRLinearRing** &poRings)
 {
 	n = 0;
@@ -108,3 +108,4 @@ BOOL GeometryToArrayOfPolygons (OGRGeometry *poGeometry, int &n, OGRPolygon** &p
 	}
 	return TRUE;
 }
+*/

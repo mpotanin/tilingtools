@@ -27,9 +27,6 @@
     <ClInclude Include="GeoReference.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PixelEnvelope.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RasterBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,9 +51,6 @@
     <ClInclude Include="VectorBorder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VectorFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ConsoleUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -75,9 +69,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GeoReference.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PixelEnvelope.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RasterBuffer.cpp">
@@ -99,9 +90,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VectorBorder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VectorFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ConsoleUtils.cpp">

@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "TileName.h"
 #include "TileBuffer.h"
+#include "VectorBorder.h"
 
 
 //unsigned int GetTiffTileType (GDALDataType type, int bands);
@@ -120,6 +121,8 @@ public:
 		for (int i=0; i<poContainer->maxTiles;i++)
 		{
 			poContainer->offsets[i]	= *((unsigned __int64*)(&offset_size[i*13]));
+			if ((poContainer->offsets[i]<<32) == 0)
+				poContainer->offsets[i]	= (poContainer->offsets[i]>>32);
 			poContainer->sizes[i]	= *((unsigned int*)(&offset_size[i*13+8]));
 		}
 
@@ -205,10 +208,11 @@ public:
 
 	int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile = L"", MercatorProjType mercType = WORLD_MERCATOR)
 	{
-		VectorBorder vb;
+		VectorBorder *poVB = NULL;
+
 		if (vectorFile!=L"") 
 		{
-			if(!VectorFile::OpenAndCreatePolygonInMercator(vectorFile, vb, this->mercType)) 
+			if(!(poVB = VectorBorder::createFromVectorFile(vectorFile,mercType))) 
 			{
 				wcout<<L"Error: can't open vector file: "<<vectorFile<<endl;
 				return 0;
@@ -224,11 +228,12 @@ public:
 				if ((maxZoom>=0)&&(z>maxZoom)) continue;
 				if ((minZoom>=0)&&(z<minZoom)) continue;
 				if (vectorFile!=L"") 
-					if (!vb.Intersects(MercatorTileGrid::calcEnvelopeByTile(z,x,y))) continue;
+					if (!poVB->intersects(z,x,y)) continue;
 				tileList.push_back(tileID(z,x,y));
 			}
 		}
 
+		delete(poVB);
 		return tileList.size();	
 	};
 	
@@ -364,7 +369,7 @@ protected:
 		}
 
 
-		fseek(containerFileData,0,SEEK_END);
+		_fseeki64(containerFileData,0,SEEK_END);
 		fwrite(pData,sizeof(BYTE),size,containerFileData);
 		sizes[n]		= size;
 		if (containerLength == 0) containerLength = headerSize();
@@ -389,8 +394,10 @@ protected:
 			}
 		}
 
-		fseek(containerFileData,offsets[n],0);
+		_fseeki64(containerFileData,offsets[n],0);
+		
 		pData			= new BYTE[sizes[n]];
+		//Huge file _fseeki64 _ftelli64 in Visual C++
 		fread(pData,1,size,containerFileData);
 	};
 
@@ -614,10 +621,10 @@ public:
 
 	int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile = L"",  MercatorProjType mercType = WORLD_MERCATOR)
 	{
-		VectorBorder vb;
+		VectorBorder *poVB = NULL;
 		if (vectorFile!=L"") 
 		{
-			if(!VectorFile::OpenAndCreatePolygonInMercator(vectorFile, vb, mercType)) 
+			if( !(poVB = VectorBorder::createFromVectorFile(vectorFile, mercType))) 
 			{
 				wcout<<L"Error: can't open vector file: "<<vectorFile<<endl;
 				return 0;
@@ -634,9 +641,10 @@ public:
 			if ((maxZoom>=0)&&(z>maxZoom)) continue;
 			if ((minZoom>=0)&&(z<minZoom)) continue;
 			if (vectorFile!=L"") 
-				if (!vb.Intersects(MercatorTileGrid::calcEnvelopeByTile(z,x,y))) continue;
+				if (!poVB->intersects(z,x,y)) continue;
 			tileList.push_back(tileID(z,x,y));
 		}
+		delete(poVB);
 		return tileList.size();	
 	};
 

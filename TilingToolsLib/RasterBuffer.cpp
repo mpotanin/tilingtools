@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "RasterBuffer.h"
+#include "FileSystemFuncs.h"
 
 
 

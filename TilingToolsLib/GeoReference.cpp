@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "GeoReference.h"
-
+#include "FileSystemFuncs.h"
+#include "str.h"
 
 GeoReference::GeoReference ()
 {

@@ -1,6 +1,11 @@
 #include "stdafx.h"
 #include "TilingFuncs.h"
 
+#include "stdafx.h"
+//#include "PixelEnvelope.h"
+#include "GeometryFuncs.h"
+
+
 //const int MAX_BUFFER_TILES_WIDTH2	= 16;
 const int MAX_BUFFER_TILES_WIDTH	= 32;
 //const int MAX_TILES_IN_CACHE = 100;
@@ -34,16 +39,16 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 	TILE_SIZE = MercatorTileGrid::TILE_SIZE;
 	//oParams.nJpegQuality = JPEG_BASE_ZOOM_QUALITY;
 	
-	if (!oBundle.InitFromRasterFile(oParams.inputFile,oParams.mercType,oParams.vectorFile,oParams.dShiftX,oParams.dShiftY))
+	if (!oBundle.init(oParams.inputPath,oParams.mercType,oParams.vectorFile,oParams.dShiftX,oParams.dShiftY))
 	{
-		wcout<<L"Error: can't open input file: "<<oParams.inputFile<<endl;
+		wcout<<L"Error: read input data by path: "<<oParams.inputPath<<endl;
 		return FALSE;
 	}
 
 	int baseZoom = (oParams.baseZoom == 0) ? oBundle.calculateBestMercZoom() : oParams.baseZoom;
 	if (baseZoom<=0)
 	{
-		wcout<<L"Error: can't calculate base zoom for tiling"<<oParams.inputFile<<endl;
+		wcout<<L"Error: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
 	
@@ -72,16 +77,15 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 
 	wcout<<L"Pyramid tiles: ";//<<endl;
 	wcout<<L"calculating number of tiles: ";
-	VectorBorder	oVectorBorder;
-	oVectorBorder.InitByEnvelope(oBundle.getMercatorEnvelope());
+	VectorBorder	bundleEnvelope(oBundle.getMercatorEnvelope(),oParams.mercType);
 	int generatedTiles = 0;
 	expectedTiles = 0;
-	CreatePyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTilePyramid,oParams.nJpegQuality);
+	CreatePyramidalTiles(bundleEnvelope,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTilePyramid,oParams.nJpegQuality);
 	wcout<<expectedTiles<<endl;
 	if (expectedTiles > 0) 
 	{
 		wcout<<L"0% ";
-		CreatePyramidalTiles(oVectorBorder,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTilePyramid,oParams.nJpegQuality);
+		CreatePyramidalTiles(bundleEnvelope,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTilePyramid,oParams.nJpegQuality);
 		wcout<<L" done."<<endl;
 	}
 
@@ -111,7 +115,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 			
 
 			RasterBuffer oTileBuffer;
-			
+
 			void *tileData = oBuffer.copyData((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
 			oTileBuffer.createBuffer(	oBuffer.getBandsCount(),
 											TILE_SIZE,
@@ -243,7 +247,7 @@ BOOL CreatePyramidalTiles (VectorBorder		&oVectorBorder,
 	BOOL b;
 
 	CreateZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
-	if (oVectorBorder.GetEnvelope().MaxX>-MercatorTileGrid::getULX())
+	if (oVectorBorder.getEnvelope().MaxX>-MercatorTileGrid::getULX())
 	{
 		CreateZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 		CreateZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
@@ -275,6 +279,7 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 
 		unsigned int size	= 0;
 		BYTE		*pData	= NULL;
+	
 		tilePyramid->getTile(nCurrZoom,nX,nY,pData,size);
 		if (size ==0) return FALSE;
 		switch (oParams.tileType)
@@ -283,7 +288,7 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 				{
 					if(!oTileBuffer.createBufferFromJpegData(pData,size))
 					{
-						wcout<<L"Error: reading jpeg-data from cache"<<endl;
+						wcout<<L"Error: reading jpeg-data"<<endl;
 						return FALSE;
 					}
 					break;
@@ -309,8 +314,7 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 		{
 			for (int j=0;j<2;j++)
 			{
-				OGREnvelope oEnvelope = MercatorTileGrid::calcEnvelopeByTile(nCurrZoom+1,2*nX+j,2*nY+i);
-				if (oVectorBorder.Intersects(oEnvelope)) 
+				if (oVectorBorder.intersects(nCurrZoom+1,2*nX+j,2*nY+i)) 
 					quarterTileExists[i*2+j] = CreateZoomOutTile(oVectorBorder,
 															nCurrZoom+1,
 															2*nX+j,

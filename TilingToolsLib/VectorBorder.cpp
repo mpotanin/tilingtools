@@ -1,11 +1,268 @@
 #include "StdAfx.h"
 #include "VectorBorder.h"
 
-VectorBorder::VectorBorder (void)
+VectorBorder::VectorBorder ()
 {
 	m_poGeometry	= NULL;
-	OGRRegisterAll();
 }
+
+VectorBorder::~VectorBorder()
+{
+	if (m_poGeometry!=NULL) m_poGeometry->empty();
+	m_poGeometry	= NULL;
+}
+
+
+VectorBorder::VectorBorder (OGREnvelope mercEnvelope, MercatorProjType	mercType)
+{
+	this->mercType = mercType;
+	this->m_poGeometry = VectorBorder::createOGRPolygonByOGREnvelope(mercEnvelope);
+}
+
+
+
+wstring VectorBorder::getVectorFileNameByRasterFileName (wstring strRasterFile)
+{
+	wstring	strVectorFileBase = RemoveExtension(strRasterFile);
+	wstring	strVectorFile;
+	
+	if (FileExists(strVectorFileBase+L".mif"))	strVectorFile = strVectorFileBase+L".mif";
+	if (FileExists(strVectorFileBase+L".shp"))	strVectorFile = strVectorFileBase+L".shp";
+	if (FileExists(strVectorFileBase+L".tab"))	strVectorFile = strVectorFileBase+L".tab";
+	
+	if (strVectorFile!=L"")
+	{
+		string strVectorFileUTF8;
+		wstrToUtf8(strVectorFileUTF8,strVectorFile);
+
+		OGRDataSource * poDS = OGRSFDriverRegistrar::Open( strVectorFileUTF8.c_str(), FALSE );
+		if (poDS ==NULL) return L"";
+		OGRDataSource::DestroyDataSource( poDS );
+	}
+	return strVectorFile;
+}
+
+VectorBorder*	VectorBorder::createFromVectorFile(wstring vectorFilePath, MercatorProjType	mercType)
+{
+	string vectorFilePathUTF8;
+	wstrToUtf8(vectorFilePathUTF8,vectorFilePath);
+
+	OGRDataSource *poDS= OGRSFDriverRegistrar::Open( vectorFilePathUTF8.c_str(), FALSE );
+	if( poDS == NULL ) return NULL;
+	
+	OGRMultiPolygon *poMultiPolygon = readMultiPolygonFromOGRDataSource(poDS);
+	if (poMultiPolygon == NULL) return NULL;
+
+	OGRLayer *poLayer = poDS->GetLayer(0);
+	OGRSpatialReference *poInputSpatial = poLayer->GetSpatialRef();
+	char	*proj_ref = NULL;
+	if (poInputSpatial!=NULL)
+	{
+		if (OGRERR_NONE!=poInputSpatial->exportToProj4(&proj_ref))
+		{
+			if (OGRERR_NONE!=poInputSpatial->morphFromESRI()) return NULL; 
+			if (OGRERR_NONE!=poInputSpatial->exportToProj4(&proj_ref)) return NULL;
+		}
+		CPLFree(proj_ref);
+	}
+	else
+	{
+		poInputSpatial = new OGRSpatialReference();
+		poInputSpatial->SetWellKnownGeogCS("WGS84");
+	}
+	
+
+	OGRSpatialReference		oSpatialMerc;
+	MercatorTileGrid::setMercatorSpatialReference(mercType,&oSpatialMerc);
+	
+	poMultiPolygon->assignSpatialReference(poInputSpatial);
+	if (OGRERR_NONE != poMultiPolygon->transformTo(&oSpatialMerc))
+	{
+		poMultiPolygon->empty();
+		return NULL;
+	}
+
+	adjustFor180DegreeIntersection(poMultiPolygon);
+		
+	VectorBorder	*poVB	= new VectorBorder();
+	poVB->mercType			= mercType;
+	poVB->m_poGeometry		= poMultiPolygon;
+	return poVB;
+};
+
+
+OGRMultiPolygon*		VectorBorder::readMultiPolygonFromOGRDataSource(OGRDataSource *poDS)
+{
+	OGRLayer *poLayer = poDS->GetLayer(0);
+	if( poLayer == NULL ) return NULL;
+	poLayer->ResetReading();
+
+	OGRMultiPolygon *poMultiPolygon = NULL;
+	BOOL	validGeometry = FALSE;
+	while (OGRFeature *poFeature = poLayer->GetNextFeature())
+	{
+		if (poMultiPolygon == NULL) poMultiPolygon = new OGRMultiPolygon();
+		if ((poFeature->GetGeometryRef()->getGeometryType() == wkbMultiPolygon) ||
+			(poFeature->GetGeometryRef()->getGeometryType() == wkbPolygon))
+		{
+			if (OGRERR_NONE == poMultiPolygon->addGeometry(poFeature->GetGeometryRef()))
+				validGeometry = TRUE;
+		}
+		OGRFeature::DestroyFeature( poFeature);
+	}
+
+	if (!validGeometry) return NULL;
+
+	return poMultiPolygon;
+};
+
+
+OGRGeometry*	VectorBorder::getOGRGeometryTransformed (OGRSpatialReference *poOutputSRS)
+{
+	if (this->m_poGeometry == NULL) return NULL;
+
+	OGRSpatialReference		oSpatialMerc;
+	MercatorTileGrid::setMercatorSpatialReference(mercType,&oSpatialMerc);
+
+	OGRMultiPolygon *poTransformedGeometry = (OGRMultiPolygon*)this->m_poGeometry->clone();	
+	poTransformedGeometry->assignSpatialReference(&oSpatialMerc);
+	
+	if (OGRERR_NONE != poTransformedGeometry->transformTo(poOutputSRS))
+	{
+		poTransformedGeometry->empty();
+		return NULL;
+	}
+
+	return poTransformedGeometry;
+};
+
+
+BOOL			VectorBorder::adjustFor180DegreeIntersection (OGRGeometry	*poMercGeometry)
+{
+	OGRLinearRing	**poRings;
+	double D = 10018754.17139462153829420444035;
+	
+	double max_x = -1e+308, min_x = 1e+308;
+
+	//poMercGeometry->getGeometryType()
+	OGRwkbGeometryType type = poMercGeometry->getGeometryType();
+
+	if ((poMercGeometry->getGeometryType()!=wkbMultiPolygon) && 
+		(poMercGeometry->getGeometryType()!=wkbMultiPolygon) &&
+		(poMercGeometry->getGeometryType()!=wkbLinearRing) &&
+		(poMercGeometry->getGeometryType()!=wkbLineString)
+		) return FALSE;
+	OGRPolygon	**poPolygons = NULL;
+
+	int	numPolygons;
+	if (poMercGeometry->getGeometryType()==wkbPolygon)
+	{
+		numPolygons		= 1;
+		poPolygons		= new OGRPolygon*[numPolygons];
+		poPolygons[0]	= (OGRPolygon*)poMercGeometry;
+	}
+	else if (poMercGeometry->getGeometryType()==wkbMultiPolygon)
+	{
+		numPolygons		= ((OGRMultiPolygon*)poMercGeometry)->getNumGeometries();
+		poPolygons		= new OGRPolygon*[numPolygons];
+		for (int i=0;i<numPolygons;i++)
+			poPolygons[i] = (OGRPolygon*)((OGRMultiPolygon*)poMercGeometry)->getGeometryRef(i);
+	}
+	else 
+	{
+		numPolygons		= 1;
+		poPolygons		= new OGRPolygon*[numPolygons];
+		poPolygons[0]	= new OGRPolygon();
+		poPolygons[0]->addRingDirectly((OGRLinearRing*)poMercGeometry);
+	}
+
+
+	for (int j=0;j<numPolygons;j++)
+	{
+		for (int i=0; i <poPolygons[j]->getNumInteriorRings() + 1; i++)
+		{
+			OGRLinearRing *poLR = (i==0) ? poPolygons[j]->getExteriorRing() : poPolygons[j]->getInteriorRing(i-1);
+			for (int i = 0; i<poLR->getNumPoints();i++)
+			{
+				if (poLR->getX(i)>max_x) max_x = poLR->getX(i);
+				if (poLR->getX(i)<min_x) min_x = poLR->getX(i);
+			}
+		}
+	}
+
+	if ((max_x>D)&&(min_x<-D))
+	{
+		for (int j=0;j<numPolygons;j++)
+		{
+			for (int i=0; i <poPolygons[j]->getNumInteriorRings() + 1; i++)
+			{
+				OGRLinearRing *poLR = (i==0) ? poPolygons[j]->getExteriorRing() : poPolygons[j]->getInteriorRing(i-1);
+				for (int i = 0; i<poLR->getNumPoints();i++)
+				{
+					if (poLR->getX(i)<0)
+						poLR->setPoint(i,4*D + poLR->getX(i),poLR->getY(i));
+				}
+			}
+		}
+	}
+	delete[]poPolygons;
+
+	return TRUE;
+};
+
+
+BOOL	VectorBorder::intersects(int tile_z, int tile_x, int tile_y)
+{
+	if (tile_x < (1<<tile_z)) return intersects(MercatorTileGrid::calcEnvelopeByTile(tile_z, tile_x, tile_y));
+	else
+	{
+		if (!intersects(MercatorTileGrid::calcEnvelopeByTile(tile_z, tile_x, tile_y)))
+			return intersects(MercatorTileGrid::calcEnvelopeByTile(tile_z, tile_x - (1<<tile_z), tile_y));
+		else return TRUE;
+	}
+};
+
+
+BOOL	VectorBorder::intersects(OGREnvelope &envelope)
+{
+	if (this->m_poGeometry == NULL) return FALSE;
+	OGRPolygon *poPolygon = createOGRPolygonByOGREnvelope (envelope);
+	BOOL bResult = this->m_poGeometry->Intersects(poPolygon);
+	poPolygon->empty();
+	return bResult;
+}
+	
+
+
+OGREnvelope VectorBorder::getEnvelope ()
+{
+	OGREnvelope oEnvelope;
+	if (this->m_poGeometry!=NULL) this->m_poGeometry->getEnvelope(&oEnvelope);
+	return oEnvelope;
+};
+
+
+
+OGRPolygon*		VectorBorder::createOGRPolygonByOGREnvelope (OGREnvelope envelope)
+{
+	OGRPolygon *poPolygon = new OGRPolygon();
+
+	OGRLinearRing	oLR;
+	oLR.addPoint(envelope.MinX,envelope.MinY);
+	oLR.addPoint(envelope.MinX,envelope.MaxY);
+	oLR.addPoint(envelope.MaxX,envelope.MaxY);
+	oLR.addPoint(envelope.MaxX,envelope.MinY);
+	oLR.closeRings();
+	poPolygon->addRing(&oLR);
+	
+	return poPolygon;
+};
+
+
+
+
+/*
+
 
 VectorBorder::VectorBorder(OGREnvelope &oEnvelope)
 {
@@ -18,7 +275,7 @@ VectorBorder::VectorBorder(OGREnvelope &oEnvelope)
 VectorBorder::VectorBorder(VectorBorder *poPolygon)
 {
 	m_poGeometry	= NULL;
-	if (poPolygon!=NULL) InitByOGRGeometry(poPolygon->GetOGRGeometry());
+	if (poPolygon!=NULL) InitByOGRGeometry(poPolygon->getOGRGeometryRef());
 }
 
 VectorBorder::VectorBorder(OGRGeometry	*poGeometry)
@@ -52,7 +309,7 @@ BOOL VectorBorder::InitByOGRGeometry (OGRGeometry *poGeometry_set)
 };
 
 
-OGRGeometry* VectorBorder::GetOGRGeometry ()
+OGRGeometry* VectorBorder::getOGRGeometryRef ()
 {
 	return this->m_poGeometry;
 };
@@ -218,7 +475,7 @@ int VectorBorder::Contains(OGREnvelope &oEnvelope)
 	if (this->m_poGeometry==NULL) return -1;
 	VectorBorder oPolygon_;
 	if (!oPolygon_.InitByEnvelope(oEnvelope)) return FALSE;
-	if ( this->m_poGeometry->Contains(oPolygon_.GetOGRGeometry())) return 1;
+	if ( this->m_poGeometry->Contains(oPolygon_.getOGRGeometryRef())) return 1;
 	else return 0;
 }
 
@@ -228,21 +485,18 @@ int VectorBorder::Intersects(OGREnvelope &oEnvelope)
 
 	//OGRLinearRing oRing((OGRPolygon*)m_poGeometry->get
 
-	/*
-	OGRPolygon	*poPolygon = (OGRPolygon*)m_poGeometry;
-	OGRLinearRing *poRing	= poPolygon->getExteriorRing();
-	
-	for (int i=0;i<poRing->getNumPoints();i++)
-	{
-		double x =	poRing->getX(i);
-		double y =	poRing->getY(i);
-		x = x;
-	}
-	*/
+
 
 	VectorBorder oPolygon_;
 	if (!oPolygon_.InitByEnvelope(oEnvelope)) return FALSE;
-	if ( this->m_poGeometry->Intersects(oPolygon_.GetOGRGeometry())) return 1;
+	((OGRPolygon*)this->m_poGeometry)->closeRings();
+	BOOL b = ((OGRPolygon*)this->m_poGeometry)->getExteriorRing()->IsValid();
+	OGRLinearRing	*poRing = ((OGRPolygon*)this->m_poGeometry)->getExteriorRing();
+
+	
+
+
+	if ( this->m_poGeometry->Intersects(oPolygon_.getOGRGeometryRef())) return 1;
 	else return 0;
 }
 
@@ -251,8 +505,8 @@ int VectorBorder::OnEdge(OGREnvelope &oEnvelope)
 	if (this->m_poGeometry==NULL) return -1;
 	VectorBorder oPolygon_;
 	if (!oPolygon_.InitByEnvelope(oEnvelope)) return FALSE;
-	if ( this->m_poGeometry->Intersects(oPolygon_.GetOGRGeometry()) &&
-		!this->m_poGeometry->Contains(oPolygon_.GetOGRGeometry())) return 1;
+	if ( this->m_poGeometry->Intersects(oPolygon_.getOGRGeometryRef()) &&
+		!this->m_poGeometry->Contains(oPolygon_.getOGRGeometryRef())) return 1;
 	else return 0;
 }
 
@@ -277,7 +531,7 @@ BOOL	VectorBorder::Intersection (OGREnvelope &oEnvelope, VectorBorder &oPolygon)
 {
 	VectorBorder oPolygon_;
 	if (!oPolygon_.InitByEnvelope(oEnvelope)) return FALSE;
-	OGRGeometry *poGeometry = this->m_poGeometry->Intersection(oPolygon_.GetOGRGeometry());
+	OGRGeometry *poGeometry = this->m_poGeometry->Intersection(oPolygon_.getOGRGeometryRef());
 	if (poGeometry==NULL) return FALSE;
 	if (!oPolygon.InitByOGRGeometry(poGeometry)) return FALSE;
 	poGeometry->empty();
@@ -373,7 +627,7 @@ void VectorBorder::makePolygon (double min_x, double min_y, double max_x, double
 };
 
 
-/*
+
 BOOL VectorBorder::Geometry2ArrayOfRings (OGRGeometry *poGeometry, int &n, OGRLinearRing** &poRings)
 {
 	n = 0;
@@ -403,7 +657,7 @@ BOOL VectorBorder::Geometry2ArrayOfRings (OGRGeometry *poGeometry, int &n, OGRLi
 
 	return TRUE;
 }
-*/
+
 
 
 BOOL	VectorBorder::GetOGRRings		(int &num,	OGRLinearRing** &poRings)
@@ -459,7 +713,7 @@ BOOL	VectorBorder::GetOGRPolygons	(int &num,	OGRPolygon**	&poPolygons)
 	return TRUE;
 }
 
-//*/
+
 
 
 double* VectorBorder::CalcHorizontalLineIntersection (double y, int &nNumOfPoints)
@@ -540,6 +794,4 @@ double* VectorBorder::CalcHorizontalLineIntersection (double y, int &nNumOfPoint
 
 	return pPoints;
 };
-
-
-
+*/

@@ -85,7 +85,6 @@
     <ClInclude Include="FileSystemFuncs.h" />
     <ClInclude Include="GeometryFuncs.h" />
     <ClInclude Include="GeoReference.h" />
-    <ClInclude Include="PixelEnvelope.h" />
     <ClInclude Include="RasterBuffer.h" />
     <ClInclude Include="RasterFile.h" />
     <ClInclude Include="stdafx.h" />
@@ -96,14 +95,12 @@
     <ClInclude Include="TilePyramid.h" />
     <ClInclude Include="TilingFuncs.h" />
     <ClInclude Include="VectorBorder.h" />
-    <ClInclude Include="VectorFile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleUtils.cpp" />
     <ClCompile Include="FileSystemFuncs.cpp" />
     <ClCompile Include="GeometryFuncs.cpp" />
     <ClCompile Include="GeoReference.cpp" />
-    <ClCompile Include="PixelEnvelope.cpp" />
     <ClCompile Include="RasterBuffer.cpp" />
     <ClCompile Include="RasterFile.cpp" />
     <ClCompile Include="stdafx.cpp" />
@@ -112,7 +109,6 @@
     <ClCompile Include="TileBuffer.cpp" />
     <ClCompile Include="TilingFuncs.cpp" />
     <ClCompile Include="VectorBorder.cpp" />
-    <ClCompile Include="VectorFile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
