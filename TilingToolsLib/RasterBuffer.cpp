@@ -383,7 +383,7 @@ BOOL RasterBuffer::SaveToPng24Data (void* &pDataDst, int &size)
 				im->tpixels[j][i] = gdTrueColorAlpha(pDataByte[j*this->nXSize+i],
 									pDataByte[j*this->nXSize+i+n],
 									pDataByte[j*this->nXSize+i+n + n],
-									(pDataByte[j*this->nXSize+ i + n + n + this->nYSize*this->nXSize] >0) ? 127 : 0);
+									(pDataByte[j*this->nXSize+ i + n + n + this->nYSize*this->nXSize] >= 75) ? 127 : 0);
 		}
 	}
 	else if (this->pNoDataValue )	// ((this->nBands == 3) || (this->nBands == 1))
@@ -395,9 +395,9 @@ BOOL RasterBuffer::SaveToPng24Data (void* &pDataDst, int &size)
 		{
 			for (int i=0;i<this->nXSize;i++)
 			{
-				opaque = (	(pDataByte[j*this->nXSize+i]			== this->pNoDataValue[0]) &&
-							(pDataByte[j*this->nXSize+ i + n]		== this->pNoDataValue[0]) &&
-							(pDataByte[j*this->nXSize + i + n +n]	== this->pNoDataValue[0])
+				opaque = (	(pDataByte[j*this->nXSize+i]			== (*this->pNoDataValue)) &&
+							(pDataByte[j*this->nXSize+ i + n]		== (*this->pNoDataValue)) &&
+							(pDataByte[j*this->nXSize + i + n +n]	== (*this->pNoDataValue))
 								) ? 127 : 0;
 				im->tpixels[j][i] = gdTrueColorAlpha(	pDataByte[j*this->nXSize+i],
 														pDataByte[j*this->nXSize+i+n],
@@ -905,14 +905,21 @@ BOOL	RasterBuffer::createAlphaBandByColor(BYTE	*pRGB)
 	BYTE	*pData_new = new BYTE[(this->nBands+1) * n];
 	memcpy(pData_new,pData,this->nBands * n);
 	int d = (this->nBands == 3) ? 1 : 0;
+	int tolerance = 5;
 
 	for (int i=0; i<this->nYSize; i++)
 	{
 		for (int j=0; j<this->nXSize; j++)
+			pData_new[i*nXSize + j + n + d*(n+n)] = (	abs(pData_new[i*nXSize + j] - pRGB[0]) + 
+														abs(pData_new[i*nXSize + j + d*n] - pRGB[0 +d] ) +
+														abs(pData_new[i*nXSize + j + d*(n+n)] - pRGB[0+d+d] ) <= tolerance)
+														? 100 : 0;
+			/*
 			pData_new[i*nXSize + j + n + d*(n+n)] = (	(pData_new[i*nXSize + j] == pRGB[0] ) &&
 														(pData_new[i*nXSize + j + d*n] == pRGB[0 +d] ) &&
 														(pData_new[i*nXSize + j + d*(n+n)] == pRGB[0+d+d] ) ) 
 														? 100 : 0;
+			*/
 	}
 	delete[]((BYTE*)pData);
 	pData = pData_new;

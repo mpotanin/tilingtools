@@ -27,6 +27,7 @@ public:
 	BOOL						intersects(int tile_z, int tile_x, int tile_y);
 	OGRGeometry*				getOGRGeometryRef();
 	OGRGeometry*				getOGRGeometryTransformed (OGRSpatialReference *poOutputSRS);
+	OGRPolygon*					getOGRPolygonTransformedToPixelLine(OGRSpatialReference *poOutputSRS, double *geoTransform);
 	OGREnvelope					getEnvelope ();
 
 

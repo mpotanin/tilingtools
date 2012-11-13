@@ -231,21 +231,45 @@ GDALDataset*	RasterFile::getGDALDatasetRef()
 	return this->m_poDataset;
 }
 
+BOOL RasterFile::readSpatialRefFromMapinfoTabFile (wstring tabFilePath, OGRSpatialReference *poSRS)
+{
+	FILE *fp;
+	if (!(fp = _wfopen(tabFilePath.c_str(),L"r"))) return FALSE;
+	fseek(fp, 0, SEEK_END);
+	long size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	char *pTabFileData = new char[size];
+	fread(pTabFileData,sizeof(char),size,fp);
+	string strTabFileData(pTabFileData);
+	delete[]pTabFileData;
+	if (strTabFileData.find("CoordSys Earth Projection") == string::npos) return FALSE;
+	int start_pos	= strTabFileData.find("CoordSys Earth Projection");
+	int end_pos		= (strTabFileData.find('\n',start_pos) != string::npos)		? 
+														strTabFileData.size() : 
+														strTabFileData.find('\n',start_pos);
+	string strMapinfoProj = strTabFileData.substr(start_pos, end_pos-start_pos+1);
+	//cout<<"Mapinfo: "<<strProj<<endl;
+	if (!OGRERR_NONE==poSRS->importFromMICoordSys(strMapinfoProj.c_str())) return FALSE;
+	
+	return TRUE;
+}
+
 
 BOOL	RasterFile::getSpatialRef(OGRSpatialReference	&oSR)
 {
 	const char* strProjRef = GDALGetProjectionRef(this->m_poDataset);
-	if (OGRERR_NONE!=oSR.SetFromUserInput(strProjRef))
+	if (OGRERR_NONE == oSR.SetFromUserInput(strProjRef)) return TRUE;
+
+	if (FileExists(RemoveExtension(this->m_strRasterFile)+L".prj"))
 	{
-		if (FileExists(RemoveExtension(this->m_strRasterFile)+L".prj"))
-		{
-			wstring prjFile		= RemoveExtension(this->m_strRasterFile)+L".prj";
-			string prjFileUTF8;
-			wstrToUtf8(prjFileUTF8,prjFile);
-			if (OGRERR_NONE==oSR.SetFromUserInput(prjFileUTF8.c_str())) return TRUE;
-		}
+		wstring prjFile		= RemoveExtension(this->m_strRasterFile)+L".prj";
+		string prjFileUTF8;
+		wstrToUtf8(prjFileUTF8,prjFile);
+		return 	(OGRERR_NONE==oSR.SetFromUserInput(prjFileUTF8.c_str()));	
 	}
-	else return TRUE;
+	else if (FileExists(RemoveExtension(this->m_strRasterFile)+L".tab"))
+		return readSpatialRefFromMapinfoTabFile(RemoveExtension(this->m_strRasterFile)+L".tab",&oSR);
 
 	return FALSE;
 }
@@ -395,7 +419,6 @@ BOOL	BundleOfRasterFiles::addItemToBundle (wstring rasterFile, wstring	vectorFil
 	}
 
 	VectorBorder	*border = VectorBorder::createFromVectorFile(vectorFile,mercType);
-	
 	pair<wstring,pair<OGREnvelope,VectorBorder*>> p;
 	p.first			= rasterFile;
 	p.second.first	= oImage.getEnvelopeInMercator(mercType);
@@ -688,6 +711,9 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
 	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
+		//check if image envelope intersects destination buffer envelope
+		if (!(*iter).second.first.Intersects(oMercEnvelope)) continue;
+		
 		// Open input raster and create source dataset
 		if (dataList.size()==0) return FALSE;
 		wstrToUtf8(fileNameUTF8,(*iter).first);
@@ -726,8 +752,20 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		psWarpOptions->nBandCount = 0;
 		
 		
-
-
+		//Init cutline for source file
+		///*
+		if ((*iter).second.second)
+		{
+			VectorBorder	*poBorder = (*iter).second.second;
+			OGRGeometry		*poOGRGeometry = poBorder->getOGRGeometryTransformed(&inputSRS);
+			double	rasterFileTransform[6];
+			if (CE_None == inputRF.getGDALDatasetRef()->GetGeoTransform(rasterFileTransform))
+			{
+				if (!((rasterFileTransform[0] == 0.) &&(rasterFileTransform[1]==1.)))
+					psWarpOptions->hCutline = poBorder->getOGRPolygonTransformedToPixelLine(&inputSRS,rasterFileTransform);
+			}
+		}
+		//*/
 		//psWarpOptions->hCutline = ((OGRMultiPolygon*)(*iter).second.second)->getGeometryRef(0)->clone();
 		//((OGRPolygon*)psWarpOptions->hCutline)->closeRings();
 

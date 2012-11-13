@@ -137,6 +137,37 @@ OGRGeometry*	VectorBorder::getOGRGeometryTransformed (OGRSpatialReference *poOut
 };
 
 
+OGRPolygon*	VectorBorder::getOGRPolygonTransformedToPixelLine(OGRSpatialReference *poOutputSRS, double *geoTransform)
+{
+	OGRGeometry *poGeometry = getOGRGeometryTransformed(poOutputSRS);
+
+	OGRPolygon *poResultPolygon = (OGRPolygon*)((OGRMultiPolygon*)poGeometry)->getGeometryRef(0)->clone();
+	poGeometry->empty();
+
+	OGRLinearRing	*poRing = poResultPolygon->getExteriorRing();
+	poRing->closeRings();
+	
+	for (int i=0;i<poRing->getNumPoints();i++)
+	{
+		double D = geoTransform[1]*geoTransform[5]-geoTransform[2]*geoTransform[4];
+		if ( fabs(D) < 1e-7)
+		{
+			poResultPolygon->empty();
+			return NULL;
+		}
+
+		double X = poRing->getX(i)	-	geoTransform[0];
+		double Y = poRing->getY(i)	-	geoTransform[3];
+		
+		double L = (geoTransform[1]*Y-geoTransform[4]*X)/D;
+		double P = (X - L*geoTransform[2])/geoTransform[1];
+
+		poRing->setPoint(i,(int)(P+0.5),(int)(L+0.5));
+	}
+	return poResultPolygon;
+}
+
+
 BOOL			VectorBorder::adjustFor180DegreeIntersection (OGRGeometry	*poMercGeometry)
 {
 	OGRLinearRing	**poRings;

@@ -45,12 +45,14 @@ public:
 	OGREnvelope		GetEnvelope ();
 	OGREnvelope		getEnvelopeInMercator (MercatorProjType	mercType);
 
+	static			BOOL readSpatialRefFromMapinfoTabFile (wstring tabFilePath, OGRSpatialReference *poSRS);
+
+
+protected:
+	void			delete_all();
 
 protected:
 	_TCHAR buf[256];
-	void delete_all();
-
-protected:
 	wstring m_strRasterFile;
 	GDALDataset  *m_poDataset;
 	BOOL	m_isGeoReferenced;

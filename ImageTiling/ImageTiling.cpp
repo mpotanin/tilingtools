@@ -223,7 +223,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strTileType		= L"png";
 	//strZoom			= L"8";
 	//strVectorFile	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
-	//strTilesFolder	= L"C:\\New\\spot4_tiles";
+ 	//strTilesFolder	= L"C:\\New\\spot4_tiles";
 	//strProjType		= L"1";
 	//strTemplate		= L"standard";
 	//strContainer	= L"-container";
