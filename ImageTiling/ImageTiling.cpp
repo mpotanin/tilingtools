@@ -191,7 +191,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
 	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
 	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
-	wstring strTileType			= MakeLower(ReadParameter(L"-tileType",argc,argv));
+	wstring strTileType			= MakeLower(ReadParameter(L"-tile_type",argc,argv));
 	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
 	wstring strTemplate			= MakeLower(ReadParameter(L"-template",argc,argv));
 	wstring strNoData			= MakeLower(ReadParameter(L"-no_data",argc,argv));
@@ -253,6 +253,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
+
+	if (strTileType	== L"" ) strTileType = MakeLower(ReadParameter(L"-tileType",argc,argv));
 
 	if (strMosaic==L"")
 	{

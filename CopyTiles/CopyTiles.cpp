@@ -33,7 +33,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	wstring destPath		= ReadParameter(L"-to",argc,argv);
 	wstring borderFilePath	= ReadParameter(L"-border",argc,argv);
 	wstring strZooms		= ReadParameter(L"-zooms",argc,argv);
-	wstring strTileType		= MakeLower(ReadParameter(L"-type",argc,argv));
+	wstring strTileType		= MakeLower(ReadParameter(L"-tile_type",argc,argv));
 	wstring strProjType		= MakeLower(ReadParameter(L"-proj",argc,argv));
 	wstring strLogFile		= ReadParameter(L"-log_file",argc,argv);
 	wstring strSrcTemplate	= MakeLower(ReadParameter(L"-src_template",argc,argv));
