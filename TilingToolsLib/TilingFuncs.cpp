@@ -1,24 +1,13 @@
 #include "stdafx.h"
 #include "TilingFuncs.h"
 
-#include "stdafx.h"
-//#include "PixelEnvelope.h"
-#include "GeometryFuncs.h"
+using namespace GMT;
+
+const int GMT_MAX_BUFFER_WIDTH	= 32;
+const int GMT_MAX_TILES_IN_CACHE = 0xFFFF;
 
 
-//const int MAX_BUFFER_TILES_WIDTH2	= 16;
-const int MAX_BUFFER_TILES_WIDTH	= 32;
-//const int MAX_TILES_IN_CACHE = 100;
-const int MAX_TILES_IN_CACHE = 0xFFFF;
-//const int MAX_TILES_IN_CACHE = 0xF;
-
-//const int MAX_TILES_IN_CACHE = 1000;
-
-//int JPEG_BASE_ZOOM_QUALITY = 80;
-
-//_TCHAR buf[256];
-
-BOOL PrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
+BOOL GMTPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
 {
 	//wcout<<nGeneratedTiles<<L" "<<endl;
 	if (nGeneratedTiles - (int)ceil((nExpectedTiles/10.0)*(nGeneratedTiles*10/nExpectedTiles))  ==0)
@@ -29,23 +18,23 @@ BOOL PrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
 	return TRUE;
 }
 
-BOOL MakeTiling		(TilingParameters		&oParams)
+BOOL GMTMakeTiling		(GMTilingParameters		*poParams)
 {
 
 
 	LONG t_ = time(0);
 	srand(t_%10000);
 	BundleOfRasterFiles		oBundle;
-	TILE_SIZE = MercatorTileGrid::TILE_SIZE;
-	//oParams.nJpegQuality = JPEG_BASE_ZOOM_QUALITY;
+	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
+	//poParams->nJpegQuality = JPEG_BASE_ZOOM_QUALITY;
 	
-	if (!oBundle.init(oParams.inputPath,oParams.mercType,oParams.vectorFile,oParams.dShiftX,oParams.dShiftY))
+	if (!oBundle.init(poParams->inputPath,poParams->mercType,poParams->vectorFile,poParams->dShiftX,poParams->dShiftY))
 	{
-		wcout<<L"Error: read input data by path: "<<oParams.inputPath<<endl;
+		wcout<<L"Error: read input data by path: "<<poParams->inputPath<<endl;
 		return FALSE;
 	}
 
-	int baseZoom = (oParams.baseZoom == 0) ? oBundle.calculateBestMercZoom() : oParams.baseZoom;
+	int baseZoom = (poParams->baseZoom == 0) ? oBundle.calculateBestMercZoom() : poParams->baseZoom;
 	if (baseZoom<=0)
 	{
 		wcout<<L"Error: can't calculate base zoom for tiling"<<endl;
@@ -56,36 +45,69 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 	int expectedTiles	= oBundle.calculateNumberOfTiles(baseZoom);	
 	wcout<<expectedTiles<<endl;
 
+	if (expectedTiles == 0) return FALSE;
+
 	wcout<<L"0% ";
-	unsigned int maxTilesInCache = (oParams.maxTilesInCache == 0) ? MAX_TILES_IN_CACHE : oParams.maxTilesInCache; 
-	unsigned int adjustedMaxTilesInCash =	(oParams.tileType == JPEG_TILE) ? maxTilesInCache	:
-											(oParams.tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
+	unsigned int maxTilesInCache = (poParams->maxTilesInCache == 0) ? GMT_MAX_TILES_IN_CACHE : poParams->maxTilesInCache; 
+	unsigned int adjustedMaxTilesInCash =	(poParams->tileType == JPEG_TILE) ? maxTilesInCache	:
+											(poParams->tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
 	BOOL	useBuffer = (expectedTiles*1.36 <= adjustedMaxTilesInCash) ? true : false;
 	
 	
 	TilePyramid	*poTilePyramid =	NULL;
-	if (oParams.useContainer)	poTilePyramid = new TileContainer(oBundle.getMercatorEnvelope(),baseZoom,useBuffer,oParams.containerFile,oParams.tileType,oParams.mercType);
-	else						poTilePyramid = new TileFolder(oParams.poTileName, useBuffer);
+
+	//ToDo
+	if (poParams->useContainer)
+	{
+		if (GetExtension(poParams->containerFile) == L"tiles")
+				poTilePyramid = new GMTileContainer(	poParams->containerFile,
+														poParams->tileType,
+														poParams->mercType,
+														oBundle.getMercatorEnvelope(),
+														baseZoom,
+														useBuffer);
+		else	poTilePyramid = new MBTileContainer(	poParams->containerFile,
+														poParams->tileType,
+														poParams->mercType,
+														oBundle.getMercatorEnvelope());
+	}
+	else		poTilePyramid = new TileFolder(poParams->poTileName, useBuffer);
 		
 	
 	
-	BaseZoomTiling2(oParams,&oBundle,expectedTiles,poTilePyramid);
+	GMTMakeBaseZoomTiling(poParams,&oBundle,expectedTiles,poTilePyramid);
 	wcout<<L" done."<<endl;
 
-	int minZoom = (oParams.minZoom <=0) ? 1 : oParams.minZoom;
+	int minZoom = (poParams->minZoom <=0) ? 1 : poParams->minZoom;
 	if (minZoom == baseZoom) return TRUE;
 
 	wcout<<L"Pyramid tiles: ";//<<endl;
 	wcout<<L"calculating number of tiles: ";
-	VectorBorder	bundleEnvelope(oBundle.getMercatorEnvelope(),oParams.mercType);
+	VectorBorder	bundleEnvelope(oBundle.getMercatorEnvelope(),poParams->mercType);
 	int generatedTiles = 0;
 	expectedTiles = 0;
-	CreatePyramidalTiles(bundleEnvelope,baseZoom,1,oParams,expectedTiles,generatedTiles,TRUE,poTilePyramid,oParams.nJpegQuality);
+	GMTCreatePyramidalTiles(	bundleEnvelope,
+								baseZoom,
+								minZoom,
+								poParams,
+								expectedTiles,
+								generatedTiles,
+								TRUE,
+								poTilePyramid,
+								poParams->nJpegQuality);
 	wcout<<expectedTiles<<endl;
 	if (expectedTiles > 0) 
 	{
 		wcout<<L"0% ";
-		CreatePyramidalTiles(bundleEnvelope,baseZoom,1,oParams,expectedTiles,generatedTiles,FALSE,poTilePyramid,oParams.nJpegQuality);
+		GMTCreatePyramidalTiles(	bundleEnvelope,
+									baseZoom,
+									minZoom,
+									poParams,
+									expectedTiles,
+									generatedTiles,
+									FALSE,
+									poTilePyramid,
+									poParams->nJpegQuality);
 		wcout<<L" done."<<endl;
 	}
 
@@ -96,16 +118,18 @@ BOOL MakeTiling		(TilingParameters		&oParams)
 }
 
 
-BOOL TilingFromBuffer (TilingParameters				&oParams, 
-					   RasterBuffer					&oBuffer, 
-					   BundleOfRasterFiles			*poBundle, 
-					   int							nX, 
-					   int							nY,
-					   int							z,
-					   int							nTilesExpected, 
-					   int							&nTilesGenerated,
-					   TilePyramid				*tilePyramid)
+BOOL GMTTilingFromBuffer (GMTilingParameters				*poParams, 
+						   RasterBuffer					&oBuffer, 
+						   BundleOfRasterFiles			*poBundle, 
+						   int							nX, 
+						   int							nY,
+						   int							z,
+						   int							nTilesExpected, 
+						   int							&nTilesGenerated,
+						   TilePyramid					*tilePyramid)
 {  
+	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
+
 	for (int x = nX; x < nX+oBuffer.getXSize()/TILE_SIZE; x += 1)
 	{
 		for (int y = nY; y < nY+oBuffer.getYSize()/TILE_SIZE; y += 1)
@@ -116,14 +140,15 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 
 			RasterBuffer oTileBuffer;
 
-			void *tileData = oBuffer.copyData((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
+			void *tileData = oBuffer.getDataBlock((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
 			oTileBuffer.createBuffer(	oBuffer.getBandsCount(),
 											TILE_SIZE,
 											TILE_SIZE,
 											tileData,
 											oBuffer.getDataType(),
 											oBuffer.getNoDataValue(),
-											oBuffer.isAlphaBand());
+											oBuffer.isAlphaBand(),
+											oBuffer.getColorTableRef());
 			delete[]tileData;
 			
 
@@ -132,7 +157,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 				
 				void *pData=NULL;
 				int size = 0;
-				switch (oParams.tileType)
+				switch (poParams->tileType)
 				{
 					case JPEG_TILE:
 						{
@@ -152,7 +177,7 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 				nTilesGenerated++;
 			}
 			
-			PrintTilingProgress(nTilesExpected,nTilesGenerated);
+			GMTPrintTilingProgress(nTilesExpected,nTilesGenerated);
 		}
 	}
 	
@@ -160,10 +185,10 @@ BOOL TilingFromBuffer (TilingParameters				&oParams,
 }
 
 
-BOOL BaseZoomTiling2	(TilingParameters		&oParams, 
-						BundleOfRasterFiles		*poBundle, 
-						int						nExpected, 
-						TilePyramid			*tilePyramid)
+BOOL GMTMakeBaseZoomTiling	(	GMTilingParameters		*poParams, 
+								BundleOfRasterFiles		*poBundle, 
+								int						nExpected, 
+								TilePyramid				*tilePyramid)
 {
 
 	//получить экстент бандла
@@ -175,35 +200,40 @@ BOOL BaseZoomTiling2	(TilingParameters		&oParams,
 		//запускаем тайлинг из буфера
 	int			generatedTiles = 0;
 	//OGREnvelope bundleMercEnvelope = poBundle->getMercatorEnvelope();
-	int			zoom = (oParams.baseZoom == 0) ? poBundle->calculateBestMercZoom() : oParams.baseZoom;
+	int			zoom = (poParams->baseZoom == 0) ? poBundle->calculateBestMercZoom() : poParams->baseZoom;
 	double		res = MercatorTileGrid::calcResolutionByZoom(zoom);
 
 
 	int minx,maxx,miny,maxy;
 	MercatorTileGrid::calcTileRange(poBundle->getMercatorEnvelope(),zoom,minx,miny,maxx,maxy);
-	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=MAX_BUFFER_TILES_WIDTH)
+	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMT_MAX_BUFFER_WIDTH)
 	{
-		int curr_max_x =	(curr_min_x + MAX_BUFFER_TILES_WIDTH - 1 > maxx) ? 
+		int curr_max_x =	(curr_min_x + GMT_MAX_BUFFER_WIDTH - 1 > maxx) ? 
 							maxx :  
-							curr_min_x + MAX_BUFFER_TILES_WIDTH - 1;
-		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=MAX_BUFFER_TILES_WIDTH)
+							curr_min_x + GMT_MAX_BUFFER_WIDTH - 1;
+		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=GMT_MAX_BUFFER_WIDTH)
 		{
-			int curr_max_y =	(curr_min_y + MAX_BUFFER_TILES_WIDTH - 1 > maxy) ? 
+			int curr_max_y =	(curr_min_y + GMT_MAX_BUFFER_WIDTH - 1 > maxy) ? 
 								maxy :  
-								curr_min_y + MAX_BUFFER_TILES_WIDTH - 1;
+								curr_min_y + GMT_MAX_BUFFER_WIDTH - 1;
 			
-			OGREnvelope bufferEnvelope = MercatorTileGrid::calcEnvelopeByTileRange(zoom,curr_min_x,curr_min_y,curr_max_x,curr_max_y);//?
+			OGREnvelope bufferEnvelope = MercatorTileGrid::calcEnvelopeByTileRange(	zoom,
+																					curr_min_x,
+																					curr_min_y,
+																					curr_max_x,
+																					curr_max_y);
+
 			if (!poBundle->intersects(bufferEnvelope)) continue;
 			RasterBuffer mercBuffer;
-			if (!poBundle->warpMercToBuffer(zoom,bufferEnvelope,mercBuffer,oParams.pNoDataValue,oParams.pBackgroundColor))
+			if (!poBundle->warpToMercBuffer(zoom,bufferEnvelope,mercBuffer,poParams->pNoDataValue,poParams->pBackgroundColor))
 			{
 				wcout<<L"Error: BaseZoomTiling: warping to merc fail"<<endl;
 				return FALSE;
 			}
 
-			if ( oParams.pTransparentColor != NULL ) mercBuffer.createAlphaBandByColor(oParams.pTransparentColor);
+			if ( poParams->pTransparentColor != NULL ) mercBuffer.createAlphaBandByColor(poParams->pTransparentColor);
 			
-			if ((oParams.tileType == JPEG_TILE || oParams.tileType == PNG_TILE)&&(mercBuffer.getDataType()!=GDT_Byte))
+			if ((poParams->tileType == JPEG_TILE || poParams->tileType == PNG_TILE)&&(mercBuffer.getDataType()!=GDT_Byte))
 			{
 				if (!mercBuffer.stretchDataTo8Bit(0,255))
 				{
@@ -211,17 +241,17 @@ BOOL BaseZoomTiling2	(TilingParameters		&oParams,
 					return FALSE;
 				}
 			}
-			if (!TilingFromBuffer(	oParams,
-									mercBuffer,
-									poBundle,
-									curr_min_x,
-									curr_min_y,
-									zoom,
-									nExpected,
-									generatedTiles,
-									tilePyramid))
+			if (!GMTTilingFromBuffer(	poParams,
+										mercBuffer,
+										poBundle,
+										curr_min_x,
+										curr_min_y,
+										zoom,
+										nExpected,
+										generatedTiles,
+										tilePyramid))
 			{
-				wcout<<L"Error: BaseZoomTiling: TilingFromBuffer fail"<<endl;
+				wcout<<L"Error: BaseZoomTiling: GMTTilingFromBuffer fail"<<endl;
 				return FALSE;
 			}
 		}
@@ -231,10 +261,10 @@ BOOL BaseZoomTiling2	(TilingParameters		&oParams,
 }
 
 
-BOOL CreatePyramidalTiles (VectorBorder		&oVectorBorder, 
+BOOL GMTCreatePyramidalTiles (VectorBorder		&oVectorBorder, 
 						  int					nBaseZoom, 
 						  int					nMinZoom, 
-						  TilingParameters		&oParams, 
+						  GMTilingParameters		*poParams, 
 						  int					&nExpectedTiles, 
 						  int					&nGeneratedTiles, 
 						  BOOL					bOnlyCalculate, 
@@ -246,23 +276,27 @@ BOOL CreatePyramidalTiles (VectorBorder		&oVectorBorder,
 	RasterBuffer oBuffer;
 	BOOL b;
 
-	CreateZoomOutTile(oVectorBorder,0,0,0,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
+	GMTCreateZoomOutTile(	oVectorBorder,0,0,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
+							nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
+
 	if (oVectorBorder.getEnvelope().MaxX>-MercatorTileGrid::getULX())
 	{
-		CreateZoomOutTile(oVectorBorder,1,2,0,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
-		CreateZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,oParams,oBuffer,nExpectedTiles,nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
+		GMTCreateZoomOutTile(	oVectorBorder,1,2,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
+								nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
+		GMTCreateZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
+								nGeneratedTiles,bOnlyCalculate,tilePyramid,nJpegQuality);
 	}
 
 	return TRUE;
 }
 
-BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder, 
+BOOL GMTCreateZoomOutTile (VectorBorder	&oVectorBorder, 
 					  int				nCurrZoom, 
 					  int				nX, 
 					  int				nY, 
 					  int				nBaseZoom, 
 					  int				nMinZoom, 
-					  TilingParameters	&oParams, 
+					  GMTilingParameters	*poParams, 
 					  RasterBuffer		&oTileBuffer,  
 					  int				&nExpectedTiles, 
 					  int				&nGeneratedTiles, 
@@ -282,7 +316,7 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 	
 		tilePyramid->getTile(nCurrZoom,nX,nY,pData,size);
 		if (size ==0) return FALSE;
-		switch (oParams.tileType)
+		switch (poParams->tileType)
 		{
 			case JPEG_TILE:
 				{
@@ -315,13 +349,13 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 			for (int j=0;j<2;j++)
 			{
 				if (oVectorBorder.intersects(nCurrZoom+1,2*nX+j,2*nY+i)) 
-					quarterTileExists[i*2+j] = CreateZoomOutTile(oVectorBorder,
+					quarterTileExists[i*2+j] = GMTCreateZoomOutTile(oVectorBorder,
 															nCurrZoom+1,
 															2*nX+j,
 															2*nY+i,
 															nBaseZoom,
 															nMinZoom,
-															oParams,quarterTileBuffer[i*2+j],
+															poParams,quarterTileBuffer[i*2+j],
 															nExpectedTiles,
 															nGeneratedTiles,
 															bOnlyCalculate,
@@ -350,7 +384,7 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 
 		void *pData=NULL;
 		int size = 0;
-		switch (oParams.tileType)
+		switch (poParams->tileType)
 		{
 			case JPEG_TILE:
 				{
@@ -368,7 +402,7 @@ BOOL CreateZoomOutTile (VectorBorder	&oVectorBorder,
 		tilePyramid->addTile(nCurrZoom,nX,nY,(BYTE*)pData,size);
 		delete[]((BYTE*)pData);
 		nGeneratedTiles++;
-		PrintTilingProgress(nExpectedTiles,nGeneratedTiles);
+		GMTPrintTilingProgress(nExpectedTiles,nGeneratedTiles);
 	}
 
 	return TRUE;
@@ -388,6 +422,7 @@ BOOL ZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], BOOL quarterTileExists[4
 	int bands;
 	GDALDataType gDT;
 	
+	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
 	zoomOutTileBuffer.createBuffer(srcQuarterTile[i].getBandsCount(),
 									TILE_SIZE,
 									TILE_SIZE,
@@ -400,7 +435,7 @@ BOOL ZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], BOOL quarterTileExists[4
 		if (quarterTileExists[n])
 		{
 			void *pZoomedData = srcQuarterTile[n].getDataZoomedOut();
-			zoomOutTileBuffer.setData(	(n%2)*TILE_SIZE/2,
+			zoomOutTileBuffer.setDataBlock(	(n%2)*TILE_SIZE/2,
 									(n/2)*TILE_SIZE/2,
 									TILE_SIZE/2,
 									TILE_SIZE/2,

@@ -2,25 +2,27 @@
 //
 
 #include "stdafx.h"
+using namespace GMT;
+
 
 void PrintHelp ()
 {
 
 	cout<<"Usage:\n";
 	cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-minZoom pyramid min zoom]"; 
-	cout<<" [-container write to container file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tileType jpg|png|tif] [-template tile name template]\n";
+	cout<<" [-container write to geomixer container file] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|tif] [-template tile name template]\n";
 		
 	cout<<"\nEx.1 - image to simple tiles:\n";
 	cout<<"ImageTiling -file c:\\image.tif"<<endl;
-	cout<<"(default values: -tiles=c:\\image_tiles -minZoom=1 -proj=0 -template=kosmosnimki -tileType=jpg)"<<endl;
+	cout<<"(default values: -tiles=c:\\image_tiles -minZoom=1 -proj=0 -template=kosmosnimki -tile_type=jpg)"<<endl;
 	
 	cout<<"\nEx.2 - image to tiles packed into geomixer container:\n";
 	cout<<"ImageTiling -file c:\\image.tif -container"<<endl;
-	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
+	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tile_type=jpg)"<<endl;
 
 	cout<<"\nEx.3 - tiling folder of images:\n";
 	cout<<"ImageTiling -file c:\\images\\*.tif -container -template {z}\\{x}\\{z}_{x}_{y}.jpg"<<endl;
-	cout<<"(default values: -minZoom=1 -proj=0 -tileType=jpg)"<<endl;
+	cout<<"(default values: -minZoom=1 -proj=0 -tile_type=jpg)"<<endl;
 
 }
 
@@ -106,7 +108,7 @@ int CheckArgsAndCallTiling (	wstring strInput,
 	tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
 					JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
 	
-	TilingParameters oParams(strInput,mercType,tileType);
+	GMTilingParameters oParams(strInput,mercType,tileType);
 
 	if (strZoom != L"")		oParams.baseZoom = (int)_wtof(strZoom.c_str());
 	if (strMinZoom != L"")	oParams.minZoom = (int)_wtof(strMinZoom.c_str());
@@ -133,8 +135,16 @@ int CheckArgsAndCallTiling (	wstring strInput,
 	}
 	else
 	{
-		oParams.useContainer = TRUE;
-		oParams.containerFile = (strTilesFolder==L"") ? (RemoveExtension(strInput)+L".tiles") : strTilesFolder;
+		oParams.useContainer	= TRUE;
+		wstring containerExt	= (strContainer == L"-container") ? L"tiles" : L"mbtiles"; 
+		oParams.containerFile = (strTilesFolder == L"")	?
+									RemoveExtension((*inputFiles.begin())) + L"." + containerExt :
+								(IsDirectory(strTilesFolder)) ?
+									RemoveEndingSlash(strTilesFolder) + L"\\" + 
+									RemoveExtension(RemovePath((*inputFiles.begin()))) + L"." + containerExt :
+								(GetExtension(strTilesFolder) == containerExt) ?
+									strTilesFolder :
+									strTilesFolder + L"." + containerExt;
 	}
 
 	if ((strShiftX!=L"")) oParams.dShiftX=_wtof(strShiftX.c_str());
@@ -161,7 +171,7 @@ int CheckArgsAndCallTiling (	wstring strInput,
 	}
 
 
-	MakeTiling(oParams);
+	GMTMakeTiling(&oParams);
 	if (logFile) fclose(logFile);
 	
 	return 1;
@@ -170,7 +180,7 @@ int CheckArgsAndCallTiling (	wstring strInput,
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if (!LoadGdal(argc,argv)) return 0;
+	if (!LoadGDAL(argc,argv)) return 0;
 	GDALAllRegister();
 	OGRRegisterAll();
 
@@ -180,73 +190,46 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
- 
   	//обязательный параметр
-	wstring strInput			= ReadParameter(L"-file",argc,argv);
+	wstring strInput			=  ReadConsoleParameter(L"-file",argc,argv);
 
 	//дополнительные параметры
-	wstring strMosaic			= ReadParameter(L"-mosaic",argc,argv,TRUE);
-	wstring	strContainer		= ReadParameter(L"-container",argc,argv,TRUE);
-	wstring strZoom				= ReadParameter(L"-zoom",argc,argv);
-	wstring strMinZoom			= ReadParameter(L"-minZoom",argc,argv);	
-	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
-	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
-	wstring strTileType			= MakeLower(ReadParameter(L"-tile_type",argc,argv));
-	wstring strProjType			= MakeLower(ReadParameter(L"-proj",argc,argv));
-	wstring strTemplate			= MakeLower(ReadParameter(L"-template",argc,argv));
-	wstring strNoData			= MakeLower(ReadParameter(L"-no_data",argc,argv));
-	wstring strTranspColor		= MakeLower(ReadParameter(L"-no_data_rgb",argc,argv));
+	wstring strMosaic			=  ReadConsoleParameter(L"-mosaic",argc,argv,TRUE);
+	wstring	strContainer		=  (ReadConsoleParameter(L"-container",argc,argv,TRUE) != L"") ? 
+											ReadConsoleParameter(L"-container",argc,argv,TRUE) : 
+											ReadConsoleParameter(L"-mbtiles",argc,argv,TRUE);
+	wstring strZoom				=  ReadConsoleParameter(L"-zoom",argc,argv);
+	wstring strMinZoom			=  ReadConsoleParameter(L"-minZoom",argc,argv);	
+	wstring strVectorFile		=  ReadConsoleParameter(L"-border",argc,argv);
+	wstring strTilesFolder		=  ReadConsoleParameter(L"-tiles",argc,argv);
+	wstring strTileType			=  ReadConsoleParameter(L"-tile_type",argc,argv);
+	wstring strProjType			=  ReadConsoleParameter(L"-proj",argc,argv);
+	wstring strTemplate			=  ReadConsoleParameter(L"-template",argc,argv);
+	wstring strNoData			=  ReadConsoleParameter(L"-no_data",argc,argv);
+	wstring strTranspColor		=  ReadConsoleParameter(L"-no_data_rgb",argc,argv);
 
 	//скрытые параметры
-	wstring strEdges			= ReadParameter(L"-edges",argc,argv);
-	wstring strShiftX			= ReadParameter(L"-shiftX",argc,argv);
-	wstring strShiftY			= ReadParameter(L"-shiftY",argc,argv);
-	wstring strPixelTiling		= ReadParameter(L"-pixel_tiling",argc,argv,TRUE);
-	wstring strBackground		= ReadParameter(L"-background",argc,argv);
-	wstring strLogFile			= ReadParameter(L"-log_file",argc,argv);
-	wstring strCache			= ReadParameter(L"-cache",argc,argv);
+	wstring strEdges			=  ReadConsoleParameter(L"-edges",argc,argv);
+	wstring strShiftX			=  ReadConsoleParameter(L"-shiftX",argc,argv);
+	wstring strShiftY			=  ReadConsoleParameter(L"-shiftY",argc,argv);
+	wstring strPixelTiling		=  ReadConsoleParameter(L"-pixel_tiling",argc,argv,TRUE);
+	wstring strBackground		=  ReadConsoleParameter(L"-background",argc,argv);
+	wstring strLogFile			=  ReadConsoleParameter(L"-log_file",argc,argv);
+	wstring strCache			=  ReadConsoleParameter(L"-cache",argc,argv);
 	//wstring	strN
 
 	if (argc == 2)				strInput	= argv[1];
 	wcout<<endl;
 
-		//проверяем входной файл(ы)
+	//проверяем входной файл(ы)
 
-	//strMosaic		= L"-mosaic";
-	//strInput		= L"E:\\Mosaic_rgbfusion_Ussuriysk02.tif";
-	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\Arctic_r06c03.2012193.terra.250m.jpg";
-	 ///*
-	//strZoom		= L"8";
-	//strMinZoom	= L"11";
-	//strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-	//strTranspColor	= L"0 0 0";
-	//strTileType		= L"png";
-	//strZoom			= L"8";
-	//strVectorFile	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
- 	//strTilesFolder	= L"C:\\New\\spot4_tiles";
-	//strProjType		= L"1";
-	//strTemplate		= L"standard";
-	//strContainer	= L"-container";
-	//*/
-
+	/*
+	strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\o42073g8.tif";
+	strVectorFile	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border_o42073g8\\border.shp";
+	strMinZoom		= L"8";
+	strTileType	= L"png";
+	*/
 	
-	//strTilesFolder	= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
-	//strZoom			= L"8";
-	//strProjType		= L"1";
-	//strTemplate		= L"standard";
-	//strContainer	= L"-container";
-	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_utm43_x4.tif";
-	//strInput	= L"C:\\ik_po_426174_0050002_ch1-3_8bit_merc.tif";
-	//strInput	= L"C:\\Work\\users\\Anton\\scn_120719_Vrangel_island_SWA.tif";
-	//strInput	= L"C:\\Users\\mpotanin\\Downloads\\Arctic_r06c03.2012193.terra.250m\\Arctic_r06c03.2012193.terra.250m.jpg";
-
-
-	//strInput		= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43.tif";
-	//strVectorFile	= L"C:\\Work\\Projects\\AllRelease\\AutoTest\\ik_po_426174_0050002_ch1-3_8bit_utm43_cut.shp";
-	//strContainer	= L"container";
-	//strTileType	= L"png";
-	//strProjType		= L"1";
-
 	if (strInput == L"")
 	{
 		cout<<L"Error: missing \"-file\" parameter"<<endl;
@@ -254,7 +237,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 
-	if (strTileType	== L"" ) strTileType = MakeLower(ReadParameter(L"-tileType",argc,argv));
+	if (strTileType	== L"" ) strTileType = MakeLower( ReadConsoleParameter(L"-tileType",argc,argv));
 
 	if (strMosaic==L"")
 	{

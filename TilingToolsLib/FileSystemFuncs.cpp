@@ -1,6 +1,9 @@
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
+namespace GMT
+{
+
 BOOL	WriteStringToFile (wstring strFileName, wstring strText)
 {
 	FILE *fp = NULL;
@@ -201,7 +204,7 @@ wstring		GetExtension (wstring path)
 }
 
 
-BOOL readDataFromFile(wstring fileName, BYTE *&pData, unsigned int &size)
+BOOL ReadDataFromFile(wstring fileName, BYTE *&pData, unsigned int &size)
 {
 	FILE *fp;
 	if (!(fp = _wfopen(fileName.c_str(),L"rb"))) return FALSE;
@@ -221,4 +224,7 @@ BOOL readDataFromFile(wstring fileName, BYTE *&pData, unsigned int &size)
 	
 	fclose(fp);
 	return TRUE;
+}
+
+
 }

@@ -21,12 +21,6 @@
     <ClInclude Include="FileSystemFuncs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeometryFuncs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeoReference.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RasterBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -34,9 +28,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="str.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StringFuncs.h">
@@ -65,12 +56,6 @@
     <ClCompile Include="FileSystemFuncs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeometryFuncs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeoReference.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RasterBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -78,9 +63,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="str.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StringFuncs.cpp">
@@ -96,6 +78,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TileBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TilePyramid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TileName.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

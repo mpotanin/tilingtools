@@ -1,5 +1,10 @@
 #pragma once
 #include	"stdafx.h"
+
+namespace GMT
+{
+
+
 class TileBuffer
 {
 public:
@@ -13,3 +18,5 @@ protected:
 
 };
 
+
+}

@@ -5,21 +5,17 @@
 #include "TilePyramid.h"
 #include "RasterFile.h"
 
-static int TILE_SIZE = 256;
 
-
-
-class TilingParameters
+class GMTilingParameters
 {
-//обязательные параметры
 public:
-	wstring					inputPath;				//входной файл или шаблон имени файла
-	MercatorProjType		mercType;				//тип Меркатора
-	TileType				tileType;				//тип тайлов
+//обязательные параметры
+	wstring						inputPath;				//входной файл или шаблон имени файла
+	GMT::MercatorProjType		mercType;				//тип Меркатора
+	GMT::TileType				tileType;				//тип тайлов
 	
 
 //дополнительные параметры
-public:
 	int						baseZoom;				//максимальный (базовый зум)
 	int						minZoom;				//минимальный зум
 	wstring					vectorFile;				//векторная граница
@@ -32,21 +28,20 @@ public:
 	int						nJpegQuality;
 	double					dShiftX;				//сдвиг по x
 	double					dShiftY;				//сдвиг по y
-	TileName				*poTileName;			//имена тайлов
+	GMT::TileName			*poTileName;			//имена тайлов
 	int						maxTilesInCache;			//максимальное количество тайлов в оперативной памяти
 
-public:
 	static const int		DEFAULT_JPEG_QUALITY = 80;
 
-public:
-	TilingParameters(wstring inputPath, MercatorProjType mercType, TileType tileType)
+
+	GMTilingParameters(wstring inputPath, GMT::MercatorProjType mercType, GMT::TileType tileType)
 	{
 		this->inputPath = inputPath;
 		this->mercType	= mercType;
 		this->tileType	= tileType;
 		
 		this->useContainer = TRUE;
-		this->nJpegQuality = TilingParameters::DEFAULT_JPEG_QUALITY;
+		this->nJpegQuality = GMTilingParameters::DEFAULT_JPEG_QUALITY;
 		this->dShiftX = 0;
 		this->dShiftY = 0;
 		this->poTileName = NULL;
@@ -58,43 +53,8 @@ public:
 		this->maxTilesInCache	= 0;
 	}
 
-
-	TilingParameters& operator = (TilingParameters &oSrcParams)
-	{
-		this->baseZoom			= oSrcParams.baseZoom;
-		this->minZoom			= oSrcParams.minZoom;
-		this->nJpegQuality		= oSrcParams.nJpegQuality;
-		this->inputPath			= oSrcParams.inputPath;
-		this->vectorFile		= oSrcParams.vectorFile;
-		this->poTileName		= oSrcParams.poTileName;
-		this->minZoom			= oSrcParams.minZoom;
-		this->mercType			= oSrcParams.mercType;
-		this->useContainer		= oSrcParams.useContainer;
-		this->tileType			= oSrcParams.tileType; 
-		this->dShiftX			= oSrcParams.dShiftX;
-		this->dShiftY			= oSrcParams.dShiftY;
-		this->maxTilesInCache	= oSrcParams.maxTilesInCache;
-
-		if (oSrcParams.pBackgroundColor!=NULL)
-		{
-			this->pBackgroundColor = new BYTE[3];
-			memcpy(this->pBackgroundColor,oSrcParams.pBackgroundColor,3);
-		}
-
-		if (oSrcParams.pTransparentColor!=NULL)
-		{
-			this->pBackgroundColor = new BYTE[3];
-			memcpy(this->pTransparentColor,oSrcParams.pTransparentColor,3);
-		}
-
-		if (oSrcParams.pNoDataValue !=NULL)
-		{
-			this->pNoDataValue = new int[1];
-			this->pNoDataValue[0] = oSrcParams.pNoDataValue[0];
-		}
-		return (*this);
-	}
-	~TilingParameters ()
+		
+	~GMTilingParameters ()
 	{
 		delete(pBackgroundColor);
 		delete(pTransparentColor);
@@ -104,67 +64,74 @@ public:
 
 
 
-BOOL PrintTilingProgress (int nExpectedTiles, int nGeneratedTiles);
+BOOL GMTPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles);
 
 
 
-BOOL MakeTiling (	TilingParameters		&oParams);
+BOOL GMTMakeTiling (	GMTilingParameters		*poParams);
 
 
-BOOL TilingFromBuffer (TilingParameters			&oParams,
-					   RasterBuffer				&oBuffer, 
-					   BundleOfRasterFiles		*poBundle, 
-					   int						nULx, 
-					   int						nULy,
-					   int						z,
-					   int						nTilesExpected, 
-					   int						&nTilesGenerated,
-					   TilePyramid			*tileContainer);
+BOOL GMTTilingFromBuffer	(	GMTilingParameters				*poParams,
+								GMT::RasterBuffer				&oBuffer, 
+								GMT::BundleOfRasterFiles		*poBundle, 
+								int								nULx, 
+								int								nULy,
+								int								z,
+								int								nTilesExpected, 
+								int								&nTilesGenerated,
+								GMT::TilePyramid				*tileContainer);
 	
 
-BOOL BaseZoomTiling2 (TilingParameters		&oParams, 
-				   BundleOfRasterFiles		*poBundle, 
-				   int nExpected, 
-				   TilePyramid			*tileContainer);
+BOOL GMTMakeBaseZoomTiling (GMTilingParameters				*poParams, 
+							GMT::BundleOfRasterFiles		*poBundle, 
+							int								nExpected, 
+							GMT::TilePyramid				*tileContainer);
 
 
 
-BOOL CreatePyramidalTiles (VectorBorder	&oVectorBorder, 
-						int					nBaseZoom, 
-						int					nMinZoom, 
-						TilingParameters	&oParams, 
-						int					&nExpectedTiles, 
-						int					&nGeneratedTiles, 
-						BOOL				bOnlyCalculate, 
-						TilePyramid			*tilePyramid,
-						int					nJpegQuality	= 80
-						);
+BOOL GMTCreatePyramidalTiles (	GMT::VectorBorder	&oVectorBorder, 
+								int					nBaseZoom, 
+								int					nMinZoom, 
+								GMTilingParameters	*poParams, 
+								int					&nExpectedTiles, 
+								int					&nGeneratedTiles, 
+								BOOL				bOnlyCalculate, 
+								GMT::TilePyramid	*tilePyramid,
+								int					nJpegQuality	= 80
+								);
 
 
-BOOL CreateZoomOutTile (VectorBorder				&oVectorBorder,
-					  int						nCurrZoom,
-					  int						nX,
-					  int						nY,
-					  int						nBaseZoom,
-					  int						nMinZoom,
-					  TilingParameters			&oParams,
-					  RasterBuffer				&oBuffer, 
-					  int						&nExpectedTiles,
-					  int						&nGeneratedTiles,
-					  BOOL						bOnlyCalculate,
-					  TilePyramid				*tilePyramid,
-					  int						nJpegQuality = 80);
-
-BOOL ZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], 
-						BOOL quarterTileExists[4], 
-						RasterBuffer &zoomOutTileBuffer); 
+BOOL GMTCreateZoomOutTile (	GMT::VectorBorder				&oVectorBorder,
+								int								nCurrZoom,
+								int								nX,
+								int								nY,
+								int								nBaseZoom,
+								int								nMinZoom,
+								GMTilingParameters				*poParams,
+								GMT::RasterBuffer				&oBuffer, 
+								int								&nExpectedTiles,
+								int								&nGeneratedTiles,
+								BOOL							bOnlyCalculate,
+								GMT::TilePyramid				*tilePyramid,
+								int								nJpegQuality = 80);
 
 
+BOOL ZoomOutTileBuffer		(	GMT::RasterBuffer				srcQuarterTile[4], 
+								BOOL							quarterTileExists[4], 
+								GMT::RasterBuffer				&zoomOutTileBuffer); 
 
 
-int CalcBaseZoomTilesForImage (wstring strImage, wstring vectorFile, TilingParameters	&oParams, BundleOfRasterFiles *poBundle, list<wstring> &tilesList_);
+int GMTCalcBaseZoomTilesForImage (	wstring						strImage, 
+									wstring						vectorFile, 
+									GMTilingParameters			*poParams, 
+									GMT::BundleOfRasterFiles	*poBundle, 
+									list<wstring>				&tilesList);
 
-int CalcBaseZoomTilesForBundle (TilingParameters	&oParams, BundleOfRasterFiles *poBundle, int &nAllTiles, list<wstring> &tilesList );
+
+int GMTCalcBaseZoomTilesForBundle (GMTilingParameters			*poParams, 
+									GMT::BundleOfRasterFiles	*poBundle, 
+									int							&nAllTiles, 
+									list<wstring>				&tilesList );
 
 
 

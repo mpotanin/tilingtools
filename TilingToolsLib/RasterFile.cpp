@@ -1,17 +1,17 @@
 #include "StdAfx.h"
 #include "RasterFile.h"
-#include "GeometryFuncs.h"
+
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
-#include "str.h"
 
 
+namespace GMT
+{
 
 //wstring str_buf;
 //_TCHAR buf[256];
 
-int _stdcall PrintNoProgress ( double dfComplete, const char *pszMessage, 
-                      void * pProgressArg )
+int _stdcall GMTPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
 {
 	return 1;
 }
@@ -297,7 +297,7 @@ BOOL	RasterFile::getDefaultSpatialRef (OGRSpatialReference	&oSRS, MercatorProjTy
 }
 
 
-OGREnvelope	RasterFile::getEnvelopeInMercator (MercatorProjType	mercType)
+OGREnvelope	RasterFile::getMercatorEnvelope (MercatorProjType	mercType)
 {
 	const int numPoints = 100;
 	OGRSpatialReference rasterFileSR;
@@ -421,7 +421,7 @@ BOOL	BundleOfRasterFiles::addItemToBundle (wstring rasterFile, wstring	vectorFil
 	VectorBorder	*border = VectorBorder::createFromVectorFile(vectorFile,mercType);
 	pair<wstring,pair<OGREnvelope,VectorBorder*>> p;
 	p.first			= rasterFile;
-	p.second.first	= oImage.getEnvelopeInMercator(mercType);
+	p.second.first	= oImage.getMercatorEnvelope(mercType);
 	p.second.second = border;
 	dataList.push_back(p);
 	return TRUE;
@@ -488,18 +488,22 @@ list<wstring>	BundleOfRasterFiles::GetFilesList()
 OGREnvelope BundleOfRasterFiles::getMercatorEnvelope()
 {
 	OGREnvelope	oEnvelope;
+
+
 	oEnvelope.MaxY=(oEnvelope.MaxX = -1e+100);oEnvelope.MinY=(oEnvelope.MinX = 1e+100);
 	if (dataList.size() == 0) return oEnvelope;
 
 	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		
-		oEnvelope = ((*iter).second.second != NULL) ? CombineEnvelopes(	oEnvelope,
-																		InetersectEnvelopes((*iter).second.first,
-																							(*iter).second.second->getEnvelope()
-																							)
-																		):
-													 CombineEnvelopes(	oEnvelope,(*iter).second.first);
+		oEnvelope = ((*iter).second.second != NULL) ?	VectorBorder::combineOGREnvelopes(
+																		oEnvelope,
+																		VectorBorder::inetersectOGREnvelopes(
+																				(*iter).second.first,
+																				(*iter).second.second->getEnvelope()
+																											)
+																						):
+														VectorBorder::combineOGREnvelopes(	oEnvelope,(*iter).second.first);
 	}
 	return oEnvelope; 
 }
@@ -647,7 +651,7 @@ BOOL	BundleOfRasterFiles::createBundleBorder (VectorBorder &border)
 
 
 
-BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
+BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
 {
 	//создать виртуальный растр по oMercEnvelope и zoom
 	//создать объект GDALWarpOptions 
@@ -669,20 +673,24 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	int				bands	= poSrcDS->GetRasterCount();
 	BOOL			bNoDataValueFromFile;
 	int				nNoDataValueFromFile = (int) poSrcDS->GetRasterBand(1)->GetNoDataValue(&bNoDataValueFromFile);
-	GDALClose(poSrcDS);
-
+	
 	double			res			=  MercatorTileGrid::calcResolutionByZoom(zoom);
 	int				bufWidth	= int(((oMercEnvelope.MaxX - oMercEnvelope.MinX)/res)+0.5);
 	int				bufHeight	= int(((oMercEnvelope.MaxY - oMercEnvelope.MinY)/res)+0.5);
+	srand(0);
+	string			strTiffInMem = "/vsimem/tiffinmem" + ConvertIntToString(rand());
 	GDALDataset*	poVrtDS = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
-								"/vsimem/tiffinmem",
+								strTiffInMem.c_str(),
 								bufWidth,
 								bufHeight,
 								bands,
 								eDT,
 								NULL
 								);
+	if (poSrcDS->GetRasterBand(1)->GetColorTable())
+		poVrtDS->GetRasterBand(1)->SetColorTable(poSrcDS->GetRasterBand(1)->GetColorTable());
+	GDALClose(poSrcDS);
 
 	double			geotransform[6];
 	geotransform[0] = oMercEnvelope.MinX;
@@ -708,6 +716,14 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
 	if (bNoDataValueFromFile) poVrtDS->GetRasterBand(1)->SetNoDataValue(nNoDataValueFromFile);
 	
+
+	//3908683.878391 7739096.239818 3986955.395355 7817367.756782
+	/*
+	if (fabs(oMercEnvelope.MinX-3908683.878391)<0.1 && fabs(oMercEnvelope.MinY-7739096.239818)<0.1)
+	{
+ 		geotransform[2] = 0;
+	}
+	*/
 
 	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
@@ -772,7 +788,7 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		
 
 		// psWarpOptions->pfnProgress = GDALTermProgress;   
-		psWarpOptions->pfnProgress = PrintNoProgress;  
+		psWarpOptions->pfnProgress = GMTPrintNoProgress;  
 
 		// Establish reprojection transformer. 
 
@@ -790,7 +806,20 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		// Initialize and execute the warp operation. 
 		GDALWarpOperation oOperation;
 		oOperation.Initialize( psWarpOptions );
-		oOperation.ChunkAndWarpImage( 0,0,bufWidth,bufHeight);
+		
+		if (CE_None != oOperation.ChunkAndWarpImage( 0,0,bufWidth,bufHeight))
+		{
+			wcout<<L"Error: warping raster block of image: "<<(*iter).first<<endl;
+
+			/*
+			FILE *fp = _wfopen(L"error.txt",L"rw");
+			string	fileNameUTF8;
+			wstrToUtf8(fileNameUTF8,(*iter).first);
+			fprintf(fp,"%s\n",fileNameUTF8);
+			fprintf(fp,"%lf %lf %lf %lf\n",oMercEnvelope.MinX,oMercEnvelope.MinY,oMercEnvelope.MaxX,oMercEnvelope.MaxY);
+			fclose(fp);
+			*/
+		}
 	
 
 		GDALDestroyApproxTransformer(psWarpOptions->pTransformerArg );
@@ -802,7 +831,8 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	}
 
 	
-	oBuffer.createBuffer(bands,bufWidth,bufHeight,NULL,eDT,pNoDataValue);
+	oBuffer.createBuffer(bands,bufWidth,bufHeight,NULL,eDT,pNoDataValue,FALSE,
+						poVrtDS->GetRasterBand(1)->GetColorTable());
 	int noDataValueFromFile = 0;
 	if	(pNoDataValue) oBuffer.initByNoDataValue(pNoDataValue[0]);
 	else if (pDefaultColor) oBuffer.initByRGBColor(pDefaultColor); 
@@ -815,13 +845,16 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
 	OGRFree(pszDstWKT);
 	GDALClose(poVrtDS);
-	VSIUnlink("/vsimem/tiffinmem");
+	VSIUnlink(strTiffInMem.c_str());
 	return TRUE;
+}
+
+
 }
 
 /*
 
-BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
+BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
 {
 	//создать виртуальный растр по oMercEnvelope и zoom
 	//создать объект GDALWarpOptions 
@@ -918,7 +951,7 @@ BOOL BundleOfRasterFiles::warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
     psWarpOptions->nBandCount = 0;
    // psWarpOptions->pfnProgress = GDALTermProgress;   
-	psWarpOptions->pfnProgress = PrintNoProgress;  
+	psWarpOptions->pfnProgress = GMTPrintNoProgress;  
 
     // Establish reprojection transformer. 
 

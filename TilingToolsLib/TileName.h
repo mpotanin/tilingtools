@@ -6,10 +6,22 @@
 #include "RasterBuffer.h"
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
-#include "GeometryFuncs.h"
+
+namespace GMT
+{
+
+
+typedef enum { 
+	WORLD_MERCATOR=0,                         
+	WEB_MERCATOR=1
+} MercatorProjType;
+
+
+
 
 class MercatorTileGrid
 {
+
 public:
 	static const int TILE_SIZE = 256;
 
@@ -115,6 +127,7 @@ public:
 	static OGREnvelope calcPixelEnvelope(OGREnvelope oImageEnvelope, int z)
 	{
 		OGREnvelope oPixelEnvelope;
+		const double E=1e-4;
 	
 		oPixelEnvelope.MinX = floor(((oImageEnvelope.MinX-getULX()-E)/calcResolutionByZoom(z))+0.5);
 		oPixelEnvelope.MinY = floor(((getULY()-oImageEnvelope.MaxY-E)/calcResolutionByZoom(z))+0.5);
@@ -133,10 +146,101 @@ public:
 
 	static void calcTileRange (OGREnvelope oEnvelope, int z, int &minX, int &minY, int &maxX, int &maxY)
 	{
-		calcTileByPoint(oEnvelope.MinX,oEnvelope.MaxY,z,minX,minY);
-		calcTileByPoint(oEnvelope.MaxX,oEnvelope.MinY,z,maxX,maxY);
+		double E = 1e-6;
+		calcTileByPoint(oEnvelope.MinX+E,oEnvelope.MaxY-E,z,minX,minY);
+		calcTileByPoint(oEnvelope.MaxX-E,oEnvelope.MinY+E,z,maxX,maxY);
 	}
 		
+
+	//	Converts from longitude to x coordinate 
+	static double mercX(double lon, MercatorProjType mercType)
+	{
+		return 6378137.0 * degToRad(lon);
+	}
+
+
+	//	Converts from x coordinate to longitude 
+	static double mercToLong(double mercX, MercatorProjType mercType)
+	{
+		return radToDeg(mercX / 6378137.0);
+	}
+
+	//	Converts from latitude to y coordinate 
+	static  double mercY(double lat, MercatorProjType mercType)
+	{
+		if (mercType == WORLD_MERCATOR)
+		{
+			if (lat > 89.5)		lat = 89.5;
+			if (lat < -89.5)	lat = -89.5;
+			double r_major	= 6378137.000;
+			double r_minor	= 6356752.3142;
+			double PI		= 3.14159265358979;
+		
+			double temp = r_minor / r_major;
+			double es = 1.0 - (temp * temp);
+			double eccent = sqrt(es);
+			double phi = degToRad(lat);
+			double sinphi = sin(phi);
+			double con = eccent * sinphi;
+			double com = .5 * eccent;
+			con = pow(((1.0-con)/(1.0+con)), com);
+			double ts = tan(.5 * ((PI*0.5) - phi))/con;
+			return 0 - r_major * log(ts);
+		}
+		else
+		{
+			double rad = degToRad(lat);
+			return  0.5*6378137*log((1.0 + sin(rad))/(1.0 - sin(rad)));
+		}
+	}
+
+	//	Converts from y coordinate to latitude 
+	static  double mercToLat (double mercY, MercatorProjType mercType)
+	{
+		double r_major	= 6378137.000;
+		double r_minor	= 6356752.3142;
+
+		if (mercType == WORLD_MERCATOR)
+		{
+			double temp = r_minor / r_major;
+			double es = 1.0 - (temp * temp);
+			double eccent = sqrt(es);
+			double ts = exp(-mercY/r_major);
+			double HALFPI = 1.5707963267948966;
+
+			double eccnth, Phi, con, dphi;
+			eccnth = 0.5 * eccent;
+
+			Phi = HALFPI - 2.0 * atan(ts);
+
+			double N_ITER = 15;
+			double TOL = 1e-7;
+			double i = N_ITER;
+			dphi = 0.1;
+			while ((fabs(dphi)>TOL)&&(--i>0))
+			{
+				con = eccent * sin (Phi);
+				dphi = HALFPI - 2.0 * atan(ts * pow((1.0 - con)/(1.0 + con), eccnth)) - Phi;
+				Phi += dphi;
+			}
+
+			return radToDeg(Phi);
+		}
+		else
+		{
+			return radToDeg (1.5707963267948966 - (2.0 * atan(exp((-1.0 * mercY) / 6378137.0))));
+		}
+	}
+
+	static double degToRad(double ang)
+	{
+		return ang * (3.14159265358979/180.0);
+	}
+
+	static double radToDeg(double rad)
+	{ 
+		return (rad/3.14159265358979) * 180.0;
+	}
 };
 //const double MercatorTileGrid::E = 1e-4;
 
@@ -199,206 +303,28 @@ protected:
 class StandardTileName : public TileName
 {
 public:
-	StandardTileName (wstring baseFolder, wstring strTemplate)
-	{
-		if (!validateTemplate(strTemplate)) return;
-		if (!FileExists(baseFolder)) return;
+	StandardTileName (wstring baseFolder, wstring strTemplate);
+	static BOOL	validateTemplate	(wstring strTemplate);
+	wstring	getTileName (int nZoom, int nX, int nY);
 
-		wstring strExt = strTemplate.substr(strTemplate.rfind(L".")+1,strTemplate.length()-strTemplate.rfind(L".")-1);
-		this->tileType =	(MakeLower(strExt)==L"jpg") ? JPEG_TILE :
-							(MakeLower(strExt)==L"png") ? PNG_TILE :
-							(MakeLower(strExt)==L"tif") ? TIFF_TILE : JPEG_TILE;
-		this->baseFolder	= baseFolder;
-		zxyPos[0] = (zxyPos[1] = (zxyPos[2] = 0));
-
-		if (strTemplate[0] == L'/' || strTemplate[0] == L'\\') 	strTemplate = strTemplate.substr(1,strTemplate.length()-1);
-		ReplaceAll(strTemplate,L"/",L"\\");
-		this->strTemplate = strTemplate;
-		
-		ReplaceAll(strTemplate,L"\\",L"\\\\");
-		int n = 0;
-		int num = 2;
-		//int k;
-		while (strTemplate.find(L'{',n)!=std::wstring::npos)
-		{
-			wstring str = strTemplate.substr(strTemplate.find(L'{',n),strTemplate.find(L'}',n)-strTemplate.find(L'{',n)+1);
-			if (str == L"{z}")
-				zxyPos[0] = (zxyPos[0] == 0) ? num : zxyPos[0];
-			else if (str == L"{x}")
-				zxyPos[1] = (zxyPos[1] == 0) ? num : zxyPos[1];
-			else if (str == L"{y}")
-				zxyPos[2] = (zxyPos[2] == 0) ? num : zxyPos[2];
-			num++;
-			n = strTemplate.find(L'}',n) + 1;
-		}
-
-		ReplaceAll(strTemplate,L"{z}",L"(\\d+)");
-		ReplaceAll(strTemplate,L"{x}",L"(\\d+)");
-		ReplaceAll(strTemplate,L"{y}",L"(\\d+)");
-		rxTemplate = (L"(.*)" + strTemplate) + L"(.*)";
-	}
-
-	static BOOL	validateTemplate	(wstring strTemplate)
-	{
-		if (strTemplate.find(L"{z}",0)==wstring::npos)
-		{
-			wcout<<"Error: bad tile name template: missing {z}"<<endl;
-			return FALSE;
-		}
-		if (strTemplate.find(L"{x}",0)==wstring::npos)
-		{
-			wcout<<"Error: bad tile name template: missing {x}"<<endl;
-			return FALSE;
-		}
-		if (strTemplate.find(L"{y}",0)==wstring::npos) 
-		{
-			wcout<<"Error: bad tile name template: missing {y}"<<endl;
-			return FALSE;
-		}
-
-		if (strTemplate.find(L".",0)==wstring::npos) 
-		{
-			wcout<<"Error: bad tile name template: missing extension"<<endl;
-			return FALSE;
-		}
-		
-		wstring strExt = strTemplate.substr(strTemplate.rfind(L".")+1,strTemplate.length()-strTemplate.rfind(L".")-1);
-		if ( (MakeLower(strExt)!=L"jpg")&& (MakeLower(strExt)==L"png") && (MakeLower(strExt)==L"tif") )
-		{
-			wcout<<"Error: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
-			return FALSE;
-		}
-		return TRUE;
-	}
-
-	wstring	getTileName (int nZoom, int nX, int nY)
-	{
-		wstring tileName = strTemplate;
-		ReplaceAll(tileName,L"{z}",ConvertInt(nZoom));
-		ReplaceAll(tileName,L"{x}",ConvertInt(nX));
-		ReplaceAll(tileName,L"{y}",ConvertInt(nY));
-		return tileName;
-	}
-
-	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y)
-	{
-		if (!regex_match(strTileName,rxTemplate)) return FALSE;
-		match_results<wstring::const_iterator> mr;
-		regex_search(strTileName, mr, rxTemplate);
-		if ((mr.size()<=zxyPos[0])||(mr.size()<=zxyPos[1])||(mr.size()<=zxyPos[2])) return FALSE;
-		z = (int)_wtof(mr[zxyPos[0]].str().c_str());
-		x = (int)_wtof(mr[zxyPos[1]].str().c_str());
-		y = (int)_wtof(mr[zxyPos[2]].str().c_str());
-		
-		return TRUE;
-	}
-
-
-	BOOL createFolder (int nZoom, int nX, int nY)
-	{
-		wstring strTileName = getTileName(nZoom,nX,nY);
-		int n = 0;
-		while (strTileName.find(L"\\",n)!=std::wstring::npos)
-		{
-			if (!FileExists(GetAbsolutePath(baseFolder,strTileName.substr(0,strTileName.find(L"\\",n)))))
-				if (!CreateDirectory(GetAbsolutePath(baseFolder,strTileName.substr(0,strTileName.find(L"\\",n))).c_str(),NULL)) return FALSE;	
-			n = (strTileName.find(L"\\",n)) + 1;
-		}
-		return TRUE;
-	}
+	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y);
+	BOOL createFolder (int nZoom, int nX, int nY);
 protected:
 	wstring	strTemplate;
 	wregex	rxTemplate;
 	int		zxyPos[3];
-
-	///////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////
-
-
 };
 
 
 class KosmosnimkiTileName : public TileName
 {
 public:
-
-	KosmosnimkiTileName (wstring strTilesFolder, TileType tileType = JPEG_TILE)
-	{
-		this->baseFolder	= strTilesFolder;
-		this->tileType		= tileType;
-	}
-
-
-	///////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////
-	
-	wstring	getTileName (int nZoom, int nX, int nY)
-	{
-		if (nZoom>0)
-		{
-			nX = nX-(1<<(nZoom-1));
-			nY = (1<<(nZoom-1))-nY-1;
-		}
-		swprintf(buf,L"%d\\%d\\%d_%d_%d.%s",nZoom,nX,nZoom,nX,nY,this->tileExtension(this->tileType).c_str());
-		return buf;
-	}
-
-	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y)
-	{
-		strTileName = RemovePath(strTileName);
-		strTileName = RemoveExtension(strTileName);
-		int k;
-
-		wregex pattern(L"[0-9]{1,2}_-{0,1}[0-9]{1,7}_-{0,1}[0-9]{1,7}");
-		//wregex pattern(L"(\d+)_-?(\d+)_-{0,1}[0-9]{1,7}");
-
-		if (!regex_match(strTileName,pattern)) return FALSE;
-
-		z = (int)_wtof(strTileName.substr(0,strTileName.find('_')).c_str());
-		strTileName = strTileName.substr(strTileName.find('_')+1);
-		
-		x = (int)_wtof(strTileName.substr(0,strTileName.find('_')).c_str());
-		y = (int)_wtof(strTileName.substr(strTileName.find('_')+1).c_str());
-
-		if (z>0)
-		{
-			x+=(1<<(z-1));
-			y=(1<<(z-1))-y-1;
-		}
-
-		return TRUE;
-	}
-
-
-	BOOL createFolder (int nZoom, int nX, int nY)
-	{
-		if (nZoom>0)
-		{
-			nX = nX-(1<<(nZoom-1));
-			nY = (1<<(nZoom-1))-nY-1;
-		}
-
-		swprintf(buf,L"%d",nZoom);
-		wstring str = GetAbsolutePath(this->baseFolder, buf);
-		if (!FileExists(str))
-		{
-			if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
-		}
-
-		swprintf(buf,L"%d",nX);
-		str = GetAbsolutePath(str,buf);
-		if (!FileExists(str))
-		{
-			if (!CreateDirectory(str.c_str(),NULL)) return FALSE;	
-		}
-		
-		return TRUE;
-	}
-
-	///////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////
+	KosmosnimkiTileName (wstring strTilesFolder, TileType tileType = JPEG_TILE);
+	wstring	getTileName (int nZoom, int nX, int nY);
+	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y);
+	BOOL createFolder (int nZoom, int nX, int nY);
 };
 
 
-
+}
 #endif

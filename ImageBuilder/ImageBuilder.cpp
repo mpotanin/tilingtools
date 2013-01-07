@@ -11,11 +11,11 @@
 
 
 using namespace std;
-
+using namespace GMT;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if (!LoadGdal(argc,argv)) return 0;
+	if (!LoadGDAL(argc,argv)) return 0;
 	GDALAllRegister();
 
 	int nRetCode = 0;
@@ -33,25 +33,25 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-	wstring strTileType		= ReadParameter(L"-type",argc,argv);		
-	//strImageType = ReadParameter(L"-imageType",argc,argv);
-	wstring strTilesFolder		= ReadParameter(L"-tiles",argc,argv);
+	wstring strTileType		=  ReadConsoleParameter(L"-type",argc,argv);		
+	//strImageType =  ReadConsoleParameter(L"-imageType",argc,argv);
+	wstring strTilesFolder		=  ReadConsoleParameter(L"-tiles",argc,argv);
 	//cout<<"AAa"<<strTilesFolder<<endl;
-	//strPoints			= ReadParameter(L"-points",argc,argv);
-	wstring strImageFile		= ReadParameter(L"-file",argc,argv);
-	wstring strZoom				= ReadParameter(L"-zoom",argc,argv);
-	wstring strVectorFile		= ReadParameter(L"-border",argc,argv);
+	//strPoints			=  ReadConsoleParameter(L"-points",argc,argv);
+	wstring strImageFile		=  ReadConsoleParameter(L"-file",argc,argv);
+	wstring strZoom				=  ReadConsoleParameter(L"-zoom",argc,argv);
+	wstring strVectorFile		=  ReadConsoleParameter(L"-border",argc,argv);
 
-	BOOL	bWldFile = (ReadParameter(L"-wld",argc,argv,TRUE) != L"");
-	BOOL	bTabFile = (ReadParameter(L"-tab",argc,argv,TRUE) != L"");
-	BOOL	bPrjFile = (ReadParameter(L"-prj",argc,argv,TRUE) != L"");
-	BOOL	bMapFile = (ReadParameter(L"-map",argc,argv,TRUE) != L"");
-	BOOL	bKmlFile = (ReadParameter(L"-kml",argc,argv,TRUE) != L"");
-	BOOL	bAuxFile = (ReadParameter(L"-xml",argc,argv,TRUE) != L"");
+	BOOL	bWldFile = ( ReadConsoleParameter(L"-wld",argc,argv,TRUE) != L"");
+	BOOL	bTabFile = ( ReadConsoleParameter(L"-tab",argc,argv,TRUE) != L"");
+	BOOL	bPrjFile = ( ReadConsoleParameter(L"-prj",argc,argv,TRUE) != L"");
+	BOOL	bMapFile = ( ReadConsoleParameter(L"-map",argc,argv,TRUE) != L"");
+	BOOL	bKmlFile = ( ReadConsoleParameter(L"-kml",argc,argv,TRUE) != L"");
+	BOOL	bAuxFile = ( ReadConsoleParameter(L"-xml",argc,argv,TRUE) != L"");
 	
-	wstring	strWMS		= ReadParameter(L"-wms",argc,argv,1);
-	wstring	strWidth	= ReadParameter(L"-width",argc,argv);
-	wstring	strHeight	= ReadParameter(L"-height",argc,argv);
+	wstring	strWMS		=  ReadConsoleParameter(L"-wms",argc,argv,1);
+	wstring	strWidth	=  ReadConsoleParameter(L"-width",argc,argv);
+	wstring	strHeight	=  ReadConsoleParameter(L"-height",argc,argv);
 	
 
 

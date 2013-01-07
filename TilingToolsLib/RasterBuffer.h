@@ -4,6 +4,9 @@
 #include "stdafx.h"
 
 
+namespace GMT
+{
+
 
 class RasterBuffer
 {
@@ -19,7 +22,8 @@ public:
 									 void			*pDataSrc				= NULL,
 									 GDALDataType	dataType				= GDT_Byte,
 									 int			*pNoDataValue			= NULL,
-									 BOOL			bAlphaBand				= FALSE	
+									 BOOL			bAlphaBand				= FALSE,
+									 GDALColorTable *pTable					= NULL
 									 );
 
 	BOOL			createBuffer				(RasterBuffer *pSrcBuffer);
@@ -49,8 +53,8 @@ public:
 	BOOL			initByValue(int value = 0);	
 	BOOL			initByNoDataValue(int noDataValue = 0);
 
-	void*			copyData	(int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
-	BOOL			setData	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
+	void*			getDataBlock	(int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+	BOOL			setDataBlock	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
 	void*			getDataZoomedOut	();	
 	BOOL			convertFromIndexToRGB ();
 	BOOL			convertFromPanToRGB();
@@ -65,15 +69,15 @@ public:
 	int				getXSize();
 	int				getYSize();
 	GDALDataType	getDataType();
-	GDALColorTable*	getColorMeta ();
-	BOOL			setColorMeta (GDALColorTable *pTable);
+	GDALColorTable*	getColorTableRef ();
+	BOOL			setColorTable (GDALColorTable *pTable);
 
 protected:
 	//void									initAlphaBand();
 	template <typename T>	BOOL			isAnyNoDataPixel	(T type);
 	template <typename T>	BOOL			initByValue	(T type, int value);
-	template <typename T>	void*			copyData	(T type, int left, int top, int w, int h,  BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
-	template <typename T>	BOOL			setData	(T type, int left, int top, int w, int h, void *pBlockData, int bands = 0);
+	template <typename T>	void*			getDataBlock	(T type, int left, int top, int w, int h,  BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+	template <typename T>	BOOL			setDataBlock	(T type, int left, int top, int w, int h, void *pBlockData, int bands = 0);
 	template <typename T>	void*			getDataZoomedOut	(T type);
 
 	BOOL			bAlphaBand;
@@ -95,4 +99,8 @@ protected:
 
 
 };
+
+
+}
+
 #endif

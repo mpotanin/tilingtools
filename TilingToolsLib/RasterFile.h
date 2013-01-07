@@ -9,6 +9,9 @@
 using namespace std;
 
 
+namespace GMT
+{
+
 
 class RasterFile
 {
@@ -43,7 +46,7 @@ public:
 
 	void			readMetaData ();
 	OGREnvelope		GetEnvelope ();
-	OGREnvelope		getEnvelopeInMercator (MercatorProjType	mercType);
+	OGREnvelope		getMercatorEnvelope (MercatorProjType	mercType);
 
 	static			BOOL readSpatialRefFromMapinfoTabFile (wstring tabFilePath, OGRSpatialReference *poSRS);
 
@@ -72,7 +75,7 @@ protected:
 
 
 
-int _stdcall PrintNoProgress ( double, const char*,void*);
+int _stdcall GMTPrintNoProgress ( double, const char*,void*);
 
 class BundleOfRasterFiles
 {
@@ -89,7 +92,7 @@ public:
 	OGREnvelope		getMercatorEnvelope();
 	int				calculateNumberOfTiles (int zoom);
 	int				calculateBestMercZoom();
-	BOOL			warpMercToBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
+	BOOL			warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
 
 	list<wstring>	GetFilesList();
 	list<wstring>	getFilesListByEnvelope(OGREnvelope mercatorEnvelope);
@@ -110,4 +113,5 @@ protected:
 	MercatorProjType		mercType;
 };
 
-//#endif
+
+}

@@ -5,11 +5,12 @@
 //
 
 #include "stdafx.h"
+using namespace GMT;
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if (!LoadGdal(argc,argv)) return 0;
+	if (!LoadGDAL(argc,argv)) return 0;
 	GDALAllRegister();
 	OGRRegisterAll();
 
@@ -25,22 +26,22 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 
+
+
 	int		nMinZoom = 0;
 	int		nMaxZoom;
-	BOOL	bSrcContainerFile;
-	BOOL	bDestContainerFile;
-	wstring srcPath			= ReadParameter(L"-from",argc,argv);
-	wstring destPath		= ReadParameter(L"-to",argc,argv);
-	wstring borderFilePath	= ReadParameter(L"-border",argc,argv);
-	wstring strZooms		= ReadParameter(L"-zooms",argc,argv);
-	wstring strTileType		= MakeLower(ReadParameter(L"-tile_type",argc,argv));
-	wstring strProjType		= MakeLower(ReadParameter(L"-proj",argc,argv));
-	wstring strLogFile		= ReadParameter(L"-log_file",argc,argv);
-	wstring strSrcTemplate	= MakeLower(ReadParameter(L"-src_template",argc,argv));
-	wstring strDestTemplate	= MakeLower(ReadParameter(L"-dest_template",argc,argv));
+	wstring srcPath			=  ReadConsoleParameter(L"-from",argc,argv);
+	wstring destPath		=  ReadConsoleParameter(L"-to",argc,argv);
+	wstring borderFilePath	=  ReadConsoleParameter(L"-border",argc,argv);
+	wstring strZooms		=  ReadConsoleParameter(L"-zooms",argc,argv);
+	wstring strTileType		= MakeLower( ReadConsoleParameter(L"-tile_type",argc,argv));
+	wstring strProjType		= MakeLower( ReadConsoleParameter(L"-proj",argc,argv));
+	wstring strLogFile		=  ReadConsoleParameter(L"-log_file",argc,argv);
+	wstring strSrcTemplate	= MakeLower( ReadConsoleParameter(L"-src_template",argc,argv));
+	wstring strDestTemplate	= MakeLower( ReadConsoleParameter(L"-dest_template",argc,argv));
 
-	 
-	FILE *logFile = NULL;
+
+ 	FILE *logFile = NULL;
 	if (strLogFile!=L"")
 	{
 		if((logFile = _wfreopen(strLogFile.c_str(), L"w", stdout)) == NULL)
@@ -53,14 +54,17 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	///*
 	//C:\Work\Projects\TilingTools\Release\copytiles -from C:\Work\Projects\TilingTools\autotest\result\Arctic_r06c03.2012193.terra.250m_tiles -to C:\Work\Projects\TilingTools\autotest\result\copy4 -border C:\Work\Projects\TilingTools\autotest\border_arctic\markers.tab -zooms 1-6
-	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
-	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\Arctic_r06c03.2012193.terra.250m_tiles";
-	
-	
-	//destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\copy2";
+	//srcPath			= L"E:\\TestData\\ik_po_426174_0050002_ch1-3_8bit_merc.mbtiles";
+	//destPath		= L"\\\\192.168.14.50\\ifs\\kosmo\\MWF\\UF\\LayerManager\\Maps\\TestPotanin\\mbtiles\\ik_po_426174_0050002_ch1-3_8bit_merc_4.tiles";
+
+	//srcPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\Arctic_r06c03.2012193.terra.250m_tiles";
+    //destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\A1204011102_merc_2.tiles";
+	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\A1204011102_merc.mbtiles";
+
+	//destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\copy1";
 	//borderFilePath	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border_arctic\\markers.tab";
 	//strZooms			= L"1-5";
-	//strProjType		= L"1";
+	//strProjType		= L"0";
 	//strDestTemplate	= L"standard";
 	//strSrcTemplate	= L"standard";
 	//strTileType		= L"png";
@@ -72,6 +76,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
+	/*
+	if (MakeLower(destPath).find(L".mbtiles") != wstring::npos)
+	{
+		wcout<<L"Error: copytiles currently supports MBTiles only for reading"<<endl;
+		return 0;
+	}
+	*/
 	if (destPath == L"")
 	{
 		wcout<<L"Error: missing \"-to\" parameter"<<endl;
@@ -92,34 +103,21 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-	bSrcContainerFile = IsDirectory(srcPath) ? FALSE : TRUE;
+	//bSrcContainerFile = IsDirectory(srcPath) ? FALSE : TRUE;
 	
-	if (MakeLower(GetExtension(destPath))==L"tiles")
+	if (FileExists(destPath))
 	{
-		bDestContainerFile = TRUE;
-		if (FileExists(destPath))
+		if (!IsDirectory(destPath))
 		{
 			if (!DeleteFile(destPath.c_str()))
 			{
-				wcout<<L"Error: can't delete file: "<<destPath<<endl;
+				wcout<<L"Error: can't delete existing file: "<<destPath<<endl;
 				return 0;
 			}
 		}
 	}
-	else
-	{
-		bDestContainerFile = FALSE;
-		if (!FileExists(destPath))
-		{
-			//if (
-			if (!CreateDirectory(destPath.c_str(),NULL))
-			{
-				wcout<<L"Error: can't create folder: "<<destPath<<endl;
-				return 0;
-			}
-		}
-	}
-	
+
+
 	if ((borderFilePath!=L"") && !FileExists(borderFilePath))
 	{
 		wcout<<L"Error: can't open file: "<<borderFilePath<<endl;
@@ -141,57 +139,62 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	
 
-	MercatorProjType mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
-								WORLD_MERCATOR : WEB_MERCATOR;
-
 	if ((strDestTemplate!=L"") &&  
 		(strDestTemplate!=L"standard")&&
 		(strDestTemplate!=L"kosmosnimki"))
 		if (!StandardTileName::validateTemplate(strDestTemplate)) return FALSE;
 
 	
-	if ((!bSrcContainerFile) &&
+	if ((IsDirectory(srcPath)) &&
 		(strSrcTemplate!=L"") && 
 		(strSrcTemplate!=L"standard")&&
 		(strSrcTemplate!=L"kosmosnimki"))
-		if (!StandardTileName::validateTemplate(strSrcTemplate)) return FALSE;
+		if (!StandardTileName::validateTemplate(strSrcTemplate))
+		{
+			wcout<<L"Error: can't validate src template: "<<strSrcTemplate<<endl;
+			return 0;
+		}
 
-	
 	TileType tileType;
-	if (strTileType==L"")
+	MercatorProjType mercType;
+
+	if (IsDirectory(srcPath))
 	{
-		if (bSrcContainerFile)
+		if (strTileType == L"")
 		{
-			TileContainer *poSrcContainer	= TileContainer::openForReading(srcPath);
-			if (poSrcContainer==NULL)
-			{
-				wcout<<L"Can't read input file: "<<srcPath<<endl;
-				return 0;
-			}
-
-			strTileType = TileName::tileExtension(poSrcContainer->getTileType());
-			mercType	= poSrcContainer->getProjType();
-			wcout<<L"Input container info: tileType="<<TileName::tileExtension(poSrcContainer->getTileType());
-			wcout<<L", proj="<<(poSrcContainer->getProjType()==WEB_MERCATOR)<<endl;
-			delete(poSrcContainer);
+			strTileType = ((strSrcTemplate!=L"") && (strSrcTemplate!=L"kosmosnimki") && (strSrcTemplate!=L"standard")) ?
+						strSrcTemplate.substr(strSrcTemplate.rfind(L".")+1,strSrcTemplate.length()-strSrcTemplate.rfind(L".")-1) :
+						L"jpg";
 		}
-		else
-		{
-			if ((strSrcTemplate!=L"") && 
-				(strSrcTemplate!=L"kosmosnimki") && 
-				(strSrcTemplate!=L"standard"))
-				strTileType = strSrcTemplate.substr(strSrcTemplate.rfind(L".")+1,strSrcTemplate.length()-strSrcTemplate.rfind(L".")-1);
-			else
-				strTileType = L"jpg";
-		}
-	}
-	
-	tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
+		tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
 					JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
+		mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
+					WORLD_MERCATOR : WEB_MERCATOR;
+	}
+	else
+	{
+		TileContainer *poSrcContainer = GMTOpenTileContainerForReading(srcPath);
+		if (! poSrcContainer)
+		{
+			wcout<<L"Error: can't init. tile container: "<<srcPath<<endl;
+			return 0;
+		}
+
+		tileType = poSrcContainer->getTileType();
+		mercType	= poSrcContainer->getProjType();
+		if ((MakeLower(srcPath).find(L".mbtiles") != wstring::npos) && strProjType!=L"")
+			mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
+					WORLD_MERCATOR : WEB_MERCATOR;
+
+		wcout<<L"Input container info: tileType="<<TileName::tileExtension(poSrcContainer->getTileType());
+		wcout<<L", proj="<<(poSrcContainer->getProjType()==WEB_MERCATOR)<<endl;
+		delete(poSrcContainer);		
+	}
 
 
+	
 	TileName		*poSrcTileName = NULL;
-	if (!bSrcContainerFile)
+	if (IsDirectory(srcPath))
 	{
 		if ((strSrcTemplate==L"") || (strSrcTemplate==L"kosmosnimki"))
 			poSrcTileName = new KosmosnimkiTileName(srcPath,tileType);
@@ -202,16 +205,25 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	TilePyramid	*poSrcTilePyramid = NULL;
-	if (bSrcContainerFile)	poSrcTilePyramid = TileContainer::openForReading(srcPath);
-	else					poSrcTilePyramid = new TileFolder(poSrcTileName, FALSE);				
+	if (IsDirectory(srcPath))	poSrcTilePyramid = new TileFolder(poSrcTileName, FALSE);	
+	else						poSrcTilePyramid = GMTOpenTileContainerForReading(srcPath);
+	
 
-
-
-	TileName		*poDestTileName = NULL;
-	TilePyramid		*poDestTilePyramid = NULL;
-
-	if (!bDestContainerFile)
+	TileName		*poDestTileName		= NULL;
+	TilePyramid		*poDestTilePyramid	= NULL;
+	BOOL			bDestFolder			= (	(MakeLower(destPath).find(L".mbtiles") == wstring::npos) && 
+											(MakeLower(destPath).find(L".tiles") == wstring::npos)) ? TRUE : FALSE;
+	if (bDestFolder)
 	{
+		if (!FileExists(destPath))
+		{
+			if (!CreateDirectory(destPath.c_str(),NULL))
+			{
+				wcout<<L"Error: can't create folder: "<<destPath<<endl;
+				return 0;
+			}
+		}
+
 		if ((strDestTemplate==L"") || (strDestTemplate==L"kosmosnimki"))
 			poDestTileName = new KosmosnimkiTileName(destPath,tileType);
 		else if (strDestTemplate==L"standard") 
@@ -223,25 +235,27 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	else
 	{
+		OGREnvelope mercEnvelope;
 		if (borderFilePath!=L"")
 		{
-			//ToDo
+			VectorBorder *pVB = VectorBorder::createFromVectorFile(borderFilePath,mercType);
+			if (!pVB) return 0;
+			mercEnvelope = pVB->getEnvelope();
+			delete(pVB);
 		}
+		else mercEnvelope = poSrcTilePyramid->getMercatorEnvelope();
+		
+		if (MakeLower(destPath).find(L".mbtiles") != wstring::npos) 
+			poDestTilePyramid = new MBTileContainer(destPath,tileType,mercType,mercEnvelope); 
 		else
-		{
-			int tileBounds[128];
-			if(!poSrcTilePyramid->getTileBounds(tileBounds)) 
-			{
-				wcout<<L"Error: no tiles found in "<<srcPath<<endl;
-				return 0;
-			}
-			poDestTilePyramid = new TileContainer(tileBounds,FALSE,destPath,tileType,mercType);//Folder(poDestTileName,FALSE); 
-		}
+			poDestTilePyramid = new GMTileContainer(destPath,
+													tileType,
+													mercType,
+													mercEnvelope,
+													(nMaxZoom == -1) ? poSrcTilePyramid->getMaxZoom() : nMaxZoom,
+													FALSE);
 	}
 	
-
-
-
 	list<__int64> oTileList;
 	wcout<<L"calculating number of tiles: ";
 	wcout<<poSrcTilePyramid->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
@@ -262,18 +276,17 @@ int _tmain(int argc, _TCHAR* argv[])
 					if(poDestTilePyramid->addTile(z,x,y,tileData,tileSize)) tilesCopied++;
 				delete[]tileData;
 			}
-			PrintTilingProgress(oTileList.size(),tilesCopied);
+			GMTPrintTilingProgress(oTileList.size(),tilesCopied);
 		}
 	}
 	if (logFile) fclose(logFile);
 	if (poDestTilePyramid) poDestTilePyramid->close();
-
-	delete(poSrcTilePyramid);//->closeContainer();
-	//delete(poSrcTilePyramid);
+	delete(poSrcTilePyramid);
 	delete(poSrcTileName);
 	delete(poDestTileName);
 	delete(poDestTilePyramid);
-	//*/
+
+
 	return 0;
 }
 

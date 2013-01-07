@@ -3,6 +3,11 @@
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
+
+namespace GMT
+{
+
+
 void	SetEnvironmentVariables (wstring gdalPath)
 {
 	wstring strPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
@@ -26,18 +31,18 @@ void	SetEnvironmentVariables (wstring gdalPath)
 }
 
 
-BOOL LoadGdal (int argc, _TCHAR* argv[])
+BOOL LoadGDAL (int argc, _TCHAR* argv[])
 {
-	//string gdalPath	= (ReadParameter(L"-gdal",argc,argv) !="") ?  ReadParameter(L"-gdal",argc,argv) : ReadParameter(L"-FWTools",argc,argv);
+	//string gdalPath	= ( ReadConsoleParameter(L"-gdal",argc,argv) !="") ?   ReadConsoleParameter(L"-gdal",argc,argv) :  ReadConsoleParameter(L"-FWTools",argc,argv);
 
-	wstring gdalPath	= ReadParameter(L"-gdal",argc,argv);
+	wstring gdalPath	=  ReadConsoleParameter(L"-gdal",argc,argv);
 	if (gdalPath == L"")
 	{
 		TCHAR exeFileName[_MAX_PATH + 1];
 		GetModuleFileName(NULL,exeFileName,_MAX_PATH);
 
 		wstring strExeFileName(exeFileName);
-		gdalPath = ReadGdalPathFromConfig(GetPath(strExeFileName));
+		gdalPath = ReadGDALPathFromConfig(GetPath(strExeFileName));
 	}
 
 	//cout<<"gdalpath: "<<gdalPath<<endl;
@@ -52,7 +57,7 @@ BOOL LoadGdal (int argc, _TCHAR* argv[])
 	//	gdalPath = gdalPath.substr(0,gdalPath.length()-1);
 
 	SetEnvironmentVariables(gdalPath);
-	if (!LoadGdalDLLs(gdalPath))
+	if (!LoadGDALDLLs(gdalPath))
 	{
 		wcout<<L"Error: can't load gdal dlls: bad path to gdal specified"<<endl;
 		return FALSE;
@@ -62,7 +67,7 @@ BOOL LoadGdal (int argc, _TCHAR* argv[])
 }
 
 ///*
-BOOL LoadGdalDLLs (wstring gdalPath)
+BOOL LoadGDALDLLs (wstring gdalPath)
 {
 	//string strDll1 = GetAbsolutePath(gdalPath,L"bin\\gdal_fw.dll");
 	//string strDll2 = GetAbsolutePath(gdalPath,L"bin\\bgd.dll");
@@ -75,7 +80,7 @@ BOOL LoadGdalDLLs (wstring gdalPath)
 	return TRUE;
 }
 
-wstring ReadGdalPathFromConfig (wstring configFilePath)
+wstring ReadGDALPathFromConfig (wstring configFilePath)
 {
 	//string	strV = "2.2.8";
 
@@ -114,7 +119,7 @@ wstring ReadGdalPathFromConfig (wstring configFilePath)
 }
 
 
-wstring ReadParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagParam)
+wstring  ReadConsoleParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagParam)
 {
 	for (int i=0;i<argc;i++)
 	{
@@ -139,4 +144,4 @@ wstring ReadParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagP
 }
 
 
-//*/
+}

@@ -2,6 +2,9 @@
 #include "TileBuffer.h"
 #include "StringFuncs.h"
 
+namespace GMT
+{
+
 
 TileBuffer::TileBuffer(void)
 {
@@ -19,7 +22,7 @@ TileBuffer::~TileBuffer(void)
 
 BOOL	TileBuffer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
 {
-	wstring tileKey = ConvertInt(z) + L"_" + ConvertInt(x) + L"_" + ConvertInt(y);
+	wstring tileKey = ConvertIntToWString(z) + L"_" + ConvertIntToWString(x) + L"_" + ConvertIntToWString(y);
 	if (tileData.find(tileKey)!=tileData.end())
 	{
 		delete[](*tileData.find(tileKey)).second;
@@ -38,7 +41,7 @@ BOOL	TileBuffer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
 
 BOOL	TileBuffer::getTile(int z, int x, int y, BYTE *&pData, unsigned int &size)
 {
-	wstring tileKey = ConvertInt(z) + L"_" + ConvertInt(x) + L"_" + ConvertInt(y);
+	wstring tileKey = ConvertIntToWString(z) + L"_" + ConvertIntToWString(x) + L"_" + ConvertIntToWString(y);
 	map<wstring,BYTE*>::const_iterator iter;
 	if ((iter=tileData.find(tileKey)) == tileData.end())
 	{
@@ -56,3 +59,4 @@ BOOL	TileBuffer::getTile(int z, int x, int y, BYTE *&pData, unsigned int &size)
 }
 
 
+}

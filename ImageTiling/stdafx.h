@@ -38,6 +38,7 @@ using namespace std;
 #include "include\ogrsf_frmts.h"
 #include "include\gdalwarper.h"
 #include "include\vrtdataset.h"
+#include "include\sqlite3.h"
 #include "..\TilingToolsLib\str.h"
 
 

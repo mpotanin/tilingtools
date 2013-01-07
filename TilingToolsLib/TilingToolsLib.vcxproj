@@ -83,12 +83,9 @@
   <ItemGroup>
     <ClInclude Include="ConsoleUtils.h" />
     <ClInclude Include="FileSystemFuncs.h" />
-    <ClInclude Include="GeometryFuncs.h" />
-    <ClInclude Include="GeoReference.h" />
     <ClInclude Include="RasterBuffer.h" />
     <ClInclude Include="RasterFile.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="str.h" />
     <ClInclude Include="StringFuncs.h" />
     <ClInclude Include="TileBuffer.h" />
     <ClInclude Include="TileName.h" />
@@ -99,14 +96,13 @@
   <ItemGroup>
     <ClCompile Include="ConsoleUtils.cpp" />
     <ClCompile Include="FileSystemFuncs.cpp" />
-    <ClCompile Include="GeometryFuncs.cpp" />
-    <ClCompile Include="GeoReference.cpp" />
     <ClCompile Include="RasterBuffer.cpp" />
     <ClCompile Include="RasterFile.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="str.cpp" />
     <ClCompile Include="StringFuncs.cpp" />
     <ClCompile Include="TileBuffer.cpp" />
+    <ClCompile Include="TileName.cpp" />
+    <ClCompile Include="TilePyramid.cpp" />
     <ClCompile Include="TilingFuncs.cpp" />
     <ClCompile Include="VectorBorder.cpp" />
   </ItemGroup>

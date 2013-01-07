@@ -1,7 +1,10 @@
 #include "StdAfx.h"
 #include "RasterBuffer.h"
 #include "FileSystemFuncs.h"
+using namespace GMT;
 
+namespace GMT
+{
 
 
 RasterBuffer::RasterBuffer(void)
@@ -73,7 +76,8 @@ BOOL RasterBuffer::createBuffer	(int			nBands,
 								 void			*pDataSrc,
 								 GDALDataType	dataType,
 								 int			*pNoDataValue,
-								 BOOL			bAlphaBand	
+								 BOOL			bAlphaBand,
+								 GDALColorTable *pTable					
 								 )
 {
 	clearBuffer();
@@ -84,6 +88,7 @@ BOOL RasterBuffer::createBuffer	(int			nBands,
 	this->dataType		= dataType;
 	this->bAlphaBand	= bAlphaBand;
 	if (pNoDataValue) setNoDataValue(pNoDataValue[0]);
+	this->pTable = (pTable) ? pTable->Clone() : NULL;
 
 	switch (dataType)
 	{
@@ -123,10 +128,9 @@ BOOL RasterBuffer::createBuffer		(RasterBuffer *pSrcBuffer)
 						pSrcBuffer->getDataRef(),
 						pSrcBuffer->getDataType(),
 						pSrcBuffer->pNoDataValue,						
-						pSrcBuffer->bAlphaBand
+						pSrcBuffer->bAlphaBand,
+						pSrcBuffer->pTable
 						)) return FALSE;
-
-	if (pSrcBuffer->pTable) this->setColorMeta(pSrcBuffer->pTable);
 	return TRUE;	
 }
 
@@ -225,7 +229,8 @@ BOOL	RasterBuffer::createBufferFromPngData (void *pDataSrc, int size)
 	{
 		for (int i=0;i<im->sx;i++)
 		{
-			color = im->tpixels[j][i];
+			color = (im->tpixels!=NULL) ? im->tpixels[j][i] :
+					gdTrueColor(im->red[im->pixels[j][i]],im->green[im->pixels[j][i]],im->blue[im->pixels[j][i]]);
 			k = j*this->nXSize+i;
 			if (im->alphaBlendingFlag)
 			{
@@ -344,10 +349,20 @@ BOOL RasterBuffer::SaveToJpegData (int quality, void* &pDataDst, int &size)
 	int n = (this->nBands < 3) ? 0 : this->nXSize*this->nYSize;
 	int color = 0;
 	BYTE	*pDataB = (BYTE*)pData;
+
+	const GDALColorEntry *pCEntry;
 	for (int j=0;j<this->nYSize;j++)
 	{
 		for (int i=0;i<this->nXSize;i++)
-			im->tpixels[j][i] = gdTrueColor(pDataB[j*this->nXSize+i],pDataB[j*this->nXSize+i+n],pDataB[j*this->nXSize+i+n+n]);
+		{
+			if (!pTable)
+				im->tpixels[j][i] = gdTrueColor(pDataB[j*this->nXSize+i],pDataB[j*this->nXSize+i+n],pDataB[j*this->nXSize+i+n+n]);
+			else
+			{
+				pCEntry = this->pTable->GetColorEntry(pDataB[j*this->nXSize+i]);
+				im->tpixels[j][i] = gdTrueColor(pCEntry->c1,pCEntry->c2,pCEntry->c3);
+			}
+		}
 	}
 	
 	if (!(pDataDst = (BYTE*)gdImageJpegPtr(im,&size,quality)))
@@ -436,6 +451,7 @@ BOOL RasterBuffer::SaveToPngData (void* &pDataDst, int &size)
 	
 	gdImagePtr im	= gdImageCreate(this->nXSize,this->nYSize);
 	im->colorsTotal = pTable->GetColorEntryCount();
+	//im->
 	for (int i=0;(i<im->colorsTotal)&&(i<gdMaxColors);i++)
 	{
 		const GDALColorEntry *pCEntry = pTable->GetColorEntry(i);
@@ -735,7 +751,7 @@ BOOL RasterBuffer::initByValue(T type, int value)
 
 BOOL	RasterBuffer::stretchDataTo8Bit(double minVal, double maxVal)
 {
-	void *pDataNew = copyData(0,0,nXSize,nYSize,TRUE,minVal,maxVal);
+	void *pDataNew = getDataBlock(0,0,nXSize,nYSize,TRUE,minVal,maxVal);
 	int bands = nBands;
 	int width = nXSize;
 	int height = nYSize;
@@ -744,7 +760,7 @@ BOOL	RasterBuffer::stretchDataTo8Bit(double minVal, double maxVal)
 }
 
 
-void*	RasterBuffer::copyData (int left, int top, int w, int h,  BOOL stretchTo8Bit, double min, double max)
+void*	RasterBuffer::getDataBlock (int left, int top, int w, int h,  BOOL stretchTo8Bit, double min, double max)
 {
 	if (pData == NULL || this->nXSize == 0 || this->nYSize==0) return NULL;
 	
@@ -753,22 +769,22 @@ void*	RasterBuffer::copyData (int left, int top, int w, int h,  BOOL stretchTo8B
 		case GDT_Byte:
 		{
 			BYTE t  = 1;
-			return copyData(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return copyData(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return copyData(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return copyData(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h);
 		}
 		default:
 			return NULL;
@@ -778,7 +794,7 @@ void*	RasterBuffer::copyData (int left, int top, int w, int h,  BOOL stretchTo8B
 
 ///*
 template <typename T>
-void*	RasterBuffer::copyData (T type, int left, int top, int w, int h,  BOOL stretchTo8Bit, double minVal, double maxVal)
+void*	RasterBuffer::getDataBlock (T type, int left, int top, int w, int h,  BOOL stretchTo8Bit, double minVal, double maxVal)
 {
 	if (nBands==0) return NULL;
 	int					n = w*h;
@@ -899,7 +915,7 @@ BOOL	RasterBuffer::isAlphaBand()
 
 BOOL	RasterBuffer::createAlphaBandByColor(BYTE	*pRGB)
 {
-	if ((this-pData == NULL) || (this->dataType!=GDT_Byte) || (this->nBands>3)) return FALSE;
+	if ((this-pData == NULL) || (this->dataType!=GDT_Byte) || (this->nBands>3) || (this->pTable)) return FALSE;
 
 	int n = this->nXSize *this->nYSize;
 	BYTE	*pData_new = new BYTE[(this->nBands+1) * n];
@@ -931,7 +947,7 @@ BOOL	RasterBuffer::createAlphaBandByColor(BYTE	*pRGB)
 //BOOL	RasterBuffer::createAlphaBandByValue(int	value);
 
 
-BOOL	RasterBuffer::setData (int left, int top, int w, int h, void *pBlockData, int bands)
+BOOL	RasterBuffer::setDataBlock (int left, int top, int w, int h, void *pBlockData, int bands)
 {
 	if (pData == NULL || this->nXSize == 0 || this->nYSize==0) return NULL;
 	bands = (bands==0) ? nBands : bands;
@@ -941,22 +957,22 @@ BOOL	RasterBuffer::setData (int left, int top, int w, int h, void *pBlockData, i
 		case GDT_Byte:
 		{
 			BYTE t = 1;
-			return setData(t,left,top,w,h,pBlockData,bands);
+			return setDataBlock(t,left,top,w,h,pBlockData,bands);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return setData(t,left,top,w,h,pBlockData,bands);
+			return setDataBlock(t,left,top,w,h,pBlockData,bands);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return setData(t,left,top,w,h,pBlockData,bands);
+			return setDataBlock(t,left,top,w,h,pBlockData,bands);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return setData(t,left,top,w,h,pBlockData,bands);
+			return setDataBlock(t,left,top,w,h,pBlockData,bands);
 		}
 		default:
 			return FALSE;
@@ -966,7 +982,7 @@ BOOL	RasterBuffer::setData (int left, int top, int w, int h, void *pBlockData, i
 
 ///*
 template <typename T>
-BOOL	RasterBuffer::setData (T type, int left, int top, int w, int h, void *pBlockData, int bands)
+BOOL	RasterBuffer::setDataBlock (T type, int left, int top, int w, int h, void *pBlockData, int bands)
 {
 	bands = (bands==0) ? nBands : bands;
 
@@ -1019,15 +1035,18 @@ GDALDataType RasterBuffer::getDataType()
 }
 
 
-BOOL	RasterBuffer::setColorMeta (GDALColorTable *pTable)
+BOOL	RasterBuffer::setColorTable (GDALColorTable *pTable)
 {
-	this->pTable = pTable;
+	this->pTable = pTable->Clone();
 	
 	return TRUE;
 }
 
 
-GDALColorTable*	RasterBuffer::getColorMeta ()
+GDALColorTable*	RasterBuffer::getColorTableRef ()
 {
 	return pTable;
+}
+
+
 }

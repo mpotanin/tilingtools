@@ -2,12 +2,16 @@
 #include "stdafx.h"
 
 
+namespace GMT
+{
+
+	
 void	SetEnvironmentVariables (wstring gdalPath);
-BOOL	LoadGdal (int argc, _TCHAR* argv[]);
+BOOL	LoadGDAL (int argc, _TCHAR* argv[]);
 
-///*
-BOOL	LoadGdalDLLs (wstring gdalPath);
-wstring ReadGdalPathFromConfig (wstring configFilePath);
-wstring ReadParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagParam = FALSE);
+BOOL	LoadGDALDLLs (wstring gdalPath);
+wstring ReadGDALPathFromConfig (wstring configFilePath);
+wstring ReadConsoleParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagParam = FALSE);
 
-//*/
+
+}

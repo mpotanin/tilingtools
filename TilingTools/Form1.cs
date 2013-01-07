@@ -234,9 +234,9 @@ namespace TilingTools
         public bool makeImageTiling(bool bFolder, bool useContainer, string strInput, bool bBundle, string strType, string strVectorBorder, string strOutputFolder, int minZoom, int maxZoom)
         {
             W = null;
-            string strTiling = " -file " + addDoubleQuotes(strInput);
-            if (bBundle) strTiling += " -bundle ";
-            if (strType != "") strTiling += " -type " + strType;
+            string strTiling = " -file " + ((bFolder) ? addDoubleQuotes(strInput+"\\*."+strType) : strInput);
+            if (bBundle) strTiling += " -mosaic ";
+            //if (strType != "") strTiling += " -type " + strType;
             if (maxZoom > 0) strTiling += " -zoom " + (maxZoom).ToString();
             else if (minZoom > 0) strTiling += " -minZoom " + minZoom.ToString();
 
@@ -331,7 +331,7 @@ namespace TilingTools
             label10.Enabled = radioButton2.Checked;
             comboBox3.Enabled = radioButton2.Checked;
             checkBox1.Enabled = false;
-            //checkBox1.Enabled = radioButton2.Checked;
+            checkBox1.Enabled = radioButton2.Checked;
 
         }
 
