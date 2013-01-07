@@ -39,7 +39,6 @@ using namespace std;
 #include "include\gdalwarper.h"
 #include "include\vrtdataset.h"
 #include "include\sqlite3.h"
-#include "..\TilingToolsLib\str.h"
 
 
 
