@@ -254,13 +254,26 @@ int _tmain(int argc, _TCHAR* argv[])
 			wcout<<L"Tiling file: "<<(*iter)<<endl;
 			if (input_files.size()>1)
 				strVectorFile = VectorBorder::getVectorFileNameByRasterFileName(*iter);
-		
+			wstring strTilesFolder_fix = strTilesFolder;
+			if ((input_files.size()>1)&&(strTilesFolder!=L""))
+			{
+				if (!FileExists(strTilesFolder)) 
+				{
+					if (!CreateDirectory(strTilesFolder.c_str(),NULL))
+					{
+						wcout<<L"Error: can't create directory: "<<strTilesFolder<<endl;
+						return 0;
+					}
+				}
+				strTilesFolder_fix = RemoveEndingSlash(strTilesFolder) + L"\\" + RemovePath(RemoveExtension(*iter)) + L"_tiles";
+			}
+
 			CheckArgsAndCallTiling (	(*iter),
 										strContainer,		
 										strZoom,
 										strMinZoom,
 										strVectorFile,
-										strTilesFolder,
+										strTilesFolder_fix,
 										strTileType,
 										strProjType,
 										strTemplate,
