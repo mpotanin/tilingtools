@@ -108,12 +108,12 @@
             // textBox23
             // 
             this.textBox23.Cursor = System.Windows.Forms.Cursors.Default;
-            this.textBox23.Location = new System.Drawing.Point(4, 337);
+            this.textBox23.Location = new System.Drawing.Point(4, 285);
             this.textBox23.Multiline = true;
             this.textBox23.Name = "textBox23";
             this.textBox23.ReadOnly = true;
             this.textBox23.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox23.Size = new System.Drawing.Size(446, 176);
+            this.textBox23.Size = new System.Drawing.Size(453, 228);
             this.textBox23.TabIndex = 13;
             this.textBox23.TabStop = false;
             // 
@@ -466,7 +466,7 @@
             this.ImageTiling.Location = new System.Drawing.Point(4, 22);
             this.ImageTiling.Name = "ImageTiling";
             this.ImageTiling.Padding = new System.Windows.Forms.Padding(3);
-            this.ImageTiling.Size = new System.Drawing.Size(449, 303);
+            this.ImageTiling.Size = new System.Drawing.Size(449, 255);
             this.ImageTiling.TabIndex = 1;
             this.ImageTiling.Text = "Tiling";
             this.ImageTiling.UseVisualStyleBackColor = true;
@@ -487,7 +487,6 @@
             // radioButton2
             // 
             this.radioButton2.AutoSize = true;
-            this.radioButton2.Enabled = true;
             this.radioButton2.Location = new System.Drawing.Point(86, 4);
             this.radioButton2.Name = "radioButton2";
             this.radioButton2.Size = new System.Drawing.Size(51, 17);
@@ -739,7 +738,7 @@
             // button19
             // 
             this.button19.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button19.Location = new System.Drawing.Point(368, 276);
+            this.button19.Location = new System.Drawing.Point(368, 229);
             this.button19.Name = "button19";
             this.button19.Size = new System.Drawing.Size(75, 23);
             this.button19.TabIndex = 27;
@@ -757,7 +756,7 @@
             this.tabControl1.Location = new System.Drawing.Point(4, 2);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(457, 329);
+            this.tabControl1.Size = new System.Drawing.Size(457, 281);
             this.tabControl1.TabIndex = 0;
             // 
             // Form1

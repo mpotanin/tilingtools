@@ -243,12 +243,8 @@ namespace TilingTools
 
             if (useContainer) strTiling += " -container ";
             if (strVectorBorder != "") strTiling += " -border " + addDoubleQuotes(strVectorBorder);
-            if (strOutputFolder != "")
-            {
-                strTiling += (useContainer) ? (" -tiles " + addDoubleQuotes(Path.Combine(strOutputFolder,Path.GetFileNameWithoutExtension(strInput)+".tiles"))) 
-                                            : (" -tiles " + addDoubleQuotes(strOutputFolder));
-            }
-
+            if (strOutputFolder != "") strTiling += " -tiles " + addDoubleQuotes(strOutputFolder);
+           
             string[] exeFile = { "ImageTiling" };
             string[] args = {strTiling};
             TilingToolsWorker w = new TilingToolsWorker(exeFile, args);
