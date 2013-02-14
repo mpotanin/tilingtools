@@ -1,6 +1,6 @@
 @echo off
 
-rem %1 D:\TeamCityTestData\TilingTools
+rem %1 D:\TeamCityTestData\
 rem %2 D:\TeamCity\buildAgent\work\160ea70fbfb7de1f
 
 :test0
@@ -33,7 +33,7 @@ echo ##teamcity[testFinished name='Check .tiles file size']
 
 :test2
 echo ##teamcity[testStarted name='Compare Files']
-set fileSource=%1\5_16_8.jpg
+set fileSource=%1\TilingTools\5_16_8.jpg
 set fileGenerated=%2\testOutput\copy1\5\16\5_16_8.jpg
 fc %fileSource% %fileGenerated% > nul
 if errorlevel 1 goto errortest2
