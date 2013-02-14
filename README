@@ -1,1 +1,6 @@
 ﻿Тайлинговые утилиты
+
+для тестирования:
+запуск testResultChack.bat
+тестовые данные положить нужно на 14.10 D:\TeamCityTestData\TilingTools
+
