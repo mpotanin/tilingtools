@@ -5,264 +5,253 @@
 //
 
 #include "stdafx.h"
-using namespace GMT;
 
-
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int argc, wchar_t* argvW[])
 {
-	if (!LoadGDAL(argc,argv)) return 0;
+	if (argc == 1)
+	{
+		cout<<"Usage: "<<endl;
+		cout<<"CopyTiles [-from input folder or container] [-to destination folder or container] [-border vector border] [-type input tiles type (jpg|png|tif)] [-zooms MinZoom-MaxZoom] [-proj input tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-src_template source tile name template] [-dest_template destination tile name template]\n"<<endl;
+		cout<<"Example  (copy tiles, default: type=jpg, proj=0 ):"<<endl;
+		cout<<"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg_tiles -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
+		return 0;
+	}
+
+	string *argv = new string[argc];
+	for (int i=0;i<argc;i++)
+	{
+		GMT::wstrToUtf8(argv[i],argvW[i]);
+		GMT::ReplaceAll(argv[i],"\\","/");
+	}
+	
+	if (!GMT::LoadGDAL(argc,argv)) return -1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
-
-
-	if (argc == 1)
-	{
-		wcout<<L"Usage: "<<endl;
-		wcout<<L"CopyTiles [-from input folder or container] [-to destination folder or container] [-border vector border] [-type input tiles type (jpg|png|tif)] [-zooms MinZoom-MaxZoom] [-proj input tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-src_template source tile name template] [-dest_template destination tile name template]\n"<<endl;
-		wcout<<L"Example  (copy tiles, default: type=jpg, proj=0 ):"<<endl;
-		wcout<<L"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg_tiles -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
-		return 0;
-	}
-
-
-
-
 	int		nMinZoom = 0;
 	int		nMaxZoom;
-	wstring srcPath			=  ReadConsoleParameter(L"-from",argc,argv);
-	wstring destPath		=  ReadConsoleParameter(L"-to",argc,argv);
-	wstring borderFilePath	=  ReadConsoleParameter(L"-border",argc,argv);
-	wstring strZooms		=  ReadConsoleParameter(L"-zooms",argc,argv);
-	wstring strTileType		= MakeLower( ReadConsoleParameter(L"-tile_type",argc,argv));
-	wstring strProjType		= MakeLower( ReadConsoleParameter(L"-proj",argc,argv));
-	wstring strLogFile		=  ReadConsoleParameter(L"-log_file",argc,argv);
-	wstring strSrcTemplate	= MakeLower( ReadConsoleParameter(L"-src_template",argc,argv));
-	wstring strDestTemplate	= MakeLower( ReadConsoleParameter(L"-dest_template",argc,argv));
+	string srcPath			= GMT::ReadConsoleParameter("-from",argc,argv);
+	string destPath			= GMT::ReadConsoleParameter("-to",argc,argv);
+	string borderFilePath	= GMT::ReadConsoleParameter("-border",argc,argv);
+	string strZooms			= GMT::ReadConsoleParameter("-zooms",argc,argv);
+	string strTileType		= GMT::MakeLower( GMT::ReadConsoleParameter("-tile_type",argc,argv));
+	string strProjType		= GMT::MakeLower( GMT::ReadConsoleParameter("-proj",argc,argv));
+	string strLogFile		= GMT::ReadConsoleParameter("-log_file",argc,argv);
+	string strSrcTemplate	= GMT::MakeLower( GMT::ReadConsoleParameter("-src_template",argc,argv));
+	string strDestTemplate	= GMT::MakeLower( GMT::ReadConsoleParameter("-dest_template",argc,argv));
 
 
  	FILE *logFile = NULL;
-	if (strLogFile!=L"")
+	/*
+	if (strLogFile!="")
 	{
-		if((logFile = _wfreopen(strLogFile.c_str(), L"w", stdout)) == NULL)
+		if((logFile = GMT::OpenFile _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
 		{
-			wcout<<L"Error: can't open log file: "<<strLogFile<<endl;
+			cout<<"Error: can't open log file: "<<strLogFile<<endl;
 			exit(-1);
 		}
 	}
+	*/
+
+	//srcPath		= "C:\\TileMill\\export\\export\\VHR_test_spot5_cover.mbtiles";
+	//destPath	= "C:\\TileMill\\export\\export\\VHR_test_spot5_cover_tiles";
 
 
-	///*
-	//C:\Work\Projects\TilingTools\Release\copytiles -from C:\Work\Projects\TilingTools\autotest\result\Arctic_r06c03.2012193.terra.250m_tiles -to C:\Work\Projects\TilingTools\autotest\result\copy4 -border C:\Work\Projects\TilingTools\autotest\border_arctic\markers.tab -zooms 1-6
-	//srcPath			= L"E:\\TestData\\ik_po_426174_0050002_ch1-3_8bit_merc.mbtiles";
-	//destPath		= L"\\\\192.168.14.50\\ifs\\kosmo\\MWF\\UF\\LayerManager\\Maps\\TestPotanin\\mbtiles\\ik_po_426174_0050002_ch1-3_8bit_merc_4.tiles";
 
-	//srcPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\Arctic_r06c03.2012193.terra.250m_tiles";
-    //destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\A1204011102_merc_2.tiles";
-	//srcPath				= L"C:\\Work\\Projects\\TilingTools\\autotest\\A1204011102_merc.mbtiles";
-
-	//destPath			= L"C:\\Work\\Projects\\TilingTools\\autotest\\result\\copy1";
-	//borderFilePath	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border_arctic\\markers.tab";
-	//strZooms			= L"1-5";
-	//strProjType		= L"0";
-	//strDestTemplate	= L"standard";
-	//strSrcTemplate	= L"standard";
-	//strTileType		= L"png";
-	//*/
-
-	if (srcPath == L"")
+	if (srcPath == "")
 	{
-		wcout<<L"Error: missing \"-from\" parameter"<<endl;
-		return 0;
+		cout<<"Error: missing \"-from\" parameter"<<endl;
+		return -1;
+	}
+
+	if (destPath == "")
+	{
+		cout<<"Error: missing \"-to\" parameter"<<endl;
+		return -1;
 	}
 
 	/*
-	if (MakeLower(destPath).find(L".mbtiles") != wstring::npos)
+	if (borderFilePath == "")
 	{
-		wcout<<L"Error: copytiles currently supports MBTiles only for reading"<<endl;
-		return 0;
-	}
-	*/
-	if (destPath == L"")
-	{
-		wcout<<L"Error: missing \"-to\" parameter"<<endl;
-		return 0;
-	}
-
-	/*
-	if (borderFilePath == L"")
-	{
-		wcout<<L"Error: missing \"-border\" parameter"<<endl;
-		return 0;
+		cout<<"Error: missing \"-border\" parameter"<<endl;
+		return -1;
 	}
 	*/
 
-	if (!FileExists(srcPath))
+	if (!GMT::FileExists(srcPath))
 	{
-		wcout<<L"Error: can't find input folder or file: "<<srcPath<<endl;
-		return 0;
+		cout<<"Error: can't find input folder or file: "<<srcPath<<endl;
+		return -1;
 	}
 
 	//bSrcContainerFile = IsDirectory(srcPath) ? FALSE : TRUE;
 	
-	if (FileExists(destPath))
+	if (GMT::FileExists(destPath))
 	{
-		if (!IsDirectory(destPath))
+		if (!GMT::IsDirectory(destPath))
 		{
-			if (!DeleteFile(destPath.c_str()))
+			if (!GMT::DeleteFile(destPath))
 			{
-				wcout<<L"Error: can't delete existing file: "<<destPath<<endl;
-				return 0;
+				cout<<"Error: can't delete existing file: "<<destPath<<endl;
+				return -1;
 			}
 		}
 	}
 
 
-	if ((borderFilePath!=L"") && !FileExists(borderFilePath))
+	if ((borderFilePath != "") && !GMT::FileExists(borderFilePath))
 	{
-		wcout<<L"Error: can't open file: "<<borderFilePath<<endl;
-		return 0;
+		cout<<"Error: can't open file: "<<borderFilePath<<endl;
+		return -1;
 	}
 	
-	if (strZooms==L"")
+	if (strZooms=="")
 	{
 		nMinZoom=(nMaxZoom=-1);
 	}
 	else
 	{
-		if (strZooms.find(L"_")>=0)
+		if (strZooms.find("_")>=0)
 		{
-			nMinZoom = (int)_wtof(strZooms.substr(0,strZooms.find(L"-")).data());
-			nMaxZoom = (int)_wtof(strZooms.substr(strZooms.find(L"-")+1,strZooms.size()-strZooms.find(L"-")-1).data());
+			nMinZoom = (int)atof(strZooms.substr(0,strZooms.find("-")).data());
+			nMaxZoom = (int)atof(strZooms.substr(strZooms.find("-")+1,strZooms.size()-strZooms.find("-")-1).data());
 			if (nMinZoom>nMaxZoom) {int t; t=nMaxZoom; nMaxZoom = nMinZoom; nMinZoom = t;}
 		}
 	}
 	
 
-	if ((strDestTemplate!=L"") &&  
-		(strDestTemplate!=L"standard")&&
-		(strDestTemplate!=L"kosmosnimki"))
-		if (!StandardTileName::validateTemplate(strDestTemplate)) return FALSE;
+	if ((strDestTemplate!="") &&  
+		(strDestTemplate!="standard")&&
+		(strDestTemplate!="kosmosnimki"))
+		if (!GMT::StandardTileName::validateTemplate(strDestTemplate)) return FALSE;
 
 	
-	if ((IsDirectory(srcPath)) &&
-		(strSrcTemplate!=L"") && 
-		(strSrcTemplate!=L"standard")&&
-		(strSrcTemplate!=L"kosmosnimki"))
-		if (!StandardTileName::validateTemplate(strSrcTemplate))
+	if ((GMT::IsDirectory(srcPath)) &&
+		(strSrcTemplate!="") && 
+		(strSrcTemplate!="standard")&&
+		(strSrcTemplate!="kosmosnimki"))
+		if (!GMT::StandardTileName::validateTemplate(strSrcTemplate))
 		{
-			wcout<<L"Error: can't validate src template: "<<strSrcTemplate<<endl;
-			return 0;
+			cout<<"Error: can't validate src template: "<<strSrcTemplate<<endl;
+			return -1;
 		}
 
-	TileType tileType;
-	MercatorProjType mercType;
+	GMT::TileType tileType;
+	GMT::MercatorProjType mercType;
 
-	if (IsDirectory(srcPath))
+	if (GMT::IsDirectory(srcPath))
 	{
-		if (strTileType == L"")
+		if (strTileType == "")
 		{
-			strTileType = ((strSrcTemplate!=L"") && (strSrcTemplate!=L"kosmosnimki") && (strSrcTemplate!=L"standard")) ?
-						strSrcTemplate.substr(strSrcTemplate.rfind(L".")+1,strSrcTemplate.length()-strSrcTemplate.rfind(L".")-1) :
-						L"jpg";
+			strTileType = ((strSrcTemplate!="") && (strSrcTemplate!="kosmosnimki") && (strSrcTemplate!="standard")) ?
+						strSrcTemplate.substr(	strSrcTemplate.rfind(".") + 1,
+												strSrcTemplate.length()-strSrcTemplate.rfind(".") - 1) :
+						"jpg";
 		}
-		tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
-					JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
-		mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
-					WORLD_MERCATOR : WEB_MERCATOR;
+		tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
+					GMT::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMT::PNG_TILE : GMT::TIFF_TILE;
+		mercType = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")|| 
+					(strProjType == "epsg:3395")) ? GMT::WORLD_MERCATOR : GMT::WEB_MERCATOR;
 	}
 	else
 	{
-		TileContainer *poSrcContainer = GMTOpenTileContainerForReading(srcPath);
+		//ToDo
+		GMT::TileContainer *poSrcContainer = GMT::OpenTileContainerForReading(srcPath);
 		if (! poSrcContainer)
 		{
-			wcout<<L"Error: can't init. tile container: "<<srcPath<<endl;
-			return 0;
+			cout<<"Error: can't init. tile container: "<<srcPath<<endl;
+			return -1;
 		}
 
 		tileType = poSrcContainer->getTileType();
 		mercType	= poSrcContainer->getProjType();
-		if ((MakeLower(srcPath).find(L".mbtiles") != wstring::npos) && strProjType!=L"")
-			mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
-					WORLD_MERCATOR : WEB_MERCATOR;
+		if ((GMT::MakeLower(srcPath).find(".mbtiles") != string::npos))
+		{
+			if (strProjType!="")
+				mercType = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")|| 
+							(strProjType == "epsg:3395")) ? GMT::WORLD_MERCATOR : GMT::WEB_MERCATOR;
+			if (strTileType!="")
+				tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
+					GMT::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMT::PNG_TILE : GMT::TIFF_TILE;
+		}
 
-		wcout<<L"Input container info: tileType="<<TileName::tileExtension(poSrcContainer->getTileType());
-		wcout<<L", proj="<<(poSrcContainer->getProjType()==WEB_MERCATOR)<<endl;
+		cout<<"Input container info: tileType="<<GMT::TileName::tileExtension(poSrcContainer->getTileType());
+		cout<<", proj="<<(poSrcContainer->getProjType()==GMT::WEB_MERCATOR)<<endl;
 		delete(poSrcContainer);		
 	}
 
 
 	
-	TileName		*poSrcTileName = NULL;
-	if (IsDirectory(srcPath))
+	GMT::TileName		*poSrcTileName = NULL;
+	if (GMT::IsDirectory(srcPath))
 	{
-		if ((strSrcTemplate==L"") || (strSrcTemplate==L"kosmosnimki"))
-			poSrcTileName = new KosmosnimkiTileName(srcPath,tileType);
-		else if (strSrcTemplate==L"standard") 
-			poSrcTileName = new StandardTileName(srcPath,(L"{z}\\{x}\\{z}_{x}_{y}."+TileName::tileExtension(tileType)));
+		if ((strSrcTemplate=="") || (strSrcTemplate=="kosmosnimki"))
+			poSrcTileName = new GMT::KosmosnimkiTileName(srcPath,tileType);
+		else if (strSrcTemplate=="standard") 
+			poSrcTileName = new GMT::StandardTileName(srcPath,("{z}/{x}/{z}_{x}_{y}."+ GMT::TileName::tileExtension(tileType)));
 		else 
-			poSrcTileName = new StandardTileName(srcPath,strSrcTemplate);
+			poSrcTileName = new GMT::StandardTileName(srcPath,strSrcTemplate);
 	}
 
-	TilePyramid	*poSrcTilePyramid = NULL;
-	if (IsDirectory(srcPath))	poSrcTilePyramid = new TileFolder(poSrcTileName, FALSE);	
-	else						poSrcTilePyramid = GMTOpenTileContainerForReading(srcPath);
+	GMT::TilePyramid	*poSrcTilePyramid = NULL;
+	if (GMT::IsDirectory(srcPath))	poSrcTilePyramid = new GMT::TileFolder(poSrcTileName, FALSE);	
+	else						poSrcTilePyramid = GMT::OpenTileContainerForReading(srcPath);
 	
 
-	TileName		*poDestTileName		= NULL;
-	TilePyramid		*poDestTilePyramid	= NULL;
-	BOOL			bDestFolder			= (	(MakeLower(destPath).find(L".mbtiles") == wstring::npos) && 
-											(MakeLower(destPath).find(L".tiles") == wstring::npos)) ? TRUE : FALSE;
+	GMT::TileName		*poDestTileName		= NULL;
+	GMT::TilePyramid		*poDestTilePyramid	= NULL;
+	BOOL			bDestFolder			= (	(GMT::MakeLower(destPath).find(".mbtiles") == string::npos) && 
+											(GMT::MakeLower(destPath).find(".tiles") == string::npos)) ? TRUE : FALSE;
 	if (bDestFolder)
 	{
-		if (!FileExists(destPath))
+		if (!GMT::FileExists(destPath))
 		{
-			if (!CreateDirectory(destPath.c_str(),NULL))
+			if (!GMT::CreateDirectory(destPath.c_str()))
 			{
-				wcout<<L"Error: can't create folder: "<<destPath<<endl;
-				return 0;
+				cout<<"Error: can't create folder: "<<destPath<<endl;
+				return -1;
 			}
 		}
 
-		if ((strDestTemplate==L"") || (strDestTemplate==L"kosmosnimki"))
-			poDestTileName = new KosmosnimkiTileName(destPath,tileType);
-		else if (strDestTemplate==L"standard") 
-			poDestTileName = new StandardTileName(destPath,(L"{z}\\{x}\\{z}_{x}_{y}."+TileName::tileExtension(tileType)));
+		if ((strDestTemplate=="") || (strDestTemplate=="kosmosnimki"))
+			poDestTileName = new GMT::KosmosnimkiTileName(destPath,tileType);
+		else if (strDestTemplate=="standard") 
+			poDestTileName = new GMT::StandardTileName(destPath,("{z}/{x}/{z}_{x}_{y}."+GMT::TileName::tileExtension(tileType)));
 		else 
-			poDestTileName = new StandardTileName(destPath,strDestTemplate);
+			poDestTileName = new GMT::StandardTileName(destPath,strDestTemplate);
 
-		poDestTilePyramid = new TileFolder(poDestTileName,FALSE);
+		poDestTilePyramid = new GMT::TileFolder(poDestTileName,FALSE);
 	}
 	else
 	{
 		OGREnvelope mercEnvelope;
-		if (borderFilePath!=L"")
+		if (borderFilePath!="")
 		{
-			VectorBorder *pVB = VectorBorder::createFromVectorFile(borderFilePath,mercType);
-			if (!pVB) return 0;
+			GMT::VectorBorder *pVB = GMT::VectorBorder::createFromVectorFile(borderFilePath,mercType);
+			if (!pVB) return -1;
 			mercEnvelope = pVB->getEnvelope();
 			delete(pVB);
 		}
 		else mercEnvelope = poSrcTilePyramid->getMercatorEnvelope();
 		
-		if (MakeLower(destPath).find(L".mbtiles") != wstring::npos) 
-			poDestTilePyramid = new MBTileContainer(destPath,tileType,mercType,mercEnvelope); 
+		if (GMT::MakeLower(destPath).find(".mbtiles") != string::npos) 
+			poDestTilePyramid = new GMT::MBTileContainer(destPath,tileType,mercType,mercEnvelope); 
 		else
-			poDestTilePyramid = new GMTileContainer(destPath,
-													tileType,
-													mercType,
-													mercEnvelope,
-													(nMaxZoom == -1) ? poSrcTilePyramid->getMaxZoom() : nMaxZoom,
-													FALSE);
+			poDestTilePyramid = new GMT::GMTileContainer(destPath,
+														tileType,
+														mercType,
+														mercEnvelope,
+														(nMaxZoom == -1) ? poSrcTilePyramid->getMaxZoom() : nMaxZoom,
+														FALSE);
 	}
 	
 	list<__int64> oTileList;
-	wcout<<L"calculating number of tiles: ";
-	wcout<<poSrcTilePyramid->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
+	cout<<"calculating number of tiles: ";
+	cout<<poSrcTilePyramid->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
 	
 	if (oTileList.size()>0)
 	{
-		wcout<<"coping tiles: 0% ";
+		cout<<"coping tiles: 0% ";
 		int tilesCopied = 0;
 		for (list<__int64>::iterator iter = oTileList.begin(); iter!=oTileList.end();iter++)
 		{

@@ -1,25 +1,31 @@
 #pragma once
 #include "stdafx.h"
+#include <windows.h>
 
 
-//wstring		_GetAbsolutePath(wstring strPath, wstring strFile);
+//string		_GetAbsolutePath(string path, string fileName);
 namespace GMT
 {
 
-wstring		RemovePath	(const wstring& strFileName);
-wstring		RemoveExtension(wstring& strFileName);
-wstring		GetPath(wstring strFileName);
-wstring		RemoveEndingSlash(wstring	folderName);
-BOOL		FileExists	(wstring strFile);
-BOOL		IsDirectory	(wstring strPath);
-BOOL		FindFilesInFolderByPattern (list<wstring> &oFilesList, wstring searchPattern);
-BOOL		FindFilesInFolderByExtension (list<wstring> &oFilesList, wstring strFolder, wstring	strExtension, BOOL bRecursive);
-BOOL		WriteStringToFile(wstring strFileName, wstring strText);
-BOOL		writeWLDFile	(wstring strFileName, double dULx, double dULy, double dRes);
-BOOL		SaveDataToFile	(wstring strFileName, void *pData, int size);
-BOOL		ReadDataFromFile(wstring fileName, BYTE *&pData, unsigned int &size);
-wstring		GetAbsolutePath (wstring basePath, wstring relativePath);
-wstring		GetExtension (wstring path);
+string		RemovePath	(const string& fileName);
+string		RemoveExtension(string& fileName);
+string		GetPath(string fileName);
+string		RemoveEndingSlash(string	folderName);
+BOOL		FileExists	(string fileName);
+BOOL		IsDirectory	(string path);
+BOOL		FindFilesInFolderByPattern (list<string> &fileList, string searchPattern);
+BOOL		FindFilesInFolderByExtension (list<string> &fileList, string strFolder, string	strExtension, BOOL bRecursive);
+BOOL		WriteToTextFile(string fileName, string strText);
+BOOL		writeWLDFile	(string fileName, double dULx, double dULy, double dRes);
+BOOL		SaveDataToFile	(string fileName, void *pData, int size);
+BOOL		ReadDataFromFile(string fileName, BYTE *&pData, unsigned int &size);
+string		GetAbsolutePath (string basePath, string relativePath);
+string		GetExtension (string path);
+BOOL		CreateDirectory(string path);
+BOOL		DeleteFile(string	path);
+BOOL		RenameFile(string oldPath, string newPath);
+FILE*		OpenFile(string	fileName, string mode);
+
 
 
 }

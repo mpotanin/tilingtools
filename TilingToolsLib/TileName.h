@@ -255,34 +255,34 @@ class TileName
 {
 public:
 
-	static wstring tileExtension(TileType tileType)
+	static string tileExtension(TileType tileType)
 	{
 		switch (tileType)
 		{
 			case JPEG_TILE:
-				return L"jpg";
+				return "jpg";
 			case PNG_TILE:
-				return L"png";
+				return "png";
 			case TIFF_TILE:
-				return L"tif";
+				return "tif";
 		}
-		return L"";
+		return "";
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ///Эти методы нужно реализовать в производном классе (см. KosmosnimkiTileName)
 ////////////////////////////////////////////////////////////////////////////////////////////
-	virtual	wstring		getTileName				(int nZoom, int nX, int nY) = 0;
-	virtual	BOOL		extractXYZFromTileName	(wstring strTileName, int &z, int &x, int &y) = 0;
+	virtual	string		getTileName				(int nZoom, int nX, int nY) = 0;
+	virtual	BOOL		extractXYZFromTileName	(string strTileName, int &z, int &x, int &y) = 0;
 	virtual	BOOL		createFolder			(int nZoom, int nX, int nY) = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-	wstring getFullTileName (int nZoom, int nX, int nY)
+	string getFullTileName (int nZoom, int nX, int nY)
 	{
-		return baseFolder + L"\\" + getTileName(nZoom,nX,nY);
+		return baseFolder + "/" + getTileName(nZoom,nX,nY);
 	}
 
-	wstring getBaseFolder ()
+	string getBaseFolder ()
 	{
 		return baseFolder;
 	}
@@ -291,27 +291,27 @@ public:
 	
 
 public:
-	wstring		baseFolder;
+	string		baseFolder;
 	TileType	tileType;
-	//wstring	tileExtension;
+	//string	tileExtension;
 
 protected:
-	_TCHAR buf[1000];
+	char buf[1000];
 };
 
 
 class StandardTileName : public TileName
 {
 public:
-	StandardTileName (wstring baseFolder, wstring strTemplate);
-	static BOOL	validateTemplate	(wstring strTemplate);
-	wstring	getTileName (int nZoom, int nX, int nY);
+	StandardTileName (string baseFolder, string strTemplate);
+	static BOOL	validateTemplate	(string strTemplate);
+	string	getTileName (int nZoom, int nX, int nY);
 
-	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y);
+	BOOL extractXYZFromTileName (string strTileName, int &z, int &x, int &y);
 	BOOL createFolder (int nZoom, int nX, int nY);
 protected:
-	wstring	strTemplate;
-	wregex	rxTemplate;
+	string	strTemplate;
+	regex	rxTemplate;
 	int		zxyPos[3];
 };
 
@@ -319,9 +319,9 @@ protected:
 class KosmosnimkiTileName : public TileName
 {
 public:
-	KosmosnimkiTileName (wstring strTilesFolder, TileType tileType = JPEG_TILE);
-	wstring	getTileName (int nZoom, int nX, int nY);
-	BOOL extractXYZFromTileName (wstring strTileName, int &z, int &x, int &y);
+	KosmosnimkiTileName (string strTilesFolder, TileType tileType = JPEG_TILE);
+	string	getTileName (int nZoom, int nX, int nY);
+	BOOL extractXYZFromTileName (string strTileName, int &z, int &x, int &y);
 	BOOL createFolder (int nZoom, int nX, int nY);
 };
 

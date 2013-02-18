@@ -6,10 +6,10 @@ namespace GMT
 {
 
 
-TileContainer* GMTOpenTileContainerForReading (wstring fileName)
+TileContainer* OpenTileContainerForReading (string fileName)
 {
 	TileContainer *poTC = NULL;
-	if (MakeLower(fileName).find(L".mbtiles") != wstring::npos) poTC = new MBTileContainer();
+	if (MakeLower(fileName).find(".mbtiles") != string::npos) poTC = new MBTileContainer();
 	else poTC = new GMTileContainer();
 
 	if (poTC->openForReading(fileName)) return poTC;
@@ -22,7 +22,7 @@ TileContainer* GMTOpenTileContainerForReading (wstring fileName)
 };
 
 
-GMTileContainer::GMTileContainer	(	wstring				containerFileName, 
+GMTileContainer::GMTileContainer	(	string				containerFileName, 
 										TileType			tileType,
 										MercatorProjType	mercType,
 										OGREnvelope			envelope, 
@@ -54,16 +54,16 @@ GMTileContainer::GMTileContainer	()
 };	
 
 	/*
-	GMTileContainer (wstring fileName)
+	GMTileContainer (string fileName)
 	{
 		if (!openForReading(fileName))
 		{
-			wcout<<L"Error: can't open for reading: "<<fileName<<endl;
+			cout<<"Error: can't open for reading: "<<fileName<<endl;
 		}
 	}
 	*/
 
-BOOL GMTileContainer::openForReading (wstring containerFileName)
+BOOL GMTileContainer::openForReading (string containerFileName)
 {
 	
 	this->bReadOnly		= TRUE;
@@ -73,12 +73,12 @@ BOOL GMTileContainer::openForReading (wstring containerFileName)
 	this->poTileBuffer	= NULL;
 	this->USE_BUFFER	= FALSE;
 	
-	if (!(this->containerFileData = _wfopen(containerFileName.c_str(),L"rb"))) return FALSE;
+	if (!(this->containerFileData = OpenFile(containerFileName,"rb"))) return FALSE;
 	BYTE	head[12];
 	fread(head,1,12,this->containerFileData);
 	if (!((head[0]=='G')&&(head[1]=='M')&&(head[2]=='T')&&(head[3]=='C'))) 
 	{
-		wcout<<L"Error: incorrect input tile container file: "<<containerFileName<<endl;
+		cout<<"Error: incorrect input tile container file: "<<containerFileName<<endl;
 		return FALSE;
 	}
 		
@@ -173,9 +173,9 @@ BOOL		GMTileContainer::close()
 	}
 	else 
 	{
-		wstring	fileTempName	= containerFileName + L".temp";
-		FILE	*fpNew;
-		if (!(fpNew = _wfopen(fileTempName.c_str(),L"wb"))) 	return FALSE;
+		string	fileTempName	= containerFileName + ".temp";
+		FILE	*fpNew = OpenFile(fileTempName,"wb");
+		if (!fpNew) 	return FALSE;
 		BYTE	*header;
 		this->writeHeaderToByteArray(header);
 		fwrite(header,1,headerSize(),fpNew);
@@ -198,7 +198,7 @@ BOOL		GMTileContainer::close()
 
 		fclose(fpNew);
 		DeleteFile(containerFileName.c_str());
-		_wrename(fileTempName.c_str(),containerFileName.c_str());
+		RenameFile(fileTempName.c_str(),containerFileName.c_str());
 	}
 	
 	empty();
@@ -209,17 +209,17 @@ BOOL		GMTileContainer::close()
 int 		GMTileContainer::getTileList(	list<__int64> &tileList, 
 											int minZoom, 
 											int maxZoom, 
-											wstring vectorFile, 
+											string vectorFile, 
 											MercatorProjType mercType
 											)
 {
 	VectorBorder *poVB = NULL;
 
-	if (vectorFile!=L"") 
+	if (vectorFile!="") 
 	{
 		if(!(poVB = VectorBorder::createFromVectorFile(vectorFile,this->mercType))) 
 		{
-			wcout<<L"Error: can't open vector file: "<<vectorFile<<endl;
+			cout<<"Error: can't open vector file: "<<vectorFile<<endl;
 			return 0;
 		}
 	}
@@ -232,7 +232,7 @@ int 		GMTileContainer::getTileList(	list<__int64> &tileList,
 			if(!tileXYZ(i,z,x,y)) continue;
 			if ((maxZoom>=0)&&(z>maxZoom)) continue;
 			if ((minZoom>=0)&&(z<minZoom)) continue;
-			if (vectorFile!=L"") 
+			if (vectorFile!="") 
 				if (!poVB->intersects(z,x,y)) continue;
 			tileList.push_back(tileID(z,x,y));
 		}
@@ -299,14 +299,14 @@ int			GMTileContainer::getMaxZoom()
 
 BOOL 	GMTileContainer::init	(	int					tileBounds[92], 
 									BOOL				useBuffer, 
-									wstring				containerFileName, 
+									string				containerFileName, 
 									TileType			tileType,
 									MercatorProjType	mercType)
 {
 	this->bReadOnly					= FALSE;
 	this->tileType					= tileType;
 	this->mercType					= mercType;
-	this->containerFileName			= containerFileName;// + L".tiles";
+	this->containerFileName			= containerFileName;// + ".tiles";
 	this->containerFileData			= NULL;
 	this->containerLength			= 0;
 	this->MAX_TILES_IN_CONTAINER	= 0;
@@ -369,9 +369,9 @@ BOOL	GMTileContainer::addTileToContainerFile(int z, int x, int y, BYTE *pData, u
 
 	if (!containerFileData)
 	{
-		if (!(containerFileData = _wfopen(containerFileName.c_str(),L"wb+")))
+		if (!(containerFileData = OpenFile(containerFileName,"wb+")))
 		{
-			wcout<<L"Can't add tile to file: "<<containerFileName<<endl;
+			cout<<"Can't add tile to file: "<<containerFileName<<endl;
 			return FALSE;
 		}
 		BYTE	*header;
@@ -399,9 +399,9 @@ BOOL	GMTileContainer::getTileFromContainerFile (int z, int x, int y, BYTE *&pDat
 	
 	if (!containerFileData)
 	{
-		if (!(containerFileData = _wfopen(containerFileName.c_str(),L"rb")))
+		if (!(containerFileData =  OpenFile(containerFileName,"rb")))
 		{
-			wcout<<L"Can't add tile to file: "<<containerFileName<<endl;
+			cout<<"Can't read tile from file: "<<containerFileName<<endl;
 			return FALSE;
 		}
 	}
@@ -417,9 +417,9 @@ BOOL	GMTileContainer::writeTilesToContainerFileFromBuffer()
 {
 	if (!containerFileData)
 	{
-		if (!(containerFileData = _wfopen(containerFileName.c_str(),L"wb+")))
+		if (!(containerFileData = OpenFile(containerFileName,"wb+")))
 		{
-			wcout<<L"Can't create file: "<<containerFileName<<endl;
+			cout<<"Can't create file: "<<containerFileName<<endl;
 			return FALSE;
 		}
 	}
@@ -551,11 +551,11 @@ MBTileContainer::~MBTileContainer ()
 }
 
 /*
-MBTileContainer (wstring fileName)
+MBTileContainer (string fileName)
 {
 	if (! openForReading(fileName))
 	{
-		wcout<<L"Error: can't open for reading: "<<fileName<<endl;
+		cout<<"Error: can't open for reading: "<<fileName<<endl;
 	}
 }
 */
@@ -574,13 +574,11 @@ int		MBTileContainer::getMaxZoom()
 	return maxZoom;
 };
 	
-BOOL MBTileContainer::openForReading  (wstring fileName)
+BOOL MBTileContainer::openForReading  (string fileName)
 {
-	string		fileNameUTF8;
-	wstrToUtf8(fileNameUTF8,fileName);
-	if (SQLITE_OK != sqlite3_open(fileNameUTF8.c_str(),&this->pDB))
+	if (SQLITE_OK != sqlite3_open(fileName.c_str(),&this->pDB))
 	{
-		wcout<<L"Error: can't open mbtiles file: "<<fileName<<endl;
+		cout<<"Error: can't open mbtiles file: "<<fileName<<endl;
 		return FALSE;
 	}
 
@@ -619,13 +617,11 @@ BOOL MBTileContainer::openForReading  (wstring fileName)
 }
 
 
-MBTileContainer::MBTileContainer (wstring fileName, TileType tileType,MercatorProjType mercType, OGREnvelope mercEnvelope)
+MBTileContainer::MBTileContainer (string fileName, TileType tileType,MercatorProjType mercType, OGREnvelope mercEnvelope)
 {
 	pDB = NULL;
 	if (FileExists(fileName)) DeleteFile(fileName.c_str());
-	string		fileNameUTF8;
-	wstrToUtf8(fileNameUTF8,fileName);
-	if (SQLITE_OK != sqlite3_open(fileNameUTF8.c_str(),&this->pDB)) return;
+	if (SQLITE_OK != sqlite3_open(fileName.c_str(),&this->pDB)) return;
 
 	string	strSQL = "CREATE TABLE metadata (name text, value text)";
 	char	*errMsg = NULL;
@@ -688,7 +684,7 @@ BOOL	MBTileContainer::addTile(int z, int x, int y, BYTE *pData, unsigned int siz
 		char	*errMsg = NULL;
 		if (SQLITE_DONE != sqlite3_exec(pDB, strSQL.c_str(), NULL, 0, &errMsg))
 		{
-			cout<<L"Error: can't delete existing tile: "<<strSQL<<endl;	
+			cout<<"Error: can't delete existing tile: "<<strSQL<<endl;	
 			return FALSE;
 		}
 	}
@@ -760,7 +756,7 @@ BOOL		MBTileContainer::getTile(int z, int x, int y, BYTE *&pData, unsigned int &
 	return TRUE;
 }
 
-int 		MBTileContainer::getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile, MercatorProjType mercType)
+int 		MBTileContainer::getTileList(list<__int64> &tileList, int minZoom, int maxZoom, string vectorFile, MercatorProjType mercType)
 {
 	if (this->pDB == NULL) return 0;
 	char buf[256];
@@ -927,28 +923,28 @@ int			TileFolder::getMaxZoom()
 };
 
 
-int 		TileFolder::getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile,  MercatorProjType mercType)
+int 		TileFolder::getTileList(list<__int64> &tileList, int minZoom, int maxZoom, string vectorFile,  MercatorProjType mercType)
 {
 	VectorBorder *poVB = NULL;
-	if (vectorFile!=L"") 
+	if (vectorFile!="") 
 	{
 		if( !(poVB = VectorBorder::createFromVectorFile(vectorFile, mercType))) 
 		{
-			wcout<<L"Error: can't open vector file: "<<vectorFile<<endl;
+			cout<<"Error: can't open vector file: "<<vectorFile<<endl;
 			return 0;
 		}
 	}
 
-	list<wstring> filesList;
+	list<string> filesList;
 	FindFilesInFolderByExtension(filesList,this->poTileName->getBaseFolder(),TileName::tileExtension(poTileName->tileType),TRUE);
 
-	for (list<wstring>::iterator iter = filesList.begin(); iter!=filesList.end();iter++)
+	for (list<string>::iterator iter = filesList.begin(); iter!=filesList.end();iter++)
 	{
 		int x,y,z;
 		if(!this->poTileName->extractXYZFromTileName((*iter),z,x,y)) continue;
 		if ((maxZoom>=0)&&(z>maxZoom)) continue;
 		if ((minZoom>=0)&&(z<minZoom)) continue;
-		if (vectorFile!=L"") 
+		if (vectorFile!="") 
 			if (!poVB->intersects(z,x,y)) continue;
 		tileList.push_back(tileID(z,x,y));
 	}
@@ -977,7 +973,7 @@ OGREnvelope TileFolder::getMercatorEnvelope()
 BOOL		TileFolder::getTileBounds (int tileBounds[92])
 {
 	list<__int64> oTileList;
-	if (!getTileList(oTileList,-1,-1,L"")) return FALSE;
+	if (!getTileList(oTileList,-1,-1,"")) return FALSE;
 	for (int z=0; z<23;z++)
 	{
 		tileBounds[4*z+3]=(tileBounds[4*z+2]=0);

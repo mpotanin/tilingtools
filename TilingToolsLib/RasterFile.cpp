@@ -8,8 +8,6 @@
 namespace GMT
 {
 
-//wstring str_buf;
-//_TCHAR buf[256];
 
 int _stdcall GMTPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
 {
@@ -30,9 +28,9 @@ void RasterFile::delete_all()
 {
 	delete(m_poDataset);
 	m_poDataset = NULL;
-	m_strRasterFile	= L"";
+	m_strRasterFile	= "";
 	m_nBands			= 0;
-	//m_strImageFormat	= L"";
+	//m_strImageFormat	= "";
 	m_isGeoReferenced = FALSE;
 }
 
@@ -44,19 +42,16 @@ BOOL RasterFile::close()
 	return FALSE;
 }
 
-BOOL RasterFile::init(wstring strRasterFile, BOOL isGeoReferenced, double dShiftX, double dShiftY)
+BOOL RasterFile::init(string strRasterFile, BOOL isGeoReferenced, double dShiftX, double dShiftY)
 {
 	delete_all();
 	GDALDriver *poDriver = NULL;
 	
-	string strRasterFileUTF8;
-	wstrToUtf8(strRasterFileUTF8,strRasterFile);
-	m_poDataset = (GDALDataset *) GDALOpen(strRasterFileUTF8.c_str(), GA_ReadOnly );
+	m_poDataset = (GDALDataset *) GDALOpen(strRasterFile.c_str(), GA_ReadOnly );
 	
-
 	if (m_poDataset==NULL)
 	{
-		wcout<<L"Error: RasterFile::init: can't open raster image"<<endl;
+		cout<<"Error: RasterFile::init: can't open raster image"<<endl;
 		return FALSE;
 	}
 	
@@ -64,7 +59,7 @@ BOOL RasterFile::init(wstring strRasterFile, BOOL isGeoReferenced, double dShift
 
 	if (!(poDriver = m_poDataset->GetDriver()))
 	{
-		wcout<<L"Error: RasterFile::init: can't get GDALDriver from image"<<endl;
+		cout<<"Error: RasterFile::init: can't get GDALDriver from image"<<endl;
 		return FALSE;
 	}
 
@@ -87,7 +82,7 @@ BOOL RasterFile::init(wstring strRasterFile, BOOL isGeoReferenced, double dShift
 		}
 		else
 		{
-			wcout<<L"Error: RasterFile::init: can't read georeference"<<endl;
+			cout<<"Error: RasterFile::init: can't read georeference"<<endl;
 			return FALSE;
 		}
 	}
@@ -111,56 +106,26 @@ BOOL RasterFile::getNoDataValue (int *pNoDataValue)
 	return TRUE;
 }
 
-/*
-BOOL RasterFile::writeWLDFile (wstring strRasterFile, double dULx, double dULy, double dRes)
-{
-	if (strRasterFile.length()>1)
-	{
-		strRasterFile[strRasterFile.length()-2]=strRasterFile[strRasterFile.length()-1];
-		strRasterFile[strRasterFile.length()-1]='w';
-	}
-	
-
-	FILE *fp;
-
-	if (!(fp=_wfopen(strRasterFile.c_str(),L"w"))) return FALSE;
-
-	fwprintf(fp,L"%.10lf\n",dRes);
-	fwprintf(fp,L"%lf\n",0.0);
-	fwprintf(fp,L"%lf\n",0.0);
-	fwprintf(fp,L"%.10lf\n",-dRes);
-	fwprintf(fp,L"%.10lf\n",dULx);
-	fwprintf(fp,L"%.10lf\n",dULy);
-
-	fclose(fp);
-
-	return TRUE;
-}
-*/
-
-
-
-
 
 RasterFile::RasterFile()
 {
 	///*
 	//*/
 	m_poDataset = NULL;
-	m_strRasterFile	= L"";
+	m_strRasterFile	= "";
 	m_nBands			= 0;
-	//m_strImageFormat	= L"";
+	//m_strImageFormat	= "";
 	m_isGeoReferenced = FALSE;
 	m_nNoDataValue = 0;
 }
 
-RasterFile::RasterFile(wstring strRasterFile, BOOL isGeoReferenced)
+RasterFile::RasterFile(string strRasterFile, BOOL isGeoReferenced)
 {
 	//*/
 	m_poDataset = NULL;
-	m_strRasterFile	= L"";
+	m_strRasterFile	= "";
 	m_nBands			= 0;
-	//m_strImageFormat	= L"";
+	//m_strImageFormat	= "";
 	m_isGeoReferenced = FALSE;
 	m_nNoDataValue = 0;
 	
@@ -231,10 +196,10 @@ GDALDataset*	RasterFile::getGDALDatasetRef()
 	return this->m_poDataset;
 }
 
-BOOL RasterFile::readSpatialRefFromMapinfoTabFile (wstring tabFilePath, OGRSpatialReference *poSRS)
+BOOL RasterFile::readSpatialRefFromMapinfoTabFile (string tabFilePath, OGRSpatialReference *poSRS)
 {
-	FILE *fp;
-	if (!(fp = _wfopen(tabFilePath.c_str(),L"r"))) return FALSE;
+	FILE *fp = OpenFile(tabFilePath,"r");
+	if (!fp) return FALSE;
 	fseek(fp, 0, SEEK_END);
 	long size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -249,7 +214,6 @@ BOOL RasterFile::readSpatialRefFromMapinfoTabFile (wstring tabFilePath, OGRSpati
 														strTabFileData.size() : 
 														strTabFileData.find('\n',start_pos);
 	string strMapinfoProj = strTabFileData.substr(start_pos, end_pos-start_pos+1);
-	//cout<<"Mapinfo: "<<strProj<<endl;
 	if (!OGRERR_NONE==poSRS->importFromMICoordSys(strMapinfoProj.c_str())) return FALSE;
 	
 	return TRUE;
@@ -261,15 +225,13 @@ BOOL	RasterFile::getSpatialRef(OGRSpatialReference	&oSR)
 	const char* strProjRef = GDALGetProjectionRef(this->m_poDataset);
 	if (OGRERR_NONE == oSR.SetFromUserInput(strProjRef)) return TRUE;
 
-	if (FileExists(RemoveExtension(this->m_strRasterFile)+L".prj"))
+	if (FileExists(RemoveExtension(this->m_strRasterFile)+".prj"))
 	{
-		wstring prjFile		= RemoveExtension(this->m_strRasterFile)+L".prj";
-		string prjFileUTF8;
-		wstrToUtf8(prjFileUTF8,prjFile);
-		return 	(OGRERR_NONE==oSR.SetFromUserInput(prjFileUTF8.c_str()));	
+		string prjFile		= RemoveExtension(this->m_strRasterFile)+".prj";
+		return 	(OGRERR_NONE==oSR.SetFromUserInput(prjFile.c_str()));	
 	}
-	else if (FileExists(RemoveExtension(this->m_strRasterFile)+L".tab"))
-		return readSpatialRefFromMapinfoTabFile(RemoveExtension(this->m_strRasterFile)+L".tab",&oSR);
+	else if (FileExists(RemoveExtension(this->m_strRasterFile)+".tab"))
+		return readSpatialRefFromMapinfoTabFile(RemoveExtension(this->m_strRasterFile)+".tab",&oSR);
 
 	return FALSE;
 }
@@ -369,7 +331,7 @@ void BundleOfRasterFiles::close_all(void)
 	//this->m_oImagesBounds.empty();
 	//this->m_poImagesBorders.empty();
 
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		delete((*iter).second.second);
 	}
@@ -389,14 +351,14 @@ int BundleOfRasterFiles::ImagesCount()
 }
 
 
-int	BundleOfRasterFiles::init (wstring inputPath, MercatorProjType mercType, wstring vectorFile, double dShiftX, double dShiftY)
+int	BundleOfRasterFiles::init (string inputPath, MercatorProjType mercType, string vectorFile, double dShiftX, double dShiftY)
 {
 	close_all();
-	list<wstring> strFilesList;
+	list<string> strFilesList;
 	if (!FindFilesInFolderByPattern(strFilesList,inputPath)) return 0;
 
 	this->mercType = mercType;
-	for (std::list<wstring>::iterator iter = strFilesList.begin(); iter!=strFilesList.end(); iter++)
+	for (std::list<string>::iterator iter = strFilesList.begin(); iter!=strFilesList.end(); iter++)
 	{
 		if (strFilesList.size()==1) addItemToBundle((*iter),vectorFile,dShiftX,dShiftY);
 		else addItemToBundle((*iter),VectorBorder::getVectorFileNameByRasterFileName(*iter),dShiftX,dShiftY);
@@ -409,17 +371,17 @@ int	BundleOfRasterFiles::init (wstring inputPath, MercatorProjType mercType, wst
 
 
 
-BOOL	BundleOfRasterFiles::addItemToBundle (wstring rasterFile, wstring	vectorFile, double dShiftX, double dShiftY)
+BOOL	BundleOfRasterFiles::addItemToBundle (string rasterFile, string	vectorFile, double dShiftX, double dShiftY)
 {	
 	RasterFile oImage;
 	if (!oImage.init(rasterFile,TRUE,dShiftX,dShiftY))
 	{
-		wcout<<L"Error: can't init. image: "<<rasterFile<<endl;
+		cout<<"Error: can't init. image: "<<rasterFile<<endl;
 		return 0;
 	}
 
 	VectorBorder	*border = VectorBorder::createFromVectorFile(vectorFile,mercType);
-	pair<wstring,pair<OGREnvelope,VectorBorder*>> p;
+	pair<string,pair<OGREnvelope,VectorBorder*>> p;
 	p.first			= rasterFile;
 	p.second.first	= oImage.getMercatorEnvelope(mercType);
 	p.second.second = border;
@@ -427,58 +389,10 @@ BOOL	BundleOfRasterFiles::addItemToBundle (wstring rasterFile, wstring	vectorFil
 	return TRUE;
 }
 
-/*
-wstring BundleOfRasterFiles::BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection)
+list<string>	BundleOfRasterFiles::GetFilesList()
 {
-	if (m_nLength == 0) return L"";
-	if (m_nLength == 1) return (*m_strFilesList.begin());
-	list<wstring>::iterator iter;
-	wstring strBestImage;
-    max_intersection = 0;
-	list<OGREnvelope>::iterator iter_ = m_oImagesBounds.begin(); 
-	for (iter = m_strFilesList.begin();iter!=m_strFilesList.end();iter++)
-	{
-		
-		OGREnvelope oEnvelope = (*iter_);
-		double min_x_ = max(min_x,oEnvelope.MinX);
-		double max_x_ = min(max_x,oEnvelope.MaxX);
-		double max_y_ = min(max_y,oEnvelope.MaxY);
-		double min_y_ = max(min_y,oEnvelope.MinY);
-		double intersection = ((max_x_-min_x_)*(max_y_-min_y_))/((max_x-min_x)*(max_y-min_y));
-		if ((intersection>max_intersection)&&(max_x_-min_x_>=0))
-		{
-			max_intersection = intersection;
-			strBestImage = (*iter);
-		}
-		iter_++;
-	}
-
-	return strBestImage;
-}
-*/
-
-/*
-OGREnvelope BundleOfRasterFiles::GetEnvelopeOfImage(wstring strFileName)
-{
-	list<OGREnvelope>::iterator iter_ = this->m_oImagesBounds.begin();
-	OGREnvelope oEnvelope;
-
-	for (list<wstring>::iterator iter = this->m_strFilesList.begin();iter!=this->m_strFilesList.end();iter++)
-	{
-		if ((*iter)==strFileName) return *iter_;
-		iter_++;
-	}
-	//return oEnvelope;
-}
-*/
-
-
-
-
-list<wstring>	BundleOfRasterFiles::GetFilesList()
-{
-	std::list<wstring> filesList;
-	for (std::list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end(); iter++)
+	std::list<string> filesList;
+	for (std::list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end(); iter++)
 		filesList.push_back((*iter).first);
 
 	return filesList;
@@ -493,7 +407,7 @@ OGREnvelope BundleOfRasterFiles::getMercatorEnvelope()
 	oEnvelope.MaxY=(oEnvelope.MaxX = -1e+100);oEnvelope.MinY=(oEnvelope.MinX = 1e+100);
 	if (dataList.size() == 0) return oEnvelope;
 
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		
 		oEnvelope = ((*iter).second.second != NULL) ?	VectorBorder::combineOGREnvelopes(
@@ -554,30 +468,12 @@ int		BundleOfRasterFiles::calculateBestMercZoom()
 }
 
 
-/*
-OGREnvelope		BundleOfRasterFiles::getEnvelopeOnlyByVectorBorders()
+list<string>	 BundleOfRasterFiles::getFilesListByEnvelope(OGREnvelope mercatorEnvelope)
 {
-	OGREnvelope	oEnvelope;
-	oEnvelope.MaxY=(oEnvelope.MaxX = -1e+100);oEnvelope.MinY=(oEnvelope.MinX = 1e+100);
-	if (dataList.size() == 0) return oEnvelope;
-
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
-	{
-		oEnvelope = CombineEnvelopes(oEnvelope,(*iter).second.second->GetEnvelope());
-	}
-
-	return oEnvelope; 
-}
-*/
+	std::list<string> oList;
 
 
-
-list<wstring>	 BundleOfRasterFiles::getFilesListByEnvelope(OGREnvelope mercatorEnvelope)
-{
-	std::list<wstring> oList;
-
-
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		if ((*iter).second.second->intersects(mercatorEnvelope)) oList.push_back((*iter).first);
 
@@ -589,7 +485,7 @@ list<wstring>	 BundleOfRasterFiles::getFilesListByEnvelope(OGREnvelope mercatorE
 
 BOOL	BundleOfRasterFiles::intersects(OGREnvelope mercatorEnvelope)
 {
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		if (mercatorEnvelope.Intersects((*iter).second.first))
 		{
@@ -605,52 +501,6 @@ BOOL	BundleOfRasterFiles::intersects(OGREnvelope mercatorEnvelope)
 }
 
 
-/*
-BOOL	BundleOfRasterFiles::createBundleBorder (VectorBorder &border)
-{
-	OGRGeometry	*poUnion = NULL;
-		
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end(); iter++)
-	{
-		if (poUnion == NULL)
-		{
-			poUnion = (*iter).second.second->getOGRGeometryRef();
-			continue;
-		}
-		OGRGeometry *temp = poUnion->Union((*iter).second.second->getOGRGeometryRef());
-		if (temp==NULL)
-		{
-			poUnion->empty();
-			return TRUE;
-		}
-		poUnion->empty();
-		poUnion = temp;
-
-		VectorBorder oImageBorder;
-		VectorFile::OpenAndCreatePolygonInMercator(VectorFile::GetVectorFileByRasterFileName(*iter),oImageBorder);//(wstring strVectorFile, VectorBorder &oPolygon);
-		if (poUnion == NULL)
-		{
-			poUnion = oImageBorder.getOGRGeometryRef()->clone();
-			continue;
-		}
-		
-		OGRGeometry *temp = poUnion->Union(oImageBorder.getOGRGeometryRef());
-		poUnion->empty();
-		poUnion = temp;
-		
-	}
-
-	border.InitByOGRGeometry(poUnion);
-	poUnion->empty();
-
-	
-	return TRUE;
-}
-*/
-
-
-
-
 BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
 {
 	//создать виртуальный растр по oMercEnvelope и zoom
@@ -661,12 +511,10 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	//создать RasterBuffer
 
 	if (dataList.size()==0) return FALSE;
-	string fileNameUTF8;
-	wstrToUtf8(fileNameUTF8,(*dataList.begin()).first);
-	GDALDataset	*poSrcDS = (GDALDataset*)GDALOpen(fileNameUTF8.c_str(),GA_ReadOnly );
+	GDALDataset	*poSrcDS = (GDALDataset*)GDALOpen((*dataList.begin()).first.c_str(),GA_ReadOnly );
 	if (poSrcDS==NULL)
 	{
-		wcout<<L"Error: can't open raster file: "<<(*dataList.begin()).first<<endl;
+		cout<<"Error: can't open raster file: "<<(*dataList.begin()).first<<endl;
 		return FALSE;
 	}
 	GDALDataType	eDT		= GDALGetRasterDataType(GDALGetRasterBand(poSrcDS,1));
@@ -716,29 +564,19 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
 	if (bNoDataValueFromFile) poVrtDS->GetRasterBand(1)->SetNoDataValue(nNoDataValueFromFile);
 	
-
-	//3908683.878391 7739096.239818 3986955.395355 7817367.756782
-	/*
-	if (fabs(oMercEnvelope.MinX-3908683.878391)<0.1 && fabs(oMercEnvelope.MinY-7739096.239818)<0.1)
-	{
- 		geotransform[2] = 0;
-	}
-	*/
-
-	for (list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		//check if image envelope intersects destination buffer envelope
 		if (!(*iter).second.first.Intersects(oMercEnvelope)) continue;
 		
 		// Open input raster and create source dataset
 		if (dataList.size()==0) return FALSE;
-		wstrToUtf8(fileNameUTF8,(*iter).first);
-		poSrcDS = (GDALDataset*)GDALOpen(fileNameUTF8.c_str(),GA_ReadOnly );
+		poSrcDS = (GDALDataset*)GDALOpen((*iter).first.c_str(),GA_ReadOnly );
 
 	
 		if (poSrcDS==NULL)
 		{
-			wcout<<L"Error: can't open raster file: "<<(*iter).first<<endl;
+			cout<<"Error: can't open raster file: "<<(*iter).first<<endl;
 			continue;
 		}
 			
@@ -750,7 +588,7 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		{
 			if(!inputRF.getDefaultSpatialRef(inputSRS,mercType))
 			{
-				cout<<L"Error: can't read spatial reference from input file: "<<(*dataList.begin()).first<<endl;
+				cout<<"Error: can't read spatial reference from input file: "<<(*dataList.begin()).first<<endl;
 				return FALSE;
 			}
 		}
@@ -809,16 +647,7 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		
 		if (CE_None != oOperation.ChunkAndWarpImage( 0,0,bufWidth,bufHeight))
 		{
-			wcout<<L"Error: warping raster block of image: "<<(*iter).first<<endl;
-
-			/*
-			FILE *fp = _wfopen(L"error.txt",L"rw");
-			string	fileNameUTF8;
-			wstrToUtf8(fileNameUTF8,(*iter).first);
-			fprintf(fp,"%s\n",fileNameUTF8);
-			fprintf(fp,"%lf %lf %lf %lf\n",oMercEnvelope.MinX,oMercEnvelope.MinY,oMercEnvelope.MaxX,oMercEnvelope.MaxY);
-			fclose(fp);
-			*/
+			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
 		}
 	
 
@@ -851,160 +680,3 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
 
 }
-
-/*
-
-BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
-{
-	//создать виртуальный растр по oMercEnvelope и zoom
-	//создать объект GDALWarpOptions 
-	//вызвать ChunkAndWarpImage
-	//вызвать RasterIO для виртуального растра
-	//удалить виртуальный растр, удалить все объекты
-	//создать RasterBuffer
-
-
-
-	// Open input raster and create source dataset
-	RasterFile		inputRF;
-	if (!inputRF.init((*dataList.begin()).first,true))
-	{
-		cout<<L"Error: can't open input file: "<<(*dataList.begin()).first<<endl;
-		return FALSE;
-	}
-
-	GDALDataset*	poSrcDS = inputRF.getGDALDatasetRef();
-	GDALDataType	eDT		= GDALGetRasterDataType(GDALGetRasterBand(poSrcDS,1));
-	int				bands	= poSrcDS->GetRasterCount();
-	double			res		=  MercatorTileGrid::calcResolutionByZoom(zoom);
-    
-	
-	//Initialize destination virtual dataset
-	int				bufWidth	= int(((oMercEnvelope.MaxX - oMercEnvelope.MinX)/res)+0.5);
-	int				bufHeight	= int(((oMercEnvelope.MaxY - oMercEnvelope.MinY)/res)+0.5);
-	double			dfErrorThreshold = 0.125;
-	GDALDataset*	poVrtDS = (GDALDataset*)GDALCreate(
-								GDALGetDriverByName("GTiff"),
-								"/vsimem/tiffinmem",
-								bufWidth,
-								bufHeight,
-								bands,
-								eDT,
-								NULL
-								);
-
-	double			geotransform[6];
-
-	geotransform[0] = oMercEnvelope.MinX;
-
-	geotransform[1] = res;
-	geotransform[2] = 0;
-	geotransform[3] = oMercEnvelope.MaxY;
-	geotransform[4] = 0;
-	geotransform[5] = -res;
-	poVrtDS->SetGeoTransform(geotransform);
-	
-
-	// Get Source coordinate system and set destination  
-	char *pszSrcWKT;
-	char *pszDstWKT = NULL;
-	OGRSpatialReference inputSRS;
-	if (!inputRF.getSpatialRef(inputSRS))
-	{
-		if(!inputRF.getDefaultSpatialRef(inputSRS,mercType))
-		{
-			cout<<L"Error: can't read spatial reference from input file: "<<(*dataList.begin()).first<<endl;
-			return FALSE;
-		}
-	}
-	inputSRS.exportToWkt(&pszSrcWKT);
-	CPLAssert( pszSrcWKT != NULL && strlen(pszSrcWKT) > 0 );
-
-
-	OGRSpatialReference outputSRS;
-	if (mercType == WORLD_MERCATOR)
-	{
-		outputSRS.SetWellKnownGeogCS("WGS84");
-		outputSRS.SetMercator(0,0,1,0,0);
-	}
-	else
-	{
-		outputSRS.importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
-	}
-	outputSRS.exportToWkt( &pszDstWKT );
-
-	poVrtDS->SetProjection(pszDstWKT);
-
-	//poVrtDS->RasterIO(	GF_Write,0,0,bufWidth,bufHeight,oBuffer.getData(),
-	//					bufWidth,bufHeight,oBuffer.getDataType(),
-	//					oBuffer.getBandsCount(),NULL,0,0,0);
-	//GDALFlushCache(poVrtDS);
-
-	
-
-	GDALWarpOptions *psWarpOptions = GDALCreateWarpOptions();
-
-    psWarpOptions->hSrcDS = poSrcDS;
-    psWarpOptions->hDstDS = poVrtDS;
-	psWarpOptions->dfWarpMemoryLimit = 250000000; 
-	
-
-    psWarpOptions->nBandCount = 0;
-   // psWarpOptions->pfnProgress = GDALTermProgress;   
-	psWarpOptions->pfnProgress = GMTPrintNoProgress;  
-
-    // Establish reprojection transformer. 
-
-	psWarpOptions->pTransformerArg = 
-            GDALCreateApproxTransformer( GDALGenImgProjTransform, 
-                                          GDALCreateGenImgProjTransformer(  poSrcDS, 
-																			pszSrcWKT, 
-																			poVrtDS,//hDstDS,
-																			pszDstWKT,//GDALGetProjectionRef(hDstDS), 
-																			FALSE, 0.0, 1 ),
-										 dfErrorThreshold );
-
-	psWarpOptions->pfnTransformer = GDALApproxTransform;
-
-    // Initialize and execute the warp operation. 
-	GDALWarpOperation oOperation;
-	oOperation.Initialize( psWarpOptions );
-    oOperation.ChunkAndWarpImage( 0,0,bufWidth,bufHeight);
-	
-
-	GDALDestroyApproxTransformer(psWarpOptions->pTransformerArg );
-    GDALDestroyWarpOptions( psWarpOptions );
-	//delete[]pszSrcWKT;
-	OGRFree(pszDstWKT);
-	OGRFree(pszSrcWKT);
-	//GDALClose( poSrcDS );
-
-	oBuffer.createBuffer(bands,bufWidth,bufHeight,NULL,eDT,pNoDataValue);
-	int noDataValueFromFile = 0;
-	if	(pNoDataValue) oBuffer.initByNoDataValue(pNoDataValue[0]);
-	else if (pDefaultColor) oBuffer.initByRGBColor(pDefaultColor); 
-	else if (inputRF.getNoDataValue(&noDataValueFromFile)) oBuffer.initByNoDataValue(noDataValueFromFile);
-
-	 
-	poVrtDS->RasterIO(	GF_Read,0,0,bufWidth,bufHeight,oBuffer.getDataRef(),
-						bufWidth,bufHeight,oBuffer.getDataType(),
-						oBuffer.getBandsCount(),NULL,0,0,0);
-	//GDALFlushCache(poVrtDS);
-	GDALClose(poVrtDS);
-	
-	//BYTE * pDataDstBuf = VSIGetMemFileBuffer("/vsimem/tiffinmem",&length, FALSE);
-	//size = length;
-	//GDALClose(poDS);
-	//memcpy((pDataDst = new BYTE[size]),pDataDstBuf,size);
-	VSIUnlink("/vsimem/tiffinmem");
-	
-
-
-
-	//  GDALClose( poDstDS );
-
-
-   
-	return TRUE;
-}
-*/

@@ -20,7 +20,8 @@ public:
 	virtual	BOOL		getTile(int z, int x, int y, BYTE *&pData, unsigned int &size) = 0;
 	virtual	BOOL		tileExists(int z, int x, int y) = 0; 
 	virtual BOOL		close() = 0;
-	virtual int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile = L"", MercatorProjType mercType = WORLD_MERCATOR) = 0;
+	virtual int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, string vectorFile = "", 
+									MercatorProjType mercType = WORLD_MERCATOR) = 0;
 	virtual OGREnvelope getMercatorEnvelope() = 0;
 	virtual int			getMaxZoom() = 0;
 	//virtual BOOL		getTileBounds (int tileBounds[92]) = 0;
@@ -58,7 +59,7 @@ class TileContainer : public TilePyramid
 
 public:
 	
-	virtual BOOL					openForReading (wstring fileName) = 0;
+	virtual BOOL					openForReading (string fileName) = 0;
 	virtual TileType				getTileType() = 0;
 	virtual MercatorProjType		getProjType() = 0;
 };
@@ -69,7 +70,7 @@ public:
 class GMTileContainer : public TileContainer
 {
 public:
-	GMTileContainer				(	wstring				containerFileName, 
+	GMTileContainer				(	string				containerFileName, 
 									TileType			tileType,
 									MercatorProjType	mercType,
 									OGREnvelope			envelope, 
@@ -79,7 +80,7 @@ public:
 
 	GMTileContainer				();
 
-	BOOL openForReading			(wstring containerFileName);
+	BOOL openForReading			(string containerFileName);
 	~GMTileContainer			();
 
 	BOOL		addTile			(int z, int x, int y, BYTE *pData, unsigned int size);
@@ -88,7 +89,7 @@ public:
 	BOOL		close			();
 	int 		getTileList		(	list<__int64> &tileList, 
 									int minZoom, int maxZoom, 
-									wstring vectorFile = L"", 
+									string vectorFile = "", 
 									MercatorProjType mercType = WORLD_MERCATOR
 								);
 	__int64		tileID			( int z, int x, int y);
@@ -101,7 +102,7 @@ public:
 protected:
 	BOOL 		init			(	int					tileBounds[92], 
 									BOOL				useBuffer, 
-									wstring				containerFileName, 
+									string				containerFileName, 
 									TileType			tileType,
 									MercatorProjType	mercType
 								);
@@ -131,7 +132,7 @@ protected:
 
 	TileBuffer				*poTileBuffer;
 	unsigned int			MAX_TILES_IN_CONTAINER;
-	wstring					containerFileName;
+	string					containerFileName;
 	FILE*					containerFileData;
 	unsigned __int64		containerLength;
 };
@@ -146,14 +147,15 @@ public:
 	~MBTileContainer ();
 		
 	int			getMaxZoom();	
-	BOOL openForReading  (wstring fileName);
-	MBTileContainer (wstring fileName, TileType tileType,MercatorProjType mercType, OGREnvelope mercEnvelope);
+	BOOL openForReading  (string fileName);
+	MBTileContainer (string fileName, TileType tileType,MercatorProjType mercType, OGREnvelope mercEnvelope);
 	
 	BOOL		addTile(int z, int x, int y, BYTE *pData, unsigned int size);
 	BOOL		tileExists(int z, int x, int y);
 
 	BOOL		getTile(int z, int x, int y, BYTE *&pData, unsigned int &size);
-	int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile = L"", MercatorProjType mercType = WORLD_MERCATOR);
+	int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, string vectorFile = "", 
+							MercatorProjType mercType = WORLD_MERCATOR);
 	
 	OGREnvelope getMercatorEnvelope();
 	BOOL		getTileBounds (int tileBounds[92]);
@@ -178,7 +180,8 @@ public:
 	BOOL		getTile(int z, int x, int y, BYTE *&pData, unsigned int &size);
 	BOOL		tileExists(int z, int x, int y);
 	int			getMaxZoom();
-	int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, wstring vectorFile = L"",  MercatorProjType mercType = WORLD_MERCATOR);
+	int 		getTileList(list<__int64> &tileList, int minZoom, int maxZoom, string vectorFile = "",  
+							MercatorProjType mercType = WORLD_MERCATOR);
 	OGREnvelope getMercatorEnvelope();
 	BOOL		getTileBounds (int tileBounds[92]);
 
@@ -194,6 +197,6 @@ protected:
 	TileBuffer	*poTileBuffer;
 };
 
-TileContainer* GMTOpenTileContainerForReading (wstring fileName);
+TileContainer* OpenTileContainerForReading (string fileName);
 
 }

@@ -13,7 +13,7 @@ TileBuffer::TileBuffer(void)
 
 TileBuffer::~TileBuffer(void)
 {
-	for (map<wstring,BYTE*>::const_iterator iter = tileData.begin(); iter!=tileData.end(); iter++)
+	for (map<string,BYTE*>::const_iterator iter = tileData.begin(); iter!=tileData.end(); iter++)
 		delete[]((*iter).second);
 	tileData.empty();
 	tileSize.empty();
@@ -22,7 +22,7 @@ TileBuffer::~TileBuffer(void)
 
 BOOL	TileBuffer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
 {
-	wstring tileKey = ConvertIntToWString(z) + L"_" + ConvertIntToWString(x) + L"_" + ConvertIntToWString(y);
+	string tileKey = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
 	if (tileData.find(tileKey)!=tileData.end())
 	{
 		delete[](*tileData.find(tileKey)).second;
@@ -32,8 +32,8 @@ BOOL	TileBuffer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
 
 	BYTE	*pData_copy = new BYTE[size];
 	memcpy(pData_copy,pData,size);
-	tileData.insert(pair<wstring,BYTE*>(tileKey,pData_copy));
-	tileSize.insert(pair<wstring,unsigned int>(tileKey,size));
+	tileData.insert(pair<string,BYTE*>(tileKey,pData_copy));
+	tileSize.insert(pair<string,unsigned int>(tileKey,size));
 
 	return TRUE;
 }
@@ -41,8 +41,8 @@ BOOL	TileBuffer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
 
 BOOL	TileBuffer::getTile(int z, int x, int y, BYTE *&pData, unsigned int &size)
 {
-	wstring tileKey = ConvertIntToWString(z) + L"_" + ConvertIntToWString(x) + L"_" + ConvertIntToWString(y);
-	map<wstring,BYTE*>::const_iterator iter;
+	string tileKey = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
+	map<string,BYTE*>::const_iterator iter;
 	if ((iter=tileData.find(tileKey)) == tileData.end())
 	{
 		pData	= NULL;

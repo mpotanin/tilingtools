@@ -11,8 +11,8 @@ namespace GMT
 class VectorBorder
 {
 public:
-	static VectorBorder*		createFromVectorFile				(wstring vectorFilePath, MercatorProjType	mercType);
-	static wstring				getVectorFileNameByRasterFileName	(wstring strRasterFile);
+	static VectorBorder*		createFromVectorFile				(string vectorFilePath, MercatorProjType	mercType);
+	static string				getVectorFileNameByRasterFileName	(string strRasterFile);
 	static OGRPolygon*			createOGRPolygonByOGREnvelope		(OGREnvelope envelope);
 	static BOOL					adjustFor180DegreeIntersection		(OGRGeometry		*poMercGeometry);
 	static OGREnvelope			combineOGREnvelopes					(OGREnvelope	&oEnvelope1, OGREnvelope	&oEnvelope2);

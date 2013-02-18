@@ -13,7 +13,6 @@
 #include <string>
 #include <iostream>
 #include <math.h>
-#include <windows.h>
 #include <fstream>
 #include <cstdlib.>
 #include <iostream>

@@ -1,17 +1,18 @@
 #pragma once
 #include "stdafx.h"
+#include <windows.h>
 
 
 namespace GMT
 {
 
 	
-void	SetEnvironmentVariables (wstring gdalPath);
-BOOL	LoadGDAL (int argc, _TCHAR* argv[]);
+void	SetEnvironmentVariables (string gdalPath);
+BOOL	LoadGDAL (int argc, string argv[]);
 
-BOOL	LoadGDALDLLs (wstring gdalPath);
-wstring ReadGDALPathFromConfig (wstring configFilePath);
-wstring ReadConsoleParameter (wstring strPattern, int argc, _TCHAR* argv[], BOOL bFlagParam = FALSE);
+BOOL	LoadGDALDLLs (string gdalPath);
+string	ReadGDALPathFromConfigFile (string configFilePath);
+string	ReadConsoleParameter (string strPattern, int argc, string argv[], BOOL bFlagParam = FALSE);
 
 
 }

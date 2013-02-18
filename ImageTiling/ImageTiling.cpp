@@ -1,16 +1,15 @@
-// ImageTiling.cpp : Defines the entry point for the console application.
+ï»¿// ImageTiling.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
-using namespace GMT;
 
 
 void PrintHelp ()
 {
 
 	cout<<"Usage:\n";
-	cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-minZoom pyramid min zoom]"; 
-	cout<<" [-container write to geomixer container file] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|tif] [-template tile name template]\n";
+	cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-minZoom pyramid min tiling zoom]"; 
+	cout<<" [-container write to geomixer container file] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|tif] [-template tile name template] [-no_data_rgb transparent color for png tiles]\n";
 		
 	cout<<"\nEx.1 - image to simple tiles:\n";
 	cout<<"ImageTiling -file c:\\image.tif"<<endl;
@@ -21,8 +20,8 @@ void PrintHelp ()
 	cout<<"(default values: -tiles=c:\\image.tiles -minZoom=1 -proj=0 -tile_type=jpg)"<<endl;
 
 	cout<<"\nEx.3 - tiling folder of images:\n";
-	cout<<"ImageTiling -file c:\\images\\*.tif -container -template {z}\\{x}\\{z}_{x}_{y}.jpg"<<endl;
-	cout<<"(default values: -minZoom=1 -proj=0 -tile_type=jpg)"<<endl;
+	cout<<"ImageTiling -file c:\\images\\*.tif -container -template {z}/{x}/{z}_{x}_{y}.png  -tile_type png -no_data_rgb \"0 0 0\""<<endl;
+	cout<<"(default values: -minZoom=1 -proj=0)"<<endl;
 
 }
 
@@ -34,136 +33,139 @@ void Exit()
 }
 
 
-int CheckArgsAndCallTiling (	wstring strInput,
-								wstring	strContainer,		
-								wstring strZoom,
-								wstring strMinZoom,
-								wstring strVectorFile,
-								wstring strTilesFolder,
-								wstring strTileType,
-								wstring strProjType,
-								wstring strTemplate,
-								wstring strNoData,
-								wstring strTranspColor,
-								wstring strEdges,
-								wstring strShiftX,
-								wstring strShiftY,
-								wstring strPixelTiling,
-								wstring strBackground,
-								wstring strLogFile,
-								wstring strCache)
+int CheckArgsAndCallTiling (	string strInput,
+								string	strContainer,		
+								string strZoom,
+								string strMinZoom,
+								string strVectorFile,
+								string strOutput,
+								string strTileType,
+								string strProjType,
+								string strTemplate,
+								string strNoData,
+								string strTranspColor,
+								string strEdges,
+								string strShiftX,
+								string strShiftY,
+								string strPixelTiling,
+								string strBackground,
+								string strLogFile,
+								string strCache)
 {
 
 
+	/*
 	FILE *logFile = NULL;
-	if (strLogFile!=L"")
+	if (strLogFile!="")
 	{
-		if((logFile = _wfreopen(strLogFile.c_str(), L"w", stdout)) == NULL)
+		if((logFile = _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
 		{
-			wcout<<L"Error: can't open log file: "<<strLogFile<<endl;
+			wcout<<"Error: can't open log file: "<<strLogFile<<endl;
 			exit(-1);
 		}
 	}
-
-	//ïðîâåðÿåì âõîäíîé ôàéë èëè äèðåêòîðèþ
-	if (strInput == L"")
+	*/
+	//Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼ Ð²Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ñ„Ð°Ð¹Ð» Ð¸Ð»Ð¸ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸ÑŽ
+	if (strInput == "")
 	{
-		cout<<L"Error: missing \"-file\" parameter"<<endl;
-		return 0;
+		cout<<"Error: missing \"-file\" parameter"<<endl;
+		return -1;
 	}
 	
 
-	list<wstring> inputFiles;
-	FindFilesInFolderByPattern(inputFiles,strInput);
+	list<string> inputFiles;
+	GMT::FindFilesInFolderByPattern(inputFiles,strInput);
 	if (inputFiles.size()==0)
 	{
-		cout<<L"Error: can't find input files by path: "<<strInput<<endl;
-		return 0;
+		cout<<"Error: can't find input files by path: "<<strInput<<endl;
+		return -1;
 	}
 
-	//ñèíèöèàëèçèðóåì îáÿçàòåëüíûå ïàðàìåòðû äëÿ òàéëèíãà
-	MercatorProjType mercType = ((strProjType == L"") || (strProjType == L"0") || (strProjType == L"world_mercator")|| (strProjType == L"epsg:3395")) ?
-								WORLD_MERCATOR : WEB_MERCATOR;
+	//ÑÐ¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€ÑƒÐµÐ¼ Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð´Ð»Ñ Ñ‚Ð°Ð¹Ð»Ð¸Ð½Ð³Ð°
+	GMT::MercatorProjType mercType =	(	(strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")
+											|| (strProjType == "epsg:3395")
+										) ? GMT::WORLD_MERCATOR : GMT::WEB_MERCATOR;
 
 
-	if ( (strContainer==L"") && 
-		 (strTemplate!=L"") && 
-		 (strTemplate!=L"kosmosnimki") && 
-		 (strTemplate!=L"standard") 
+	if ( (strContainer=="") && 
+		 (strTemplate!="") && 
+		 (strTemplate!="kosmosnimki") && 
+		 (strTemplate!="standard") 
 		)
 	{
-		if (!StandardTileName::validateTemplate(strTemplate)) return FALSE;
+		if (!GMT::StandardTileName::validateTemplate(strTemplate)) return FALSE;
 	}
 
 	
-	TileType tileType;
-	if (strTileType==L"")
+	GMT::TileType tileType;
+	if (strTileType=="")
 	{
-		if ((strTemplate!=L"") && (strTemplate!=L"kosmosnimki") && (strTemplate!=L"standard"))
-			strTileType = strTemplate.substr(strTemplate.rfind(L".")+1,strTemplate.length()-strTemplate.rfind(L".")-1);
+		if ((strTemplate!="") && (strTemplate!="kosmosnimki") && (strTemplate!="standard"))
+			strTileType = strTemplate.substr(strTemplate.rfind(".")+1,strTemplate.length()-strTemplate.rfind(".")-1);
 		else
-			strTileType = L"jpg";
+			strTileType = "jpg";
 	}
 	
-	tileType = ((strTileType == L"") ||  (strTileType == L"jpg") || (strTileType == L"jpeg") || (strTileType == L".jpg")) ?
-					JPEG_TILE : ((strTileType == L"png") || (strTileType == L".png")) ? PNG_TILE : TIFF_TILE;
+	tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
+					GMT::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMT::PNG_TILE : GMT::TIFF_TILE;
 	
 	GMTilingParameters oParams(strInput,mercType,tileType);
 
-	if (strZoom != L"")		oParams.baseZoom = (int)_wtof(strZoom.c_str());
-	if (strMinZoom != L"")	oParams.minZoom = (int)_wtof(strMinZoom.c_str());
-	if (strVectorFile!=L"") oParams.vectorFile = strVectorFile;
+	if (strZoom != "")		oParams.baseZoom = (int)atof(strZoom.c_str());
+	if (strMinZoom != "")	oParams.minZoom = (int)atof(strMinZoom.c_str());
+	if (strVectorFile!="") oParams.vectorFile = strVectorFile;
 	
-	if (strContainer==L"")
+	if (strContainer=="")
 	{
 		oParams.useContainer = FALSE;
-		strTilesFolder = (strTilesFolder == L"") ? (RemoveExtension(strInput)+L"_tiles") : strTilesFolder;
-		if (!IsDirectory(strTilesFolder))
+		strOutput = (strOutput == "") ? (GMT::RemoveExtension(strInput)+"_tiles") : strOutput;
+		if (!GMT::IsDirectory(strOutput))
 		{
-			if (!CreateDirectory(strTilesFolder.c_str(),NULL))
+			if (!GMT::CreateDirectory(strOutput.c_str()))
 			{
-				wcout<<L"Error: can't create folder: "<<strTilesFolder<<endl;
+				cout<<"Error: can't create folder: "<<strOutput<<endl;
 				return FALSE;
 			}
 		}
-		if ((strTemplate==L"") || (strTemplate==L"kosmosnimki"))
-			oParams.poTileName = new KosmosnimkiTileName(strTilesFolder,tileType);
-		else if (strTemplate==L"standard") 
-			oParams.poTileName = new StandardTileName(strTilesFolder,(L"{z}\\{x}\\{z}_{x}_{y}."+TileName::tileExtension(tileType)));
+		if ((strTemplate=="") || (strTemplate=="kosmosnimki"))
+			oParams.poTileName = new GMT::KosmosnimkiTileName(strOutput,tileType);
+		else if (strTemplate=="standard") 
+			oParams.poTileName = new GMT::StandardTileName(	strOutput,("{z}/{x}/{z}_{x}_{y}." + 
+															GMT::TileName::tileExtension(tileType)));
 		else 
-			oParams.poTileName = new StandardTileName(strTilesFolder,strTemplate);
+			oParams.poTileName = new GMT::StandardTileName(strOutput,strTemplate);
 	}
 	else
 	{
 		oParams.useContainer	= TRUE;
-		wstring containerExt	= (strContainer == L"-container") ? L"tiles" : L"mbtiles"; 
-		oParams.containerFile = (strTilesFolder == L"")	?
-									RemoveExtension((*inputFiles.begin())) + L"." + containerExt :
-								(IsDirectory(strTilesFolder)) ?
-									RemoveEndingSlash(strTilesFolder) + L"\\" + 
-									RemoveExtension(RemovePath((*inputFiles.begin()))) + L"." + containerExt :
-								(GetExtension(strTilesFolder) == containerExt) ?
-									strTilesFolder :
-									strTilesFolder + L"." + containerExt;
+		string containerExt	= (strContainer == "-container") ? "tiles" : "mbtiles"; 
+		oParams.containerFile = (strOutput == "")	?
+									GMT::RemoveExtension((*inputFiles.begin())) + "." + containerExt :
+								(GMT::IsDirectory(strOutput)) ?
+									GMT::RemoveEndingSlash(strOutput) + "/" + 
+									GMT::RemoveExtension(GMT::RemovePath((*inputFiles.begin()))) + "." + containerExt :
+								(GMT::GetExtension(strOutput) == containerExt) ?
+									strOutput :
+									strOutput + "." + containerExt;
 	}
 
-	if ((strShiftX!=L"")) oParams.dShiftX=_wtof(strShiftX.c_str());
-	if ((strShiftY!=L"")) oParams.dShiftY=_wtof(strShiftY.c_str());
+	if ((strShiftX!="")) oParams.dShiftX=atof(strShiftX.c_str());
+	if ((strShiftY!="")) oParams.dShiftY=atof(strShiftY.c_str());
 
-	if (strCache!=L"") oParams.maxTilesInCache = _wtof(strCache.c_str());
+	if (strCache!="") oParams.maxTilesInCache = atof(strCache.c_str());
 
-	if (strNoData!=L"")
+	if (strNoData!="")
 	{
 		oParams.pNoDataValue = new int[1];
-		oParams.pNoDataValue[0] = _wtof(strNoData.c_str());
+		oParams.pNoDataValue[0] = atof(strNoData.c_str());
 	}
 
-	if (strTranspColor!=L"")
+	if (strTranspColor!="")
 	{
 		BYTE	rgb[3];
-		if (!ConvertStringToRGB(strTranspColor,rgb))
+		if (!GMT::ConvertStringToRGB(strTranspColor,rgb))
 		{
-			wcout<<L"Error: bad value of parameter: \"-no_data_rgb\""<<endl;
+			cout<<"Error: bad value of parameter: \"-no_data_rgb\""<<endl;
 			return FALSE;
 		}
 		oParams.pTransparentColor = new BYTE[3];
@@ -172,15 +174,24 @@ int CheckArgsAndCallTiling (	wstring strInput,
 
 
 	GMTMakeTiling(&oParams);
-	if (logFile) fclose(logFile);
+	//if (logFile) fclose(logFile);
 	
 	return 1;
 }
 
 
-int _tmain(int argc, _TCHAR* argv[])
+
+int _tmain(int argc, wchar_t* argvW[])
 {
-	if (!LoadGDAL(argc,argv)) return 0;
+	cout.imbue(std::locale("rus_rus.866"));
+	string *argv = new string[argc];
+	for (int i=0;i<argc;i++)
+	{
+		GMT::wstrToUtf8(argv[i],argvW[i]);
+		GMT::ReplaceAll(argv[i],"\\","/");
+	}
+	
+	if (!GMT::LoadGDAL(argc,argv)) return -1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
@@ -190,82 +201,91 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-  	//îáÿçàòåëüíûé ïàðàìåòð
-	wstring strInput			=  ReadConsoleParameter(L"-file",argc,argv);
+  	//Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€
+	string strInput				=  GMT::ReadConsoleParameter("-file",argc,argv);
 
-	//äîïîëíèòåëüíûå ïàðàìåòðû
-	wstring strMosaic			=  ReadConsoleParameter(L"-mosaic",argc,argv,TRUE);
-	wstring	strContainer		=  (ReadConsoleParameter(L"-container",argc,argv,TRUE) != L"") ? 
-											ReadConsoleParameter(L"-container",argc,argv,TRUE) : 
-											ReadConsoleParameter(L"-mbtiles",argc,argv,TRUE);
-	wstring strZoom				=  ReadConsoleParameter(L"-zoom",argc,argv);
-	wstring strMinZoom			=  ReadConsoleParameter(L"-minZoom",argc,argv);	
-	wstring strVectorFile		=  ReadConsoleParameter(L"-border",argc,argv);
-	wstring strTilesFolder		=  ReadConsoleParameter(L"-tiles",argc,argv);
-	wstring strTileType			=  ReadConsoleParameter(L"-tile_type",argc,argv);
-	wstring strProjType			=  ReadConsoleParameter(L"-proj",argc,argv);
-	wstring strTemplate			=  ReadConsoleParameter(L"-template",argc,argv);
-	wstring strNoData			=  ReadConsoleParameter(L"-no_data",argc,argv);
-	wstring strTranspColor		=  ReadConsoleParameter(L"-no_data_rgb",argc,argv);
+	//Ð´Ð¾Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹
+	string strMosaic			=  GMT::ReadConsoleParameter("-mosaic",argc,argv,TRUE);
+	string	strContainer		=  (GMT::ReadConsoleParameter("-container",argc,argv,TRUE) != "") ? 
+											GMT::ReadConsoleParameter("-container",argc,argv,TRUE) : 
+											GMT::ReadConsoleParameter("-mbtiles",argc,argv,TRUE);
+	string strZoom				=  GMT::ReadConsoleParameter("-zoom",argc,argv);
+	string strMinZoom			=  GMT::ReadConsoleParameter("-minZoom",argc,argv);	
+	string strVectorFile		=  GMT::ReadConsoleParameter("-border",argc,argv);
+	string strOutput		=  GMT::ReadConsoleParameter("-tiles",argc,argv);
+	string strTileType			=  GMT::ReadConsoleParameter("-tile_type",argc,argv);
+	string strProjType			=  GMT::ReadConsoleParameter("-proj",argc,argv);
+	string strTemplate			=  GMT::ReadConsoleParameter("-template",argc,argv);
+	string strNoData			=  GMT::ReadConsoleParameter("-no_data",argc,argv);
+	string strTranspColor		=  GMT::ReadConsoleParameter("-no_data_rgb",argc,argv);
 
-	//ñêðûòûå ïàðàìåòðû
-	wstring strEdges			=  ReadConsoleParameter(L"-edges",argc,argv);
-	wstring strShiftX			=  ReadConsoleParameter(L"-shiftX",argc,argv);
-	wstring strShiftY			=  ReadConsoleParameter(L"-shiftY",argc,argv);
-	wstring strPixelTiling		=  ReadConsoleParameter(L"-pixel_tiling",argc,argv,TRUE);
-	wstring strBackground		=  ReadConsoleParameter(L"-background",argc,argv);
-	wstring strLogFile			=  ReadConsoleParameter(L"-log_file",argc,argv);
-	wstring strCache			=  ReadConsoleParameter(L"-cache",argc,argv);
-	//wstring	strN
+	//ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹
+	string strEdges				=  GMT::ReadConsoleParameter("-edges",argc,argv);
+	string strShiftX			=  GMT::ReadConsoleParameter("-shiftX",argc,argv);
+	string strShiftY			=  GMT::ReadConsoleParameter("-shiftY",argc,argv);
+	string strPixelTiling		=  GMT::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE);
+	string strBackground		=  GMT::ReadConsoleParameter("-background",argc,argv);
+	string strLogFile			=  GMT::ReadConsoleParameter("-log_file",argc,argv);
+	string strCache				=  GMT::ReadConsoleParameter("-cache",argc,argv);
+	//string	strN
 
 	if (argc == 2)				strInput	= argv[1];
 	wcout<<endl;
 
-	//ïðîâåðÿåì âõîäíîé ôàéë(û)
+	//Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼ Ð²Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ñ„Ð°Ð¹Ð»(Ñ‹)
+
+
+	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+	//strOutput		= "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
+	//strZoom			= "8";
+	//strContainer	= "-container";
+
+
 
 	/*
-	strInput		= L"C:\\Work\\Projects\\TilingTools\\autotest\\o42073g8.tif";
-	strVectorFile	= L"C:\\Work\\Projects\\TilingTools\\autotest\\border_o42073g8\\border.shp";
-	strMinZoom		= L"8";
-	strTileType	= L"png";
+	strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\o42073g8.tif";
+	strVectorFile	= "C:\\Work\\Projects\\TilingTools\\autotest\\border_o42073g8\\border.shp";
+	strMinZoom		= "8";
+	strTileType	= "png";
 	*/
 	
-	if (strInput == L"")
+	if (strInput == "")
 	{
-		cout<<L"Error: missing \"-file\" parameter"<<endl;
-		return 0;
+		cout<<"Error: missing \"-file\" parameter"<<endl;
+		return -1;
 	}
 
 
-	if (strTileType	== L"" ) strTileType = MakeLower( ReadConsoleParameter(L"-tileType",argc,argv));
+	if (strTileType	== "" ) strTileType = GMT::MakeLower( GMT::ReadConsoleParameter("-tileType",argc,argv));
 
-	if (strMosaic==L"")
+	if (strMosaic=="")
 	{
-		std::list<wstring> input_files;
-		if (!FindFilesInFolderByPattern (input_files,strInput))
+		std::list<string> input_files;
+		if (!GMT::FindFilesInFolderByPattern (input_files,strInput))
 		{
-			wcout<<L"Can't find input files by pattern: "<<strInput<<endl;
+			cout<<"Can't find input files by pattern: "<<strInput<<endl;
 			return 1;
 		}
 
 
-		for (std::list<wstring>::iterator iter = input_files.begin(); iter!=input_files.end();iter++)
+		for (std::list<string>::iterator iter = input_files.begin(); iter!=input_files.end();iter++)
 		{
-			wcout<<L"Tiling file: "<<(*iter)<<endl;
+			cout<<"Tiling file: "<<(*iter)<<endl;
 			if (input_files.size()>1)
-				strVectorFile = VectorBorder::getVectorFileNameByRasterFileName(*iter);
-			wstring strTilesFolder_fix = strTilesFolder;
-			if ((input_files.size()>1)&&(strTilesFolder!=L""))
+				strVectorFile = GMT::VectorBorder::getVectorFileNameByRasterFileName(*iter);
+			string strOutput_fix = strOutput;
+			if ((input_files.size()>1)&&(strOutput!=""))
 			{
-				if (!FileExists(strTilesFolder)) 
+				if (!GMT::FileExists(strOutput)) 
 				{
-					if (!CreateDirectory(strTilesFolder.c_str(),NULL))
+					if (!GMT::CreateDirectory(strOutput.c_str()))
 					{
-						wcout<<L"Error: can't create directory: "<<strTilesFolder<<endl;
-						return 0;
+						cout<<"Error: can't create directory: "<<strOutput<<endl;
+						return -1;
 					}
 				}
-				strTilesFolder_fix = RemoveEndingSlash(strTilesFolder) + L"\\" + RemovePath(RemoveExtension(*iter)) + L"_tiles";
+				strOutput_fix =	GMT::RemoveEndingSlash(strOutput) + "/" + 
+										GMT::RemovePath(GMT::RemoveExtension(*iter)) + "_tiles";
 			}
 
 			CheckArgsAndCallTiling (	(*iter),
@@ -273,7 +293,7 @@ int _tmain(int argc, _TCHAR* argv[])
 										strZoom,
 										strMinZoom,
 										strVectorFile,
-										strTilesFolder_fix,
+										strOutput_fix,
 										strTileType,
 										strProjType,
 										strTemplate,
@@ -296,7 +316,7 @@ int _tmain(int argc, _TCHAR* argv[])
 									strZoom,
 									strMinZoom,
 									strVectorFile,
-									strTilesFolder,
+									strOutput,
 									strTileType,
 									strProjType,
 									strTemplate,

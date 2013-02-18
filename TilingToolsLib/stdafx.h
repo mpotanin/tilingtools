@@ -10,6 +10,7 @@
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 #define _FILE_OFFSET_BITS 64
 
+#include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
 #include <string>
@@ -24,16 +25,15 @@
 
 
 
-#include "include\gdal_priv.h"
-#include "include\ogrsf_frmts.h"
-#include "include\gd.h"
-#include "include\vrtdataset.h"
-#include "include\gdalwarper.h"
-#include "include\sqlite3.h"
+#include "include/gdal_priv.h"
+#include "include/ogrsf_frmts.h"
+#include "include/gd.h"
+#include "include/vrtdataset.h"
+#include "include/gdalwarper.h"
+#include "include/sqlite3.h"
 #include <time.h>
 
 
-#include <windows.h>
 using namespace std;
 // TODO: reference additional headers your program requires here
 

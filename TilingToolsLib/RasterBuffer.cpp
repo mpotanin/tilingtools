@@ -249,7 +249,7 @@ BOOL	RasterBuffer::createBufferFromPngData (void *pDataSrc, int size)
 }
 
 
-BOOL RasterBuffer::SaveBufferToFile (wstring fileName, int quality)
+BOOL RasterBuffer::SaveBufferToFile (string fileName, int quality)
 {
 	void *pDataDst = NULL;
 	int size = 0;
@@ -259,11 +259,11 @@ BOOL RasterBuffer::SaveBufferToFile (wstring fileName, int quality)
 }
 
 
-BOOL	RasterBuffer::SaveBufferToFileAndData	(wstring fileName, void* &pDataDst, int &size, int quality)
+BOOL	RasterBuffer::SaveBufferToFileAndData	(string fileName, void* &pDataDst, int &size, int quality)
 {
-	int n_jpg = fileName.find(L".jpg");
-	int n_png = fileName.find(L".png");
-	int n_tif = fileName.find(L".tif");
+	int n_jpg = fileName.find(".jpg");
+	int n_png = fileName.find(".png");
+	int n_tif = fileName.find(".tif");
 	
 	
 	if (n_jpg>0)
@@ -503,7 +503,7 @@ BOOL	RasterBuffer::SaveToTiffData	(void* &pDataDst, int &size)
 	memcpy((pDataDst = new BYTE[size]),pDataDstBuf,size);
 	VSIUnlink("/vsimem/tiffinmem");
 	
-	//SaveDataToFile(L"e:\\1.tif",pDataDst,size);
+	//SaveDataToFile("e:\\1.tif",pDataDst,size);
 	//delete[]pDataDst;
 	//ToDo: delete poDS
 	return TRUE;

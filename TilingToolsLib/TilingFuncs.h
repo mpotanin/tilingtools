@@ -10,7 +10,7 @@ class GMTilingParameters
 {
 public:
 //обязательные параметры
-	wstring						inputPath;				//входной файл или шаблон имени файла
+	string						inputPath;				//входной файл или шаблон имени файла
 	GMT::MercatorProjType		mercType;				//тип Меркатора
 	GMT::TileType				tileType;				//тип тайлов
 	
@@ -18,8 +18,8 @@ public:
 //дополнительные параметры
 	int						baseZoom;				//максимальный (базовый зум)
 	int						minZoom;				//минимальный зум
-	wstring					vectorFile;				//векторная граница
-	wstring					containerFile;			//название файла-контейнера тайлов
+	string					vectorFile;				//векторная граница
+	string					containerFile;			//название файла-контейнера тайлов
 	bool					useContainer;			//писать тайлы в контейнер
 	BYTE					*pBackgroundColor;		//RGB-цвет для заливки фона в тайлах
 	BYTE					*pTransparentColor;		//RGB-цвет для маски прозрачности
@@ -34,7 +34,7 @@ public:
 	static const int		DEFAULT_JPEG_QUALITY = 80;
 
 
-	GMTilingParameters(wstring inputPath, GMT::MercatorProjType mercType, GMT::TileType tileType)
+	GMTilingParameters(string inputPath, GMT::MercatorProjType mercType, GMT::TileType tileType)
 	{
 		this->inputPath = inputPath;
 		this->mercType	= mercType;
@@ -121,17 +121,17 @@ BOOL ZoomOutTileBuffer		(	GMT::RasterBuffer				srcQuarterTile[4],
 								GMT::RasterBuffer				&zoomOutTileBuffer); 
 
 
-int GMTCalcBaseZoomTilesForImage (	wstring						strImage, 
-									wstring						vectorFile, 
+int GMTCalcBaseZoomTilesForImage (	string						strImage, 
+									string						vectorFile, 
 									GMTilingParameters			*poParams, 
 									GMT::BundleOfRasterFiles	*poBundle, 
-									list<wstring>				&tilesList);
+									list<string>				&tilesList);
 
 
 int GMTCalcBaseZoomTilesForBundle (GMTilingParameters			*poParams, 
 									GMT::BundleOfRasterFiles	*poBundle, 
 									int							&nAllTiles, 
-									list<wstring>				&tilesList );
+									list<string>				&tilesList );
 
 
 

@@ -9,10 +9,10 @@ const int GMT_MAX_TILES_IN_CACHE = 0xFFFF;
 
 BOOL GMTPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
 {
-	//wcout<<nGeneratedTiles<<L" "<<endl;
+	//cout<<nGeneratedTiles<<" "<<endl;
 	if (nGeneratedTiles - (int)ceil((nExpectedTiles/10.0)*(nGeneratedTiles*10/nExpectedTiles))  ==0)
 	{
-		wcout<<(nGeneratedTiles*10/nExpectedTiles)*10<<L" ";
+		cout<<(nGeneratedTiles*10/nExpectedTiles)*10<<" ";
 		fflush(stdout);
 	}
 	return TRUE;
@@ -30,24 +30,24 @@ BOOL GMTMakeTiling		(GMTilingParameters		*poParams)
 	
 	if (!oBundle.init(poParams->inputPath,poParams->mercType,poParams->vectorFile,poParams->dShiftX,poParams->dShiftY))
 	{
-		wcout<<L"Error: read input data by path: "<<poParams->inputPath<<endl;
+		cout<<"Error: read input data by path: "<<poParams->inputPath<<endl;
 		return FALSE;
 	}
 
 	int baseZoom = (poParams->baseZoom == 0) ? oBundle.calculateBestMercZoom() : poParams->baseZoom;
 	if (baseZoom<=0)
 	{
-		wcout<<L"Error: can't calculate base zoom for tiling"<<endl;
+		cout<<"Error: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
 	
-	wcout<<L"Base zoom: calculating number of tiles: ";
+	cout<<"Base zoom: calculating number of tiles: ";
 	int expectedTiles	= oBundle.calculateNumberOfTiles(baseZoom);	
-	wcout<<expectedTiles<<endl;
+	cout<<expectedTiles<<endl;
 
 	if (expectedTiles == 0) return FALSE;
 
-	wcout<<L"0% ";
+	cout<<"0% ";
 	unsigned int maxTilesInCache = (poParams->maxTilesInCache == 0) ? GMT_MAX_TILES_IN_CACHE : poParams->maxTilesInCache; 
 	unsigned int adjustedMaxTilesInCash =	(poParams->tileType == JPEG_TILE) ? maxTilesInCache	:
 											(poParams->tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
@@ -59,7 +59,7 @@ BOOL GMTMakeTiling		(GMTilingParameters		*poParams)
 	//ToDo
 	if (poParams->useContainer)
 	{
-		if (GetExtension(poParams->containerFile) == L"tiles")
+		if (GetExtension(poParams->containerFile) == "tiles")
 				poTilePyramid = new GMTileContainer(	poParams->containerFile,
 														poParams->tileType,
 														poParams->mercType,
@@ -76,13 +76,13 @@ BOOL GMTMakeTiling		(GMTilingParameters		*poParams)
 	
 	
 	GMTMakeBaseZoomTiling(poParams,&oBundle,expectedTiles,poTilePyramid);
-	wcout<<L" done."<<endl;
+	cout<<" done."<<endl;
 
 	int minZoom = (poParams->minZoom <=0) ? 1 : poParams->minZoom;
 	if (minZoom == baseZoom) return TRUE;
 
-	wcout<<L"Pyramid tiles: ";//<<endl;
-	wcout<<L"calculating number of tiles: ";
+	cout<<"Pyramid tiles: ";//<<endl;
+	cout<<"calculating number of tiles: ";
 	VectorBorder	bundleEnvelope(oBundle.getMercatorEnvelope(),poParams->mercType);
 	int generatedTiles = 0;
 	expectedTiles = 0;
@@ -95,10 +95,10 @@ BOOL GMTMakeTiling		(GMTilingParameters		*poParams)
 								TRUE,
 								poTilePyramid,
 								poParams->nJpegQuality);
-	wcout<<expectedTiles<<endl;
+	cout<<expectedTiles<<endl;
 	if (expectedTiles > 0) 
 	{
-		wcout<<L"0% ";
+		cout<<"0% ";
 		GMTCreatePyramidalTiles(	bundleEnvelope,
 									baseZoom,
 									minZoom,
@@ -108,7 +108,7 @@ BOOL GMTMakeTiling		(GMTilingParameters		*poParams)
 									FALSE,
 									poTilePyramid,
 									poParams->nJpegQuality);
-		wcout<<L" done."<<endl;
+		cout<<" done."<<endl;
 	}
 
 	poTilePyramid->close();
@@ -227,7 +227,7 @@ BOOL GMTMakeBaseZoomTiling	(	GMTilingParameters		*poParams,
 			RasterBuffer mercBuffer;
 			if (!poBundle->warpToMercBuffer(zoom,bufferEnvelope,mercBuffer,poParams->pNoDataValue,poParams->pBackgroundColor))
 			{
-				wcout<<L"Error: BaseZoomTiling: warping to merc fail"<<endl;
+				cout<<"Error: BaseZoomTiling: warping to merc fail"<<endl;
 				return FALSE;
 			}
 
@@ -237,7 +237,7 @@ BOOL GMTMakeBaseZoomTiling	(	GMTilingParameters		*poParams,
 			{
 				if (!mercBuffer.stretchDataTo8Bit(0,255))
 				{
-					wcout<<L"Error: can't stretch data to 8 bit"<<endl;
+					cout<<"Error: can't stretch data to 8 bit"<<endl;
 					return FALSE;
 				}
 			}
@@ -251,7 +251,7 @@ BOOL GMTMakeBaseZoomTiling	(	GMTilingParameters		*poParams,
 										generatedTiles,
 										tilePyramid))
 			{
-				wcout<<L"Error: BaseZoomTiling: GMTTilingFromBuffer fail"<<endl;
+				cout<<"Error: BaseZoomTiling: GMTTilingFromBuffer fail"<<endl;
 				return FALSE;
 			}
 		}
@@ -322,7 +322,7 @@ BOOL GMTCreateZoomOutTile (VectorBorder	&oVectorBorder,
 				{
 					if(!oTileBuffer.createBufferFromJpegData(pData,size))
 					{
-						wcout<<L"Error: reading jpeg-data"<<endl;
+						cout<<"Error: reading jpeg-data"<<endl;
 						return FALSE;
 					}
 					break;

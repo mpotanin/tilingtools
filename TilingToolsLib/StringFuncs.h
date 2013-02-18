@@ -3,13 +3,13 @@
 
 
 
+
 namespace GMT
 {
 
-wstring			MakeLower				(wstring str);
-void			ReplaceAll				(wstring	&str, const wstring	&from, const wstring	&to);
-BOOL			ConvertStringToRGB		(wstring strColor, BYTE rgb[3]);			
-wstring			ConvertIntToWString		(int number);
+string			MakeLower				(string str);
+void			ReplaceAll				(string	&str, const string	&from, const string	&to);
+BOOL			ConvertStringToRGB		(string strColor, BYTE rgb[3]);			
 string			ConvertIntToString		(int number);
 int				Ustrlen					(const unsigned char *str);
 

@@ -13,8 +13,8 @@ public:
 	BOOL		getTile(int z, int x, int y, BYTE *&pData, unsigned int &size);
 	~TileBuffer(void);
 protected:
-	map<wstring,BYTE*>			tileData;
-	map<wstring,unsigned int>	tileSize;
+	map<string,BYTE*>			tileData;
+	map<string,unsigned int>	tileSize;
 
 };
 

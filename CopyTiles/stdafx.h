@@ -14,7 +14,6 @@
 #include <string>
 #include <iostream>
 #include <math.h>
-#include <windows.h>
 #include <fstream>
 #include <cstdlib.>
 #include <iostream>
@@ -22,16 +21,16 @@
 using namespace std;
 
 
-#include "..\TilingToolsLib\FileSystemFuncs.h"
-#include "..\TilingToolsLib\TilingFuncs.h"
-#include "..\TilingToolsLib\ConsoleUtils.h"
+#include "../TilingToolsLib/FileSystemFuncs.h"
+#include "../TilingToolsLib/TilingFuncs.h"
+#include "../TilingToolsLib/ConsoleUtils.h"
 
-#include "include\gdal_priv.h"
-#include "include\cpl_port.h"
-#include "include\ogrsf_frmts.h"
-#include "include\gdalwarper.h"
-#include "include\vrtdataset.h"
-#include "include\sqlite3.h"
+#include "include/gdal_priv.h"
+#include "include/cpl_port.h"
+#include "include/ogrsf_frmts.h"
+#include "include/gdalwarper.h"
+#include "include/vrtdataset.h"
+#include "include/sqlite3.h"
 
 
 

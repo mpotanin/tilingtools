@@ -42,8 +42,8 @@ public:
 
 	BOOL			isAnyNoDataPixel			();
 
-	BOOL			SaveBufferToFile		(wstring fileName, int quality = 80);
-	BOOL			SaveBufferToFileAndData	(wstring fileName, void* &pDataDest, int &size, int quality = 80);
+	BOOL			SaveBufferToFile		(string fileName, int quality = 80);
+	BOOL			SaveBufferToFileAndData	(string fileName, void* &pDataDest, int &size, int quality = 80);
 
 	//BOOL			ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight);
 	//BOOL			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
@@ -53,7 +53,8 @@ public:
 	BOOL			initByValue(int value = 0);	
 	BOOL			initByNoDataValue(int noDataValue = 0);
 
-	void*			getDataBlock	(int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+	void*			getDataBlock	(	int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, 
+										double minVal = 0, double maxVal = 0);
 	BOOL			setDataBlock	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
 	void*			getDataZoomedOut	();	
 	BOOL			convertFromIndexToRGB ();
@@ -76,8 +77,10 @@ protected:
 	//void									initAlphaBand();
 	template <typename T>	BOOL			isAnyNoDataPixel	(T type);
 	template <typename T>	BOOL			initByValue	(T type, int value);
-	template <typename T>	void*			getDataBlock	(T type, int left, int top, int w, int h,  BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
-	template <typename T>	BOOL			setDataBlock	(T type, int left, int top, int w, int h, void *pBlockData, int bands = 0);
+	template <typename T>	void*			getDataBlock	(	T type, int left, int top, int w, int h,  
+																BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+	template <typename T>	BOOL			setDataBlock	(	T type, int left, int top, int w, int h, 
+																void *pBlockData, int bands = 0);
 	template <typename T>	void*			getDataZoomedOut	(T type);
 
 	BOOL			bAlphaBand;

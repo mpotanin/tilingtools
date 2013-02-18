@@ -17,11 +17,11 @@ class RasterFile
 {
 
 public:
-	BOOL			init(wstring strRasterFile, BOOL isGeoReferenced, double dShiftX=0.0, double dShiftY=0.0 );
+	BOOL			init(string strRasterFile, BOOL isGeoReferenced, double dShiftX=0.0, double dShiftY=0.0 );
 	BOOL			close();
 
 	RasterFile();
-	RasterFile(wstring strRasterFile, BOOL isGeoReferenced = TRUE);
+	RasterFile(string strRasterFile, BOOL isGeoReferenced = TRUE);
 	~RasterFile(void);
 
 	void			getPixelSize (int &nWidth, int &nHeight);
@@ -48,7 +48,7 @@ public:
 	OGREnvelope		GetEnvelope ();
 	OGREnvelope		getMercatorEnvelope (MercatorProjType	mercType);
 
-	static			BOOL readSpatialRefFromMapinfoTabFile (wstring tabFilePath, OGRSpatialReference *poSRS);
+	static			BOOL readSpatialRefFromMapinfoTabFile (string tabFilePath, OGRSpatialReference *poSRS);
 
 
 protected:
@@ -56,7 +56,7 @@ protected:
 
 protected:
 	_TCHAR buf[256];
-	wstring m_strRasterFile;
+	string m_strRasterFile;
 	GDALDataset  *m_poDataset;
 	BOOL	m_isGeoReferenced;
 	int		m_nWidth;
@@ -86,16 +86,18 @@ public:
 
 public:
 	
-	int				init	(wstring inputPath, MercatorProjType mercType, wstring vectorFile=L"", double dShiftX = 0.0, double dShiftY = 0.0);
-	//wstring			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
+	int				init	(string inputPath, MercatorProjType mercType, string vectorFile="", 
+							double dShiftX = 0.0, double dShiftY = 0.0);
+	//string			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
 
 	OGREnvelope		getMercatorEnvelope();
 	int				calculateNumberOfTiles (int zoom);
 	int				calculateBestMercZoom();
-	BOOL			warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
+	BOOL			warpToMercBuffer (	int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, 
+										int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
 
-	list<wstring>	GetFilesList();
-	list<wstring>	getFilesListByEnvelope(OGREnvelope mercatorEnvelope);
+	list<string>	GetFilesList();
+	list<string>	getFilesListByEnvelope(OGREnvelope mercatorEnvelope);
 	BOOL			intersects(OGREnvelope mercatorEnvelope);
 
 
@@ -105,11 +107,11 @@ public:
 
 protected:
 
-	BOOL			addItemToBundle (wstring rasterFile, wstring	vectorFile, double dShiftX = 0.0, double dShiftY = 0.0);
+	BOOL			addItemToBundle (string rasterFile, string	vectorFile, double dShiftX = 0.0, double dShiftY = 0.0);
 
 
 protected:
-	list<pair<wstring,pair<OGREnvelope,VectorBorder*>>>	dataList;
+	list<pair<string,pair<OGREnvelope,VectorBorder*>>>	dataList;
 	MercatorProjType		mercType;
 };
 

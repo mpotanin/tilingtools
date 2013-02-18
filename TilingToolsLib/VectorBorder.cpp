@@ -24,22 +24,19 @@ VectorBorder::VectorBorder (OGREnvelope mercEnvelope, MercatorProjType	mercType)
 
 
 
-wstring VectorBorder::getVectorFileNameByRasterFileName (wstring strRasterFile)
+string VectorBorder::getVectorFileNameByRasterFileName (string strRasterFile)
 {
-	wstring	strVectorFileBase = RemoveExtension(strRasterFile);
-	wstring	strVectorFile;
+	string	strVectorFileBase = RemoveExtension(strRasterFile);
+	string	strVectorFile;
 	
-	if (FileExists(strVectorFileBase+L".mif"))	strVectorFile = strVectorFileBase+L".mif";
-	if (FileExists(strVectorFileBase+L".shp"))	strVectorFile = strVectorFileBase+L".shp";
-	if (FileExists(strVectorFileBase+L".tab"))	strVectorFile = strVectorFileBase+L".tab";
+	if (FileExists(strVectorFileBase+".mif"))	strVectorFile = strVectorFileBase+".mif";
+	if (FileExists(strVectorFileBase+".shp"))	strVectorFile = strVectorFileBase+".shp";
+	if (FileExists(strVectorFileBase+".tab"))	strVectorFile = strVectorFileBase+".tab";
 	
-	if (strVectorFile!=L"")
+	if (strVectorFile!="")
 	{
-		string strVectorFileUTF8;
-		wstrToUtf8(strVectorFileUTF8,strVectorFile);
-
-		OGRDataSource * poDS = OGRSFDriverRegistrar::Open( strVectorFileUTF8.c_str(), FALSE );
-		if (poDS ==NULL) return L"";
+		OGRDataSource * poDS = OGRSFDriverRegistrar::Open( strVectorFile.c_str(), FALSE );
+		if (poDS ==NULL) return "";
 		OGRDataSource::DestroyDataSource( poDS );
 	}
 	return strVectorFile;
@@ -66,12 +63,9 @@ OGREnvelope	VectorBorder::inetersectOGREnvelopes (OGREnvelope	&oEnvelope1,OGREnv
 	return oEnvelope;
 }
 
-VectorBorder*	VectorBorder::createFromVectorFile(wstring vectorFilePath, MercatorProjType	mercType)
+VectorBorder*	VectorBorder::createFromVectorFile(string vectorFilePath, MercatorProjType	mercType)
 {
-	string vectorFilePathUTF8;
-	wstrToUtf8(vectorFilePathUTF8,vectorFilePath);
-
-	OGRDataSource *poDS= OGRSFDriverRegistrar::Open( vectorFilePathUTF8.c_str(), FALSE );
+	OGRDataSource *poDS= OGRSFDriverRegistrar::Open( vectorFilePath.c_str(), FALSE );
 	if( poDS == NULL ) return NULL;
 	
 	OGRMultiPolygon *poMultiPolygon = readMultiPolygonFromOGRDataSource(poDS);
