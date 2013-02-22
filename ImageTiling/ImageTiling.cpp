@@ -183,7 +183,10 @@ int CheckArgsAndCallTiling (	string strInput,
 
 int _tmain(int argc, wchar_t* argvW[])
 {
-	cout.imbue(std::locale("rus_rus.866"));
+	//cout.imbue(std::locale("rus_rus.866"));
+	//locale myloc("");
+	
+
 	string *argv = new string[argc];
 	for (int i=0;i<argc;i++)
 	{

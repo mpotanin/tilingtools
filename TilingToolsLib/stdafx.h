@@ -21,6 +21,11 @@
 #include <regex>
 #include <math.h>
 #include <cstdlib>
+#include <omp.h>
+
+//#include <pthread>
+//#include <semaphore>
+
 
 
 

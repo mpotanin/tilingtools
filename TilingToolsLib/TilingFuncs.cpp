@@ -225,6 +225,7 @@ BOOL GMTMakeBaseZoomTiling	(	GMTilingParameters		*poParams,
 
 			if (!poBundle->intersects(bufferEnvelope)) continue;
 			RasterBuffer mercBuffer;
+
 			if (!poBundle->warpToMercBuffer(zoom,bufferEnvelope,mercBuffer,poParams->pNoDataValue,poParams->pBackgroundColor))
 			{
 				cout<<"Error: BaseZoomTiling: warping to merc fail"<<endl;
@@ -241,6 +242,14 @@ BOOL GMTMakeBaseZoomTiling	(	GMTilingParameters		*poParams,
 					return FALSE;
 				}
 			}
+
+			//ToDo
+			//Если длина очереди тайлинга < Lmax, то запустить новую порцию на тайлинг
+			//(при этом требуется проконтролировать: многопоточность записи в TilePyramid, безопасность mercBuffer).
+			//Если длина очереди >=Lmax, то ждать 
+
+
+
 			if (!GMTTilingFromBuffer(	poParams,
 										mercBuffer,
 										poBundle,
@@ -377,11 +386,12 @@ BOOL GMTCreateZoomOutTile (VectorBorder	&oVectorBorder,
 			return TRUE;
 		}
 
+		//ToDo
+		//Проверить длину очереди на выполнение операций: ZoomOut + SaveData + запись результатов
+		//Если < Lmax, то отправить на выполнение
+		//Если >=Lmax, то ждать
+
 		if (!ZoomOutTileBuffer(quarterTileBuffer,quarterTileExists, oTileBuffer)) return FALSE;
-		
-	
-
-
 		void *pData=NULL;
 		int size = 0;
 		switch (poParams->tileType)
@@ -399,6 +409,8 @@ BOOL GMTCreateZoomOutTile (VectorBorder	&oVectorBorder,
 			default:
 				oTileBuffer.SaveToTiffData(pData,size);
 		}
+
+
 		tilePyramid->addTile(nCurrZoom,nX,nY,(BYTE*)pData,size);
 		delete[]((BYTE*)pData);
 		nGeneratedTiles++;

@@ -234,7 +234,7 @@ namespace TilingTools
         public bool makeImageTiling(bool bFolder, bool useContainer, string strInput, bool bBundle, string strType, string strVectorBorder, string strOutputFolder, int minZoom, int maxZoom)
         {
             W = null;
-            string strTiling = " -file " + ((bFolder) ? addDoubleQuotes(strInput+"\\*."+strType) : strInput);
+            string strTiling = " -file " + ((bFolder) ? addDoubleQuotes(strInput+"\\*."+strType) : addDoubleQuotes(strInput));
             if (bBundle) strTiling += " -mosaic ";
             //if (strType != "") strTiling += " -type " + strType;
             if (maxZoom > 0) strTiling += " -zoom " + (maxZoom).ToString();
