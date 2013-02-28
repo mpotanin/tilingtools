@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "VectorBorder.h"
-namespace GMT
+namespace GMX
 {
 
 
@@ -13,7 +13,7 @@ VectorBorder::~VectorBorder()
 {
 	if (m_poGeometry!=NULL) m_poGeometry->empty();
 	m_poGeometry	= NULL;
-}
+}  
 
 
 VectorBorder::VectorBorder (OGREnvelope mercEnvelope, MercatorProjType	mercType)
@@ -63,6 +63,44 @@ OGREnvelope	VectorBorder::inetersectOGREnvelopes (OGREnvelope	&oEnvelope1,OGREnv
 	return oEnvelope;
 }
 
+BOOL	VectorBorder::intersects180Degree (OGRGeometry	*poGeometry, OGRSpatialReference *poSR)
+{
+	int numRings;
+	OGRLinearRing **poRings = VectorBorder::getLinearRingsRef(poGeometry,numRings);
+
+	OGRSpatialReference	oWGS84;
+	oWGS84.SetWellKnownGeogCS("WGS84");
+	
+
+	for (int i=0;i<numRings;i++)
+	{
+		for (int k=0;k<poRings[i]->getNumPoints()-1;k++)
+		{
+			OGRLineString oLS;
+			for (double j=0;j<=1.0001;j+=0.1)
+				oLS.addPoint(	poRings[i]->getX(k)*(1-j) + poRings[i]->getX(k+1)*j,
+								poRings[i]->getY(k)*(1-j) + poRings[i]->getY(k+1)*j);
+			oLS.assignSpatialReference(poSR);
+			//ToDo
+			oLS.transformTo(&oWGS84);
+			for (int l=0;l<oLS.getNumPoints()-1;l++)
+			{
+				if(	((oLS.getX(l)>90)&&(oLS.getX(l+1)<-90)) || ((oLS.getX(l)<-90)&&(oLS.getX(l+1)>90)) ||
+					((oLS.getX(l)>180.0001)&&(oLS.getX(l+1)<179.9999)) || ((oLS.getX(l)<179.9999)&&(oLS.getX(l+1)>180.0001)) || 
+					((oLS.getX(l)>-179.9999)&&(oLS.getX(l+1)<-180.0001)) || ((oLS.getX(l)<-180.0001)&&(oLS.getX(l+1)>-179.9999)))
+				{
+					delete[]poRings;
+					return TRUE;
+				}
+			}
+		}
+	}
+	
+	delete[]poRings;
+	return FALSE;
+}
+
+
 VectorBorder*	VectorBorder::createFromVectorFile(string vectorFilePath, MercatorProjType	mercType)
 {
 	OGRDataSource *poDS= OGRSFDriverRegistrar::Open( vectorFilePath.c_str(), FALSE );
@@ -94,13 +132,13 @@ VectorBorder*	VectorBorder::createFromVectorFile(string vectorFilePath, Mercator
 	MercatorTileGrid::setMercatorSpatialReference(mercType,&oSpatialMerc);
 	
 	poMultiPolygon->assignSpatialReference(poInputSpatial);
+	BOOL	intersects180 = VectorBorder::intersects180Degree(poMultiPolygon,poInputSpatial);
 	if (OGRERR_NONE != poMultiPolygon->transformTo(&oSpatialMerc))
 	{
 		poMultiPolygon->empty();
 		return NULL;
 	}
-
-	adjustFor180DegreeIntersection(poMultiPolygon);
+	if (intersects180) adjustFor180DegreeIntersection(poMultiPolygon);
 		
 	VectorBorder	*poVB	= new VectorBorder();
 	poVB->mercType			= mercType;
@@ -185,77 +223,82 @@ OGRPolygon*	VectorBorder::getOGRPolygonTransformedToPixelLine(OGRSpatialReferenc
 	return poResultPolygon;
 }
 
+OGRLinearRing**		VectorBorder::getLinearRingsRef	(OGRGeometry	*poGeometry, int &numRings)
+{
+	numRings = 0;
+	OGRLinearRing	**poRings = NULL;
+	OGRPolygon		**poPolygons = NULL;
+	OGRwkbGeometryType type = poGeometry->getGeometryType();
+
+	if ((type!=wkbMultiPolygon) && (type!=wkbMultiPolygon) && 
+		(type!=wkbLinearRing) && (type!=wkbLineString)
+		) return NULL;
+
+	int	numPolygons = 0;
+	BOOL	inputIsRing = FALSE;
+	if (type==wkbPolygon)
+	{
+		numPolygons		= 1;
+		poPolygons		= new OGRPolygon*[numPolygons];
+		poPolygons[0]	= (OGRPolygon*)poGeometry;
+	}
+	else if (type==wkbMultiPolygon)
+	{
+		numPolygons		= ((OGRMultiPolygon*)poGeometry)->getNumGeometries();
+		poPolygons		= new OGRPolygon*[numPolygons];
+		for (int i=0;i<numPolygons;i++)
+			poPolygons[i] = (OGRPolygon*)((OGRMultiPolygon*)poGeometry)->getGeometryRef(i);
+	}
+
+	if (numPolygons>0)
+	{
+		for (int i=0;i<numPolygons;i++)
+		{
+			numRings++;
+			numRings+=poPolygons[i]->getNumInteriorRings();
+		}
+		poRings = new OGRLinearRing*[numRings];
+		int j=0;
+		for (int i=0;i<numPolygons;i++)
+		{
+			poRings[j] = poPolygons[i]->getExteriorRing();
+			j++;
+			for (int k=0;k<poPolygons[i]->getNumInteriorRings();k++)
+			{
+				poRings[j] = poPolygons[i]->getInteriorRing(k);
+				j++;
+			}
+		}
+	}
+	else
+	{
+		numRings = 1;
+		poRings = new OGRLinearRing*[numRings];
+		poRings[0] = (OGRLinearRing*)poGeometry;
+	}
+
+	delete[]poPolygons;
+	return poRings;
+}
+
 
 BOOL			VectorBorder::adjustFor180DegreeIntersection (OGRGeometry	*poMercGeometry)
 {
 	OGRLinearRing	**poRings;
-	double D = 10018754.17139462153829420444035;
+	int numRings = 0;
 	
-	double max_x = -1e+308, min_x = 1e+308;
-
-	//poMercGeometry->getGeometryType()
-	OGRwkbGeometryType type = poMercGeometry->getGeometryType();
-
-	if ((poMercGeometry->getGeometryType()!=wkbMultiPolygon) && 
-		(poMercGeometry->getGeometryType()!=wkbMultiPolygon) &&
-		(poMercGeometry->getGeometryType()!=wkbLinearRing) &&
-		(poMercGeometry->getGeometryType()!=wkbLineString)
-		) return FALSE;
-	OGRPolygon	**poPolygons = NULL;
-
-	int	numPolygons;
-	if (poMercGeometry->getGeometryType()==wkbPolygon)
+	if (!(poRings = VectorBorder::getLinearRingsRef(poMercGeometry,numRings))) return FALSE;
+	
+	for (int i=0;i<numRings;i++)
 	{
-		numPolygons		= 1;
-		poPolygons		= new OGRPolygon*[numPolygons];
-		poPolygons[0]	= (OGRPolygon*)poMercGeometry;
-	}
-	else if (poMercGeometry->getGeometryType()==wkbMultiPolygon)
-	{
-		numPolygons		= ((OGRMultiPolygon*)poMercGeometry)->getNumGeometries();
-		poPolygons		= new OGRPolygon*[numPolygons];
-		for (int i=0;i<numPolygons;i++)
-			poPolygons[i] = (OGRPolygon*)((OGRMultiPolygon*)poMercGeometry)->getGeometryRef(i);
-	}
-	else 
-	{
-		numPolygons		= 1;
-		poPolygons		= new OGRPolygon*[numPolygons];
-		poPolygons[0]	= new OGRPolygon();
-		poPolygons[0]->addRingDirectly((OGRLinearRing*)poMercGeometry);
-	}
-
-
-	for (int j=0;j<numPolygons;j++)
-	{
-		for (int i=0; i <poPolygons[j]->getNumInteriorRings() + 1; i++)
+		for (int k=0;k<poRings[i]->getNumPoints();k++)
 		{
-			OGRLinearRing *poLR = (i==0) ? poPolygons[j]->getExteriorRing() : poPolygons[j]->getInteriorRing(i-1);
-			for (int i = 0; i<poLR->getNumPoints();i++)
-			{
-				if (poLR->getX(i)>max_x) max_x = poLR->getX(i);
-				if (poLR->getX(i)<min_x) min_x = poLR->getX(i);
-			}
+				if (poRings[i]->getX(k)<0)
+					poRings[i]->setPoint(k,-2*MercatorTileGrid::getULX() + poRings[i]->getX(k),poRings[i]->getY(k));
 		}
 	}
-
-	if ((max_x>D)&&(min_x<-D))
-	{
-		for (int j=0;j<numPolygons;j++)
-		{
-			for (int i=0; i <poPolygons[j]->getNumInteriorRings() + 1; i++)
-			{
-				OGRLinearRing *poLR = (i==0) ? poPolygons[j]->getExteriorRing() : poPolygons[j]->getInteriorRing(i-1);
-				for (int i = 0; i<poLR->getNumPoints();i++)
-				{
-					if (poLR->getX(i)<0)
-						poLR->setPoint(i,4*D + poLR->getX(i),poLR->getY(i));
-				}
-			}
-		}
-	}
-	delete[]poPolygons;
-
+	
+	delete[]poRings;
 	return TRUE;
 };
 

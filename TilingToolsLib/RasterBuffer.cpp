@@ -1,9 +1,9 @@
 #include "StdAfx.h"
 #include "RasterBuffer.h"
 #include "FileSystemFuncs.h"
-using namespace GMT;
+using namespace GMX;
 
-namespace GMT
+namespace GMX
 {
 
 

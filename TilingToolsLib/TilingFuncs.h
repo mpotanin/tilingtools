@@ -6,13 +6,13 @@
 #include "RasterFile.h"
 
 
-class GMTilingParameters
+class GMXilingParameters
 {
 public:
 //обязательные параметры
 	string						inputPath;				//входной файл или шаблон имени файла
-	GMT::MercatorProjType		mercType;				//тип Меркатора
-	GMT::TileType				tileType;				//тип тайлов
+	GMX::MercatorProjType		mercType;				//тип Меркатора
+	GMX::TileType				tileType;				//тип тайлов
 	
 
 //дополнительные параметры
@@ -28,20 +28,20 @@ public:
 	int						nJpegQuality;
 	double					dShiftX;				//сдвиг по x
 	double					dShiftY;				//сдвиг по y
-	GMT::TileName			*poTileName;			//имена тайлов
+	GMX::TileName			*poTileName;			//имена тайлов
 	int						maxTilesInCache;			//максимальное количество тайлов в оперативной памяти
 
 	static const int		DEFAULT_JPEG_QUALITY = 80;
 
 
-	GMTilingParameters(string inputPath, GMT::MercatorProjType mercType, GMT::TileType tileType)
+	GMXilingParameters(string inputPath, GMX::MercatorProjType mercType, GMX::TileType tileType)
 	{
 		this->inputPath = inputPath;
 		this->mercType	= mercType;
 		this->tileType	= tileType;
 		
 		this->useContainer = TRUE;
-		this->nJpegQuality = GMTilingParameters::DEFAULT_JPEG_QUALITY;
+		this->nJpegQuality = GMXilingParameters::DEFAULT_JPEG_QUALITY;
 		this->dShiftX = 0;
 		this->dShiftY = 0;
 		this->poTileName = NULL;
@@ -54,7 +54,7 @@ public:
 	}
 
 		
-	~GMTilingParameters ()
+	~GMXilingParameters ()
 	{
 		delete(pBackgroundColor);
 		delete(pTransparentColor);
@@ -64,72 +64,72 @@ public:
 
 
 
-BOOL GMTPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles);
+BOOL GMXPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles);
 
 
 
-BOOL GMTMakeTiling (	GMTilingParameters		*poParams);
+BOOL GMXMakeTiling (	GMXilingParameters		*poParams);
 
 
-BOOL GMTTilingFromBuffer	(	GMTilingParameters				*poParams,
-								GMT::RasterBuffer				&oBuffer, 
-								GMT::BundleOfRasterFiles		*poBundle, 
+BOOL GMXTilingFromBuffer	(	GMXilingParameters				*poParams,
+								GMX::RasterBuffer				&oBuffer, 
+								GMX::BundleOfRasterFiles		*poBundle, 
 								int								nULx, 
 								int								nULy,
 								int								z,
 								int								nTilesExpected, 
 								int								&nTilesGenerated,
-								GMT::TilePyramid				*tileContainer);
+								GMX::ITilePyramid				*tileContainer);
 	
 
-BOOL GMTMakeBaseZoomTiling (GMTilingParameters				*poParams, 
-							GMT::BundleOfRasterFiles		*poBundle, 
+BOOL GMXMakeBaseZoomTiling (GMXilingParameters				*poParams, 
+							GMX::BundleOfRasterFiles		*poBundle, 
 							int								nExpected, 
-							GMT::TilePyramid				*tileContainer);
+							GMX::ITilePyramid				*tileContainer);
 
 
 
-BOOL GMTCreatePyramidalTiles (	GMT::VectorBorder	&oVectorBorder, 
+BOOL GMXCreatePyramidalTiles (	GMX::VectorBorder	&oVectorBorder, 
 								int					nBaseZoom, 
 								int					nMinZoom, 
-								GMTilingParameters	*poParams, 
+								GMXilingParameters	*poParams, 
 								int					&nExpectedTiles, 
 								int					&nGeneratedTiles, 
 								BOOL				bOnlyCalculate, 
-								GMT::TilePyramid	*tilePyramid,
+								GMX::ITilePyramid	*ITilePyramid,
 								int					nJpegQuality	= 80
 								);
 
 
-BOOL GMTCreateZoomOutTile (	GMT::VectorBorder				&oVectorBorder,
+BOOL GMXCreateZoomOutTile (	GMX::VectorBorder				&oVectorBorder,
 								int								nCurrZoom,
 								int								nX,
 								int								nY,
 								int								nBaseZoom,
 								int								nMinZoom,
-								GMTilingParameters				*poParams,
-								GMT::RasterBuffer				&oBuffer, 
+								GMXilingParameters				*poParams,
+								GMX::RasterBuffer				&oBuffer, 
 								int								&nExpectedTiles,
 								int								&nGeneratedTiles,
 								BOOL							bOnlyCalculate,
-								GMT::TilePyramid				*tilePyramid,
+								GMX::ITilePyramid				*ITilePyramid,
 								int								nJpegQuality = 80);
 
 
-BOOL ZoomOutTileBuffer		(	GMT::RasterBuffer				srcQuarterTile[4], 
+BOOL ZoomOutTileBuffer		(	GMX::RasterBuffer				srcQuarterTile[4], 
 								BOOL							quarterTileExists[4], 
-								GMT::RasterBuffer				&zoomOutTileBuffer); 
+								GMX::RasterBuffer				&zoomOutTileBuffer); 
 
 
-int GMTCalcBaseZoomTilesForImage (	string						strImage, 
+int GMXCalcBaseZoomTilesForImage (	string						strImage, 
 									string						vectorFile, 
-									GMTilingParameters			*poParams, 
-									GMT::BundleOfRasterFiles	*poBundle, 
+									GMXilingParameters			*poParams, 
+									GMX::BundleOfRasterFiles	*poBundle, 
 									list<string>				&tilesList);
 
 
-int GMTCalcBaseZoomTilesForBundle (GMTilingParameters			*poParams, 
-									GMT::BundleOfRasterFiles	*poBundle, 
+int GMXCalcBaseZoomTilesForBundle (GMXilingParameters			*poParams, 
+									GMX::BundleOfRasterFiles	*poBundle, 
 									int							&nAllTiles, 
 									list<string>				&tilesList );
 

@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "TileName.h"
-namespace GMT
+namespace GMX
 {
 
 

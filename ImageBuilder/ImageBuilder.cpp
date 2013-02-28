@@ -11,7 +11,7 @@
 
 
 using namespace std;
-//using namespace GMT;
+//using namespace GMX;
 
 int _tmain(int argc, wchar_t* argv[])
 {

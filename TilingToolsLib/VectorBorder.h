@@ -1,10 +1,10 @@
 #pragma once
-#ifndef		GMTVECTORBORDER_H
-#define		GMTVECTORBORDER_H 
+#ifndef		GMXVECTORBORDER_H
+#define		GMXVECTORBORDER_H 
 #include "stdafx.h"
 #include "TileName.h"
 
-namespace GMT
+namespace GMX
 {
 
 
@@ -17,11 +17,12 @@ public:
 	static BOOL					adjustFor180DegreeIntersection		(OGRGeometry		*poMercGeometry);
 	static OGREnvelope			combineOGREnvelopes					(OGREnvelope	&oEnvelope1, OGREnvelope	&oEnvelope2);
 	static OGREnvelope			inetersectOGREnvelopes				(OGREnvelope	&oEnvelope1, OGREnvelope	&oEnvelope2);
+	static OGRLinearRing**		getLinearRingsRef					(OGRGeometry	*poGeometry, int &numRings);
+	static BOOL						intersects180Degree (OGRGeometry	*poGeometry, OGRSpatialReference *poSR);
 
-
-	VectorBorder();
-	VectorBorder(OGREnvelope mercEnvelope, MercatorProjType	mercType);
-	~VectorBorder();
+	VectorBorder	();
+	VectorBorder	(OGREnvelope mercEnvelope, MercatorProjType	mercType);
+	~VectorBorder	();
 	
 
 public:

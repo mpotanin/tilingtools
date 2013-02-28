@@ -4,7 +4,7 @@
 
 
 //string		_GetAbsolutePath(string path, string fileName);
-namespace GMT
+namespace GMX
 {
 
 string		RemovePath	(const string& fileName);

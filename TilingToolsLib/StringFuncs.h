@@ -4,7 +4,7 @@
 
 
 
-namespace GMT
+namespace GMX
 {
 
 string			MakeLower				(string str);

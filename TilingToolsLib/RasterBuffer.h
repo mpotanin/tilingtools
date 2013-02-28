@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 
-namespace GMT
+namespace GMX
 {
 
 

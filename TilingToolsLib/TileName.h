@@ -7,7 +7,7 @@
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
-namespace GMT
+namespace GMX
 {
 
 

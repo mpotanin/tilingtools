@@ -3,7 +3,7 @@
 #include <windows.h>
 
 
-namespace GMT
+namespace GMX
 {
 
 	

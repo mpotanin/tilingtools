@@ -2,7 +2,7 @@
 #include "TileBuffer.h"
 #include "StringFuncs.h"
 
-namespace GMT
+namespace GMX
 {
 
 

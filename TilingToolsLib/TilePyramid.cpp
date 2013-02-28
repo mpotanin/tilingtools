@@ -1,16 +1,16 @@
 #include "StdAfx.h"
 #include "TilePyramid.h"
-using namespace GMT;
+using namespace GMX;
 
-namespace GMT
+namespace GMX
 {
 
 
-TileContainer* OpenTileContainerForReading (string fileName)
+ITileContainer* OpenITileContainerForReading (string fileName)
 {
-	TileContainer *poTC = NULL;
+	ITileContainer *poTC = NULL;
 	if (MakeLower(fileName).find(".mbtiles") != string::npos) poTC = new MBTileContainer();
-	else poTC = new GMTileContainer();
+	else poTC = new GMXTileContainer();
 
 	if (poTC->openForReading(fileName)) return poTC;
 	else
@@ -22,7 +22,18 @@ TileContainer* OpenTileContainerForReading (string fileName)
 };
 
 
-GMTileContainer::GMTileContainer	(	string				containerFileName, 
+GMXTileContainer::GMXTileContainer (	string				containerFileName, 
+										TileType			tileType,
+										MercatorProjType	mercType,
+										int					tileBounds[92],
+										BOOL				useBuffer
+									)
+{
+	init(tileBounds,useBuffer,containerFileName,tileType,mercType);
+};
+
+
+GMXTileContainer::GMXTileContainer	(	string				containerFileName, 
 										TileType			tileType,
 										MercatorProjType	mercType,
 										OGREnvelope			envelope, 
@@ -32,18 +43,17 @@ GMTileContainer::GMTileContainer	(	string				containerFileName,
 	int tileBounds[92];
 	for (int i=0;i<23;i++)
 	{
-		tileBounds[4*i] = (tileBounds[4*i+1] = (tileBounds[4*i+2] = (tileBounds[4*i+3] = 0)));
+		tileBounds[4*i] = (tileBounds[4*i+1] = (tileBounds[4*i+2] = (tileBounds[4*i+3] = -1)));
 		if (i<=maxZoom)
 		{
 			MercatorTileGrid::calcTileRange(envelope,i,tileBounds[4*i],tileBounds[4*i+1],tileBounds[4*i+2],tileBounds[4*i+3]);
-			tileBounds[4*i+2]++;tileBounds[4*i+3]++;
 		}
 	}
 	init(tileBounds,useBuffer,containerFileName,tileType,mercType);
 };
 
 
-GMTileContainer::GMTileContainer	() 
+GMXTileContainer::GMXTileContainer	() 
 {
 	this->maxTiles		= 0;
 	this->sizes			= NULL; 
@@ -54,7 +64,7 @@ GMTileContainer::GMTileContainer	()
 };	
 
 	/*
-	GMTileContainer (string fileName)
+	GMXTileContainer (string fileName)
 	{
 		if (!openForReading(fileName))
 		{
@@ -63,7 +73,7 @@ GMTileContainer::GMTileContainer	()
 	}
 	*/
 
-BOOL GMTileContainer::openForReading (string containerFileName)
+BOOL GMXTileContainer::openForReading (string containerFileName)
 {
 	
 	this->bReadOnly		= TRUE;
@@ -124,7 +134,7 @@ BOOL GMTileContainer::openForReading (string containerFileName)
 };
 	
 
-GMTileContainer::~GMTileContainer()
+GMXTileContainer::~GMXTileContainer()
 {
 	empty();
 }
@@ -132,7 +142,7 @@ GMTileContainer::~GMTileContainer()
 //fclose(containerFileData);
 
 
-BOOL		GMTileContainer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
+BOOL		GMXTileContainer::addTile(int z, int x, int y, BYTE *pData, unsigned int size)
 {
 	if (USE_BUFFER)
 	{
@@ -144,20 +154,20 @@ BOOL		GMTileContainer::addTile(int z, int x, int y, BYTE *pData, unsigned int si
 	else return addTileToContainerFile(z,x,y,pData,size);
 };
 
-BOOL		GMTileContainer::getTile(int z, int x, int y, BYTE *&pData, unsigned int &size)
+BOOL		GMXTileContainer::getTile(int z, int x, int y, BYTE *&pData, unsigned int &size)
 {
 	if (USE_BUFFER)		return poTileBuffer->getTile(z,x,y,pData,size);
 	else				return getTileFromContainerFile(z,x,y,pData,size);
 };
 
-BOOL		GMTileContainer::tileExists(int z, int x, int y)
+BOOL		GMXTileContainer::tileExists(int z, int x, int y)
 {
 	unsigned int n = tileID(z,x,y);
 	if (n>= maxTiles && n<0) return FALSE;
 	return (sizes[n]>0) ? TRUE : FALSE;
 }; 
 
-BOOL		GMTileContainer::close()
+BOOL		GMXTileContainer::close()
 {
 	if (bReadOnly)
 	{
@@ -206,7 +216,27 @@ BOOL		GMTileContainer::close()
 };
 
 
-int 		GMTileContainer::getTileList(	list<__int64> &tileList, 
+BOOL		GMXTileContainer::getTileBounds (int tileBounds[92])
+{
+	if (this->maxTiles<=0) return FALSE;
+	if (this->maxx==0 || this->maxy==0 || this->minx==0 || this->miny==0) return FALSE;
+	for (int z=0;z<23;z++)
+	{
+		if ((maxx[4*z+2]==0)||(maxx[4*z+3]==0)) tileBounds[4*z] = (tileBounds[4*z+1] = (tileBounds[4*z+2] = (tileBounds[4*z+3] =-1)));
+		else 
+		{
+			tileBounds[4*z]		= minx[z];
+			tileBounds[4*z+1]	= miny[z];
+			tileBounds[4*z+2]	= maxx[z]-1;
+			tileBounds[4*z+3]	= maxy[z]-1;
+		}
+	}
+	return TRUE;
+}
+
+
+
+int 		GMXTileContainer::getTileList(	list<__int64> &tileList, 
 											int minZoom, 
 											int maxZoom, 
 											string vectorFile, 
@@ -242,7 +272,7 @@ int 		GMTileContainer::getTileList(	list<__int64> &tileList,
 	return tileList.size();	
 };
 	
-__int64		GMTileContainer::tileID( int z, int x, int y)
+__int64		GMXTileContainer::tileID( int z, int x, int y)
 {
 	unsigned int num = 0;
 	for (int s=0;s<z;s++)
@@ -250,7 +280,7 @@ __int64		GMTileContainer::tileID( int z, int x, int y)
 	return (num + (maxx[z]-minx[z])*(y-miny[z]) + x-minx[z]);
 };
 
-BOOL		GMTileContainer::tileXYZ(__int64 n, int &z, int &x, int &y)
+BOOL		GMXTileContainer::tileXYZ(__int64 n, int &z, int &x, int &y)
 {
 	if ((maxTiles>0) && (n>=maxTiles)) return FALSE; 
 	int s = 0;
@@ -265,17 +295,17 @@ BOOL		GMTileContainer::tileXYZ(__int64 n, int &z, int &x, int &y)
 	return TRUE;
 };
 
-TileType	GMTileContainer::getTileType()
+TileType	GMXTileContainer::getTileType()
 {
 	return this->tileType;
 };
 
-MercatorProjType	GMTileContainer::getProjType()
+MercatorProjType	GMXTileContainer::getProjType()
 {
 	return this->mercType;
 };
 
-OGREnvelope GMTileContainer::getMercatorEnvelope()
+OGREnvelope GMXTileContainer::getMercatorEnvelope()
 {
 	OGREnvelope envelope;
 	envelope.MinX = (envelope.MaxX = (envelope.MinY = (envelope.MaxY = 0)));
@@ -289,7 +319,7 @@ OGREnvelope GMTileContainer::getMercatorEnvelope()
 	return envelope;
 };
 
-int			GMTileContainer::getMaxZoom()
+int			GMXTileContainer::getMaxZoom()
 {
 	int maxZ = -1;
 	for (int z=0;z<23;z++)
@@ -297,7 +327,7 @@ int			GMTileContainer::getMaxZoom()
 	return maxZ;
 };
 
-BOOL 	GMTileContainer::init	(	int					tileBounds[92], 
+BOOL 	GMXTileContainer::init	(	int					tileBounds[92], 
 									BOOL				useBuffer, 
 									string				containerFileName, 
 									TileType			tileType,
@@ -327,13 +357,13 @@ BOOL 	GMTileContainer::init	(	int					tileBounds[92],
 	int maxZoom = 0;
 	for (int z =0; z<23;z++)
 	{
-		if (tileBounds[4*z+2]>0)
+		if (tileBounds[4*z+2]>=0)
 		{
 			maxZoom = z;
 			minx[z] = tileBounds[4*z];
 			miny[z] = tileBounds[4*z+1];
-			maxx[z] = tileBounds[4*z+2];
-			maxy[z] = tileBounds[4*z+3];
+			maxx[z] = tileBounds[4*z+2]+1;
+			maxy[z] = tileBounds[4*z+3]+1;
 		}
 		else minx[z] = (miny[z] = (maxx[z] = (maxy[z] = 0)));
 	}
@@ -351,7 +381,7 @@ BOOL 	GMTileContainer::init	(	int					tileBounds[92],
 };
 
 
-BOOL	GMTileContainer::writeContainerFromBuffer()
+BOOL	GMXTileContainer::writeContainerFromBuffer()
 {
 	if (USE_BUFFER) 
 	{
@@ -362,8 +392,9 @@ BOOL	GMTileContainer::writeContainerFromBuffer()
 }
 
 
-BOOL	GMTileContainer::addTileToContainerFile(int z, int x, int y, BYTE *pData, unsigned int size)
+BOOL	GMXTileContainer::addTileToContainerFile(int z, int x, int y, BYTE *pData, unsigned int size)
 {
+	//ToDo - fix if n<0
 	unsigned int n	= tileID(z,x,y);
 	if (n>= maxTiles) return FALSE;
 
@@ -391,7 +422,7 @@ BOOL	GMTileContainer::addTileToContainerFile(int z, int x, int y, BYTE *pData, u
 	return TRUE;
 };
 	
-BOOL	GMTileContainer::getTileFromContainerFile (int z, int x, int y, BYTE *&pData, unsigned int &size)
+BOOL	GMXTileContainer::getTileFromContainerFile (int z, int x, int y, BYTE *&pData, unsigned int &size)
 {
 	unsigned int n	= tileID(z,x,y);
 	if (n>= maxTiles && n<0) return FALSE;
@@ -413,7 +444,7 @@ BOOL	GMTileContainer::getTileFromContainerFile (int z, int x, int y, BYTE *&pDat
 	fread(pData,1,size,containerFileData);
 };
 
-BOOL	GMTileContainer::writeTilesToContainerFileFromBuffer()
+BOOL	GMXTileContainer::writeTilesToContainerFileFromBuffer()
 {
 	if (!containerFileData)
 	{
@@ -459,7 +490,7 @@ BOOL	GMTileContainer::writeTilesToContainerFileFromBuffer()
 	return TRUE;
 };
 
-BOOL	GMTileContainer::writeContainerFileHeader()
+BOOL	GMXTileContainer::writeContainerFileHeader()
 {
 	if (!containerFileData) return FALSE;
 	fseek(containerFileData,0,SEEK_SET);
@@ -474,11 +505,11 @@ BOOL	GMTileContainer::writeContainerFileHeader()
 };
 
 
-BOOL	GMTileContainer::writeHeaderToByteArray(BYTE*	&pData)
+BOOL	GMXTileContainer::writeHeaderToByteArray(BYTE*	&pData)
 {
 	pData = new BYTE[headerSize()];
-	string gmtc = "GMTC";
-	memcpy(pData,gmtc.c_str(),4);
+	string fileType = "GMTC";
+	memcpy(pData,fileType.c_str(),4);
 	memcpy(&pData[4],&MAX_TILES_IN_CONTAINER,4);
 	pData[8]	= 0;
 	pData[9]	= mercType;
@@ -516,12 +547,12 @@ BOOL	GMTileContainer::writeHeaderToByteArray(BYTE*	&pData)
 };
 
 	
-unsigned int GMTileContainer::headerSize()
+unsigned int GMXTileContainer::headerSize()
 {
 	return (4+4+4+512+maxTiles*(4+8+1));
 };
 
-void GMTileContainer::empty ()
+void GMXTileContainer::empty ()
 {
 	delete[]sizes;
 	sizes = NULL;
@@ -775,6 +806,8 @@ int 		MBTileContainer::getTileList(list<__int64> &tileList, int minZoom, int max
 		int z		= sqlite3_column_int(stmt, 0);
 		int x		= sqlite3_column_int(stmt, 1);
 		int y		= (z>0) ? ((1<<z) - sqlite3_column_int(stmt, 2) -1) : 0;
+		if (x<0 || y<0 || z <0) continue;
+
 		if (pVB)
 			if (! pVB->intersects(z,x,y)) continue;
 			
@@ -808,12 +841,7 @@ OGREnvelope MBTileContainer::getMercatorEnvelope()
 BOOL		MBTileContainer::getTileBounds (int tileBounds[92])
 {
 	for (int z=0; z<23; z++)
-	{
-		tileBounds[4*z]	= 	(tileBounds[4*z+1] =	-1);
-		tileBounds[4*z + 2]	= 	(tileBounds[4*z+3] =	0);
-	}
-
-		
+		tileBounds[4*z]		= 	(tileBounds[4*z+1] = (tileBounds[4*z + 2]	= 	(tileBounds[4*z+3] =	-1)));
 
 	if (this->pDB == NULL) return FALSE;
 	char buf[256];
@@ -831,17 +859,10 @@ BOOL		MBTileContainer::getTileBounds (int tileBounds[92])
 		int x		= sqlite3_column_int(stmt, 1);
 		int y		= (z>0) ? ((1<<z) - sqlite3_column_int(stmt, 2) -1) : 0;
 
-		tileBounds[4*z]		= (tileBounds[4*z] == -1 || tileBounds[4*z] > x) ? x : tileBounds[4*z];
+		tileBounds[4*z]		= (tileBounds[4*z] == -1   || tileBounds[4*z] > x) ? x : tileBounds[4*z];
 		tileBounds[4*z+1]	= (tileBounds[4*z+1] == -1 || tileBounds[4*z+1] > y) ? y : tileBounds[4*z+1];
-		tileBounds[4*z+2]	= (tileBounds[4*z+2] == 0 || tileBounds[4*z+2] < x + 1) ? x + 1 : tileBounds[4*z+2];
-		tileBounds[4*z+3]	= (tileBounds[4*z+3] == 0 || tileBounds[4*z+3] < y + 1) ? y + 1 : tileBounds[4*z+3];
-	}
-
-	for (int z=0; z<23; z++)
-	{
-		tileBounds[4*z]		= (tileBounds[4*z] == -1) ? 0 : tileBounds[4*z];
-		tileBounds[4*z+1]	= (tileBounds[4*z+1] == -1) ? 0 : tileBounds[4*z+1];
-
+		tileBounds[4*z+2]	= (tileBounds[4*z+2] == -1 || tileBounds[4*z+2] < x) ? x : tileBounds[4*z+2];
+		tileBounds[4*z+3]	= (tileBounds[4*z+3] == -1 || tileBounds[4*z+3] < y) ? y : tileBounds[4*z+3];
 	}
 
 	sqlite3_finalize(stmt);
@@ -975,19 +996,17 @@ BOOL		TileFolder::getTileBounds (int tileBounds[92])
 	list<__int64> oTileList;
 	if (!getTileList(oTileList,-1,-1,"")) return FALSE;
 	for (int z=0; z<23;z++)
-	{
-		tileBounds[4*z+3]=(tileBounds[4*z+2]=0);
-		tileBounds[4*z]=(tileBounds[4*z+1]=(1<<(z+1)));
-	}
+		tileBounds[4*z]		= 	(tileBounds[4*z+1] = (tileBounds[4*z + 2]	= 	(tileBounds[4*z+3] =	-1)));
+
 	for (list<__int64>::const_iterator iter = oTileList.begin(); iter!=oTileList.end();iter++)
 	{
 		int z,x,y;
 		if (tileXYZ((*iter),z,x,y))
 		{
-			if (tileBounds[4*z]>x)		tileBounds[4*z] = x;
-			if (tileBounds[4*z+1]>y)	tileBounds[4*z+1] = y;
-			if (tileBounds[4*z+2]<=x)	tileBounds[4*z+2] = (x+1);
-			if (tileBounds[4*z+3]<=y)	tileBounds[4*z+3] = (y+1);
+			tileBounds[4*z]		= (tileBounds[4*z] == -1   || tileBounds[4*z] > x) ? x : tileBounds[4*z];
+			tileBounds[4*z+1]	= (tileBounds[4*z+1] == -1 || tileBounds[4*z+1] > y) ? y : tileBounds[4*z+1];
+			tileBounds[4*z+2]	= (tileBounds[4*z+2] == -1 || tileBounds[4*z+2] < x) ? x : tileBounds[4*z+2];
+			tileBounds[4*z+3]	= (tileBounds[4*z+3] == -1 || tileBounds[4*z+3] < y) ? y : tileBounds[4*z+3];
 		}
 	}
 

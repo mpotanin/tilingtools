@@ -5,11 +5,11 @@
 #include "FileSystemFuncs.h"
 
 
-namespace GMT
+namespace GMX
 {
 
 
-int _stdcall GMTPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
+int _stdcall GMXPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
 {
 	return 1;
 }
@@ -291,10 +291,9 @@ OGREnvelope	RasterFile::getMercatorEnvelope (MercatorProjType	mercType)
 	OGRSpatialReference oSpatialMerc;
 	MercatorTileGrid::setMercatorSpatialReference(mercType,&oSpatialMerc);
 	
+	BOOL	intersects180 = VectorBorder::intersects180Degree(&oLR,&rasterFileSR);
 	oLR.transformTo(&oSpatialMerc);
-	OGRwkbGeometryType type = oLR.getGeometryType();
-
-	VectorBorder::adjustFor180DegreeIntersection(&oLR);
+	if (intersects180) VectorBorder::adjustFor180DegreeIntersection(&oLR);
 
 
 	OGREnvelope resultEnvelope;
@@ -626,7 +625,7 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		
 
 		// psWarpOptions->pfnProgress = GDALTermProgress;   
-		psWarpOptions->pfnProgress = GMTPrintNoProgress;  
+		psWarpOptions->pfnProgress = GMXPrintNoProgress;  
 
 		// Establish reprojection transformer. 
 

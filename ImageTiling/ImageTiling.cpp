@@ -74,7 +74,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	
 
 	list<string> inputFiles;
-	GMT::FindFilesInFolderByPattern(inputFiles,strInput);
+	GMX::FindFilesInFolderByPattern(inputFiles,strInput);
 	if (inputFiles.size()==0)
 	{
 		cout<<"Error: can't find input files by path: "<<strInput<<endl;
@@ -82,9 +82,9 @@ int CheckArgsAndCallTiling (	string strInput,
 	}
 
 	//синициализируем обязательные параметры для тайлинга
-	GMT::MercatorProjType mercType =	(	(strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")
+	GMX::MercatorProjType mercType =	(	(strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")
 											|| (strProjType == "epsg:3395")
-										) ? GMT::WORLD_MERCATOR : GMT::WEB_MERCATOR;
+										) ? GMX::WORLD_MERCATOR : GMX::WEB_MERCATOR;
 
 
 	if ( (strContainer=="") && 
@@ -93,11 +93,11 @@ int CheckArgsAndCallTiling (	string strInput,
 		 (strTemplate!="standard") 
 		)
 	{
-		if (!GMT::StandardTileName::validateTemplate(strTemplate)) return FALSE;
+		if (!GMX::StandardTileName::validateTemplate(strTemplate)) return FALSE;
 	}
 
 	
-	GMT::TileType tileType;
+	GMX::TileType tileType;
 	if (strTileType=="")
 	{
 		if ((strTemplate!="") && (strTemplate!="kosmosnimki") && (strTemplate!="standard"))
@@ -107,9 +107,9 @@ int CheckArgsAndCallTiling (	string strInput,
 	}
 	
 	tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
-					GMT::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMT::PNG_TILE : GMT::TIFF_TILE;
+					GMX::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMX::PNG_TILE : GMX::TIFF_TILE;
 	
-	GMTilingParameters oParams(strInput,mercType,tileType);
+	GMXilingParameters oParams(strInput,mercType,tileType);
 
 	if (strZoom != "")		oParams.baseZoom = (int)atof(strZoom.c_str());
 	if (strMinZoom != "")	oParams.minZoom = (int)atof(strMinZoom.c_str());
@@ -118,33 +118,33 @@ int CheckArgsAndCallTiling (	string strInput,
 	if (strContainer=="")
 	{
 		oParams.useContainer = FALSE;
-		strOutput = (strOutput == "") ? (GMT::RemoveExtension(strInput)+"_tiles") : strOutput;
-		if (!GMT::IsDirectory(strOutput))
+		strOutput = (strOutput == "") ? (GMX::RemoveExtension(strInput)+"_tiles") : strOutput;
+		if (!GMX::IsDirectory(strOutput))
 		{
-			if (!GMT::CreateDirectory(strOutput.c_str()))
+			if (!GMX::CreateDirectory(strOutput.c_str()))
 			{
 				cout<<"Error: can't create folder: "<<strOutput<<endl;
 				return FALSE;
 			}
 		}
 		if ((strTemplate=="") || (strTemplate=="kosmosnimki"))
-			oParams.poTileName = new GMT::KosmosnimkiTileName(strOutput,tileType);
+			oParams.poTileName = new GMX::KosmosnimkiTileName(strOutput,tileType);
 		else if (strTemplate=="standard") 
-			oParams.poTileName = new GMT::StandardTileName(	strOutput,("{z}/{x}/{z}_{x}_{y}." + 
-															GMT::TileName::tileExtension(tileType)));
+			oParams.poTileName = new GMX::StandardTileName(	strOutput,("{z}/{x}/{z}_{x}_{y}." + 
+															GMX::TileName::tileExtension(tileType)));
 		else 
-			oParams.poTileName = new GMT::StandardTileName(strOutput,strTemplate);
+			oParams.poTileName = new GMX::StandardTileName(strOutput,strTemplate);
 	}
 	else
 	{
 		oParams.useContainer	= TRUE;
 		string containerExt	= (strContainer == "-container") ? "tiles" : "mbtiles"; 
 		oParams.containerFile = (strOutput == "")	?
-									GMT::RemoveExtension((*inputFiles.begin())) + "." + containerExt :
-								(GMT::IsDirectory(strOutput)) ?
-									GMT::RemoveEndingSlash(strOutput) + "/" + 
-									GMT::RemoveExtension(GMT::RemovePath((*inputFiles.begin()))) + "." + containerExt :
-								(GMT::GetExtension(strOutput) == containerExt) ?
+									GMX::RemoveExtension((*inputFiles.begin())) + "." + containerExt :
+								(GMX::IsDirectory(strOutput)) ?
+									GMX::RemoveEndingSlash(strOutput) + "/" + 
+									GMX::RemoveExtension(GMX::RemovePath((*inputFiles.begin()))) + "." + containerExt :
+								(GMX::GetExtension(strOutput) == containerExt) ?
 									strOutput :
 									strOutput + "." + containerExt;
 	}
@@ -163,7 +163,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	if (strTranspColor!="")
 	{
 		BYTE	rgb[3];
-		if (!GMT::ConvertStringToRGB(strTranspColor,rgb))
+		if (!GMX::ConvertStringToRGB(strTranspColor,rgb))
 		{
 			cout<<"Error: bad value of parameter: \"-no_data_rgb\""<<endl;
 			return FALSE;
@@ -173,7 +173,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	}
 
 
-	GMTMakeTiling(&oParams);
+	GMXMakeTiling(&oParams);
 	//if (logFile) fclose(logFile);
 	
 	return 1;
@@ -190,11 +190,11 @@ int _tmain(int argc, wchar_t* argvW[])
 	string *argv = new string[argc];
 	for (int i=0;i<argc;i++)
 	{
-		GMT::wstrToUtf8(argv[i],argvW[i]);
-		GMT::ReplaceAll(argv[i],"\\","/");
+		GMX::wstrToUtf8(argv[i],argvW[i]);
+		GMX::ReplaceAll(argv[i],"\\","/");
 	}
 	
-	if (!GMT::LoadGDAL(argc,argv)) return -1;
+	if (!GMX::LoadGDAL(argc,argv)) return -1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
@@ -205,31 +205,31 @@ int _tmain(int argc, wchar_t* argvW[])
 	}
 
   	//обязательный параметр
-	string strInput				=  GMT::ReadConsoleParameter("-file",argc,argv);
+	string strInput				=  GMX::ReadConsoleParameter("-file",argc,argv);
 
 	//дополнительные параметры
-	string strMosaic			=  GMT::ReadConsoleParameter("-mosaic",argc,argv,TRUE);
-	string	strContainer		=  (GMT::ReadConsoleParameter("-container",argc,argv,TRUE) != "") ? 
-											GMT::ReadConsoleParameter("-container",argc,argv,TRUE) : 
-											GMT::ReadConsoleParameter("-mbtiles",argc,argv,TRUE);
-	string strZoom				=  GMT::ReadConsoleParameter("-zoom",argc,argv);
-	string strMinZoom			=  GMT::ReadConsoleParameter("-minZoom",argc,argv);	
-	string strVectorFile		=  GMT::ReadConsoleParameter("-border",argc,argv);
-	string strOutput		=  GMT::ReadConsoleParameter("-tiles",argc,argv);
-	string strTileType			=  GMT::ReadConsoleParameter("-tile_type",argc,argv);
-	string strProjType			=  GMT::ReadConsoleParameter("-proj",argc,argv);
-	string strTemplate			=  GMT::ReadConsoleParameter("-template",argc,argv);
-	string strNoData			=  GMT::ReadConsoleParameter("-no_data",argc,argv);
-	string strTranspColor		=  GMT::ReadConsoleParameter("-no_data_rgb",argc,argv);
+	string strMosaic			=  GMX::ReadConsoleParameter("-mosaic",argc,argv,TRUE);
+	string	strContainer		=  (GMX::ReadConsoleParameter("-container",argc,argv,TRUE) != "") ? 
+											GMX::ReadConsoleParameter("-container",argc,argv,TRUE) : 
+											GMX::ReadConsoleParameter("-mbtiles",argc,argv,TRUE);
+	string strZoom				=  GMX::ReadConsoleParameter("-zoom",argc,argv);
+	string strMinZoom			=  GMX::ReadConsoleParameter("-minZoom",argc,argv);	
+	string strVectorFile		=  GMX::ReadConsoleParameter("-border",argc,argv);
+	string strOutput		=  GMX::ReadConsoleParameter("-tiles",argc,argv);
+	string strTileType			=  GMX::ReadConsoleParameter("-tile_type",argc,argv);
+	string strProjType			=  GMX::ReadConsoleParameter("-proj",argc,argv);
+	string strTemplate			=  GMX::ReadConsoleParameter("-template",argc,argv);
+	string strNoData			=  GMX::ReadConsoleParameter("-no_data",argc,argv);
+	string strTranspColor		=  GMX::ReadConsoleParameter("-no_data_rgb",argc,argv);
 
 	//скрытые параметры
-	string strEdges				=  GMT::ReadConsoleParameter("-edges",argc,argv);
-	string strShiftX			=  GMT::ReadConsoleParameter("-shiftX",argc,argv);
-	string strShiftY			=  GMT::ReadConsoleParameter("-shiftY",argc,argv);
-	string strPixelTiling		=  GMT::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE);
-	string strBackground		=  GMT::ReadConsoleParameter("-background",argc,argv);
-	string strLogFile			=  GMT::ReadConsoleParameter("-log_file",argc,argv);
-	string strCache				=  GMT::ReadConsoleParameter("-cache",argc,argv);
+	string strEdges				=  GMX::ReadConsoleParameter("-edges",argc,argv);
+	string strShiftX			=  GMX::ReadConsoleParameter("-shiftX",argc,argv);
+	string strShiftY			=  GMX::ReadConsoleParameter("-shiftY",argc,argv);
+	string strPixelTiling		=  GMX::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE);
+	string strBackground		=  GMX::ReadConsoleParameter("-background",argc,argv);
+	string strLogFile			=  GMX::ReadConsoleParameter("-log_file",argc,argv);
+	string strCache				=  GMX::ReadConsoleParameter("-cache",argc,argv);
 	//string	strN
 
 	if (argc == 2)				strInput	= argv[1];
@@ -237,10 +237,19 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	//проверяем входной файл(ы)
 
-
 	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-	//strOutput		= "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
+	//strOutput		= "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
 	//strZoom			= "8";
+	//strProjType		= "1";
+	//strTemplate		= "standard";
+	//strVectorFile	= "C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+
+	//-no_data_rgb "0 0 0" -tile_type png -border C:\Work\Projects\TilingTools\autotest\border\markers.tab
+
+
+	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\dnb_land_ocean_ice.2012.54000x27000_geo_cut3.tif";
+	//strOutput		= "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
+	//strZoom			= "6";
 	//strContainer	= "-container";
 
 
@@ -259,12 +268,12 @@ int _tmain(int argc, wchar_t* argvW[])
 	}
 
 
-	if (strTileType	== "" ) strTileType = GMT::MakeLower( GMT::ReadConsoleParameter("-tileType",argc,argv));
+	if (strTileType	== "" ) strTileType = GMX::MakeLower( GMX::ReadConsoleParameter("-tileType",argc,argv));
 
 	if (strMosaic=="")
 	{
 		std::list<string> input_files;
-		if (!GMT::FindFilesInFolderByPattern (input_files,strInput))
+		if (!GMX::FindFilesInFolderByPattern (input_files,strInput))
 		{
 			cout<<"Can't find input files by pattern: "<<strInput<<endl;
 			return 1;
@@ -275,20 +284,20 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			cout<<"Tiling file: "<<(*iter)<<endl;
 			if (input_files.size()>1)
-				strVectorFile = GMT::VectorBorder::getVectorFileNameByRasterFileName(*iter);
+				strVectorFile = GMX::VectorBorder::getVectorFileNameByRasterFileName(*iter);
 			string strOutput_fix = strOutput;
 			if ((input_files.size()>1)&&(strOutput!=""))
 			{
-				if (!GMT::FileExists(strOutput)) 
+				if (!GMX::FileExists(strOutput)) 
 				{
-					if (!GMT::CreateDirectory(strOutput.c_str()))
+					if (!GMX::CreateDirectory(strOutput.c_str()))
 					{
 						cout<<"Error: can't create directory: "<<strOutput<<endl;
 						return -1;
 					}
 				}
-				strOutput_fix =	GMT::RemoveEndingSlash(strOutput) + "/" + 
-										GMT::RemovePath(GMT::RemoveExtension(*iter)) + "_tiles";
+				strOutput_fix =	GMX::RemoveEndingSlash(strOutput) + "/" + 
+										GMX::RemovePath(GMX::RemoveExtension(*iter)) + "_tiles";
 			}
 
 			CheckArgsAndCallTiling (	(*iter),

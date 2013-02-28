@@ -20,41 +20,40 @@ int _tmain(int argc, wchar_t* argvW[])
 	string *argv = new string[argc];
 	for (int i=0;i<argc;i++)
 	{
-		GMT::wstrToUtf8(argv[i],argvW[i]);
-		GMT::ReplaceAll(argv[i],"\\","/");
+		GMX::wstrToUtf8(argv[i],argvW[i]);
+		GMX::ReplaceAll(argv[i],"\\","/");
 	}
 	
-	if (!GMT::LoadGDAL(argc,argv)) return -1;
+	if (!GMX::LoadGDAL(argc,argv)) return -1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
 	int		nMinZoom = 0;
 	int		nMaxZoom;
-	string srcPath			= GMT::ReadConsoleParameter("-from",argc,argv);
-	string destPath			= GMT::ReadConsoleParameter("-to",argc,argv);
-	string borderFilePath	= GMT::ReadConsoleParameter("-border",argc,argv);
-	string strZooms			= GMT::ReadConsoleParameter("-zooms",argc,argv);
-	string strTileType		= GMT::MakeLower( GMT::ReadConsoleParameter("-tile_type",argc,argv));
-	string strProjType		= GMT::MakeLower( GMT::ReadConsoleParameter("-proj",argc,argv));
-	string strLogFile		= GMT::ReadConsoleParameter("-log_file",argc,argv);
-	string strSrcTemplate	= GMT::MakeLower( GMT::ReadConsoleParameter("-src_template",argc,argv));
-	string strDestTemplate	= GMT::MakeLower( GMT::ReadConsoleParameter("-dest_template",argc,argv));
+	string srcPath			= GMX::ReadConsoleParameter("-from",argc,argv);
+	string destPath			= GMX::ReadConsoleParameter("-to",argc,argv);
+	string borderFilePath	= GMX::ReadConsoleParameter("-border",argc,argv);
+	string strZooms			= GMX::ReadConsoleParameter("-zooms",argc,argv);
+	string strTileType		= GMX::MakeLower( GMX::ReadConsoleParameter("-tile_type",argc,argv));
+	string strProjType		= GMX::MakeLower( GMX::ReadConsoleParameter("-proj",argc,argv));
+	string strLogFile		= GMX::ReadConsoleParameter("-log_file",argc,argv);
+	string strSrcTemplate	= GMX::MakeLower( GMX::ReadConsoleParameter("-src_template",argc,argv));
+	string strDestTemplate	= GMX::MakeLower( GMX::ReadConsoleParameter("-dest_template",argc,argv));
 
 
  	FILE *logFile = NULL;
 	/*
 	if (strLogFile!="")
 	{
-		if((logFile = GMT::OpenFile _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
+		if((logFile = GMX::OpenFile _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
 		{
 			cout<<"Error: can't open log file: "<<strLogFile<<endl;
 			exit(-1);
 		}
 	}
 	*/
-
-	//srcPath		= "C:\\TileMill\\export\\export\\VHR_test_spot5_cover.mbtiles";
-	//destPath	= "C:\\TileMill\\export\\export\\VHR_test_spot5_cover_tiles";
+	//srcPath			= "C:\\Users\\mpotanin\\Downloads\\Layers.mbtiles";
+	//destPath		= "C:\\Users\\mpotanin\\Downloads\\Layers.tiles";
 
 
 
@@ -78,7 +77,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	}
 	*/
 
-	if (!GMT::FileExists(srcPath))
+	if (!GMX::FileExists(srcPath))
 	{
 		cout<<"Error: can't find input folder or file: "<<srcPath<<endl;
 		return -1;
@@ -86,11 +85,11 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	//bSrcContainerFile = IsDirectory(srcPath) ? FALSE : TRUE;
 	
-	if (GMT::FileExists(destPath))
+	if (GMX::FileExists(destPath))
 	{
-		if (!GMT::IsDirectory(destPath))
+		if (!GMX::IsDirectory(destPath))
 		{
-			if (!GMT::DeleteFile(destPath))
+			if (!GMX::DeleteFile(destPath))
 			{
 				cout<<"Error: can't delete existing file: "<<destPath<<endl;
 				return -1;
@@ -99,7 +98,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	}
 
 
-	if ((borderFilePath != "") && !GMT::FileExists(borderFilePath))
+	if ((borderFilePath != "") && !GMX::FileExists(borderFilePath))
 	{
 		cout<<"Error: can't open file: "<<borderFilePath<<endl;
 		return -1;
@@ -123,23 +122,23 @@ int _tmain(int argc, wchar_t* argvW[])
 	if ((strDestTemplate!="") &&  
 		(strDestTemplate!="standard")&&
 		(strDestTemplate!="kosmosnimki"))
-		if (!GMT::StandardTileName::validateTemplate(strDestTemplate)) return FALSE;
+		if (!GMX::StandardTileName::validateTemplate(strDestTemplate)) return FALSE;
 
 	
-	if ((GMT::IsDirectory(srcPath)) &&
+	if ((GMX::IsDirectory(srcPath)) &&
 		(strSrcTemplate!="") && 
 		(strSrcTemplate!="standard")&&
 		(strSrcTemplate!="kosmosnimki"))
-		if (!GMT::StandardTileName::validateTemplate(strSrcTemplate))
+		if (!GMX::StandardTileName::validateTemplate(strSrcTemplate))
 		{
 			cout<<"Error: can't validate src template: "<<strSrcTemplate<<endl;
 			return -1;
 		}
 
-	GMT::TileType tileType;
-	GMT::MercatorProjType mercType;
+	GMX::TileType tileType;
+	GMX::MercatorProjType mercType;
 
-	if (GMT::IsDirectory(srcPath))
+	if (GMX::IsDirectory(srcPath))
 	{
 		if (strTileType == "")
 		{
@@ -149,14 +148,14 @@ int _tmain(int argc, wchar_t* argvW[])
 						"jpg";
 		}
 		tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
-					GMT::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMT::PNG_TILE : GMT::TIFF_TILE;
+					GMX::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMX::PNG_TILE : GMX::TIFF_TILE;
 		mercType = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")|| 
-					(strProjType == "epsg:3395")) ? GMT::WORLD_MERCATOR : GMT::WEB_MERCATOR;
+					(strProjType == "epsg:3395")) ? GMX::WORLD_MERCATOR : GMX::WEB_MERCATOR;
 	}
 	else
 	{
 		//ToDo
-		GMT::TileContainer *poSrcContainer = GMT::OpenTileContainerForReading(srcPath);
+		GMX::ITileContainer *poSrcContainer = GMX::OpenITileContainerForReading(srcPath);
 		if (! poSrcContainer)
 		{
 			cout<<"Error: can't init. tile container: "<<srcPath<<endl;
@@ -165,48 +164,48 @@ int _tmain(int argc, wchar_t* argvW[])
 
 		tileType = poSrcContainer->getTileType();
 		mercType	= poSrcContainer->getProjType();
-		if ((GMT::MakeLower(srcPath).find(".mbtiles") != string::npos))
+		if ((GMX::MakeLower(srcPath).find(".mbtiles") != string::npos))
 		{
 			if (strProjType!="")
 				mercType = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")|| 
-							(strProjType == "epsg:3395")) ? GMT::WORLD_MERCATOR : GMT::WEB_MERCATOR;
+							(strProjType == "epsg:3395")) ? GMX::WORLD_MERCATOR : GMX::WEB_MERCATOR;
 			if (strTileType!="")
 				tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
-					GMT::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMT::PNG_TILE : GMT::TIFF_TILE;
+					GMX::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMX::PNG_TILE : GMX::TIFF_TILE;
 		}
 
-		cout<<"Input container info: tileType="<<GMT::TileName::tileExtension(poSrcContainer->getTileType());
-		cout<<", proj="<<(poSrcContainer->getProjType()==GMT::WEB_MERCATOR)<<endl;
+		cout<<"Input container info: tileType="<<GMX::TileName::tileExtension(poSrcContainer->getTileType());
+		cout<<", proj="<<(poSrcContainer->getProjType()==GMX::WEB_MERCATOR)<<endl;
 		delete(poSrcContainer);		
 	}
 
 
 	
-	GMT::TileName		*poSrcTileName = NULL;
-	if (GMT::IsDirectory(srcPath))
+	GMX::TileName		*poSrcTileName = NULL;
+	if (GMX::IsDirectory(srcPath))
 	{
 		if ((strSrcTemplate=="") || (strSrcTemplate=="kosmosnimki"))
-			poSrcTileName = new GMT::KosmosnimkiTileName(srcPath,tileType);
+			poSrcTileName = new GMX::KosmosnimkiTileName(srcPath,tileType);
 		else if (strSrcTemplate=="standard") 
-			poSrcTileName = new GMT::StandardTileName(srcPath,("{z}/{x}/{z}_{x}_{y}."+ GMT::TileName::tileExtension(tileType)));
+			poSrcTileName = new GMX::StandardTileName(srcPath,("{z}/{x}/{z}_{x}_{y}."+ GMX::TileName::tileExtension(tileType)));
 		else 
-			poSrcTileName = new GMT::StandardTileName(srcPath,strSrcTemplate);
+			poSrcTileName = new GMX::StandardTileName(srcPath,strSrcTemplate);
 	}
 
-	GMT::TilePyramid	*poSrcTilePyramid = NULL;
-	if (GMT::IsDirectory(srcPath))	poSrcTilePyramid = new GMT::TileFolder(poSrcTileName, FALSE);	
-	else						poSrcTilePyramid = GMT::OpenTileContainerForReading(srcPath);
+	GMX::ITilePyramid	*poSrcITilePyramid = NULL;
+	if (GMX::IsDirectory(srcPath))	poSrcITilePyramid = new GMX::TileFolder(poSrcTileName, FALSE);	
+	else						poSrcITilePyramid = GMX::OpenITileContainerForReading(srcPath);
 	
 
-	GMT::TileName		*poDestTileName		= NULL;
-	GMT::TilePyramid		*poDestTilePyramid	= NULL;
-	BOOL			bDestFolder			= (	(GMT::MakeLower(destPath).find(".mbtiles") == string::npos) && 
-											(GMT::MakeLower(destPath).find(".tiles") == string::npos)) ? TRUE : FALSE;
+	GMX::TileName		*poDestTileName		= NULL;
+	GMX::ITilePyramid	*poDestITilePyramid	= NULL;
+	BOOL			bDestFolder			= (	(GMX::MakeLower(destPath).find(".mbtiles") == string::npos) && 
+											(GMX::MakeLower(destPath).find(".tiles") == string::npos)) ? TRUE : FALSE;
 	if (bDestFolder)
 	{
-		if (!GMT::FileExists(destPath))
+		if (!GMX::FileExists(destPath))
 		{
-			if (!GMT::CreateDirectory(destPath.c_str()))
+			if (!GMX::CreateDirectory(destPath.c_str()))
 			{
 				cout<<"Error: can't create folder: "<<destPath<<endl;
 				return -1;
@@ -214,40 +213,59 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 
 		if ((strDestTemplate=="") || (strDestTemplate=="kosmosnimki"))
-			poDestTileName = new GMT::KosmosnimkiTileName(destPath,tileType);
+			poDestTileName = new GMX::KosmosnimkiTileName(destPath,tileType);
 		else if (strDestTemplate=="standard") 
-			poDestTileName = new GMT::StandardTileName(destPath,("{z}/{x}/{z}_{x}_{y}."+GMT::TileName::tileExtension(tileType)));
+			poDestTileName = new GMX::StandardTileName(destPath,("{z}/{x}/{z}_{x}_{y}."+GMX::TileName::tileExtension(tileType)));
 		else 
-			poDestTileName = new GMT::StandardTileName(destPath,strDestTemplate);
+			poDestTileName = new GMX::StandardTileName(destPath,strDestTemplate);
 
-		poDestTilePyramid = new GMT::TileFolder(poDestTileName,FALSE);
+		poDestITilePyramid = new GMX::TileFolder(poDestTileName,FALSE);
 	}
 	else
 	{
 		OGREnvelope mercEnvelope;
+		int tileBounds[92];
+
 		if (borderFilePath!="")
 		{
-			GMT::VectorBorder *pVB = GMT::VectorBorder::createFromVectorFile(borderFilePath,mercType);
-			if (!pVB) return -1;
+			GMX::VectorBorder *pVB = GMX::VectorBorder::createFromVectorFile(borderFilePath,mercType);
+			if (!pVB)
+			{
+				cout<<"Error: reading vector file: "<<borderFilePath<<endl;
+				return -1;
+			}
 			mercEnvelope = pVB->getEnvelope();
 			delete(pVB);
 		}
-		else mercEnvelope = poSrcTilePyramid->getMercatorEnvelope();
-		
-		if (GMT::MakeLower(destPath).find(".mbtiles") != string::npos) 
-			poDestTilePyramid = new GMT::MBTileContainer(destPath,tileType,mercType,mercEnvelope); 
 		else
-			poDestTilePyramid = new GMT::GMTileContainer(destPath,
-														tileType,
-														mercType,
-														mercEnvelope,
-														(nMaxZoom == -1) ? poSrcTilePyramid->getMaxZoom() : nMaxZoom,
-														FALSE);
+		{
+			if (!poSrcITilePyramid->getTileBounds(tileBounds))
+			{
+				cout<<"Error: reading tile bounds from source: "<<srcPath<<endl;
+				return -1;
+			}
+		}
+		if (GMX::MakeLower(destPath).find(".mbtiles") != string::npos) 
+			poDestITilePyramid = new GMX::MBTileContainer(destPath,tileType,mercType,mercEnvelope); 
+		else
+		{
+			poDestITilePyramid =  (borderFilePath!="") ?  new GMX::GMXTileContainer(destPath,
+																				tileType,
+																				mercType,
+																				mercEnvelope,
+																				(nMaxZoom == -1) ? poSrcITilePyramid->getMaxZoom() : nMaxZoom,
+																				FALSE)
+													: new GMX::GMXTileContainer(destPath,
+																				tileType,
+																				mercType,
+																				tileBounds,
+																				FALSE);
+		}
 	}
 	
 	list<__int64> oTileList;
 	cout<<"calculating number of tiles: ";
-	cout<<poSrcTilePyramid->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
+	cout<<poSrcITilePyramid->getTileList(oTileList,nMinZoom,nMaxZoom,borderFilePath)<<endl;
 	
 	if (oTileList.size()>0)
 	{
@@ -258,22 +276,24 @@ int _tmain(int argc, wchar_t* argvW[])
 			int x,y,z;
 			BYTE	*tileData = NULL;
 			unsigned int		tileSize = 0;
-			if (poSrcTilePyramid->tileXYZ((*iter),z,x,y))
+			if (poSrcITilePyramid->tileXYZ((*iter),z,x,y))
 			{
-				poSrcTilePyramid->getTile(z,x,y,tileData,tileSize);
-				if (tileSize>0) 
-					if(poDestTilePyramid->addTile(z,x,y,tileData,tileSize)) tilesCopied++;
+				poSrcITilePyramid->getTile(z,x,y,tileData,tileSize);
+				if (tileSize>0)
+				{
+					if(poDestITilePyramid->addTile(z,x,y,tileData,tileSize)) tilesCopied++;
+				}
 				delete[]tileData;
 			}
-			GMTPrintTilingProgress(oTileList.size(),tilesCopied);
+			GMXPrintTilingProgress(oTileList.size(),tilesCopied);
 		}
 	}
 	if (logFile) fclose(logFile);
-	if (poDestTilePyramid) poDestTilePyramid->close();
-	delete(poSrcTilePyramid);
+	if (poDestITilePyramid) poDestITilePyramid->close();
+	delete(poSrcITilePyramid);
 	delete(poSrcTileName);
 	delete(poDestTileName);
-	delete(poDestTilePyramid);
+	delete(poDestITilePyramid);
 
 
 	return 0;

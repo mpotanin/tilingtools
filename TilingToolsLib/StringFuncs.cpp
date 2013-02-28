@@ -1,7 +1,7 @@
 ﻿#include "StringFuncs.h"
 
 
-namespace GMT
+namespace GMX
 {
 
 //ToDo

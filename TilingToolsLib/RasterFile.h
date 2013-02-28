@@ -9,7 +9,7 @@
 using namespace std;
 
 
-namespace GMT
+namespace GMX
 {
 
 
@@ -75,7 +75,7 @@ protected:
 
 
 
-int _stdcall GMTPrintNoProgress ( double, const char*,void*);
+int _stdcall GMXPrintNoProgress ( double, const char*,void*);
 
 class BundleOfRasterFiles
 {
