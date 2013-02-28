@@ -86,8 +86,8 @@ BOOL	VectorBorder::intersects180Degree (OGRGeometry	*poGeometry, OGRSpatialRefer
 			for (int l=0;l<oLS.getNumPoints()-1;l++)
 			{
 				if(	((oLS.getX(l)>90)&&(oLS.getX(l+1)<-90)) || ((oLS.getX(l)<-90)&&(oLS.getX(l+1)>90)) ||
-					((oLS.getX(l)>180.0001)&&(oLS.getX(l+1)<179.9999)) || ((oLS.getX(l)<179.9999)&&(oLS.getX(l+1)>180.0001)) || 
-					((oLS.getX(l)>-179.9999)&&(oLS.getX(l+1)<-180.0001)) || ((oLS.getX(l)<-180.0001)&&(oLS.getX(l+1)>-179.9999)))
+					((oLS.getX(l)>180.00001)&&(oLS.getX(l+1)<179.9999)) || ((oLS.getX(l)<179.9999)&&(oLS.getX(l+1)>180.00001)) || 
+					((oLS.getX(l)>-179.9999)&&(oLS.getX(l+1)<-180.00001)) || ((oLS.getX(l)<-180.00001)&&(oLS.getX(l+1)>-179.9999)))
 				{
 					delete[]poRings;
 					return TRUE;
