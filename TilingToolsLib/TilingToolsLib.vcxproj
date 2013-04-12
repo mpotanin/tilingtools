@@ -77,7 +77,8 @@
       <Command>..\copy_files.bat</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>pthread.lib</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
     <Lib>
       <AdditionalLibraryDirectories>../Release</AdditionalLibraryDirectories>
