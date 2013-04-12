@@ -21,21 +21,14 @@
 #include <regex>
 #include <math.h>
 #include <cstdlib>
-#include <omp.h>
 
-//#include <pthread>
-//#include <semaphore>
-
-
-
-
-
-#include "include/gdal_priv.h"
-#include "include/ogrsf_frmts.h"
-#include "include/gd.h"
-#include "include/vrtdataset.h"
-#include "include/gdalwarper.h"
-#include "include/sqlite3.h"
+//#include "../pthread/pthread.h"
+#include "../gdal/include/gdal_priv.h"
+#include "../gdal/include/ogrsf_frmts.h"
+#include "../gdal/include/gd.h"
+#include "../gdal/include/vrtdataset.h"
+#include "../gdal/include/gdalwarper.h"
+#include "../gdal/include/sqlite3.h"
 #include <time.h>
 
 

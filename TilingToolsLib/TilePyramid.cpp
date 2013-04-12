@@ -68,7 +68,7 @@ GMXTileContainer::GMXTileContainer	()
 	{
 		if (!openForReading(fileName))
 		{
-			cout<<"Error: can't open for reading: "<<fileName<<endl;
+			cout<<"ERROR: can't open for reading: "<<fileName<<endl;
 		}
 	}
 	*/
@@ -88,7 +88,7 @@ BOOL GMXTileContainer::openForReading (string containerFileName)
 	fread(head,1,12,this->containerFileData);
 	if (!((head[0]=='G')&&(head[1]=='M')&&(head[2]=='T')&&(head[3]=='C'))) 
 	{
-		cout<<"Error: incorrect input tile container file: "<<containerFileName<<endl;
+		cout<<"ERROR: incorrect input tile container file: "<<containerFileName<<endl;
 		return FALSE;
 	}
 		
@@ -249,7 +249,7 @@ int 		GMXTileContainer::getTileList(	list<__int64> &tileList,
 	{
 		if(!(poVB = VectorBorder::createFromVectorFile(vectorFile,this->mercType))) 
 		{
-			cout<<"Error: can't open vector file: "<<vectorFile<<endl;
+			cout<<"ERROR: can't open vector file: "<<vectorFile<<endl;
 			return 0;
 		}
 	}
@@ -586,7 +586,7 @@ MBTileContainer (string fileName)
 {
 	if (! openForReading(fileName))
 	{
-		cout<<"Error: can't open for reading: "<<fileName<<endl;
+		cout<<"ERROR: can't open for reading: "<<fileName<<endl;
 	}
 }
 */
@@ -609,7 +609,7 @@ BOOL MBTileContainer::openForReading  (string fileName)
 {
 	if (SQLITE_OK != sqlite3_open(fileName.c_str(),&this->pDB))
 	{
-		cout<<"Error: can't open mbtiles file: "<<fileName<<endl;
+		cout<<"ERROR: can't open mbtiles file: "<<fileName<<endl;
 		return FALSE;
 	}
 
@@ -659,7 +659,7 @@ MBTileContainer::MBTileContainer (string fileName, TileType tileType,MercatorPro
 	sqlite3_exec(this->pDB, strSQL.c_str(), NULL, 0, &errMsg);
 	if (errMsg!=NULL)
 	{
-		cout<<"Error: sqlite: "<<errMsg<<endl;
+		cout<<"ERROR: sqlite: "<<errMsg<<endl;
 		delete[]errMsg;
 		close();
 		return;
@@ -690,7 +690,7 @@ MBTileContainer::MBTileContainer (string fileName, TileType tileType,MercatorPro
 	sqlite3_exec(this->pDB, strSQL.c_str(), NULL, 0, &errMsg);
 	if (errMsg!=NULL)
 	{
-		cout<<"Error: sqlite: "<<errMsg<<endl;
+		cout<<"ERROR: sqlite: "<<errMsg<<endl;
 		delete[]errMsg;
 		close();
 		return;
@@ -715,7 +715,7 @@ BOOL	MBTileContainer::addTile(int z, int x, int y, BYTE *pData, unsigned int siz
 		char	*errMsg = NULL;
 		if (SQLITE_DONE != sqlite3_exec(pDB, strSQL.c_str(), NULL, 0, &errMsg))
 		{
-			cout<<"Error: can't delete existing tile: "<<strSQL<<endl;	
+			cout<<"ERROR: can't delete existing tile: "<<strSQL<<endl;	
 			return FALSE;
 		}
 	}
@@ -951,7 +951,7 @@ int 		TileFolder::getTileList(list<__int64> &tileList, int minZoom, int maxZoom,
 	{
 		if( !(poVB = VectorBorder::createFromVectorFile(vectorFile, mercType))) 
 		{
-			cout<<"Error: can't open vector file: "<<vectorFile<<endl;
+			cout<<"ERROR: can't open vector file: "<<vectorFile<<endl;
 			return 0;
 		}
 	}

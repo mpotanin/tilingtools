@@ -47,30 +47,30 @@ BOOL	StandardTileName::validateTemplate	(string strTemplate)
 {
 	if (strTemplate.find("{z}",0)==string::npos)
 	{
-		cout<<"Error: bad tile name template: missing {z}"<<endl;
+		cout<<"ERROR: bad tile name template: missing {z}"<<endl;
 		return FALSE;
 	}
 	if (strTemplate.find("{x}",0)==string::npos)
 	{
-		cout<<"Error: bad tile name template: missing {x}"<<endl;
+		cout<<"ERROR: bad tile name template: missing {x}"<<endl;
 		return FALSE;
 	}
 	if (strTemplate.find("{y}",0)==string::npos) 
 	{
-		cout<<"Error: bad tile name template: missing {y}"<<endl;
+		cout<<"ERROR: bad tile name template: missing {y}"<<endl;
 		return FALSE;
 	}
 
 	if (strTemplate.find(".",0)==string::npos) 
 	{
-		cout<<"Error: bad tile name template: missing extension"<<endl;
+		cout<<"ERROR: bad tile name template: missing extension"<<endl;
 		return FALSE;
 	}
 		
 	string strExt = strTemplate.substr(strTemplate.rfind(".")+1,strTemplate.length()-strTemplate.rfind(".")-1);
 	if ( (MakeLower(strExt)!="jpg")&& (MakeLower(strExt)=="png") && (MakeLower(strExt)=="tif") )
 	{
-		cout<<"Error: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+		cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
 		return FALSE;
 	}
 	return TRUE;

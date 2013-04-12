@@ -749,18 +749,21 @@ BOOL RasterBuffer::initByValue(T type, int value)
 
 
 
-BOOL	RasterBuffer::stretchDataTo8Bit(double minVal, double maxVal)
+BOOL	RasterBuffer::stretchDataTo8Bit(double *minValues, double *maxValues)
 {
-	void *pDataNew = getDataBlock(0,0,nXSize,nYSize,TRUE,minVal,maxVal);
+	void *pDataNew = getDataBlock(0,0,nXSize,nYSize,TRUE,minValues,maxValues);
 	int bands = nBands;
 	int width = nXSize;
 	int height = nYSize;
 	clearBuffer();
-	return createBuffer(bands,width,height,pDataNew,GDT_Byte);
+	if (!createBuffer(bands,width,height,pDataNew,GDT_Byte)) return FALSE;
+	delete[]((BYTE*)pDataNew);
+
+	return TRUE;
 }
 
 
-void*	RasterBuffer::getDataBlock (int left, int top, int w, int h,  BOOL stretchTo8Bit, double min, double max)
+void*	RasterBuffer::getDataBlock (int left, int top, int w, int h,  BOOL stretchTo8Bit, double *minValues, double *maxValues)
 {
 	if (pData == NULL || this->nXSize == 0 || this->nYSize==0) return NULL;
 	
@@ -774,17 +777,17 @@ void*	RasterBuffer::getDataBlock (int left, int top, int w, int h,  BOOL stretch
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return getDataBlock(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h,stretchTo8Bit,minValues,maxValues);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return getDataBlock(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h,stretchTo8Bit,minValues,maxValues);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return getDataBlock(t,left,top,w,h);
+			return getDataBlock(t,left,top,w,h,stretchTo8Bit,minValues,maxValues);
 		}
 		default:
 			return NULL;
@@ -794,7 +797,8 @@ void*	RasterBuffer::getDataBlock (int left, int top, int w, int h,  BOOL stretch
 
 ///*
 template <typename T>
-void*	RasterBuffer::getDataBlock (T type, int left, int top, int w, int h,  BOOL stretchTo8Bit, double minVal, double maxVal)
+void*	RasterBuffer::getDataBlock (T type, int left, int top, int w, int h,  
+									BOOL stretchTo8Bit, double *minValues, double *maxValues)
 {
 	if (nBands==0) return NULL;
 	int					n = w*h;
@@ -814,12 +818,12 @@ void*	RasterBuffer::getDataBlock (T type, int left, int top, int w, int h,  BOOL
 		{
 			for (int i=top;i<top+h;i++)
 			{
-				if (!stretchTo8Bit) pBlockT[n*k+(i-top)*w+j-left] = pDataT[m*k+i*nXSize+j];
-				else
+				if (stretchTo8Bit) 
 				{
-					d = max(min(pDataT[m*k+i*nXSize+j],maxVal),minVal);
-					pBlockB[n*k+(i-top)*w+j-left] = (int)(0.5+255*((d-minVal)/(maxVal-minVal)));
+					d = max(min(pDataT[m*k+i*nXSize+j],maxValues[k]),minValues[k]);
+					pBlockB[n*k+(i-top)*w+j-left] = (int)(0.5+255*((d-minValues[k])/(maxValues[k]-minValues[k])));
 				}
+				else pBlockT[n*k+(i-top)*w+j-left] = pDataT[m*k+i*nXSize+j];
 			}
 		}
 	}			

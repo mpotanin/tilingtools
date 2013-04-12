@@ -47,7 +47,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	{
 		if((logFile = GMX::OpenFile _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
 		{
-			cout<<"Error: can't open log file: "<<strLogFile<<endl;
+			cout<<"ERROR: can't open log file: "<<strLogFile<<endl;
 			exit(-1);
 		}
 	}
@@ -59,27 +59,27 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	if (srcPath == "")
 	{
-		cout<<"Error: missing \"-from\" parameter"<<endl;
+		cout<<"ERROR: missing \"-from\" parameter"<<endl;
 		return -1;
 	}
 
 	if (destPath == "")
 	{
-		cout<<"Error: missing \"-to\" parameter"<<endl;
+		cout<<"ERROR: missing \"-to\" parameter"<<endl;
 		return -1;
 	}
 
 	/*
 	if (borderFilePath == "")
 	{
-		cout<<"Error: missing \"-border\" parameter"<<endl;
+		cout<<"ERROR: missing \"-border\" parameter"<<endl;
 		return -1;
 	}
 	*/
 
 	if (!GMX::FileExists(srcPath))
 	{
-		cout<<"Error: can't find input folder or file: "<<srcPath<<endl;
+		cout<<"ERROR: can't find input folder or file: "<<srcPath<<endl;
 		return -1;
 	}
 
@@ -91,7 +91,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			if (!GMX::DeleteFile(destPath))
 			{
-				cout<<"Error: can't delete existing file: "<<destPath<<endl;
+				cout<<"ERROR: can't delete existing file: "<<destPath<<endl;
 				return -1;
 			}
 		}
@@ -100,7 +100,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	if ((borderFilePath != "") && !GMX::FileExists(borderFilePath))
 	{
-		cout<<"Error: can't open file: "<<borderFilePath<<endl;
+		cout<<"ERROR: can't open file: "<<borderFilePath<<endl;
 		return -1;
 	}
 	
@@ -131,7 +131,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		(strSrcTemplate!="kosmosnimki"))
 		if (!GMX::StandardTileName::validateTemplate(strSrcTemplate))
 		{
-			cout<<"Error: can't validate src template: "<<strSrcTemplate<<endl;
+			cout<<"ERROR: can't validate src template: "<<strSrcTemplate<<endl;
 			return -1;
 		}
 
@@ -158,7 +158,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		GMX::ITileContainer *poSrcContainer = GMX::OpenITileContainerForReading(srcPath);
 		if (! poSrcContainer)
 		{
-			cout<<"Error: can't init. tile container: "<<srcPath<<endl;
+			cout<<"ERROR: can't init. tile container: "<<srcPath<<endl;
 			return -1;
 		}
 
@@ -207,7 +207,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			if (!GMX::CreateDirectory(destPath.c_str()))
 			{
-				cout<<"Error: can't create folder: "<<destPath<<endl;
+				cout<<"ERROR: can't create folder: "<<destPath<<endl;
 				return -1;
 			}
 		}
@@ -231,7 +231,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			GMX::VectorBorder *pVB = GMX::VectorBorder::createFromVectorFile(borderFilePath,mercType);
 			if (!pVB)
 			{
-				cout<<"Error: reading vector file: "<<borderFilePath<<endl;
+				cout<<"ERROR: reading vector file: "<<borderFilePath<<endl;
 				return -1;
 			}
 			mercEnvelope = pVB->getEnvelope();
@@ -241,7 +241,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			if (!poSrcITilePyramid->getTileBounds(tileBounds))
 			{
-				cout<<"Error: reading tile bounds from source: "<<srcPath<<endl;
+				cout<<"ERROR: reading tile bounds from source: "<<srcPath<<endl;
 				return -1;
 			}
 		}

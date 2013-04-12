@@ -51,7 +51,7 @@ BOOL RasterFile::init(string strRasterFile, BOOL isGeoReferenced, double dShiftX
 	
 	if (m_poDataset==NULL)
 	{
-		cout<<"Error: RasterFile::init: can't open raster image"<<endl;
+		cout<<"ERROR: RasterFile::init: can't open raster image"<<endl;
 		return FALSE;
 	}
 	
@@ -59,7 +59,7 @@ BOOL RasterFile::init(string strRasterFile, BOOL isGeoReferenced, double dShiftX
 
 	if (!(poDriver = m_poDataset->GetDriver()))
 	{
-		cout<<"Error: RasterFile::init: can't get GDALDriver from image"<<endl;
+		cout<<"ERROR: RasterFile::init: can't get GDALDriver from image"<<endl;
 		return FALSE;
 	}
 
@@ -82,7 +82,7 @@ BOOL RasterFile::init(string strRasterFile, BOOL isGeoReferenced, double dShiftX
 		}
 		else
 		{
-			cout<<"Error: RasterFile::init: can't read georeference"<<endl;
+			cout<<"ERROR: RasterFile::init: can't read georeference"<<endl;
 			return FALSE;
 		}
 	}
@@ -92,10 +92,28 @@ BOOL RasterFile::init(string strRasterFile, BOOL isGeoReferenced, double dShiftX
 
 
 
-BOOL	RasterFile::getMinMaxPixelValues (double &minVal, double &maxVal)
+BOOL	RasterFile::computeStatistics(int &bands, double *&min, double *&max, double *&mean, double *&stdDev)
 {
-	//void 
+	if (this->m_poDataset == NULL) return FALSE;
+	bands	= this->m_nBands;
+	min		= new double[bands];
+	max		= new double[bands];
+	mean	= new double[bands];
+	stdDev	= new double[bands];
 
+	for (int i=0;i<bands;i++)
+	{
+		int pbSuccess;
+		if (CE_None!=this->m_poDataset->GetRasterBand(i+1)->ComputeStatistics(0,&min[i],&max[i],&mean[i],&stdDev[i],NULL,NULL))
+		{
+			bands= 0;
+			delete[]min;	min = NULL;
+			delete[]max;	max = NULL;
+			delete[]mean;	mean = NULL;
+			delete[]stdDev;	stdDev = NULL;
+		}
+	}
+		
 	return TRUE;
 }
 
@@ -344,12 +362,6 @@ BundleOfRasterFiles::~BundleOfRasterFiles(void)
 }
 
 
-int BundleOfRasterFiles::ImagesCount()
-{
-	return dataList.size();
-}
-
-
 int	BundleOfRasterFiles::init (string inputPath, MercatorProjType mercType, string vectorFile, double dShiftX, double dShiftY)
 {
 	close_all();
@@ -375,7 +387,7 @@ BOOL	BundleOfRasterFiles::addItemToBundle (string rasterFile, string	vectorFile,
 	RasterFile oImage;
 	if (!oImage.init(rasterFile,TRUE,dShiftX,dShiftY))
 	{
-		cout<<"Error: can't init. image: "<<rasterFile<<endl;
+		cout<<"ERROR: can't init. image: "<<rasterFile<<endl;
 		return 0;
 	}
 
@@ -388,13 +400,13 @@ BOOL	BundleOfRasterFiles::addItemToBundle (string rasterFile, string	vectorFile,
 	return TRUE;
 }
 
-list<string>	BundleOfRasterFiles::GetFilesList()
+list<string>	BundleOfRasterFiles::getFileList()
 {
-	std::list<string> filesList;
+	std::list<string> fileList;
 	for (std::list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end(); iter++)
-		filesList.push_back((*iter).first);
+		fileList.push_back((*iter).first);
 
-	return filesList;
+	return fileList;
 	//return this->m_strFilesList;
 }
 
@@ -467,7 +479,7 @@ int		BundleOfRasterFiles::calculateBestMercZoom()
 }
 
 
-list<string>	 BundleOfRasterFiles::getFilesListByEnvelope(OGREnvelope mercatorEnvelope)
+list<string>	 BundleOfRasterFiles::getFileListByEnvelope(OGREnvelope mercatorEnvelope)
 {
 	std::list<string> oList;
 
@@ -500,7 +512,7 @@ BOOL	BundleOfRasterFiles::intersects(OGREnvelope mercatorEnvelope)
 }
 
 
-BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, int *pNoDataValue, BYTE *pDefaultColor)
+BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer *poBuffer, int *pNoDataValue, BYTE *pDefaultColor)
 {
 	//создать виртуальный растр по oMercEnvelope и zoom
 	//создать объект GDALWarpOptions 
@@ -513,7 +525,7 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	GDALDataset	*poSrcDS = (GDALDataset*)GDALOpen((*dataList.begin()).first.c_str(),GA_ReadOnly );
 	if (poSrcDS==NULL)
 	{
-		cout<<"Error: can't open raster file: "<<(*dataList.begin()).first<<endl;
+		cout<<"ERROR: can't open raster file: "<<(*dataList.begin()).first<<endl;
 		return FALSE;
 	}
 	GDALDataType	eDT		= GDALGetRasterDataType(GDALGetRasterBand(poSrcDS,1));
@@ -575,7 +587,7 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 	
 		if (poSrcDS==NULL)
 		{
-			cout<<"Error: can't open raster file: "<<(*iter).first<<endl;
+			cout<<"ERROR: can't open raster file: "<<(*iter).first<<endl;
 			continue;
 		}
 			
@@ -587,7 +599,7 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		{
 			if(!inputRF.getDefaultSpatialRef(inputSRS,mercType))
 			{
-				cout<<"Error: can't read spatial reference from input file: "<<(*dataList.begin()).first<<endl;
+				cout<<"ERROR: can't read spatial reference from input file: "<<(*dataList.begin()).first<<endl;
 				return FALSE;
 			}
 		}
@@ -606,7 +618,6 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		
 		
 		//Init cutline for source file
-		///*
 		if ((*iter).second.second)
 		{
 			VectorBorder	*poBorder = (*iter).second.second;
@@ -618,7 +629,6 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 					psWarpOptions->hCutline = poBorder->getOGRPolygonTransformedToPixelLine(&inputSRS,rasterFileTransform);
 			}
 		}
-		//*/
 		//psWarpOptions->hCutline = ((OGRMultiPolygon*)(*iter).second.second)->getGeometryRef(0)->clone();
 		//((OGRPolygon*)psWarpOptions->hCutline)->closeRings();
 
@@ -643,34 +653,28 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 		// Initialize and execute the warp operation. 
 		GDALWarpOperation oOperation;
 		oOperation.Initialize( psWarpOptions );
-		
 		if (CE_None != oOperation.ChunkAndWarpImage( 0,0,bufWidth,bufHeight))
 		{
-			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
+			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
 		}
-	
-
+		
 		GDALDestroyApproxTransformer(psWarpOptions->pTransformerArg );
 		GDALDestroyWarpOptions( psWarpOptions );
-		//delete[]pszSrcWKT;
 		OGRFree(pszSrcWKT);
 		inputRF.close();
-		//GDALClose( poSrcDS );
+		GDALClose( poSrcDS );
 	}
 
-	
-	oBuffer.createBuffer(bands,bufWidth,bufHeight,NULL,eDT,pNoDataValue,FALSE,
+	poBuffer->createBuffer(bands,bufWidth,bufHeight,NULL,eDT,pNoDataValue,FALSE,
 						poVrtDS->GetRasterBand(1)->GetColorTable());
 	int noDataValueFromFile = 0;
-	if	(pNoDataValue) oBuffer.initByNoDataValue(pNoDataValue[0]);
-	else if (pDefaultColor) oBuffer.initByRGBColor(pDefaultColor); 
-	else if (bNoDataValueFromFile) oBuffer.initByNoDataValue(nNoDataValueFromFile);
-
-	 
-	poVrtDS->RasterIO(	GF_Read,0,0,bufWidth,bufHeight,oBuffer.getDataRef(),
-						bufWidth,bufHeight,oBuffer.getDataType(),
-						oBuffer.getBandsCount(),NULL,0,0,0);
-
+	if	(pNoDataValue) poBuffer->initByNoDataValue(pNoDataValue[0]);
+	else if (pDefaultColor) poBuffer->initByRGBColor(pDefaultColor); 
+	else if (bNoDataValueFromFile) poBuffer->initByNoDataValue(nNoDataValueFromFile);
+	poVrtDS->RasterIO(	GF_Read,0,0,bufWidth,bufHeight,poBuffer->getDataRef(),
+						bufWidth,bufHeight,poBuffer->getDataType(),
+						poBuffer->getBandsCount(),NULL,0,0,0);
+	
 	OGRFree(pszDstWKT);
 	GDALClose(poVrtDS);
 	VSIUnlink(strTiffInMem.c_str());

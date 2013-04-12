@@ -54,7 +54,7 @@ public:
 	BOOL			initByNoDataValue(int noDataValue = 0);
 
 	void*			getDataBlock	(	int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, 
-										double minVal = 0, double maxVal = 0);
+										 double *minValues = 0, double *maxValues = 0);
 	BOOL			setDataBlock	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
 	void*			getDataZoomedOut	();	
 	BOOL			convertFromIndexToRGB ();
@@ -64,7 +64,7 @@ public:
 	//BOOL			createAlphaBandByValue(int	value);
 
 public:
-	BOOL			stretchDataTo8Bit(double minVal, double maxVal);
+	BOOL			stretchDataTo8Bit(double *minValues, double *maxValues);
 	void*			getDataRef();
 	int				getBandsCount();
 	int				getXSize();
@@ -75,13 +75,13 @@ public:
 
 protected:
 	//void									initAlphaBand();
-	template <typename T>	BOOL			isAnyNoDataPixel	(T type);
-	template <typename T>	BOOL			initByValue	(T type, int value);
+	template <typename T>	BOOL			isAnyNoDataPixel(T type);
+	template <typename T>	BOOL			initByValue		(T type, int value);
 	template <typename T>	void*			getDataBlock	(	T type, int left, int top, int w, int h,  
-																BOOL stretchTo8Bit = FALSE, double minVal = 0, double maxVal = 0);
+																BOOL stretchTo8Bit = FALSE, double *minValues = 0, double *maxValues = 0);
 	template <typename T>	BOOL			setDataBlock	(	T type, int left, int top, int w, int h, 
 																void *pBlockData, int bands = 0);
-	template <typename T>	void*			getDataZoomedOut	(T type);
+	template <typename T>	void*			getDataZoomedOut(T type);
 
 	BOOL			bAlphaBand;
 	void			*pData;

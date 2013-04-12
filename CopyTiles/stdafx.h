@@ -25,13 +25,14 @@ using namespace std;
 #include "../TilingToolsLib/TilingFuncs.h"
 #include "../TilingToolsLib/ConsoleUtils.h"
 
+/*
 #include "include/gdal_priv.h"
 #include "include/cpl_port.h"
 #include "include/ogrsf_frmts.h"
 #include "include/gdalwarper.h"
 #include "include/vrtdataset.h"
 #include "include/sqlite3.h"
-
+*/
 
 
 // TODO: reference additional headers your program requires here

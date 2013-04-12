@@ -36,9 +36,9 @@ public:
 	
 
 public: 
-	void			setGeoReference	(double dResolution, double dULx, double dULy);
-	BOOL			getMinMaxPixelValues (double &minVal, double &maxVal);
-	BOOL			getNoDataValue (int *pNoDataValue);
+	void			setGeoReference		(double dResolution, double dULx, double dULy);
+	BOOL			computeStatistics	(int &bands, double *&min, double *&max, double *&mean, double *&stdDev);
+	BOOL			getNoDataValue		(int *pNoDataValue);
 
 
 public:
@@ -93,18 +93,16 @@ public:
 	OGREnvelope		getMercatorEnvelope();
 	int				calculateNumberOfTiles (int zoom);
 	int				calculateBestMercZoom();
-	BOOL			warpToMercBuffer (	int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer &oBuffer, 
+	BOOL			warpToMercBuffer (	int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer *poBuffer, 
 										int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
 
-	list<string>	GetFilesList();
-	list<string>	getFilesListByEnvelope(OGREnvelope mercatorEnvelope);
+	list<string>	getFileList();
+	list<string>	getFileListByEnvelope(OGREnvelope mercatorEnvelope);
 	BOOL			intersects(OGREnvelope mercatorEnvelope);
 
 
 
 	//BOOL			createBundleBorder (VectorBorder &border);	
-	int ImagesCount();
-
 protected:
 
 	BOOL			addItemToBundle (string rasterFile, string	vectorFile, double dShiftX = 0.0, double dShiftY = 0.0);

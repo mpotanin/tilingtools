@@ -3,8 +3,10 @@
 
 using namespace GMX;
 
-const int GMX_MAX_BUFFER_WIDTH	= 32;
-const int GMX_MAX_TILES_IN_CACHE = 0xFFFF;
+const int	GMX_MAX_BUFFER_WIDTH	= 32;
+const int	GMX_MAX_TILES_IN_CACHE = 0xFFFF;
+int			GMX_MAX_THREADS	= 2;
+int			GMX_CURR_NUM_OF_THREADS = 1;
 
 
 BOOL GMXPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
@@ -18,10 +20,9 @@ BOOL GMXPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
 	return TRUE;
 }
 
-BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
+
+BOOL GMXMakeTiling		(GMXTilingParameters		*poParams)
 {
-
-
 	LONG t_ = time(0);
 	srand(t_%10000);
 	BundleOfRasterFiles		oBundle;
@@ -30,14 +31,14 @@ BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
 	
 	if (!oBundle.init(poParams->inputPath,poParams->mercType,poParams->vectorFile,poParams->dShiftX,poParams->dShiftY))
 	{
-		cout<<"Error: read input data by path: "<<poParams->inputPath<<endl;
+		cout<<"ERROR: read input data by path: "<<poParams->inputPath<<endl;
 		return FALSE;
 	}
 
 	int baseZoom = (poParams->baseZoom == 0) ? oBundle.calculateBestMercZoom() : poParams->baseZoom;
 	if (baseZoom<=0)
 	{
-		cout<<"Error: can't calculate base zoom for tiling"<<endl;
+		cout<<"ERROR: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
 	
@@ -47,7 +48,7 @@ BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
 
 	if (expectedTiles == 0) return FALSE;
 
-	cout<<"0% ";
+
 	unsigned int maxTilesInCache = (poParams->maxTilesInCache == 0) ? GMX_MAX_TILES_IN_CACHE : poParams->maxTilesInCache; 
 	unsigned int adjustedMaxTilesInCash =	(poParams->tileType == JPEG_TILE) ? maxTilesInCache	:
 											(poParams->tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
@@ -75,7 +76,7 @@ BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
 		
 	
 	
-	GMXMakeBaseZoomTiling(poParams,&oBundle,expectedTiles,poITilePyramid);
+	GMXMakeZoomFromBundle(poParams,&oBundle,expectedTiles,poITilePyramid);
 	cout<<" done."<<endl;
 
 	int minZoom = (poParams->minZoom <=0) ? 1 : poParams->minZoom;
@@ -86,7 +87,7 @@ BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
 	VectorBorder	bundleEnvelope(oBundle.getMercatorEnvelope(),poParams->mercType);
 	int generatedTiles = 0;
 	expectedTiles = 0;
-	GMXCreatePyramidalTiles(	bundleEnvelope,
+	GMXMakePyramidFromBaseZoom(	bundleEnvelope,
 								baseZoom,
 								minZoom,
 								poParams,
@@ -99,7 +100,7 @@ BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
 	if (expectedTiles > 0) 
 	{
 		cout<<"0% ";
-		GMXCreatePyramidalTiles(	bundleEnvelope,
+		GMXMakePyramidFromBaseZoom(	bundleEnvelope,
 									baseZoom,
 									minZoom,
 									poParams,
@@ -118,41 +119,40 @@ BOOL GMXMakeTiling		(GMXilingParameters		*poParams)
 }
 
 
-BOOL GMXTilingFromBuffer (GMXilingParameters				*poParams, 
-						   RasterBuffer					&oBuffer, 
+BOOL GMXTilingFromBuffer (GMXTilingParameters			*poParams, 
+						   RasterBuffer					*poBuffer, 
 						   BundleOfRasterFiles			*poBundle, 
 						   int							nX, 
 						   int							nY,
 						   int							z,
 						   int							nTilesExpected, 
-						   int							&nTilesGenerated,
-						   ITilePyramid					*ITilePyramid)
+						   int							*pnTilesGenerated,
+						   ITilePyramid					*poTilePyramid)
 {  
 	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
 
-	for (int x = nX; x < nX+oBuffer.getXSize()/TILE_SIZE; x += 1)
+	for (int x = nX; x < nX+poBuffer->getXSize()/TILE_SIZE; x += 1)
 	{
-		for (int y = nY; y < nY+oBuffer.getYSize()/TILE_SIZE; y += 1)
+		for (int y = nY; y < nY+poBuffer->getYSize()/TILE_SIZE; y += 1)
 		{	
 			OGREnvelope oTileEnvelope = MercatorTileGrid::calcEnvelopeByTile(z,x,y);
 			if (!poBundle->intersects(oTileEnvelope)) continue;
 			
-
+			
 			RasterBuffer oTileBuffer;
-
-			void *tileData = oBuffer.getDataBlock((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
-			oTileBuffer.createBuffer(	oBuffer.getBandsCount(),
+			void *tileData = poBuffer->getDataBlock((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
+			oTileBuffer.createBuffer(	poBuffer->getBandsCount(),
 											TILE_SIZE,
 											TILE_SIZE,
 											tileData,
-											oBuffer.getDataType(),
-											oBuffer.getNoDataValue(),
-											oBuffer.isAlphaBand(),
-											oBuffer.getColorTableRef());
+											poBuffer->getDataType(),
+											poBuffer->getNoDataValue(),
+											poBuffer->isAlphaBand(),
+											poBuffer->getColorTableRef());
 			delete[]tileData;
 			
 
-			if (ITilePyramid != NULL)
+			if (poTilePyramid != NULL)
 			{
 				
 				void *pData=NULL;
@@ -172,23 +172,86 @@ BOOL GMXTilingFromBuffer (GMXilingParameters				*poParams,
 					default:
 						oTileBuffer.SaveToTiffData(pData,size);
 				}
-				ITilePyramid->addTile(z,x,y,(BYTE*)pData,size);
+				poTilePyramid->addTile(z,x,y,(BYTE*)pData,size);
 				delete[]((BYTE*)pData);
-				nTilesGenerated++;
+				(*pnTilesGenerated)++;
 			}
 			
-			GMXPrintTilingProgress(nTilesExpected,nTilesGenerated);
+			GMXPrintTilingProgress(nTilesExpected,(*pnTilesGenerated));
 		}
 	}
 	
 	return TRUE;
 }
 
+BOOL GMXCleanAfterTilingFromBufer (GMX::RasterBuffer				*poBuffer)
+{
+	delete(poBuffer);
+	return TRUE;
+}
 
-BOOL GMXMakeBaseZoomTiling	(	GMXilingParameters		*poParams, 
+DWORD WINAPI GMXCallTilingFromBuffer( LPVOID lpParam )
+{
+	GMXTilingFromBufferParams	*poParams = (GMXTilingFromBufferParams*)lpParam;
+	//ToDo
+	//Обработка ошибки
+	DWORD result = GMXTilingFromBuffer(poParams->poTilingParams,
+						poParams->poBuffer,
+						poParams->poBundle,
+						poParams->nULx,
+						poParams->nULy,
+						poParams->z,
+						poParams->nTilesExpected,
+						poParams->pnTilesGenerated,
+						poParams->poTilePyramid);
+	poParams->pfCleanAfterTiling(poParams->poBuffer);
+	GMX_CURR_NUM_OF_THREADS--;
+	return result;
+}
+
+HANDLE GMXAsyncTilingFromBuffer (	GMXTilingParameters			*poTilingParams, 
+								RasterBuffer				*poBuffer, 
+								BundleOfRasterFiles			*poBundle, 
+								int							nX, 
+								int							nY,
+								int							z,
+								int							nTilesExpected, 
+								int							*pnTilesGenerated,
+								ITilePyramid				*poTilePyramid,
+								unsigned long				&threadId)
+{
+	//запустить GMXTilingFromBuffer в отдельном потоке
+	GMXTilingFromBufferParams	*poParams = new GMXTilingFromBufferParams;
+	
+	poParams->poTilingParams		= poTilingParams;
+	poParams->poBuffer				= poBuffer;
+	poParams->poBundle				= poBundle;
+	poParams->nTilesExpected		= nTilesExpected;
+	poParams->nULx					= nX;
+	poParams->nULy					= nY;
+	poParams->pnTilesGenerated		= pnTilesGenerated;
+	poParams->poTilePyramid		= poTilePyramid;	
+	poParams->z					= z;
+	poParams->pfCleanAfterTiling	= GMXCleanAfterTilingFromBufer;
+
+
+	//Увеличить количество потоков
+	GMX_CURR_NUM_OF_THREADS++;
+	return CreateThread(NULL,0,GMXCallTilingFromBuffer,poParams,0,&threadId);
+	//ToDo
+	//Если ошибка, уменьшить количество потоков
+	//ждать окончание потока, потом закрыть handle 
+	//Уменьшить количество потоков
+	//msdn.microsoft.com/en-us/library/windows/desktop/ms682516(v=vs.85).aspx
+	//return TRUE;
+
+}
+
+
+BOOL GMXMakeZoomFromBundle	(	GMXTilingParameters		*poParams, 
 								BundleOfRasterFiles		*poBundle, 
 								int						nExpected, 
-								ITilePyramid				*ITilePyramid)
+								ITilePyramid			*poTilePyramid)
 {
 
 	//получить экстент бандла
@@ -203,14 +266,51 @@ BOOL GMXMakeBaseZoomTiling	(	GMXilingParameters		*poParams,
 	int			zoom = (poParams->baseZoom == 0) ? poBundle->calculateBestMercZoom() : poParams->baseZoom;
 	double		res = MercatorTileGrid::calcResolutionByZoom(zoom);
 
+	bool		bStretchTo8Bit = false;
+	double		*stretchMinValues = NULL, *stretchMaxValues = NULL;
+	if (poParams->bAutoStretchTo8Bit)
+	{
+		RasterFile oRF((*poBundle->getFileList().begin()),TRUE);
+		double *min,*max,*mean,*stdDev;
+		int bands;
+		if ( (poParams->tileType == JPEG_TILE || poParams->tileType == PNG_TILE) && 
+			 (oRF.getGDALDatasetRef()->GetRasterBand(1)->GetRasterDataType() != GDT_Byte))
+		{
+			bStretchTo8Bit = true;
+			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
+
+			if (!oRF.computeStatistics(bands,min,max,mean,stdDev))
+			{
+				cout<<"ERROR: compute statistics failed for "<<(*poBundle->getFileList().begin())<<endl;
+				return false;
+			}
+			stretchMinValues = new double[bands];
+			stretchMaxValues = new double[bands];
+			for (int i=0;i<bands;i++)
+			{
+				stretchMinValues[i] = mean[i] - 2*stdDev[i];
+				stretchMaxValues[i] = mean[i] + 2*stdDev[i];
+			}
+			delete[]min;delete[]max;delete[]mean;delete[]stdDev;
+		}
+	}
+
+	cout<<"0% ";
+	fflush(stdout);
+
+	//if (poBundle->getFileList().size()>1) GMX_MAX_THREADS = 1;
 
 	int minx,maxx,miny,maxy;
 	MercatorTileGrid::calcTileRange(poBundle->getMercatorEnvelope(),zoom,minx,miny,maxx,maxy);
+
+	HANDLE			threadHandle = NULL;
+	unsigned long	threadId;
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
 	{
 		int curr_max_x =	(curr_min_x + GMX_MAX_BUFFER_WIDTH - 1 > maxx) ? 
 							maxx :  
 							curr_min_x + GMX_MAX_BUFFER_WIDTH - 1;
+		
 		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=GMX_MAX_BUFFER_WIDTH)
 		{
 			int curr_max_y =	(curr_min_y + GMX_MAX_BUFFER_WIDTH - 1 > maxy) ? 
@@ -222,90 +322,120 @@ BOOL GMXMakeBaseZoomTiling	(	GMXilingParameters		*poParams,
 																					curr_min_y,
 																					curr_max_x,
 																					curr_max_y);
-
 			if (!poBundle->intersects(bufferEnvelope)) continue;
-			RasterBuffer mercBuffer;
+			RasterBuffer *poMercBuffer = new RasterBuffer();
 
-			if (!poBundle->warpToMercBuffer(zoom,bufferEnvelope,mercBuffer,poParams->pNoDataValue,poParams->pBackgroundColor))
+			if (!poBundle->warpToMercBuffer(zoom,bufferEnvelope,poMercBuffer,poParams->pNoDataValue,poParams->pBackgroundColor))
 			{
-				cout<<"Error: BaseZoomTiling: warping to merc fail"<<endl;
+				cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
 				return FALSE;
 			}
-
-			if ( poParams->pTransparentColor != NULL ) mercBuffer.createAlphaBandByColor(poParams->pTransparentColor);
+		
+			if ( poParams->pTransparentColor != NULL ) poMercBuffer->createAlphaBandByColor(poParams->pTransparentColor);
 			
-			if ((poParams->tileType == JPEG_TILE || poParams->tileType == PNG_TILE)&&(mercBuffer.getDataType()!=GDT_Byte))
+			if (bStretchTo8Bit)
 			{
-				if (!mercBuffer.stretchDataTo8Bit(0,255))
+				if (!poMercBuffer->stretchDataTo8Bit(stretchMinValues,stretchMaxValues))
 				{
-					cout<<"Error: can't stretch data to 8 bit"<<endl;
+					cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
 					return FALSE;
 				}
+				
 			}
-
+			
 			//ToDo
-			//Если длина очереди тайлинга < Lmax, то запустить новую порцию на тайлинг
 			//(при этом требуется проконтролировать: многопоточность записи в ITilePyramid, безопасность mercBuffer).
-			//Если длина очереди >=Lmax, то ждать 
-
-
-
-			if (!GMXTilingFromBuffer(	poParams,
-										mercBuffer,
+			if (GMX_MAX_THREADS == 1)
+			{
+				if (!GMXTilingFromBuffer(poParams,
+										poMercBuffer,
 										poBundle,
 										curr_min_x,
 										curr_min_y,
 										zoom,
 										nExpected,
-										generatedTiles,
-										ITilePyramid))
+										&generatedTiles,
+										poTilePyramid))
+				{
+					cout<<"ERROR: BaseZoomTiling: GMXTilingFromBuffer fail"<<endl;
+					return FALSE;
+				}
+				delete(poMercBuffer);
+			}
+			else 
 			{
-				cout<<"Error: BaseZoomTiling: GMXTilingFromBuffer fail"<<endl;
-				return FALSE;
+				while (GMX_CURR_NUM_OF_THREADS==GMX_MAX_THREADS)
+					Sleep(250);
+				if (threadHandle!=NULL) 
+				{
+					CloseHandle(threadHandle);
+					threadHandle = NULL;
+				}
+				if (!(threadHandle = GMXAsyncTilingFromBuffer(	poParams,
+																poMercBuffer,
+																poBundle,
+																curr_min_x,
+																curr_min_y,
+																zoom,
+																nExpected,
+																&generatedTiles,
+																poTilePyramid,
+																threadId)))
+				{
+					cout<<"ERROR: BaseZoomTiling: GMXTilingFromBuffer fail"<<endl;
+					return FALSE;
+				}
 			}
 		}
 	}
 
+	while (GMX_CURR_NUM_OF_THREADS>1)
+		Sleep(250);
+	if (threadHandle!=NULL) 
+	{
+		CloseHandle(threadHandle);
+		threadHandle = NULL;
+	}
 	return TRUE;
 }
 
 
-BOOL GMXCreatePyramidalTiles (VectorBorder		&oVectorBorder, 
-						  int					nBaseZoom, 
-						  int					nMinZoom, 
-						  GMXilingParameters		*poParams, 
-						  int					&nExpectedTiles, 
-						  int					&nGeneratedTiles, 
-						  BOOL					bOnlyCalculate, 
-						  ITilePyramid			*ITilePyramid,
-						  int					nJpegQuality
-						  )
+BOOL GMXMakePyramidFromBaseZoom (	VectorBorder		&oVectorBorder, 
+								int					nBaseZoom, 
+								int					nMinZoom, 
+								GMXTilingParameters		*poParams, 
+								int					&nExpectedTiles, 
+								int					&nGeneratedTiles, 
+								BOOL					bOnlyCalculate, 
+								ITilePyramid			*ITilePyramid,
+								int					nJpegQuality
+								)
 {
 
 	RasterBuffer oBuffer;
 	BOOL b;
 
-	GMXCreateZoomOutTile(	oVectorBorder,0,0,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
+	GMXMakeZoomOutTile(	oVectorBorder,0,0,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
 							nGeneratedTiles,bOnlyCalculate,ITilePyramid,nJpegQuality);
 
 	if (oVectorBorder.getEnvelope().MaxX>-MercatorTileGrid::getULX())
 	{
-		GMXCreateZoomOutTile(	oVectorBorder,1,2,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
+		GMXMakeZoomOutTile(	oVectorBorder,1,2,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
 								nGeneratedTiles,bOnlyCalculate,ITilePyramid,nJpegQuality);
-		GMXCreateZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
+		GMXMakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
 								nGeneratedTiles,bOnlyCalculate,ITilePyramid,nJpegQuality);
 	}
 
 	return TRUE;
 }
 
-BOOL GMXCreateZoomOutTile (VectorBorder	&oVectorBorder, 
+BOOL GMXMakeZoomOutTile (VectorBorder	&oVectorBorder, 
 					  int				nCurrZoom, 
 					  int				nX, 
 					  int				nY, 
 					  int				nBaseZoom, 
 					  int				nMinZoom, 
-					  GMXilingParameters	*poParams, 
+					  GMXTilingParameters	*poParams, 
 					  RasterBuffer		&oTileBuffer,  
 					  int				&nExpectedTiles, 
 					  int				&nGeneratedTiles, 
@@ -314,7 +444,6 @@ BOOL GMXCreateZoomOutTile (VectorBorder	&oVectorBorder,
 					  int				nJpegQuality)
 {
 
-	int start;
 	if (nCurrZoom==nBaseZoom)
 	{	
 		if (!ITilePyramid->tileExists(nCurrZoom,nX,nY)) return FALSE;
@@ -331,7 +460,7 @@ BOOL GMXCreateZoomOutTile (VectorBorder	&oVectorBorder,
 				{
 					if(!oTileBuffer.createBufferFromJpegData(pData,size))
 					{
-						cout<<"Error: reading jpeg-data"<<endl;
+						cout<<"ERROR: reading jpeg-data"<<endl;
 						return FALSE;
 					}
 					break;
@@ -358,7 +487,7 @@ BOOL GMXCreateZoomOutTile (VectorBorder	&oVectorBorder,
 			for (int j=0;j<2;j++)
 			{
 				if (oVectorBorder.intersects(nCurrZoom+1,2*nX+j,2*nY+i)) 
-					quarterTileExists[i*2+j] = GMXCreateZoomOutTile(oVectorBorder,
+					quarterTileExists[i*2+j] = GMXMakeZoomOutTile(oVectorBorder,
 															nCurrZoom+1,
 															2*nX+j,
 															2*nY+i,
@@ -391,7 +520,7 @@ BOOL GMXCreateZoomOutTile (VectorBorder	&oVectorBorder,
 		//Если < Lmax, то отправить на выполнение
 		//Если >=Lmax, то ждать
 
-		if (!ZoomOutTileBuffer(quarterTileBuffer,quarterTileExists, oTileBuffer)) return FALSE;
+		if (!GMXZoomOutTileBuffer(quarterTileBuffer,quarterTileExists, oTileBuffer)) return FALSE;
 		void *pData=NULL;
 		int size = 0;
 		switch (poParams->tileType)
@@ -424,15 +553,12 @@ BOOL GMXCreateZoomOutTile (VectorBorder	&oVectorBorder,
 
 
 
-BOOL ZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], BOOL quarterTileExists[4], RasterBuffer &zoomOutTileBuffer) 
+BOOL GMXZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], BOOL quarterTileExists[4], RasterBuffer &zoomOutTileBuffer) 
 {
 	int i;
 	for (i = 0; i<4;i++)
 		if (quarterTileExists[i]) break;
 	if (i==4) return FALSE;
-	
-	int bands;
-	GDALDataType gDT;
 	
 	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
 	zoomOutTileBuffer.createBuffer(srcQuarterTile[i].getBandsCount(),

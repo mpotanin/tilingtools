@@ -32,7 +32,7 @@ BOOL LoadGDAL (int argc, string argv[])
 
 	if (gdalPath=="")
 	{
-		cout<<"Error: GDAL path isn't specified"<<endl;
+		cout<<"ERROR: GDAL path isn't specified"<<endl;
 		return FALSE;
 	}
 	
@@ -40,7 +40,7 @@ BOOL LoadGDAL (int argc, string argv[])
 
 	if (!LoadGDALDLLs(gdalPath))
 	{
-		cout<<"Error: can't load gdal dlls: bad path to gdal specified"<<endl;
+		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified"<<endl;
 		return FALSE;
 	}
 
@@ -55,6 +55,36 @@ BOOL LoadGDALDLLs (string gdalPath)
 	return (b != NULL);
 }
 
+///*
+string ReadGDALPathFromConfigFile (string configFilePath)
+{
+	string	configFile = (configFilePath=="") ? "TilingTools.config" : GetAbsolutePath (configFilePath,"TilingTools.config");
+	
+	FILE *fp = fopen(configFile.c_str(),"r");
+	if (!fp) return "";
+	string s;
+	char c;
+	while (1==fscanf(fp,"%c",&c))
+		s+=c;
+	fclose(fp);
+	s+=' ';
+
+	std::tr1::regex rxTemplate;
+	rxTemplate = "^GdalPath=(.*[^\\s$])";
+	
+	match_results<string::const_iterator> mr;
+	regex_search(s, mr, rxTemplate);
+	if (mr.size()<2)
+	{
+		cout<<"ERROR: can't read GdalPath from file: "<<configFile<<endl;
+		return "";
+	}
+
+	return GetAbsolutePath (configFilePath,mr[1]);
+}
+//*/
+
+/*
 string ReadGDALPathFromConfigFile (string configFilePath)
 {
 	string	strGdalTag = "<gdalpath>";
@@ -86,7 +116,7 @@ string ReadGDALPathFromConfigFile (string configFilePath)
 	
 	return GetAbsolutePath (configFilePath,strGdalPath);
 }
-
+*/
 
 string  ReadConsoleParameter (string strPattern, int argc, string argv[], BOOL bFlagParam)
 {

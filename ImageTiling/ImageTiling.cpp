@@ -60,7 +60,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	{
 		if((logFile = _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
 		{
-			wcout<<"Error: can't open log file: "<<strLogFile<<endl;
+			wcout<<"ERROR: can't open log file: "<<strLogFile<<endl;
 			exit(-1);
 		}
 	}
@@ -68,7 +68,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	//проверяем входной файл или директорию
 	if (strInput == "")
 	{
-		cout<<"Error: missing \"-file\" parameter"<<endl;
+		cout<<"ERROR: missing \"-file\" parameter"<<endl;
 		return -1;
 	}
 	
@@ -77,7 +77,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	GMX::FindFilesInFolderByPattern(inputFiles,strInput);
 	if (inputFiles.size()==0)
 	{
-		cout<<"Error: can't find input files by path: "<<strInput<<endl;
+		cout<<"ERROR: can't find input files by path: "<<strInput<<endl;
 		return -1;
 	}
 
@@ -109,7 +109,7 @@ int CheckArgsAndCallTiling (	string strInput,
 	tileType = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
 					GMX::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? GMX::PNG_TILE : GMX::TIFF_TILE;
 	
-	GMXilingParameters oParams(strInput,mercType,tileType);
+	GMXTilingParameters oParams(strInput,mercType,tileType);
 
 	if (strZoom != "")		oParams.baseZoom = (int)atof(strZoom.c_str());
 	if (strMinZoom != "")	oParams.minZoom = (int)atof(strMinZoom.c_str());
@@ -123,7 +123,7 @@ int CheckArgsAndCallTiling (	string strInput,
 		{
 			if (!GMX::CreateDirectory(strOutput.c_str()))
 			{
-				cout<<"Error: can't create folder: "<<strOutput<<endl;
+				cout<<"ERROR: can't create folder: "<<strOutput<<endl;
 				return FALSE;
 			}
 		}
@@ -165,13 +165,14 @@ int CheckArgsAndCallTiling (	string strInput,
 		BYTE	rgb[3];
 		if (!GMX::ConvertStringToRGB(strTranspColor,rgb))
 		{
-			cout<<"Error: bad value of parameter: \"-no_data_rgb\""<<endl;
+			cout<<"ERROR: bad value of parameter: \"-no_data_rgb\""<<endl;
 			return FALSE;
 		}
 		oParams.pTransparentColor = new BYTE[3];
 		memcpy(oParams.pTransparentColor,rgb,3);
 	}
 
+	oParams.bAutoStretchTo8Bit = true;
 
 	GMXMakeTiling(&oParams);
 	//if (logFile) fclose(logFile);
@@ -186,7 +187,6 @@ int _tmain(int argc, wchar_t* argvW[])
 	//cout.imbue(std::locale("rus_rus.866"));
 	//locale myloc("");
 	
-
 	string *argv = new string[argc];
 	for (int i=0;i<argc;i++)
 	{
@@ -236,8 +236,45 @@ int _tmain(int argc, wchar_t* argvW[])
 	wcout<<endl;
 
 	//проверяем входной файл(ы)
+	//ToDo
+	//проверить входные растры на соответствие параметрам тайлинга
+	//если не подходят:
+	// - выдать сообщение
+	// - вычислить параметры приведения по умолчанию через класс GMX::RasterFile
+	//запустить тайлинг с параметрами
 
+	//В классе GMX::RasterFile 
+	//-  добавить функцию, которая вычисляет среднее и стд для каналов
+	//-  изменить функцию getMinMax..
+	//
+	
+	//Добавить в класс ImageTilingParams переменные
+	//bands *int - номера каналов
+	//мин, мах для приведения к 256
+
+
+	//Добавляем парметр AutoStretchTo8Bit
+	//Если этот параметр равен TRUE то
+	//Модифицирую функцию GMXMakeZoomFromBundle:
+		//проверяем надо ли делать Stretch
+		//вычисляем Stretch-пареметры
+	//Модифицирую функцию GMX::RasterBuffer::stretchDataTo8Bit:
+		//массив чисел по каналам
+		//убрать лишние каналы ?
+	   
+
+
+
+	 //C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10
+
+	//strInput		= "e:\\huge\\1.img";
 	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+	//strZoom			= "8";
+
+	//strContainer	= "-container";
+	//strTemplate		= "standard";
+
+
 	//strOutput		= "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
 	//strZoom			= "8";
 	//strProjType		= "1";
@@ -250,7 +287,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\dnb_land_ocean_ice.2012.54000x27000_geo_cut3.tif";
 	//strOutput		= "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
 	//strZoom			= "6";
-	//strContainer	= "-container";
+	
 
 
 
@@ -263,7 +300,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	
 	if (strInput == "")
 	{
-		cout<<"Error: missing \"-file\" parameter"<<endl;
+		cout<<"ERROR: missing \"-file\" parameter"<<endl;
 		return -1;
 	}
 
@@ -292,7 +329,7 @@ int _tmain(int argc, wchar_t* argvW[])
 				{
 					if (!GMX::CreateDirectory(strOutput.c_str()))
 					{
-						cout<<"Error: can't create directory: "<<strOutput<<endl;
+						cout<<"ERROR: can't create directory: "<<strOutput<<endl;
 						return -1;
 					}
 				}
