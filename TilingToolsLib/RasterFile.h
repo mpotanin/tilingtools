@@ -46,7 +46,7 @@ public:
 
 	void			readMetaData ();
 	OGREnvelope		GetEnvelope ();
-	OGREnvelope		getMercatorEnvelope (MercatorProjType	mercType);
+	OGREnvelope*	calcMercatorEnvelope (MercatorProjType	mercType);
 
 	static			BOOL readSpatialRefFromMapinfoTabFile (string tabFilePath, OGRSpatialReference *poSRS);
 
@@ -90,7 +90,7 @@ public:
 							double dShiftX = 0.0, double dShiftY = 0.0);
 	//string			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
 
-	OGREnvelope		getMercatorEnvelope();
+	OGREnvelope		getEnvelope();
 	int				calculateNumberOfTiles (int zoom);
 	int				calculateBestMercZoom();
 	BOOL			warpToMercBuffer (	int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer *poBuffer, 
@@ -109,7 +109,7 @@ protected:
 
 
 protected:
-	list<pair<string,pair<OGREnvelope,VectorBorder*>>>	dataList;
+	list<pair<string,pair<OGREnvelope*,VectorBorder*>>>	dataList;
 	MercatorProjType		mercType;
 };
 

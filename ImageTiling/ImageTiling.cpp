@@ -267,9 +267,9 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	 //C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10
 
-	//strInput		= "e:\\huge\\1.img";
+	//strInput		= "E:\\MODIS_IRK\\A1304191903.tif";
 	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-	//strZoom			= "8";
+	//strZoom			= "9";
 
 	//strContainer	= "-container";
 	//strTemplate		= "standard";
@@ -279,7 +279,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	//strZoom			= "8";
 	//strProjType		= "1";
 	//strTemplate		= "standard";
-	//strVectorFile	= "C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+	//strVectorFile	= "E:\\MODIS_IRK\\A1304191903.mif";
 
 	//-no_data_rgb "0 0 0" -tile_type png -border C:\Work\Projects\TilingTools\autotest\border\markers.tab
 

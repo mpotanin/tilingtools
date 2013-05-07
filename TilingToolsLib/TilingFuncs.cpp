@@ -64,13 +64,13 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*poParams)
 				poITilePyramid = new GMXTileContainer(	poParams->containerFile,
 														poParams->tileType,
 														poParams->mercType,
-														oBundle.getMercatorEnvelope(),
+														oBundle.getEnvelope(),
 														baseZoom,
 														useBuffer);
 		else	poITilePyramid = new MBTileContainer(	poParams->containerFile,
 														poParams->tileType,
 														poParams->mercType,
-														oBundle.getMercatorEnvelope());
+														oBundle.getEnvelope());
 	}
 	else		poITilePyramid = new TileFolder(poParams->poTileName, useBuffer);
 		
@@ -84,7 +84,7 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*poParams)
 
 	cout<<"Pyramid tiles: ";//<<endl;
 	cout<<"calculating number of tiles: ";
-	VectorBorder	bundleEnvelope(oBundle.getMercatorEnvelope(),poParams->mercType);
+	VectorBorder	bundleEnvelope(oBundle.getEnvelope(),poParams->mercType);
 	int generatedTiles = 0;
 	expectedTiles = 0;
 	GMXMakePyramidFromBaseZoom(	bundleEnvelope,
@@ -301,7 +301,7 @@ BOOL GMXMakeZoomFromBundle	(	GMXTilingParameters		*poParams,
 	//if (poBundle->getFileList().size()>1) GMX_MAX_THREADS = 1;
 
 	int minx,maxx,miny,maxy;
-	MercatorTileGrid::calcTileRange(poBundle->getMercatorEnvelope(),zoom,minx,miny,maxx,maxy);
+	MercatorTileGrid::calcTileRange(poBundle->getEnvelope(),zoom,minx,miny,maxx,maxy);
 
 	HANDLE			threadHandle = NULL;
 	unsigned long	threadId;

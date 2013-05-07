@@ -277,7 +277,7 @@ BOOL	RasterFile::getDefaultSpatialRef (OGRSpatialReference	&oSRS, MercatorProjTy
 }
 
 
-OGREnvelope	RasterFile::getMercatorEnvelope (MercatorProjType	mercType)
+OGREnvelope*	RasterFile::calcMercatorEnvelope (MercatorProjType	mercType)
 {
 	const int numPoints = 100;
 	OGRSpatialReference rasterFileSR;
@@ -310,14 +310,15 @@ OGREnvelope	RasterFile::getMercatorEnvelope (MercatorProjType	mercType)
 	MercatorTileGrid::setMercatorSpatialReference(mercType,&oSpatialMerc);
 	
 	BOOL	intersects180 = VectorBorder::intersects180Degree(&oLR,&rasterFileSR);
-	oLR.transformTo(&oSpatialMerc);
+	if (OGRERR_NONE != oLR.transformTo(&oSpatialMerc)) return NULL;
+	
 	if (intersects180) VectorBorder::adjustFor180DegreeIntersection(&oLR);
 
 
-	OGREnvelope resultEnvelope;
-	oLR.getEnvelope(&resultEnvelope);
+	OGREnvelope *pResultEnvelope = new OGREnvelope();
+	oLR.getEnvelope(pResultEnvelope);
 
-	return	resultEnvelope;
+	return	pResultEnvelope;
 }	
 
 
@@ -348,9 +349,10 @@ void BundleOfRasterFiles::close_all(void)
 	//this->m_oImagesBounds.empty();
 	//this->m_poImagesBorders.empty();
 
-	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		delete((*iter).second.second);
+		delete((*iter).second.first);
 	}
 	dataList.empty();
 
@@ -392,10 +394,11 @@ BOOL	BundleOfRasterFiles::addItemToBundle (string rasterFile, string	vectorFile,
 	}
 
 	VectorBorder	*border = VectorBorder::createFromVectorFile(vectorFile,mercType);
-	pair<string,pair<OGREnvelope,VectorBorder*>> p;
+	pair<string,pair<OGREnvelope*,VectorBorder*>> p;
 	p.first			= rasterFile;
-	p.second.first	= oImage.getMercatorEnvelope(mercType);
+	p.second.first	= oImage.calcMercatorEnvelope(mercType);
 	p.second.second = border;
+	if ((p.second.first == NULL) && (p.second.second == NULL)) return FALSE;
 	dataList.push_back(p);
 	return TRUE;
 }
@@ -403,14 +406,14 @@ BOOL	BundleOfRasterFiles::addItemToBundle (string rasterFile, string	vectorFile,
 list<string>	BundleOfRasterFiles::getFileList()
 {
 	std::list<string> fileList;
-	for (std::list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end(); iter++)
+	for (std::list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end(); iter++)
 		fileList.push_back((*iter).first);
 
 	return fileList;
 	//return this->m_strFilesList;
 }
 
-OGREnvelope BundleOfRasterFiles::getMercatorEnvelope()
+OGREnvelope BundleOfRasterFiles::getEnvelope()
 {
 	OGREnvelope	oEnvelope;
 
@@ -418,17 +421,12 @@ OGREnvelope BundleOfRasterFiles::getMercatorEnvelope()
 	oEnvelope.MaxY=(oEnvelope.MaxX = -1e+100);oEnvelope.MinY=(oEnvelope.MinX = 1e+100);
 	if (dataList.size() == 0) return oEnvelope;
 
-	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
-		
-		oEnvelope = ((*iter).second.second != NULL) ?	VectorBorder::combineOGREnvelopes(
-																		oEnvelope,
-																		VectorBorder::inetersectOGREnvelopes(
-																				(*iter).second.first,
-																				(*iter).second.second->getEnvelope()
-																											)
-																						):
-														VectorBorder::combineOGREnvelopes(	oEnvelope,(*iter).second.first);
+		if ((*iter).second.second != NULL)
+			oEnvelope = VectorBorder::combineOGREnvelopes(oEnvelope,(*iter).second.second->getEnvelope());
+		else if ((*iter).second.first != NULL)
+			oEnvelope = VectorBorder::combineOGREnvelopes(oEnvelope,*(*iter).second.first);
 	}
 	return oEnvelope; 
 }
@@ -440,7 +438,7 @@ int	BundleOfRasterFiles::calculateNumberOfTiles (int zoom)
 	double		res = MercatorTileGrid::calcResolutionByZoom(zoom);
 
 	int minx,maxx,miny,maxy;
-	MercatorTileGrid::calcTileRange(getMercatorEnvelope(),zoom,minx,miny,maxx,maxy);
+	MercatorTileGrid::calcTileRange(getEnvelope(),zoom,minx,miny,maxx,maxy);
 	
 	for (int curr_x = minx; curr_x<=maxx; curr_x++)
 	{
@@ -460,11 +458,13 @@ int		BundleOfRasterFiles::calculateBestMercZoom()
 {
 	if (dataList.size()==0) return -1;
 
+	if ((*dataList.begin()).second.first == NULL) return -1;
+
 	RasterFile rf((*dataList.begin()).first,1);
 	int srcWidth = 0, srcHeight = 0;
 	rf.getPixelSize(srcWidth,srcHeight);
 	if (srcWidth<=0 || srcHeight <= 0) return false;
-	OGREnvelope oMercEnvelope = (*dataList.begin()).second.first;
+	OGREnvelope oMercEnvelope(*(*dataList.begin()).second.first);
 
 	double srcRes = min((oMercEnvelope.MaxX - oMercEnvelope.MinX)/srcWidth,(oMercEnvelope.MaxY - oMercEnvelope.MinY)/srcHeight);
 	if (srcRes<=0) return -1;
@@ -482,9 +482,8 @@ int		BundleOfRasterFiles::calculateBestMercZoom()
 list<string>	 BundleOfRasterFiles::getFileListByEnvelope(OGREnvelope mercatorEnvelope)
 {
 	std::list<string> oList;
-
-
-	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	
+	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		if ((*iter).second.second->intersects(mercatorEnvelope)) oList.push_back((*iter).first);
 
@@ -496,16 +495,12 @@ list<string>	 BundleOfRasterFiles::getFileListByEnvelope(OGREnvelope mercatorEnv
 
 BOOL	BundleOfRasterFiles::intersects(OGREnvelope mercatorEnvelope)
 {
-	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
-		if (mercatorEnvelope.Intersects((*iter).second.first))
-		{
-			if ((*iter).second.second != NULL)
-			{
-				if ((*iter).second.second->intersects(mercatorEnvelope)) return TRUE;
-			}
-			else return TRUE;			
-		}
+		if ((*iter).second.second != NULL)
+			if ((*iter).second.second->intersects(mercatorEnvelope)) return TRUE;
+		if ((*iter).second.first != NULL)
+			if ((*iter).second.first->Intersects(mercatorEnvelope)) return TRUE;
 	}
 	
 	return FALSE;
@@ -575,11 +570,19 @@ BOOL BundleOfRasterFiles::warpToMercBuffer (int zoom,	OGREnvelope	oMercEnvelope,
 
 	if (bNoDataValueFromFile) poVrtDS->GetRasterBand(1)->SetNoDataValue(nNoDataValueFromFile);
 	
-	for (list<pair<string,pair<OGREnvelope,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
+	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = dataList.begin(); iter!=dataList.end();iter++)
 	{
 		//check if image envelope intersects destination buffer envelope
-		if (!(*iter).second.first.Intersects(oMercEnvelope)) continue;
+		if ((*iter).second.first != NULL)
+		{
+			if (!(*iter).second.first->Intersects(oMercEnvelope)) continue;
+		}
 		
+		if ((*iter).second.second != NULL)
+		{
+			if (!(*iter).second.second->intersects(oMercEnvelope)) continue;
+		}
+
 		// Open input raster and create source dataset
 		if (dataList.size()==0) return FALSE;
 		poSrcDS = (GDALDataset*)GDALOpen((*iter).first.c_str(),GA_ReadOnly );

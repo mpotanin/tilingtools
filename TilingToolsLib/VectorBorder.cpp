@@ -80,11 +80,27 @@ BOOL	VectorBorder::intersects180Degree (OGRGeometry	*poGeometry, OGRSpatialRefer
 			for (double j=0;j<=1.0001;j+=0.1)
 				oLS.addPoint(	poRings[i]->getX(k)*(1-j) + poRings[i]->getX(k+1)*j,
 								poRings[i]->getY(k)*(1-j) + poRings[i]->getY(k+1)*j);
+			if (k==9)
+			{
+				double x1 = poRings[0]->getX(9);
+				double y1 = poRings[0]->getY(9);
+				double x2 = poRings[0]->getX(10);
+				double y2 = poRings[0]->getY(10);
+				y2=y2;
+			}
 			oLS.assignSpatialReference(poSR);
 			//ToDo
-			oLS.transformTo(&oWGS84);
+			OGRErr errorTransform =	oLS.transformTo(&oWGS84);
+			
+			
 			for (int l=0;l<oLS.getNumPoints()-1;l++)
 			{
+				double x1 = oLS.getX(l);
+				double y1 = oLS.getY(l);
+				double x2 = oLS.getX(l+1);
+				double y2 = oLS.getY(l+1);
+
+
 				if(	((oLS.getX(l)>90)&&(oLS.getX(l+1)<-90)) || ((oLS.getX(l)<-90)&&(oLS.getX(l+1)>90)) ||
 					((oLS.getX(l)>180.00001)&&(oLS.getX(l+1)<179.9999)) || ((oLS.getX(l)<179.9999)&&(oLS.getX(l+1)>180.00001)) || 
 					((oLS.getX(l)>-179.9999)&&(oLS.getX(l+1)<-180.00001)) || ((oLS.getX(l)<-180.00001)&&(oLS.getX(l+1)>-179.9999)))
