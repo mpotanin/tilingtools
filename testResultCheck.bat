@@ -76,9 +76,9 @@ echo ##teamcity[testFailed name='Compare Files6']
 
 :test7
 echo ##teamcity[testStarted name='Compare Files7']
-set fileSource6=%1\TilingTools\11_275_299.jpg
-set fileGenerated6=%2\testOutput\Eros-B_16bit_cut_tiles\11\275\11_275_299.jpg
-fc %fileSource6% %fileGenerated6% > nul
+set fileSource7=%1\TilingTools\11_275_299.jpg
+set fileGenerated7=%2\testOutput\Eros-B_16bit_cut_tiles\11\275\11_275_299.jpg
+fc %fileSource7% %fileGenerated7% > nul
 if errorlevel 1 goto errortest7
 :nexttest7
 echo ##teamcity[testFinished name='Compare Files7']
