@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            this.textBox23 = new System.Windows.Forms.TextBox();
+            this.textBox32 = new System.Windows.Forms.TextBox();
             this.ImageBuilder = new System.Windows.Forms.TabPage();
             this.button1 = new System.Windows.Forms.Button();
             this.label21 = new System.Windows.Forms.Label();
@@ -38,7 +38,7 @@
             this.textBox15 = new System.Windows.Forms.TextBox();
             this.textBox19 = new System.Windows.Forms.TextBox();
             this.textBox20 = new System.Windows.Forms.TextBox();
-            this.label23 = new System.Windows.Forms.Label();
+            this.label32 = new System.Windows.Forms.Label();
             this.label24 = new System.Windows.Forms.Label();
             this.comboBox4 = new System.Windows.Forms.ComboBox();
             this.button14 = new System.Windows.Forms.Button();
@@ -105,17 +105,17 @@
             this.tabControl1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // textBox23
+            // textBox32
             // 
-            this.textBox23.Cursor = System.Windows.Forms.Cursors.Default;
-            this.textBox23.Location = new System.Drawing.Point(4, 285);
-            this.textBox23.Multiline = true;
-            this.textBox23.Name = "textBox23";
-            this.textBox23.ReadOnly = true;
-            this.textBox23.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox23.Size = new System.Drawing.Size(453, 228);
-            this.textBox23.TabIndex = 13;
-            this.textBox23.TabStop = false;
+            this.textBox32.Cursor = System.Windows.Forms.Cursors.Default;
+            this.textBox32.Location = new System.Drawing.Point(4, 285);
+            this.textBox32.Multiline = true;
+            this.textBox32.Name = "textBox32";
+            this.textBox32.ReadOnly = true;
+            this.textBox32.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.textBox32.Size = new System.Drawing.Size(453, 228);
+            this.textBox32.TabIndex = 13;
+            this.textBox32.TabStop = false;
             // 
             // ImageBuilder
             // 
@@ -126,7 +126,7 @@
             this.ImageBuilder.Controls.Add(this.textBox15);
             this.ImageBuilder.Controls.Add(this.textBox19);
             this.ImageBuilder.Controls.Add(this.textBox20);
-            this.ImageBuilder.Controls.Add(this.label23);
+            this.ImageBuilder.Controls.Add(this.label32);
             this.ImageBuilder.Controls.Add(this.label24);
             this.ImageBuilder.Controls.Add(this.comboBox4);
             this.ImageBuilder.Controls.Add(this.button14);
@@ -146,7 +146,7 @@
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button1.Location = new System.Drawing.Point(368, 208);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.Size = new System.Drawing.Size(75, 32);
             this.button1.TabIndex = 61;
             this.button1.Text = "Run";
             this.button1.UseVisualStyleBackColor = true;
@@ -220,14 +220,14 @@
             this.textBox20.Size = new System.Drawing.Size(253, 20);
             this.textBox20.TabIndex = 46;
             // 
-            // label23
+            // label32
             // 
-            this.label23.AutoSize = true;
-            this.label23.Location = new System.Drawing.Point(4, 114);
-            this.label23.Name = "label23";
-            this.label23.Size = new System.Drawing.Size(74, 13);
-            this.label23.TabIndex = 56;
-            this.label23.Text = "Vector border:";
+            this.label32.AutoSize = true;
+            this.label32.Location = new System.Drawing.Point(4, 114);
+            this.label32.Name = "label32";
+            this.label32.Size = new System.Drawing.Size(74, 13);
+            this.label32.TabIndex = 56;
+            this.label32.Text = "Vector border:";
             // 
             // label24
             // 
@@ -317,7 +317,7 @@
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button2.Location = new System.Drawing.Point(368, 208);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.Size = new System.Drawing.Size(75, 32);
             this.button2.TabIndex = 45;
             this.button2.Text = "Run";
             this.button2.UseVisualStyleBackColor = true;
@@ -707,7 +707,7 @@
             // radioButton4
             // 
             this.radioButton4.AutoSize = true;
-            this.radioButton4.Location = new System.Drawing.Point(235, 4);
+            this.radioButton4.Location = new System.Drawing.Point(325, 4);
             this.radioButton4.Name = "radioButton4";
             this.radioButton4.Size = new System.Drawing.Size(43, 17);
             this.radioButton4.TabIndex = 2;
@@ -740,7 +740,7 @@
             this.button19.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button19.Location = new System.Drawing.Point(368, 229);
             this.button19.Name = "button19";
-            this.button19.Size = new System.Drawing.Size(75, 23);
+            this.button19.Size = new System.Drawing.Size(75, 32);
             this.button19.TabIndex = 27;
             this.button19.Text = "Run";
             this.button19.UseVisualStyleBackColor = true;
@@ -764,7 +764,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(457, 517);
-            this.Controls.Add(this.textBox23);
+            this.Controls.Add(this.textBox32);
             this.Controls.Add(this.tabControl1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
@@ -796,7 +796,7 @@
 
         #endregion
 
-        private System.Windows.Forms.TextBox textBox23;
+        private System.Windows.Forms.TextBox textBox32;
         private System.Windows.Forms.TabPage ImageBuilder;
         private System.Windows.Forms.Label label21;
         private System.Windows.Forms.ComboBox comboBox5;
@@ -804,7 +804,7 @@
         private System.Windows.Forms.TextBox textBox15;
         private System.Windows.Forms.TextBox textBox19;
         private System.Windows.Forms.TextBox textBox20;
-        private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.Label label32;
         private System.Windows.Forms.Label label24;
         private System.Windows.Forms.ComboBox comboBox4;
         private System.Windows.Forms.Button button14;

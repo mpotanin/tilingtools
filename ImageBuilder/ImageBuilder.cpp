@@ -11,7 +11,7 @@
 
 
 using namespace std;
-//using namespace GMX;
+//using namespace gmx;
 
 int _tmain(int argc, wchar_t* argv[])
 {
@@ -79,7 +79,7 @@ int _tmain(int argc, wchar_t* argv[])
 	bWldFile = (bTabFile = (bMapFile = (bKmlFile = (bPrjFile = (bAuxFile = 1)))));
 	*/
 	/*
-	int			nZoom;
+	int			zoom;
 	double		dResolution;
 	wstring		strPoints;
 
@@ -130,13 +130,13 @@ int _tmain(int argc, wchar_t* argv[])
 		return 0;
 	}
 		
-	nZoom = (int)(_wtof(strZoom.data()));
+	zoom = (int)(_wtof(strZoom.data()));
 	//dResolution = TileName::CalcResolutionByZoom((int)(_wtof(strZoom.data())));
 		
 		
 		
 	OGRRegisterAll();
-	VectorBorder oVectorBorder;
+	VectorBorder vb;
 	*/
 
 	/*
@@ -185,11 +185,11 @@ int _tmain(int argc, wchar_t* argv[])
 				oGeoRef.ToXY(dblPoints[2*i],dblPoints[2*i+1],dblPoints[2*i],dblPoints[2*i+1]);
 			}
 	  	}
-		oVectorBorder.InitByPoints(nNumOfPoints/2,dblPoints);
+		vb.InitByPoints(nNumOfPoints/2,dblPoints);
 	}
 	else
 	{
-		if (!VectorFile::OpenAndCreatePolygonInMercator(strVectorFile,oVectorBorder))
+		if (!VectorFile::OpenAndCreatePolygonInMercator(strVectorFile,vb))
 		{
 			wcout<<L"ERROR: "<<strVectorFile<<L": can't read border polygon"<<endl;
 			return FALSE;
@@ -209,7 +209,7 @@ int _tmain(int argc, wchar_t* argv[])
 		RasterBuffer oBuffer;
 			
 		KosmosnimkiTileName oTileName(strTilesFolder,L"");
-		if (!CombineTilesIntoBuffer(&oTileName,nZoom,oVectorBorder.GetEnvelope(),oBuffer)) return 0;
+		if (!CombineTilesIntoBuffer(&oTileName,zoom,vb.GetEnvelope(),oBuffer)) return 0;
 			
 		//ToDo
 		//oBuffer.ResizeAndConvertToRGB(width,height);
@@ -225,17 +225,17 @@ int _tmain(int argc, wchar_t* argv[])
 		
 		
 		
-	OGREnvelope oEnvelope  = oVectorBorder.GetEnvelope();
+	OGREnvelope oEnvelope  = vb.GetEnvelope();
 		
-	OGREnvelope pixelEnvelope = oTileName.CalcPixelEnvelope(oEnvelope,nZoom);
+	OGREnvelope pixelEnvelope = oTileName.CalcPixelEnvelope(oEnvelope,zoom);
 	pixelEnvelope.MinX -=(((int)pixelEnvelope.MinX%oTileName.TILE_SIZE)%8);
 	pixelEnvelope.MaxX += min(8-(((int)pixelEnvelope.MaxX%oTileName.TILE_SIZE)%8),oTileName.TILE_SIZE-((int)pixelEnvelope.MaxX%oTileName.TILE_SIZE) );
 	pixelEnvelope.MinY -=(((int)pixelEnvelope.MinY%oTileName.TILE_SIZE)%8);
 	pixelEnvelope.MaxY += min(8-(((int)pixelEnvelope.MaxY%oTileName.TILE_SIZE)%8),oTileName.TILE_SIZE-((int)pixelEnvelope.MaxY%oTileName.TILE_SIZE) );
 	
-	double ULX = - 20037508.342789243076588408880691,ULY = 20037508.342789243076588408880691;
+	double ULX = - 20037508.3427812843076588408880691,ULY = 20037508.3427812843076588408880691;
 	//oTileName.CalcCoordSysULxy(ULX,ULY);
-	dResolution = oTileName.CalcResolutionByZoom(nZoom);
+	dResolution = oTileName.CalcResolutionByZoom(zoom);
 	oEnvelope.MinX = ULX + pixelEnvelope.MinX*dResolution;
 	oEnvelope.MaxY = ULY - pixelEnvelope.MinY*dResolution;
 	oEnvelope.MaxX = ULX + pixelEnvelope.MaxX*dResolution;
@@ -252,7 +252,7 @@ int _tmain(int argc, wchar_t* argv[])
 		wstring strWldExt = L".jgw";
 		if ((MakeLower(strTileType) == L"png")||(MakeLower(strTileType) == L".png")) strWldExt = L".pgw";
 		wstring strWldFile = RemoveExtension(strImageFile)+strWldExt;
-		oGeoRef.WriteWldFile(oEnvelope.MinX,oEnvelope.MaxY,dResolution,strWldFile);
+		oGeoRef.WriteWLDFile(oEnvelope.MinX,oEnvelope.MaxY,dResolution,strWldFile);
 			
 	}
 	if (bTabFile)

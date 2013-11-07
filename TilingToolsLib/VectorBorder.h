@@ -1,47 +1,47 @@
 #pragma once
-#ifndef		GMXVECTORBORDER_H
-#define		GMXVECTORBORDER_H 
+#ifndef		gmxVECTORBORDER_H
+#define		gmxVECTORBORDER_H 
 #include "stdafx.h"
 #include "TileName.h"
 
-namespace GMX
+namespace gmx
 {
 
 
 class VectorBorder
 {
 public:
-	static VectorBorder*		createFromVectorFile				(string vectorFilePath, MercatorProjType	mercType);
-	static string				getVectorFileNameByRasterFileName	(string strRasterFile);
-	static OGRPolygon*			createOGRPolygonByOGREnvelope		(OGREnvelope envelope);
-	static BOOL					adjustFor180DegreeIntersection		(OGRGeometry		*poMercGeometry);
-	static OGREnvelope			combineOGREnvelopes					(OGREnvelope	&oEnvelope1, OGREnvelope	&oEnvelope2);
-	static OGREnvelope			inetersectOGREnvelopes				(OGREnvelope	&oEnvelope1, OGREnvelope	&oEnvelope2);
-	static OGRLinearRing**		getLinearRingsRef					(OGRGeometry	*poGeometry, int &numRings);
-	static BOOL						intersects180Degree (OGRGeometry	*poGeometry, OGRSpatialReference *poSR);
+	static VectorBorder*		CreateFromVectorFile				(string vector_file, MercatorProjType	merc_type);
+	static string				GetVectorFileNameByRasterFileName	(string raster_file);
+	static OGRPolygon*			CreateOGRPolygonByOGREnvelope		(OGREnvelope &envelope);
+	static BOOL					AdjustFor180DegreeIntersection		(OGRGeometry		*p_ogr_geom_merc);
+	static OGREnvelope			CombineOGREnvelopes					(OGREnvelope	&envp1, OGREnvelope	&envp2);
+	static OGREnvelope			InetersectOGREnvelopes				(OGREnvelope	&envp1, OGREnvelope	&envp2);
+	static OGRLinearRing**		GetLinearRingsRef					(OGRGeometry	*p_ogr_geom, int &num_rings);
+	static BOOL					Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr);
 
 	VectorBorder	();
-	VectorBorder	(OGREnvelope mercEnvelope, MercatorProjType	mercType);
+	VectorBorder	(OGREnvelope merc_envp, MercatorProjType	merc_type);
 	~VectorBorder	();
 	
 
 public:
 	//BOOL						initByMercEnvelope (OGREnvelope envelope);
-	BOOL						intersects(OGREnvelope &envelope);
-	BOOL						intersects(int tile_z, int tile_x, int tile_y);
-	OGRGeometry*				getOGRGeometryRef();
-	OGRGeometry*				getOGRGeometryTransformed (OGRSpatialReference *poOutputSRS);
-	OGRPolygon*					getOGRPolygonTransformedToPixelLine(OGRSpatialReference *poOutputSRS, double *geoTransform);
-	OGREnvelope					getEnvelope ();
+	BOOL						Intersects(OGREnvelope &envelope);
+	BOOL						Intersects(int tile_z, int tile_x, int tile_y);
+	OGRGeometry*				get_ogr_geometry_ref();
+	OGRGeometry*				GetOGRGeometryTransformed (OGRSpatialReference *poOutputSRS);
+	OGRPolygon*					GetOGRPolygonTransformedToPixelLine(OGRSpatialReference *poOutputSRS, double *geoTransform);
+	OGREnvelope					GetEnvelope ();
 
 
 protected:
-	OGRGeometry					*m_poGeometry;
-	MercatorProjType			mercType;
+	OGRGeometry					*p_ogr_geometry_;
+	MercatorProjType			merc_type_;
 
 
 protected:
-	static OGRMultiPolygon*		readMultiPolygonFromOGRDataSource	(OGRDataSource		*poDS); 
+	static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource	(OGRDataSource		*p_ogr_ds); 
 	
 
 };

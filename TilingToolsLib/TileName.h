@@ -7,16 +7,15 @@
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
-namespace GMX
+namespace gmx
 {
 
 
 typedef enum { 
-	WORLD_MERCATOR=0,                         
+	NDEF_PROJ_TYPE=-1,
+  WORLD_MERCATOR=0,                         
 	WEB_MERCATOR=1
 } MercatorProjType;
-
-
 
 
 class MercatorTileGrid
@@ -25,161 +24,161 @@ class MercatorTileGrid
 public:
 	static const int TILE_SIZE = 256;
 
-	static void setMercatorSpatialReference (MercatorProjType mercType, OGRSpatialReference	*poSR)
+	static void SetMercatorSpatialReference (MercatorProjType merc_type, OGRSpatialReference	*p_ogr_sr)
 	{
-		if (poSR == NULL) return;		
+		if (p_ogr_sr == NULL) return;		
 
-		if (mercType == WORLD_MERCATOR)
+		if (merc_type == WORLD_MERCATOR)
 		{
-			poSR->SetWellKnownGeogCS("WGS84");
-			poSR->SetMercator(0,0,1,0,0);
+			p_ogr_sr->SetWellKnownGeogCS("WGS84");
+			p_ogr_sr->SetMercator(0,0,1,0,0);
 		}
 		else
 		{
-			poSR->importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
+			p_ogr_sr->importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
 		}
 		return;
 	}
 
-	static double	getULX()
+	static double	ULX()//get_ulx(
 	{
-		return -20037508.342789243076588408880691;
+		return -20037508.3427812843076588408880691;
 	}
 
-	static double	getULY()
+	static double	ULY()
 	{
-		return 20037508.342789243076588408880691;
+		return 20037508.3427812843076588408880691;
 	}
 	
-	static int calcZoomByResolution (double dRes)
+	static int CalcZoomByResolution (double res)
 	{
-		double a = calcResolutionByZoom(0);
+		double a = CalcResolutionByZoom(0);
 		for (int i=0;i<22;i++)
 		{
-			if (fabs(a-dRes)<0.0001) return i;
+			if (fabs(a-res)<0.0001) return i;
 			a/=2;
 		}
 		return -1;
 	}
 
-	static double calcResolutionByZoom (int nZoom)
+	static double CalcResolutionByZoom (int zoom)
 	{
-		return (nZoom<0) ? 0 : getULY()/(1<<(nZoom+7));
+		return (zoom<0) ? 0 : ULY()/(1<<(zoom+7));
 	}
 
-	static int calcZoomByEnvelope (OGREnvelope envelope)
+	static int CalcZoomByEnvelope (OGREnvelope envelope)
 	{
-		return calcZoomByResolution ((envelope.MaxX-envelope.MinX)/TILE_SIZE);
+		return CalcZoomByResolution ((envelope.MaxX-envelope.MinX)/TILE_SIZE);
 	}
 
-	static OGREnvelope calcEnvelopeByTile (int nZoom, int nX, int nY)
+	static OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y)
 	{
-		double size = calcResolutionByZoom(nZoom)*TILE_SIZE;
-		OGREnvelope oEnvelope;
+		double size = CalcResolutionByZoom(zoom)*TILE_SIZE;
+		OGREnvelope envp;
 			
-		oEnvelope.MinX = getULX() + nX*size;
-		oEnvelope.MaxY = getULY() - nY*size;
-		oEnvelope.MaxX = oEnvelope.MinX + size;
-		oEnvelope.MinY = oEnvelope.MaxY - size;
+		envp.MinX = ULX() + x*size;
+		envp.MaxY = ULY() - y*size;
+		envp.MaxX = envp.MinX + size;
+		envp.MinY = envp.MaxY - size;
 		
-		return oEnvelope;
+		return envp;
 	}
 
 	static __int64 TileID(int z, int x, int y)
 	{
-		__int64 tileID = 0;
+		__int64 tile_id = 0;
 		for (int i=0;i<z;i++)
-			tileID+=(((__int64)1)<<(2*i));
-		return (tileID + ((__int64)y)*(1<<z) + x);
+			tile_id+=(((__int64)1)<<(2*i));
+		return (tile_id + ((__int64)y)*(1<<z) + x);
 	}
 
-	static void TileXYZ(__int64 tileID, int &z, int &x, int &y)
+	static void TileXYZ(__int64 tile_id, int &z, int &x, int &y)
 	{
 		__int64 n = 0;
 		for (int i=0;i<z;i++)
 		{
-			if (n+((__int64)1)<<(2*i)>tileID)
+			if (n+((__int64)1)<<(2*i)>tile_id)
 			{
 				z = i;
 				break;
 			}
-			else n+=((__int64)1)<<(2*i)>tileID;
+			else n+=((__int64)1)<<(2*i)>tile_id;
 		}
-		y = (tileID-n)/(((__int64)1)<<(2*z));
-		y = (tileID-n)%(((__int64)1)<<(2*z));
+		y = (tile_id-n)/(((__int64)1)<<(2*z));
+		y = (tile_id-n)%(((__int64)1)<<(2*z));
 	}
 
 
-	static OGREnvelope calcEnvelopeByTileRange (int nZoom, int minx, int miny, int maxx, int maxy)
+	static OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy)
 	{
-		double size = calcResolutionByZoom(nZoom)*TILE_SIZE;
-		OGREnvelope oEnvelope;
+		double size = CalcResolutionByZoom(zoom)*TILE_SIZE;
+		OGREnvelope envp;
 			
-		oEnvelope.MinX = getULX() + minx*size;
-		oEnvelope.MaxY = getULY() - miny*size;
-		oEnvelope.MaxX = getULX() + (maxx+1)*size;
-		oEnvelope.MinY = getULY() - (maxy+1)*size;
+		envp.MinX = ULX() + minx*size;
+		envp.MaxY = ULY() - miny*size;
+		envp.MaxX = ULX() + (maxx+1)*size;
+		envp.MinY = ULY() - (maxy+1)*size;
 		
-		return oEnvelope;
+		return envp;
 	}
 
 
-	static OGREnvelope calcPixelEnvelope(OGREnvelope oImageEnvelope, int z)
+	static OGREnvelope CalcPixelEnvelope(OGREnvelope oImageEnvelope, int z)
 	{
-		OGREnvelope oPixelEnvelope;
+		OGREnvelope pixel_envp;
 		const double E=1e-4;
 	
-		oPixelEnvelope.MinX = floor(((oImageEnvelope.MinX-getULX()-E)/calcResolutionByZoom(z))+0.5);
-		oPixelEnvelope.MinY = floor(((getULY()-oImageEnvelope.MaxY-E)/calcResolutionByZoom(z))+0.5);
-		oPixelEnvelope.MaxX = oPixelEnvelope.MinX + floor((oImageEnvelope.MaxX - oImageEnvelope.MinX)/calcResolutionByZoom(z)+0.5);
-		oPixelEnvelope.MaxY = oPixelEnvelope.MinY + floor((oImageEnvelope.MaxY - oImageEnvelope.MinY)/calcResolutionByZoom(z)+0.5);
+		pixel_envp.MinX = floor(((oImageEnvelope.MinX-ULX()-E)/CalcResolutionByZoom(z))+0.5);
+		pixel_envp.MinY = floor(((ULY()-oImageEnvelope.MaxY-E)/CalcResolutionByZoom(z))+0.5);
+		pixel_envp.MaxX = pixel_envp.MinX + floor((oImageEnvelope.MaxX - oImageEnvelope.MinX)/CalcResolutionByZoom(z)+0.5);
+		pixel_envp.MaxY = pixel_envp.MinY + floor((oImageEnvelope.MaxY - oImageEnvelope.MinY)/CalcResolutionByZoom(z)+0.5);
 		
-		return oPixelEnvelope;
+		return pixel_envp;
 	}
 
-	static void calcTileByPoint (double x, double y, int z, int &nX, int &nY)
+	static void CalcTileByPoint (double merc_x, double merc_y, int z, int &x, int &y)
 	{
 		//double E = 1e-4;
-		nX = (int)floor((x-getULX())/(TILE_SIZE*calcResolutionByZoom(z)));
-		nY = (int)floor((getULY()-y)/(TILE_SIZE*calcResolutionByZoom(z)));
+		x = (int)floor((merc_x-ULX())/(TILE_SIZE*CalcResolutionByZoom(z)));
+		y = (int)floor((ULY()-merc_y)/(TILE_SIZE*CalcResolutionByZoom(z)));
 	}
 
-	static void calcTileRange (OGREnvelope oEnvelope, int z, int &minX, int &minY, int &maxX, int &maxY)
+	static void CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y)
 	{
 		double E = 1e-6;
-		calcTileByPoint(oEnvelope.MinX+E,oEnvelope.MaxY-E,z,minX,minY);
-		calcTileByPoint(oEnvelope.MaxX-E,oEnvelope.MinY+E,z,maxX,maxY);
+		CalcTileByPoint(envp.MinX+E,envp.MaxY-E,z,min_x,min_y);
+		CalcTileByPoint(envp.MaxX-E,envp.MinY+E,z,max_x,max_y);
 	}
 		
 
 	//	Converts from longitude to x coordinate 
-	static double mercX(double lon, MercatorProjType mercType)
+	static double MercX(double lon, MercatorProjType merc_type)
 	{
-		return 6378137.0 * degToRad(lon);
+		return 6378137.0 * DegToRad(lon);
 	}
 
 
 	//	Converts from x coordinate to longitude 
-	static double mercToLong(double mercX, MercatorProjType mercType)
+	static double MecrToLong(double MercX, MercatorProjType merc_type)
 	{
-		return radToDeg(mercX / 6378137.0);
+		return RadToDeg(MercX / 6378137.0);
 	}
 
 	//	Converts from latitude to y coordinate 
-	static  double mercY(double lat, MercatorProjType mercType)
+	static  double MercY(double lat, MercatorProjType merc_type)
 	{
-		if (mercType == WORLD_MERCATOR)
+		if (merc_type == WORLD_MERCATOR)
 		{
 			if (lat > 89.5)		lat = 89.5;
 			if (lat < -89.5)	lat = -89.5;
 			double r_major	= 6378137.000;
 			double r_minor	= 6356752.3142;
-			double PI		= 3.14159265358979;
+			double PI		= 3.141512865358979;
 		
 			double temp = r_minor / r_major;
 			double es = 1.0 - (temp * temp);
 			double eccent = sqrt(es);
-			double phi = degToRad(lat);
+			double phi = DegToRad(lat);
 			double sinphi = sin(phi);
 			double con = eccent * sinphi;
 			double com = .5 * eccent;
@@ -189,23 +188,23 @@ public:
 		}
 		else
 		{
-			double rad = degToRad(lat);
+			double rad = DegToRad(lat);
 			return  0.5*6378137*log((1.0 + sin(rad))/(1.0 - sin(rad)));
 		}
 	}
 
 	//	Converts from y coordinate to latitude 
-	static  double mercToLat (double mercY, MercatorProjType mercType)
+	static  double MercToLat (double MercY, MercatorProjType merc_type)
 	{
 		double r_major	= 6378137.000;
 		double r_minor	= 6356752.3142;
 
-		if (mercType == WORLD_MERCATOR)
+		if (merc_type == WORLD_MERCATOR)
 		{
 			double temp = r_minor / r_major;
 			double es = 1.0 - (temp * temp);
 			double eccent = sqrt(es);
-			double ts = exp(-mercY/r_major);
+			double ts = exp(-MercY/r_major);
 			double HALFPI = 1.5707963267948966;
 
 			double eccnth, Phi, con, dphi;
@@ -224,30 +223,32 @@ public:
 				Phi += dphi;
 			}
 
-			return radToDeg(Phi);
+			return RadToDeg(Phi);
 		}
 		else
 		{
-			return radToDeg (1.5707963267948966 - (2.0 * atan(exp((-1.0 * mercY) / 6378137.0))));
+			return RadToDeg (1.5707963267948966 - (2.0 * atan(exp((-1.0 * MercY) / 6378137.0))));
 		}
 	}
 
-	static double degToRad(double ang)
+	static double DegToRad(double ang)
 	{
-		return ang * (3.14159265358979/180.0);
+		return ang * (3.141512865358979/180.0);
 	}
 
-	static double radToDeg(double rad)
+	static double RadToDeg(double rad)
 	{ 
-		return (rad/3.14159265358979) * 180.0;
+		return (rad/3.141512865358979) * 180.0;
 	}
 };
 //const double MercatorTileGrid::E = 1e-4;
 
 typedef enum { 
-	JPEG_TILE		=0,
-	PNG_TILE		=1,
-	TIFF_TILE		=4
+  NDEF_TILE_TYPE=-1,
+	JPEG_TILE=0,
+	PNG_TILE=1,
+	TIFF_TILE=4,
+  JP2_TILE=8
 } TileType;
 
 
@@ -255,9 +256,9 @@ class TileName
 {
 public:
 
-	static string tileExtension(TileType tileType)
+	static string TileExtension(TileType tile_type)
 	{
-		switch (tileType)
+		switch (tile_type)
 		{
 			case JPEG_TILE:
 				return "jpg";
@@ -265,6 +266,8 @@ public:
 				return "png";
 			case TIFF_TILE:
 				return "tif";
+      case JP2_TILE:
+        return "jp2";
 		}
 		return "";
 	}
@@ -272,28 +275,28 @@ public:
 ////////////////////////////////////////////////////////////////////////////////////////////
 ///Эти методы нужно реализовать в производном классе (см. KosmosnimkiTileName)
 ////////////////////////////////////////////////////////////////////////////////////////////
-	virtual	string		getTileName				(int nZoom, int nX, int nY) = 0;
-	virtual	BOOL		extractXYZFromTileName	(string strTileName, int &z, int &x, int &y) = 0;
-	virtual	BOOL		createFolder			(int nZoom, int nX, int nY) = 0;
+	virtual	string		GetTileName				(int zoom, int x, int y) = 0;
+	virtual	BOOL		ExtractXYZFromTileName	(string tile_name, int &z, int &x, int &y) = 0;
+	virtual	BOOL		CreateFolder			(int zoom, int x, int y) = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-	string getFullTileName (int nZoom, int nX, int nY)
+	string GetFullTileName (int zoom, int nX, int nY)
 	{
-		return baseFolder + "/" + getTileName(nZoom,nX,nY);
+		return base_folder_ + "/" + GetTileName(zoom,nX,nY);
 	}
 
-	string getBaseFolder ()
+	string GetBaseFolder ()
 	{
-		return baseFolder;
+		return base_folder_;
 	}
 	
 	
 	
 
 public:
-	string		baseFolder;
-	TileType	tileType;
-	//string	tileExtension;
+	string		base_folder_;
+	TileType	tile_type_;
+	//string	TileExtension;
 
 protected:
 	char buf[1000];
@@ -303,26 +306,26 @@ protected:
 class StandardTileName : public TileName
 {
 public:
-	StandardTileName (string baseFolder, string strTemplate);
-	static BOOL	validateTemplate	(string strTemplate);
-	string	getTileName (int nZoom, int nX, int nY);
+	StandardTileName (string base_folder, string str_template);
+	static BOOL	ValidateTemplate	(string str_template);
+	string	GetTileName (int zoom, int nX, int nY);
 
-	BOOL extractXYZFromTileName (string strTileName, int &z, int &x, int &y);
-	BOOL createFolder (int nZoom, int nX, int nY);
+	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	BOOL CreateFolder (int zoom, int nX, int nY);
 protected:
-	string	strTemplate;
-	regex	rxTemplate;
-	int		zxyPos[3];
+	string	str_template_;
+	regex	rx_template_;
+	int		zxy_pos_[3];
 };
 
 
 class KosmosnimkiTileName : public TileName
 {
 public:
-	KosmosnimkiTileName (string strTilesFolder, TileType tileType = JPEG_TILE);
-	string	getTileName (int nZoom, int nX, int nY);
-	BOOL extractXYZFromTileName (string strTileName, int &z, int &x, int &y);
-	BOOL createFolder (int nZoom, int nX, int nY);
+	KosmosnimkiTileName (string tiles_folder, TileType tile_type = JPEG_TILE);
+	string	GetTileName (int zoom, int x, int y);
+	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	BOOL CreateFolder (int zoom, int x, int y);
 };
 
 

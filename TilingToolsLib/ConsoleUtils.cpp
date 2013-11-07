@@ -4,41 +4,49 @@
 #include "FileSystemFuncs.h"
 
 
-namespace GMX
+namespace gmx
 {
 
 
-void	SetEnvironmentVariables (string gdalPath)
+void	SetEnvironmentVariables (string gdal_path)
 {
-	wstring strPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
-	wstring gdalPathW;
-	utf8toWStr(gdalPathW,GetAbsolutePath(gdalPath,"bins"));
-	_wputenv((L"PATH=" + gdalPathW + L";" + strPATH).c_str());
+	wstring env_PATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
+
+	wstring gdal_path_w, gdal_data_path_w, gdal_driver_path_w;
+	utf8toWStr(gdal_path_w,GetAbsolutePath(gdal_path,"bins"));
+  utf8toWStr(gdal_data_path_w,GetAbsolutePath(gdal_path,"bins\\gdal-data"));
+  gdal_driver_path_w=L"";
+
+	_wputenv((L"PATH=" + gdal_path_w + L";" + env_PATH).c_str());
+  _wputenv((L"GDAL_DATA=" + gdal_data_path_w).c_str());
+  _wputenv((L"GDAL_DRIVER_PATH=" + gdal_driver_path_w).c_str());
+
+
 }
 
 
 
 BOOL LoadGDAL (int argc, string argv[])
 {
-	string gdalPath	=  ReadConsoleParameter("-gdal",argc,argv);
-	if (gdalPath == "")
+	string gdal_path	=  ReadConsoleParameter("-gdal",argc,argv);
+	if (gdal_path == "")
 	{
-		wchar_t exeFileNameW[_MAX_PATH + 1];
-		GetModuleFileName(NULL,exeFileNameW,_MAX_PATH); 
-		string exeFileName;
-		wstrToUtf8(exeFileName,exeFileNameW);
-		gdalPath = ReadGDALPathFromConfigFile(GetPath(exeFileName));
+		wchar_t exe_filename_w[_MAX_PATH + 1];
+		GetModuleFileName(NULL,exe_filename_w,_MAX_PATH); 
+		string exe_file_name;
+		wstrToUtf8(exe_file_name,exe_filename_w);
+		gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_file_name));
 	}
 
-	if (gdalPath=="")
+	if (gdal_path=="")
 	{
 		cout<<"ERROR: GDAL path isn't specified"<<endl;
 		return FALSE;
 	}
 	
-	SetEnvironmentVariables(gdalPath);
+	SetEnvironmentVariables(gdal_path);
 
-	if (!LoadGDALDLLs(gdalPath))
+	if (!LoadGDALDLLs(gdal_path))
 	{
 		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified"<<endl;
 		return FALSE;
@@ -47,18 +55,18 @@ BOOL LoadGDAL (int argc, string argv[])
 	return TRUE;
 }
 
-BOOL LoadGDALDLLs (string gdalPath)
+BOOL LoadGDALDLLs (string gdal_path)
 {
-	wstring gdalDllW;
-	utf8toWStr(gdalDllW, GetAbsolutePath(gdalPath,"bins\\gdal18.dll"));
-	HMODULE b = LoadLibrary(gdalDllW.c_str());
+	wstring gdal_dll_w;
+	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal18.dll"));
+	HMODULE b = LoadLibrary(gdal_dll_w.c_str());
 	return (b != NULL);
 }
 
 ///*
-string ReadGDALPathFromConfigFile (string configFilePath)
+string ReadGDALPathFromConfigFile (string config_file_path)
 {
-	string	configFile = (configFilePath=="") ? "TilingTools.config" : GetAbsolutePath (configFilePath,"TilingTools.config");
+	string	configFile = (config_file_path=="") ? "TilingTools.config" : GetAbsolutePath (config_file_path,"TilingTools.config");
 	
 	FILE *fp = fopen(configFile.c_str(),"r");
 	if (!fp) return "";
@@ -69,28 +77,28 @@ string ReadGDALPathFromConfigFile (string configFilePath)
 	fclose(fp);
 	s+=' ';
 
-	std::tr1::regex rxTemplate;
-	rxTemplate = "^GdalPath=(.*[^\\s$])";
+	std::tr1::regex rx_template;
+	rx_template = "^GdalPath=(.*[^\\s$])";
 	
 	match_results<string::const_iterator> mr;
-	regex_search(s, mr, rxTemplate);
+	regex_search(s, mr, rx_template);
 	if (mr.size()<2)
 	{
 		cout<<"ERROR: can't read GdalPath from file: "<<configFile<<endl;
 		return "";
 	}
 
-	return GetAbsolutePath (configFilePath,mr[1]);
+	return GetAbsolutePath (config_file_path,mr[1]);
 }
 //*/
 
 /*
-string ReadGDALPathFromConfigFile (string configFilePath)
+string ReadGDALPathFromConfigFile (string config_file_path)
 {
 	string	strGdalTag = "<gdalpath>";
 	string	strGdalCloseTag = "</gdalpath>";
 
-	string	configFile = (configFilePath=="") ? "TilingTools.config" : GetAbsolutePath (configFilePath,"TilingTools.config");
+	string	configFile = (config_file_path=="") ? "TilingTools.config" : GetAbsolutePath (config_file_path,"TilingTools.config");
 	wstring configFileW;
 	utf8toWStr(configFileW,configFile);
 	
@@ -114,22 +122,22 @@ string ReadGDALPathFromConfigFile (string configFilePath)
 	while (strGdalPath[strGdalPath.length()-1]==L' ' || strGdalPath[strGdalPath.length()-1]==L'\n')
 		strGdalPath = strGdalPath.substr(0,strGdalPath.length()-1);
 	
-	return GetAbsolutePath (configFilePath,strGdalPath);
+	return GetAbsolutePath (config_file_path,strGdalPath);
 }
 */
 
-string  ReadConsoleParameter (string strPattern, int argc, string argv[], BOOL bFlagParam)
+string  ReadConsoleParameter (string str_pattern, int argc, string argv[], BOOL is_flag_param)
 {
 	for (int i=0;i<argc;i++)
 	{
 		string strArg(argv[i]);
 		strArg = MakeLower(strArg);
-		strPattern = MakeLower(strPattern);
-		//cout<<strPattern<<" "<<strArg<<endl;
+		str_pattern = MakeLower(str_pattern);
+		//cout<<str_pattern<<" "<<strArg<<endl;
 		
-		if (strPattern==strArg)
+		if (str_pattern==strArg)
 		{
-			if (bFlagParam) return strPattern;
+			if (is_flag_param) return str_pattern;
 			if (i!=argc-1) 
 			{
 				string str(argv[i+1]);

@@ -1,20 +1,19 @@
 ﻿#include "StringFuncs.h"
 
 
-namespace GMX
+namespace gmx
 {
 
-//ToDo
 string MakeLower(string str)
 {
-	string strLower = str;
+	string str_lower = str;
 	for (int i=0;i<str.length();i++)
-		strLower[i]=tolower(str[i]);
-	return strLower;
+		str_lower[i]=tolower(str[i]);
+	return str_lower;
 
 }
 
-int				Ustrlen	(const unsigned char *str)
+int	StrLen	(const unsigned char *str)
 {
 	if (str == 0) return -1;
 	int len = 0;
@@ -41,32 +40,31 @@ string ConvertIntToString(int number)
 	return buf;
 }
 
-BOOL	ConvertStringToRGB (string strColor, BYTE rgb[3])
+BOOL	ConvertStringToRGB (string str_color, BYTE rgb[3])
 {
-	strColor = MakeLower(strColor);
-	regex rgbDecPattern("([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");
-	regex rgbHexPattern("[0-9,a,b,c,d,e,f]{6}");
+	str_color = MakeLower(str_color);
+	regex rgb_dec_pattern("([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");
+	regex rgb_hex_pattern("[0-9,a,b,c,d,e,f]{6}");
 	
-	if (regex_match(strColor,rgbDecPattern))
+	if (regex_match(str_color,rgb_dec_pattern))
 	{
 		match_results<string::const_iterator> mr;
-		regex_search(strColor, mr, rgbDecPattern);
+		regex_search(str_color, mr, rgb_dec_pattern);
 
 		for (int i=1;i<4;i++)
 			rgb[i-1] = (int)atof(mr[i].str().c_str());
 		return TRUE;
 	}
-	else if (regex_match(strColor,rgbHexPattern))
+	else if (regex_match(str_color,rgb_hex_pattern))
 	{
 		char * p;
-		unsigned int nColor =  strtol( strColor.c_str(), & p, 16 );
+		unsigned int nColor =  strtol( str_color.c_str(), & p, 16 );
 		rgb[0] = nColor>>16;
 		rgb[1] = (nColor>>8)%256;
 		rgb[2] = nColor%256;
 		return TRUE;
 	}
 	return FALSE;
-
 }
 
 	

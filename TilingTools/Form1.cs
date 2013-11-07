@@ -98,9 +98,9 @@ namespace TilingTools
         {
             //MessageBox.Show("DONE!");
             //bWarpedDone = true;
-            textBox23.Invoke(new MethodInvoker(delegate
+            textBox32.Invoke(new MethodInvoker(delegate
             {
-                textBox23.Text="";
+                textBox32.Text="";
             }));
 
             tabControl1.Invoke(new MethodInvoker(delegate
@@ -122,28 +122,28 @@ namespace TilingTools
 
         void w_OnResponseReceived(object sender, string response)
         {
-            textBox23.Invoke(new MethodInvoker(delegate
+            textBox32.Invoke(new MethodInvoker(delegate
             {
-                textBox23.Text += response;
+                textBox32.Text += response;
             }));
         }
 
-        private bool readZoomLevelsFromText (string strText, out int minZoom, out int maxZoom)
+        private bool readZoomLevelsFromText (string strText, out int min_zoom, out int max_zoom)
         {
-            minZoom = 0; maxZoom = 0;
+            min_zoom = 0; max_zoom = 0;
             try
             {
 
                 if (strText.LastIndexOf('-') < 0)
                 {
-                    maxZoom = int.Parse(strText);
+                    max_zoom = int.Parse(strText);
                     return true;
                 }
                 else
                 {
                     string[] strZooms = strText.Split('-');
-                    minZoom = (strZooms[0] == "") ? 1 : int.Parse(strZooms[0]);
-                    maxZoom = (strZooms[1] == "") ? 0 : int.Parse(strZooms[1]);
+                    min_zoom = (strZooms[0] == "") ? 1 : int.Parse(strZooms[0]);
+                    max_zoom = (strZooms[1] == "") ? 0 : int.Parse(strZooms[1]);
                 }
             }
             catch (System.FormatException e)
@@ -164,7 +164,7 @@ namespace TilingTools
         }
 
         /*
-        public bool makeWarpingAndTiling(bool useFolder, bool useContainer, string input, string type, string vectorFile, string outputFolder, int minZoom, int maxZoom)
+        public bool makeWarpingAndTiling(bool useFolder, bool useContainer, string input, string type, string vector_file, string outputFolder, int min_zoom, int max_zoom)
         {
                 string[]    inputImages;
                 string[]    inputVectors;
@@ -189,7 +189,7 @@ namespace TilingTools
                     inputImages = new string[1];
                     inputVectors = new string[1];
                     inputImages[0] = input;
-                    inputVectors[0] = (vectorFile=="") ? findVectorFileForImage(inputImages[0]) : vectorFile;
+                    inputVectors[0] = (vector_file=="") ? findVectorFileForImage(inputImages[0]) : vector_file;
                 }
 
                 string[] exeFile = new string[2 * inputImages.Length];
@@ -200,13 +200,13 @@ namespace TilingTools
                 {
                     exeFile[2*i] = "Warp2Merc";
                     args[2*i] = "-image " + addDoubleQuotes(inputImages[i]);
-                    if (maxZoom > 0) args[2*i] += " -zoom " + maxZoom.ToString();
+                    if (max_zoom > 0) args[2*i] += " -zoom " + max_zoom.ToString();
                     warpedImages[i] = Path.Combine(Path.GetDirectoryName(inputImages[i]), Path.GetFileNameWithoutExtension(inputImages[i]) + "_merc.img");
 
                     exeFile[2*i+1] = "ImageTiling";
                     args[2*i+1] = "-file " +addDoubleQuotes(warpedImages[i]);
-                    if (maxZoom > 0 && minZoom > 0) args[2 * i + 1] += " -zooms " + (maxZoom - minZoom + 1).ToString();
-                    else if ((maxZoom == 0) && (minZoom > 0)) args[2 * i + 1] += " -minZoom " + minZoom.ToString();
+                    if (max_zoom > 0 && min_zoom > 0) args[2 * i + 1] += " -zooms " + (max_zoom - min_zoom + 1).ToString();
+                    else if ((max_zoom == 0) && (min_zoom > 0)) args[2 * i + 1] += " -min_zoom " + min_zoom.ToString();
                    
                     //if (outputFolder != "") args[2*i+1] += " -tiles " + addDoubleQuotes(outputFolder);
                     if (useContainer) args[2*i + 1] += " -container ";
@@ -231,14 +231,14 @@ namespace TilingTools
         }
         */
 
-        public bool makeImageTiling(bool bFolder, bool useContainer, string strInput, bool bBundle, string strType, string strVectorBorder, string strOutputFolder, int minZoom, int maxZoom)
+        public bool makeImageTiling(bool bFolder, bool useContainer, string strInput, bool bBundle, string strType, string strVectorBorder, string strOutputFolder, int min_zoom, int max_zoom)
         {
             W = null;
             string strTiling = " -file " + ((bFolder) ? addDoubleQuotes(strInput+"\\*."+strType) : addDoubleQuotes(strInput));
             if (bBundle) strTiling += " -mosaic ";
             //if (strType != "") strTiling += " -type " + strType;
-            if (maxZoom > 0) strTiling += " -zoom " + (maxZoom).ToString();
-            else if (minZoom > 0) strTiling += " -minZoom " + minZoom.ToString();
+            if (max_zoom > 0) strTiling += " -zoom " + (max_zoom).ToString();
+            else if (min_zoom > 0) strTiling += " -min_zoom " + min_zoom.ToString();
 
 
             if (useContainer) strTiling += " -container ";
@@ -261,12 +261,12 @@ namespace TilingTools
      
         private void button19_Click(object sender, EventArgs e)
         {
-            int         minZoom = 0, maxZoom = 0;
+            int         min_zoom = 0, max_zoom = 0;
             string      input = textBox6.Text;
             bool        useFolder = radioButton2.Checked;
             bool        useBundle = checkBox1.Checked;
             string      type = comboBox3.Text;
-            string      vectorFile = textBox3.Text;
+            string      vector_file = textBox3.Text;
             string      outputFolder = textBox4.Text;
             string      strZooms = textBox7.Text;
             bool        useContainer = radioButton3.Checked;  
@@ -279,7 +279,7 @@ namespace TilingTools
 
             if (strZooms != "")
             {
-                if (!readZoomLevelsFromText(strZooms, out minZoom, out maxZoom))
+                if (!readZoomLevelsFromText(strZooms, out min_zoom, out max_zoom))
                 {
                     MessageBox.Show("Bad zoom levels input (e.g.: 1-17 or -13)");
                     return;
@@ -287,7 +287,7 @@ namespace TilingTools
             }
 
           
-            makeImageTiling(useFolder,useContainer, input, useBundle, type, vectorFile, outputFolder,minZoom, maxZoom);
+            makeImageTiling(useFolder,useContainer, input, useBundle, type, vector_file, outputFolder,min_zoom, max_zoom);
         }
 
         private void button6_Click(object sender, EventArgs e)
@@ -352,10 +352,10 @@ namespace TilingTools
 
         private void button2_Click(object sender, EventArgs e)
         {
-            int minZoom = 0, maxZoom = 0;
+            int min_zoom = 0, max_zoom = 0;
             string inputFolder = textBox11.Text;
             string outputFolder = textBox9.Text;
-            string vectorFile = textBox12.Text;
+            string vector_file = textBox12.Text;
 
             bool remove = checkBox2.Checked;
             string type = comboBox2.Text;
@@ -373,7 +373,7 @@ namespace TilingTools
                 return;
             }
 
-            if (vectorFile == "")
+            if (vector_file == "")
             {
                 MessageBox.Show("You must specify vector border file");
                 return;
@@ -381,7 +381,7 @@ namespace TilingTools
 
             if (strZooms != "")
             {
-                if (!readZoomLevelsFromText(strZooms, out minZoom, out maxZoom))
+                if (!readZoomLevelsFromText(strZooms, out min_zoom, out max_zoom))
                 {
                     MessageBox.Show("Bad zoom levels input (e.g.: 1-17, 9-13)");
                     return;
@@ -395,8 +395,8 @@ namespace TilingTools
 
 
             string strCoping = "-from " + addDoubleQuotes(inputFolder) + " -to " +addDoubleQuotes(outputFolder);
-            strCoping+= " -zooms " + minZoom.ToString() + "-" + maxZoom.ToString();
-            strCoping += " -border " + addDoubleQuotes(vectorFile);
+            strCoping+= " -zooms " + min_zoom.ToString() + "-" + max_zoom.ToString();
+            strCoping += " -border " + addDoubleQuotes(vector_file);
             strCoping += " -type " + type;
             if (remove) strCoping += " -delete";
             string[] exeFile = { "CopyTiles" };
@@ -449,7 +449,7 @@ namespace TilingTools
             int zoom = 0;
             string inputFolder = textBox20.Text;
             string outputFile = textBox19.Text;
-            string vectorFile = textBox15.Text;
+            string vector_file = textBox15.Text;
             string type = comboBox4.Text;
             string strZoom = comboBox5.Text;
 
@@ -465,7 +465,7 @@ namespace TilingTools
                 return;
             }
 
-            if (vectorFile == "")
+            if (vector_file == "")
             {
                 MessageBox.Show("You must specify vector border file");
                 return;
@@ -483,7 +483,7 @@ namespace TilingTools
             ///*
             string strCombine = "-tiles " + addDoubleQuotes(inputFolder) + " -file " + addDoubleQuotes(outputFile);
             strCombine += " -zoom " + zoom.ToString();
-            strCombine += " -border " + addDoubleQuotes(vectorFile);
+            strCombine += " -border " + addDoubleQuotes(vector_file);
             strCombine += " -type " + type;
             strCombine += " -kml -tab -map -xml";
             string[] exeFile = { "ImageBuilder" };

@@ -40,6 +40,10 @@ using namespace std;
 #include "../TilingToolsLib/FileSystemFuncs.h"
 #include "../TilingToolsLib/TilingFuncs.h"
 #include "../TilingToolsLib/ConsoleUtils.h"
+//#include "../openjpeg-2.0/include/openjpeg.h"
+//#include "../../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
+//#include "../gdal110/x86/include/openjpeg.h"
+
 
 
 // TODO: reference additional headers your program requires here

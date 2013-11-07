@@ -1,74 +1,74 @@
 #include "StdAfx.h"
 #include "TileName.h"
-namespace GMX
+namespace gmx
 {
 
 
-StandardTileName::StandardTileName (string baseFolder, string strTemplate)
+StandardTileName::StandardTileName (string base_folder, string str_template)
 {
-	if (!validateTemplate(strTemplate)) return;
-	if (!FileExists(baseFolder)) return;
+	if (!ValidateTemplate(str_template)) return;
+	if (!FileExists(base_folder)) return;
 
-	string strExt = strTemplate.substr(strTemplate.rfind(".")+1,strTemplate.length()-strTemplate.rfind(".")-1);
-	this->tileType =	(MakeLower(strExt)=="jpg") ? JPEG_TILE :
-						(MakeLower(strExt)=="png") ? PNG_TILE :
-						(MakeLower(strExt)=="tif") ? TIFF_TILE : JPEG_TILE;
-	this->baseFolder	= baseFolder;
-	zxyPos[0] = (zxyPos[1] = (zxyPos[2] = 0));
+	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
+	tile_type_ =	(MakeLower(tile_ext)=="jpg") ? JPEG_TILE :
+						(MakeLower(tile_ext)=="png") ? PNG_TILE :
+						(MakeLower(tile_ext)=="tif") ? TIFF_TILE : JPEG_TILE;
+	base_folder_	= base_folder;
+	zxy_pos_[0] = (zxy_pos_[1] = (zxy_pos_[2] = 0));
 
-	if (strTemplate[0] == L'/' || strTemplate[0] == L'\\') 	strTemplate = strTemplate.substr(1,strTemplate.length()-1);
-	ReplaceAll(strTemplate,"\\","/");
-	this->strTemplate = strTemplate;
+	if (str_template[0] == L'/' || str_template[0] == L'\\') 	str_template = str_template.substr(1,str_template.length()-1);
+	ReplaceAll(str_template,"\\","/");
+	str_template_ = str_template;
 		
 	//ReplaceAll(strTemplate,"\\","\\\\");
 	int n = 0;
 	int num = 2;
 	//int k;
-	while (strTemplate.find(L'{',n)!=std::string::npos)
+	while (str_template.find(L'{',n)!=std::string::npos)
 	{
-		string str = strTemplate.substr(strTemplate.find(L'{',n),strTemplate.find(L'}',n)-strTemplate.find(L'{',n)+1);
+		string str = str_template.substr(str_template.find(L'{',n),str_template.find(L'}',n)-str_template.find(L'{',n)+1);
 		if (str == "{z}")
-			zxyPos[0] = (zxyPos[0] == 0) ? num : zxyPos[0];
+			zxy_pos_[0] = (zxy_pos_[0] == 0) ? num : zxy_pos_[0];
 		else if (str == "{x}")
-			zxyPos[1] = (zxyPos[1] == 0) ? num : zxyPos[1];
+			zxy_pos_[1] = (zxy_pos_[1] == 0) ? num : zxy_pos_[1];
 		else if (str == "{y}")
-			zxyPos[2] = (zxyPos[2] == 0) ? num : zxyPos[2];
+			zxy_pos_[2] = (zxy_pos_[2] == 0) ? num : zxy_pos_[2];
 		num++;
-		n = strTemplate.find(L'}',n) + 1;
+		n = str_template.find(L'}',n) + 1;
 	}
 
-	ReplaceAll(strTemplate,"{z}","(\\d+)");
-	ReplaceAll(strTemplate,"{x}","(\\d+)");
-	ReplaceAll(strTemplate,"{y}","(\\d+)");
-	rxTemplate = ("(.*)" + strTemplate) + "(.*)";
+	ReplaceAll(str_template,"{z}","(\\d+)");
+	ReplaceAll(str_template,"{x}","(\\d+)");
+	ReplaceAll(str_template,"{y}","(\\d+)");
+	rx_template_ = ("(.*)" + str_template) + "(.*)";
 }
 
-BOOL	StandardTileName::validateTemplate	(string strTemplate)
+BOOL	StandardTileName::ValidateTemplate	(string str_template)
 {
-	if (strTemplate.find("{z}",0)==string::npos)
+	if (str_template.find("{z}",0)==string::npos)
 	{
 		cout<<"ERROR: bad tile name template: missing {z}"<<endl;
 		return FALSE;
 	}
-	if (strTemplate.find("{x}",0)==string::npos)
+	if (str_template.find("{x}",0)==string::npos)
 	{
 		cout<<"ERROR: bad tile name template: missing {x}"<<endl;
 		return FALSE;
 	}
-	if (strTemplate.find("{y}",0)==string::npos) 
+	if (str_template.find("{y}",0)==string::npos) 
 	{
 		cout<<"ERROR: bad tile name template: missing {y}"<<endl;
 		return FALSE;
 	}
 
-	if (strTemplate.find(".",0)==string::npos) 
+	if (str_template.find(".",0)==string::npos) 
 	{
 		cout<<"ERROR: bad tile name template: missing extension"<<endl;
 		return FALSE;
 	}
 		
-	string strExt = strTemplate.substr(strTemplate.rfind(".")+1,strTemplate.length()-strTemplate.rfind(".")-1);
-	if ( (MakeLower(strExt)!="jpg")&& (MakeLower(strExt)=="png") && (MakeLower(strExt)=="tif") )
+	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
+	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
 	{
 		cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
 		return FALSE;
@@ -76,78 +76,78 @@ BOOL	StandardTileName::validateTemplate	(string strTemplate)
 	return TRUE;
 }
 
-string	StandardTileName::getTileName (int nZoom, int nX, int nY)
+string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 {
-	string tileName = strTemplate;
-	ReplaceAll(tileName,"{z}",ConvertIntToString(nZoom));
-	ReplaceAll(tileName,"{x}",ConvertIntToString(nX));
-	ReplaceAll(tileName,"{y}",ConvertIntToString(nY));
-	return tileName;
+	string tile_name = str_template_;
+	ReplaceAll(tile_name,"{z}",ConvertIntToString(zoom));
+	ReplaceAll(tile_name,"{x}",ConvertIntToString(nX));
+	ReplaceAll(tile_name,"{y}",ConvertIntToString(nY));
+	return tile_name;
 }
 
-BOOL StandardTileName::extractXYZFromTileName (string strTileName, int &z, int &x, int &y)
+BOOL StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
 {
-	if (!regex_match(strTileName,rxTemplate)) return FALSE;
+	if (!regex_match(tile_name,rx_template_)) return FALSE;
 	match_results<string::const_iterator> mr;
-	regex_search(strTileName, mr, rxTemplate);
-	if ((mr.size()<=zxyPos[0])||(mr.size()<=zxyPos[1])||(mr.size()<=zxyPos[2])) return FALSE;
-	z = (int)atof(mr[zxyPos[0]].str().c_str());
-	x = (int)atof(mr[zxyPos[1]].str().c_str());
-	y = (int)atof(mr[zxyPos[2]].str().c_str());
+	regex_search(tile_name, mr, rx_template_);
+	if ((mr.size()<=zxy_pos_[0])||(mr.size()<=zxy_pos_[1])||(mr.size()<=zxy_pos_[2])) return FALSE;
+	z = (int)atof(mr[zxy_pos_[0]].str().c_str());
+	x = (int)atof(mr[zxy_pos_[1]].str().c_str());
+	y = (int)atof(mr[zxy_pos_[2]].str().c_str());
 		
 	return TRUE;
 }
 
 
-BOOL StandardTileName::createFolder (int nZoom, int nX, int nY)
+BOOL StandardTileName::CreateFolder (int zoom, int x, int y)
 {
-	string strTileName = getTileName(nZoom,nX,nY);
+	string tile_name = GetTileName(zoom,x,y);
 	int n = 0;
-	while (strTileName.find("/",n)!=std::string::npos)
+	while (tile_name.find("/",n)!=std::string::npos)
 	{
-		if (!FileExists(GetAbsolutePath(baseFolder,strTileName.substr(0,strTileName.find("/",n)))))
-			if (!CreateDirectory(GetAbsolutePath(baseFolder,strTileName.substr(0,strTileName.find("/",n))).c_str())) return FALSE;	
-		n = (strTileName.find("/",n)) + 1;
+		if (!FileExists(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
+			if (!CreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+		n = (tile_name.find("/",n)) + 1;
 	}
 	return TRUE;
 }
 
 
-KosmosnimkiTileName::KosmosnimkiTileName (string strTilesFolder, TileType tileType)
+KosmosnimkiTileName::KosmosnimkiTileName (string tiles_folder, TileType tile_type)
 {
-	this->baseFolder	= strTilesFolder;
-	this->tileType		= tileType;
+	base_folder_	= tiles_folder;
+	tile_type_		= tile_type;
 }
 
 
 	
-string	KosmosnimkiTileName::getTileName (int nZoom, int nX, int nY)
+string	KosmosnimkiTileName::GetTileName (int zoom, int x, int y)
 {
-	if (nZoom>0)
+	if (zoom>0)
 	{
-		nX = nX-(1<<(nZoom-1));
-		nY = (1<<(nZoom-1))-nY-1;
+		x = x-(1<<(zoom-1));
+		y = (1<<(zoom-1))-y-1;
 	}
-	sprintf(buf,"%d\\%d\\%d_%d_%d.%s",nZoom,nX,nZoom,nX,nY,this->tileExtension(this->tileType).c_str());
+	sprintf(buf,"%d\\%d\\%d_%d_%d.%s",zoom,x,zoom,x,y,this->TileExtension(tile_type_).c_str());
 	return buf;
 }
 
-BOOL KosmosnimkiTileName::extractXYZFromTileName (string strTileName, int &z, int &x, int &y)
+BOOL KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
 {
-	strTileName = RemovePath(strTileName);
-	strTileName = RemoveExtension(strTileName);
+	tile_name = RemovePath(tile_name);
+	tile_name = RemoveExtension(tile_name);
 	int k;
 
 	regex pattern("[0-9]{1,2}_-{0,1}[0-9]{1,7}_-{0,1}[0-9]{1,7}");
 	//wregex pattern("(\d+)_-?(\d+)_-{0,1}[0-9]{1,7}");
 
-	if (!regex_match(strTileName,pattern)) return FALSE;
+	if (!regex_match(tile_name,pattern)) return FALSE;
 
-	z = (int)atof(strTileName.substr(0,strTileName.find('_')).c_str());
-	strTileName = strTileName.substr(strTileName.find('_')+1);
+	z = (int)atof(tile_name.substr(0,tile_name.find('_')).c_str());
+	tile_name = tile_name.substr(tile_name.find('_')+1);
 		
-	x = (int)atof(strTileName.substr(0,strTileName.find('_')).c_str());
-	y = (int)atof(strTileName.substr(strTileName.find('_')+1).c_str());
+	x = (int)atof(tile_name.substr(0,tile_name.find('_')).c_str());
+	y = (int)atof(tile_name.substr(tile_name.find('_')+1).c_str());
 
 	if (z>0)
 	{
@@ -159,22 +159,22 @@ BOOL KosmosnimkiTileName::extractXYZFromTileName (string strTileName, int &z, in
 }
 
 
-BOOL KosmosnimkiTileName::createFolder (int nZoom, int nX, int nY)
+BOOL KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
 {
-	if (nZoom>0)
+	if (zoom>0)
 	{
-		nX = nX-(1<<(nZoom-1));
-		nY = (1<<(nZoom-1))-nY-1;
+		x = x-(1<<(zoom-1));
+		y = (1<<(zoom-1))-y-1;
 	}
 
-	sprintf(buf,"%d",nZoom);
-	string str = GetAbsolutePath(this->baseFolder, buf);
+	sprintf(buf,"%d",zoom);
+	string str = GetAbsolutePath(base_folder_, buf);
 	if (!FileExists(str))
 	{
 		if (!CreateDirectory(str.c_str())) return FALSE;	
 	}
 
-	sprintf(buf,"%d",nX);
+	sprintf(buf,"%d",x);
 	str = GetAbsolutePath(str,buf);
 	if (!FileExists(str))
 	{

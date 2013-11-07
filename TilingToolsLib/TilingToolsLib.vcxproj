@@ -50,12 +50,16 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../gdal/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../gdal/include;../../openjpeg-2.0.0/src/lib/openjp2/;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -65,7 +69,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../gdal/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../openjpeg-2.0.0/src/lib/openjp2;../gdal/include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -90,26 +94,28 @@
   <ItemGroup>
     <ClInclude Include="ConsoleUtils.h" />
     <ClInclude Include="FileSystemFuncs.h" />
+    <ClInclude Include="histogram.h" />
     <ClInclude Include="RasterBuffer.h" />
     <ClInclude Include="RasterFile.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StringFuncs.h" />
-    <ClInclude Include="TileBuffer.h" />
+    <ClInclude Include="TileCache.h" />
     <ClInclude Include="TileName.h" />
-    <ClInclude Include="TilePyramid.h" />
+    <ClInclude Include="TileContainer.h" />
     <ClInclude Include="TilingFuncs.h" />
     <ClInclude Include="VectorBorder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleUtils.cpp" />
     <ClCompile Include="FileSystemFuncs.cpp" />
+    <ClCompile Include="histogram.cpp" />
     <ClCompile Include="RasterBuffer.cpp" />
     <ClCompile Include="RasterFile.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="StringFuncs.cpp" />
-    <ClCompile Include="TileBuffer.cpp" />
+    <ClCompile Include="TileCache.cpp" />
     <ClCompile Include="TileName.cpp" />
-    <ClCompile Include="TilePyramid.cpp" />
+    <ClCompile Include="TileContainer.cpp" />
     <ClCompile Include="TilingFuncs.cpp" />
     <ClCompile Include="VectorBorder.cpp" />
   </ItemGroup>

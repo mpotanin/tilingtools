@@ -2,9 +2,10 @@
 #ifndef IMAGE_BUFFER_H
 #define IMAGE_BUFFER_H
 #include "stdafx.h"
+#include "histogram.h"
 
 
-namespace GMX
+namespace gmx
 {
 
 
@@ -14,93 +15,92 @@ public:
 	RasterBuffer(void);
 	~RasterBuffer(void);
 
-	void	clearBuffer();
+	void	ClearBuffer();
 
-	BOOL			createBuffer	(int			nBands,
-									 int			nXSize,
-									 int			nYSize,
-									 void			*pDataSrc				= NULL,
-									 GDALDataType	dataType				= GDT_Byte,
-									 int			*pNoDataValue			= NULL,
-									 BOOL			bAlphaBand				= FALSE,
-									 GDALColorTable *pTable					= NULL
+	BOOL			CreateBuffer	(int			num_bands,
+									 int			x_size,
+									 int			y_size,
+									 void			*p_data_src				= NULL,
+									 GDALDataType	data_type				= GDT_Byte,
+									 int			*p_nodata_value			= NULL,
+									 BOOL			is_alpha_band			= FALSE,
+									 GDALColorTable *p_color_table			= NULL
 									 );
 
-	BOOL			createBuffer				(RasterBuffer *pSrcBuffer);
-	BOOL			createBufferFromJpegData	(void *pDataSrc, int size);
-	BOOL			createBufferFromPngData		(void *pDataSrc, int size);
-	BOOL			createBufferFromTiffData	(void *pDataSrc, int size);
+	BOOL			CreateBuffer				(RasterBuffer *p_src_buffer);
+	BOOL			CreateBufferFromJpegData	(void *p_data_src, int size);
+	BOOL			CreateBufferFromPngData		(void *p_data_src, int size);
+	BOOL			createFromJP2Data			(void *p_data_src, int size);
+	BOOL			CreateBufferFromTiffData	(void *p_data_src, int size);
 
-	BOOL			setNoDataValue(int noDataValue = 0);
-	int*			getNoDataValue		();
+	BOOL			SaveToPngData	(void* &p_data_dst, int &size);
+	BOOL			SaveToPng24Data	(void* &p_data_dst, int &size);
+	BOOL			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
+	BOOL			SaveToTiffData	(void* &p_data_dst, int &size);
+	BOOL			SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate = 0);
 
+	BOOL			IsAnyNoDataPixel			();
 
-	BOOL			SaveToPngData	(void* &pDataDst, int &size);
-	BOOL			SaveToPng24Data	(void* &pDataDst, int &size);
-	BOOL			SaveToJpegData	(int quality, void* &pDataDst, int &size);
-	BOOL			SaveToTiffData	(void* &pDataDst, int &size);
-
-	BOOL			isAnyNoDataPixel			();
-
-	BOOL			SaveBufferToFile		(string fileName, int quality = 80);
-	BOOL			SaveBufferToFileAndData	(string fileName, void* &pDataDest, int &size, int quality = 80);
+	BOOL			SaveBufferToFile		(string filename, int quality = 0);
+	BOOL			SaveBufferToFileAndData	(string filename, void* &p_data_dst, int &size, int quality = 0);
 
 	//BOOL			ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight);
 	//BOOL			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
 
 	//BOOL			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
-	BOOL			initByRGBColor	 (BYTE rgb[3]);
-	BOOL			initByValue(int value = 0);	
-	BOOL			initByNoDataValue(int noDataValue = 0);
+	BOOL			InitByRGBColor	 (BYTE rgb[3]);
+	BOOL			InitByValue(int value = 0);	
+	BOOL			InitByNoDataValue(int nodata_value = 0);
 
-	void*			getDataBlock	(	int left, int top, int w, int h, BOOL stretchTo8Bit = FALSE, 
-										 double *minValues = 0, double *maxValues = 0);
-	BOOL			setDataBlock	(int left, int top, int w, int h, void *pBlockData, int bands = 0);
-	void*			getDataZoomedOut	();	
-	BOOL			convertFromIndexToRGB ();
-	BOOL			convertFromPanToRGB();
-	BOOL			createAlphaBandByColor(BYTE	*pRGB);
-	BOOL			isAlphaBand();
+	void*			GetPixelDataBlock	(	int left, int top, int w, int h, BOOL stretch_to_8bit = FALSE, 
+										 double *p_min_values = 0, double *p_max_values = 0);
+	BOOL			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int bands = 0);
+	void*			GetDataZoomedOut	();	
+	BOOL			ConvertFromIndexToRGB ();
+	BOOL			ConvertFromPanToRGB();
+	BOOL			CreateAlphaBandByColor(BYTE	*p_rgb);
+	BOOL			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
+	BOOL			StretchDataTo8Bit(double *min_values, double *max_values);
+  BOOL      AddPixelDataToHistogram(Histogram *p_hist);
+
 
 public:
-	BOOL			stretchDataTo8Bit(double *minValues, double *maxValues);
-	void*			getDataRef();
-	int				getBandsCount();
-	int				getXSize();
-	int				getYSize();
-	GDALDataType	getDataType();
-	GDALColorTable*	getColorTableRef ();
-	BOOL			setColorTable (GDALColorTable *pTable);
+	BOOL			set_nodata_value(int nodata_value = 0);
+	int*			get_nodata_value();				
+	void*			get_pixel_data_ref();
+	int				get_num_bands();
+	int				get_x_size();
+	int				get_y_size();
+	GDALDataType	get_data_type();
+	GDALColorTable*	get_color_table_ref ();
+	BOOL			set_color_table (GDALColorTable *p_color_table);
 
 protected:
 	//void									initAlphaBand();
-	template <typename T>	BOOL			isAnyNoDataPixel(T type);
-	template <typename T>	BOOL			initByValue		(T type, int value);
-	template <typename T>	void*			getDataBlock	(	T type, int left, int top, int w, int h,  
-																BOOL stretchTo8Bit = FALSE, double *minValues = 0, double *maxValues = 0);
-	template <typename T>	BOOL			setDataBlock	(	T type, int left, int top, int w, int h, 
-																void *pBlockData, int bands = 0);
-	template <typename T>	void*			getDataZoomedOut(T type);
+	template <typename T>	BOOL			IsAnyNoDataPixel(T type);
+	template <typename T>	BOOL			InitByValue		(T type, int value);
+	template <typename T>	void*			GetPixelDataBlock	(	T type, int left, int top, int w, int h,  
+																BOOL stretch_to_8bit = FALSE, double *p_min_values = 0, double *p_max_values = 0);
+	template <typename T>	BOOL			SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
+																void *p_block_data, int bands = 0);
+	template <typename T>	void*			GetDataZoomedOut(T type);
+  template <typename T>	BOOL    AddPixelDataToHistogram(T type, Histogram *p_hist);
 
-	BOOL			bAlphaBand;
-	void			*pData;
-	GDALDataType	dataType;
-	int				dataSize;
+
+protected:
+	BOOL			alpha_band_defined_;
+	void			*p_pixel_data_;
+	GDALDataType	data_type_;
+	int				data_size_;
 	 
 	
-	int				nBands;
-	int				nXSize;
-	int				nYSize;
+	int				num_bands_;
+	int				x_size_;
+	int				y_size_;
 
-protected:
-	GDALColorTable	*pTable;
-
-protected:
-	int				*pNoDataValue;			
-	
-
-
+	GDALColorTable	*p_color_table_;
+	int				*p_nodata_value_;			
 };
 
 

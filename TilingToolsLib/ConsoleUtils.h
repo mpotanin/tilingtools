@@ -3,17 +3,17 @@
 #include <windows.h>
 
 
-namespace GMX
+namespace gmx
 {
 
 	
-void	SetEnvironmentVariables (string gdalPath);
+void	SetEnvironmentVariables (string gdal_path);
 BOOL	LoadGDAL (int argc, string argv[]);
 
-BOOL	LoadGDALDLLs (string gdalPath);
-string	ReadGDALPathFromConfigFile (string configFilePath);
-//string	ReadGDALPathFromConfigFile2(string configFilePath);
-string	ReadConsoleParameter (string strPattern, int argc, string argv[], BOOL bFlagParam = FALSE);
+BOOL	LoadGDALDLLs (string gdal_path);
+string	ReadGDALPathFromConfigFile (string config_file_path);
+//string	ReadGDALPathFromConfigFile2(string config_file_path);
+string	ReadConsoleParameter (string str_pattern, int argc, string argv[], BOOL is_flag_param = FALSE);
 
 
 }

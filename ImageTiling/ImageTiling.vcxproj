@@ -52,13 +52,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../gdal/include;../pthread/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../gdal/include;../../openjpeg-2.0.0/src/lib/openjp2;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../gdal/x86/lib; ../Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;TilingToolsLib.lib;gdal_i.lib;gd.lib;sqlite3_i.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../gdal/x86/lib; ../Debug;../../openjpeg-2.0.0/bin/Debug;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;TilingToolsLib.lib;gdal_i.lib;gd.lib;sqlite3_i.lib;openjp2.lib</AdditionalDependencies>
       <DelayLoadDLLs>cairo.dll;cfitsio.dll;fribidi.dll;ftgl.dll;gdal18.dll;geos_c.dll;hdf5dll;iconv.dll;libcurl.dll;libeay32.dll;libecwj2.dll;libexpat.dll;libfcgi.dll;libmap.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk.dll;lti_lidar_dsdk.dll;netcdf.dll;openjpeg.dll;pdflib.dll;proj.dll;spatialite.dll;sqlite3.dll;ssleay32.dll;xerces-c_2_8.dll;zlib1.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -70,7 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../gdal/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../openjpeg-2.0.0/src/lib/openjp2;../gdal/include;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -78,9 +78,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>../gdal/x86/lib; ../Release;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;TilingToolsLib.lib;gdal_i.lib;gd.lib;sqlite3_i.lib;</AdditionalDependencies>
-      <DelayLoadDLLs>cairo.dll;cfitsio.dll;fribidi.dll;ftgl.dll;gdal18.dll;geos_c.dll;hdf5dll;iconv.dll;libcurl.dll;libeay32.dll;libecwj2.dll;libexpat.dll;libfcgi.dll;libmap.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk.dll;lti_lidar_dsdk.dll;netcdf.dll;openjpeg.dll;pdflib.dll;proj.dll;spatialite.dll;sqlite3.dll;ssleay32.dll;xerces-c_2_8.dll;zlib1.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>../../openjpeg-2.0.0/bin/Release;../gdal/x86/lib; ../Release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;TilingToolsLib.lib;gdal_i.lib;gd.lib;sqlite3_i.lib;openjp2.lib</AdditionalDependencies>
+      <DelayLoadDLLs>cairo.dll;cfitsio.dll;fribidi.dll;ftgl.dll;gdal18.dll;geos_c.dll;hdf5dll;iconv.dll;libcurl.dll;libeay32.dll;libecwj2.dll;libexpat.dll;libfcgi.dll;libmap.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk.dll;lti_lidar_dsdk.dll;netcdf.dll;openjpeg.dll;pdflib.dll;proj.dll;spatialite.dll;sqlite3.dll;ssleay32.dll;xerces-c_2_8.dll;zlib1.dll;</DelayLoadDLLs>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
     </Link>

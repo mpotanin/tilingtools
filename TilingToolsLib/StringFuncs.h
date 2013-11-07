@@ -4,14 +4,14 @@
 
 
 
-namespace GMX
+namespace gmx
 {
 
 string			MakeLower				(string str);
 void			ReplaceAll				(string	&str, const string	&from, const string	&to);
-BOOL			ConvertStringToRGB		(string strColor, BYTE rgb[3]);			
+BOOL			ConvertStringToRGB		(string str_color, BYTE rgb[3]);			
 string			ConvertIntToString		(int number);
-int				Ustrlen					(const unsigned char *str);
+int				StrLen					(const unsigned char *str);
 
 
 typedef std::string Str;

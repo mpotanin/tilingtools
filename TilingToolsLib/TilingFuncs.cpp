@@ -1,310 +1,321 @@
 #include "stdafx.h"
 #include "TilingFuncs.h"
 
-using namespace GMX;
+using namespace gmx;
 
-const int	GMX_MAX_BUFFER_WIDTH	= 32;
-const int	GMX_MAX_TILES_IN_CACHE = 0xFFFF;
+const int	GMX_MAX_BUFFER_WIDTH	= 16;
+//const int	GMX_MAX_TILES_IN_CACHE = 0xFFFF;
 int			GMX_MAX_THREADS	= 2;
 int			GMX_CURR_NUM_OF_THREADS = 1;
 
 
-BOOL GMXPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles)
+BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
 {
-	//cout<<nGeneratedTiles<<" "<<endl;
-	if (nGeneratedTiles - (int)ceil((nExpectedTiles/10.0)*(nGeneratedTiles*10/nExpectedTiles))  ==0)
+	//cout<<tiles_generated<<" "<<endl;
+	if (tiles_generated - (int)ceil((tiles_expected/10.0)*(tiles_generated*10/tiles_expected))  ==0)
 	{
-		cout<<(nGeneratedTiles*10/nExpectedTiles)*10<<" ";
+		cout<<(tiles_generated*10/tiles_expected)*10<<" ";
 		fflush(stdout);
 	}
 	return TRUE;
 }
 
 
-BOOL GMXMakeTiling		(GMXTilingParameters		*poParams)
+BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 {
 	LONG t_ = time(0);
 	srand(t_%10000);
-	BundleOfRasterFiles		oBundle;
-	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
-	//poParams->nJpegQuality = JPEG_BASE_ZOOM_QUALITY;
+	BundleOfRasterFiles		raster_bundle;
+	int tile_size = MercatorTileGrid::TILE_SIZE;
+	//p_tiling_params->jpeg_quality_ = JPEG_BASE_ZOOM_QUALITY;
 	
-	if (!oBundle.init(poParams->inputPath,poParams->mercType,poParams->vectorFile,poParams->dShiftX,poParams->dShiftY))
+	if (!raster_bundle.Init(p_tiling_params->input_path_,p_tiling_params->merc_type_,p_tiling_params->vector_file_,p_tiling_params->shift_x_,p_tiling_params->shift_y_))
 	{
-		cout<<"ERROR: read input data by path: "<<poParams->inputPath<<endl;
+		cout<<"ERROR: read input data by path: "<<p_tiling_params->input_path_<<endl;
 		return FALSE;
 	}
 
-	int baseZoom = (poParams->baseZoom == 0) ? oBundle.calculateBestMercZoom() : poParams->baseZoom;
-	if (baseZoom<=0)
+	int base_zoom = (p_tiling_params->base_zoom_ == 0) ? raster_bundle.CalcBestMercZoom() : p_tiling_params->base_zoom_;
+	if (base_zoom<=0)
 	{
 		cout<<"ERROR: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
 	
-	cout<<"Base zoom "<<baseZoom<<": calculating number of tiles: ";
-	int expectedTiles	= oBundle.calculateNumberOfTiles(baseZoom);	
-	cout<<expectedTiles<<endl;
+  ITileContainer	*p_itile_pyramid =	NULL;
 
-	if (expectedTiles == 0) return FALSE;
-
-
-	unsigned int maxTilesInCache = (poParams->maxTilesInCache == 0) ? GMX_MAX_TILES_IN_CACHE : poParams->maxTilesInCache; 
-	unsigned int adjustedMaxTilesInCash =	(poParams->tileType == JPEG_TILE) ? maxTilesInCache	:
-											(poParams->tileType == PNG_TILE) ? maxTilesInCache/3	: maxTilesInCache/20;
-	BOOL	useBuffer = (expectedTiles*1.36 <= adjustedMaxTilesInCash) ? true : false;
-	
-	
-	ITilePyramid	*poITilePyramid =	NULL;
-
-	//ToDo
-	if (poParams->useContainer)
+	if (p_tiling_params->use_container_)
 	{
-		if (GetExtension(poParams->containerFile) == "tiles")
-				poITilePyramid = new GMXTileContainer(	poParams->containerFile,
-														poParams->tileType,
-														poParams->mercType,
-														oBundle.getEnvelope(),
-														baseZoom,
-														useBuffer);
-		else	poITilePyramid = new MBTileContainer(	poParams->containerFile,
-														poParams->tileType,
-														poParams->mercType,
-														oBundle.getEnvelope());
+		if (GetExtension(p_tiling_params->container_file_) == "tiles")
+				p_itile_pyramid = new GMXTileContainer(	p_tiling_params->container_file_,
+														p_tiling_params->tile_type_,
+														p_tiling_params->merc_type_,
+														raster_bundle.CalcMercEnvelope(),
+														base_zoom,
+														TRUE);
+		else	p_itile_pyramid = new MBTileContainer(	p_tiling_params->container_file_,
+														p_tiling_params->tile_type_,
+														p_tiling_params->merc_type_,
+														raster_bundle.CalcMercEnvelope());
 	}
-	else		poITilePyramid = new TileFolder(poParams->poTileName, useBuffer);
-		
-	
-	
-	GMXMakeZoomFromBundle(poParams,&oBundle,expectedTiles,poITilePyramid);
+	else		p_itile_pyramid = new TileFolder(p_tiling_params->p_tile_name_, TRUE);
+  
+  cout<<"Base zoom "<<base_zoom<<": ";
+	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid)) 
+  {
+    p_itile_pyramid->Close();
+	  delete(p_itile_pyramid);
+    return FALSE;
+  }
 	cout<<" done."<<endl;
 
-	int minZoom = (poParams->minZoom <=0) ? 1 : poParams->minZoom;
-	if (minZoom == baseZoom) return TRUE;
+	int min_zoom = (p_tiling_params->min_zoom_ <=0) ? 1 : p_tiling_params->min_zoom_;
+	if (min_zoom == base_zoom) return TRUE;
 
 	cout<<"Pyramid tiles: ";//<<endl;
 	cout<<"calculating number of tiles: ";
-	VectorBorder	bundleEnvelope(oBundle.getEnvelope(),poParams->mercType);
-	int generatedTiles = 0;
-	expectedTiles = 0;
-	GMXMakePyramidFromBaseZoom(	bundleEnvelope,
-								baseZoom,
-								minZoom,
-								poParams,
-								expectedTiles,
-								generatedTiles,
+  VectorBorder	bundle_envp(raster_bundle.CalcMercEnvelope(),p_tiling_params->merc_type_);
+	int tiles_generated = 0;
+	int tiles_expected = 0;
+	GMXMakePyramidFromBaseZoom(	bundle_envp,
+								base_zoom,
+								min_zoom,
+								p_tiling_params,
+								tiles_expected,
+								tiles_generated,
 								TRUE,
-								poITilePyramid,
-								poParams->nJpegQuality);
-	cout<<expectedTiles<<endl;
-	if (expectedTiles > 0) 
+								p_itile_pyramid);
+	cout<<tiles_expected<<endl;
+	if (tiles_expected > 0) 
 	{
 		cout<<"0% ";
-		GMXMakePyramidFromBaseZoom(	bundleEnvelope,
-									baseZoom,
-									minZoom,
-									poParams,
-									expectedTiles,
-									generatedTiles,
+		if (!GMXMakePyramidFromBaseZoom(	bundle_envp,
+									base_zoom,
+									min_zoom,
+									p_tiling_params,
+									tiles_expected,
+									tiles_generated,
 									FALSE,
-									poITilePyramid,
-									poParams->nJpegQuality);
+									p_itile_pyramid))
+    {
+      cout<<"ERROR: GMXMakePyramidFromBaseZoom"<<endl;
+      p_itile_pyramid->Close();
+	    delete(p_itile_pyramid);
+      return FALSE;
+    }
 		cout<<" done."<<endl;
 	}
 
-	poITilePyramid->close();
-	delete(poITilePyramid);
+	if (!p_itile_pyramid->Close())
+  {
+    cout<<"ERROR: can't save tile container to disk"<<endl;
+    return FALSE;
+  }
+	delete(p_itile_pyramid);
 
 	return TRUE;
 }
 
 
-BOOL GMXTilingFromBuffer (GMXTilingParameters			*poParams, 
-						   RasterBuffer					*poBuffer, 
-						   BundleOfRasterFiles			*poBundle, 
-						   int							nX, 
-						   int							nY,
+BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params, 
+						   RasterBuffer					*p_buffer, 
+						   BundleOfRasterFiles			*p_bundle, 
+						   int							ul_x, 
+						   int							ul_y,
 						   int							z,
-						   int							nTilesExpected, 
-						   int							*pnTilesGenerated,
-						   ITilePyramid					*poTilePyramid)
+						   int							tiles_expected, 
+						   int							*p_tiles_generated,
+						   ITileContainer					*p_tile_container)
 {  
-	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
-
-	for (int x = nX; x < nX+poBuffer->getXSize()/TILE_SIZE; x += 1)
+	int tile_size = MercatorTileGrid::TILE_SIZE;
+  
+	for (int x = ul_x; x < ul_x+p_buffer->get_x_size()/tile_size; x += 1)
 	{
-		for (int y = nY; y < nY+poBuffer->getYSize()/TILE_SIZE; y += 1)
+		for (int y = ul_y; y < ul_y+p_buffer->get_y_size()/tile_size; y += 1)
 		{	
-			OGREnvelope oTileEnvelope = MercatorTileGrid::calcEnvelopeByTile(z,x,y);
-			if (!poBundle->intersects(oTileEnvelope)) continue;
+			OGREnvelope tile_envelope = MercatorTileGrid::CalcEnvelopeByTile(z,x,y);
+			if (!p_bundle->Intersects(tile_envelope)) continue;
 			
 			
-			RasterBuffer oTileBuffer;
-			void *tileData = poBuffer->getDataBlock((x-nX)*TILE_SIZE, (y-nY)*TILE_SIZE,TILE_SIZE,TILE_SIZE);
-			oTileBuffer.createBuffer(	poBuffer->getBandsCount(),
-											TILE_SIZE,
-											TILE_SIZE,
-											tileData,
-											poBuffer->getDataType(),
-											poBuffer->getNoDataValue(),
-											poBuffer->isAlphaBand(),
-											poBuffer->getColorTableRef());
-			delete[]tileData;
+			RasterBuffer tile_buffer;
+			void *p_tile_pixel_data = p_buffer->GetPixelDataBlock((x-ul_x)*tile_size, (y-ul_y)*tile_size,tile_size,tile_size);
+			tile_buffer.CreateBuffer(	p_buffer->get_num_bands(),
+											tile_size,
+											tile_size,
+											p_tile_pixel_data,
+											p_buffer->get_data_type(),
+											p_buffer->get_nodata_value(),
+											p_buffer->IsAlphaBand(),
+											p_buffer->get_color_table_ref());
+      delete[]p_tile_pixel_data;
 			
 
-			if (poTilePyramid != NULL)
+			if (p_tile_container != NULL)
 			{
 				
-				void *pData=NULL;
+				void *p_data=NULL;
 				int size = 0;
-				switch (poParams->tileType)
+				switch (p_tiling_params->tile_type_)
 				{
 					case JPEG_TILE:
 						{
-							oTileBuffer.SaveToJpegData(85,pData,size);
+              if ((p_tiling_params->jpeg_quality_>0)&&(p_tiling_params->jpeg_quality_<=100))
+                tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
+              else 
+                tile_buffer.SaveToJpegData(p_data,size);
 							break;
 						}
 					case PNG_TILE:
 						{
-							oTileBuffer.SaveToPngData(pData,size);
+							tile_buffer.SaveToPngData(p_data,size);
 							break;
 						}
+          case JP2_TILE:
+            {
+              if ((p_tiling_params->jpeg_quality_>=1)&&(p_tiling_params->jpeg_quality_<=50))
+                tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
+              else 
+                tile_buffer.SaveToJP2Data(p_data,size);
+              break;
+            }
 					default:
-						oTileBuffer.SaveToTiffData(pData,size);
+						tile_buffer.SaveToTiffData(p_data,size);
 				}
-				poTilePyramid->addTile(z,x,y,(BYTE*)pData,size);
-				delete[]((BYTE*)pData);
-				(*pnTilesGenerated)++;
+				if (!p_tile_container->AddTile(z,x,y,(BYTE*)p_data,size))
+        {
+          if (p_data) delete[]((BYTE*)p_data);
+          cout<<"ERROR: AddTile: writing tile to container"<<endl;
+          return FALSE;
+        }
+				delete[]((BYTE*)p_data);
+				(*p_tiles_generated)++;
 			}
 			
-			GMXPrintTilingProgress(nTilesExpected,(*pnTilesGenerated));
+			GMXPrintTilingProgress(tiles_expected,(*p_tiles_generated));
 		}
 	}
 	
 	return TRUE;
 }
 
-BOOL GMXCleanAfterTilingFromBufer (GMX::RasterBuffer				*poBuffer)
+BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer)
 {
-	delete(poBuffer);
+	delete(p_buffer);
 	return TRUE;
 }
 
 DWORD WINAPI GMXCallTilingFromBuffer( LPVOID lpParam )
 {
-	GMXTilingFromBufferParams	*poParams = (GMXTilingFromBufferParams*)lpParam;
+	GMXTilingFromBufferParams	*p_from_buffer_params = (GMXTilingFromBufferParams*)lpParam;
 	//ToDo
 	//Обработка ошибки
-	DWORD result = GMXTilingFromBuffer(poParams->poTilingParams,
-						poParams->poBuffer,
-						poParams->poBundle,
-						poParams->nULx,
-						poParams->nULy,
-						poParams->z,
-						poParams->nTilesExpected,
-						poParams->pnTilesGenerated,
-						poParams->poTilePyramid);
-	poParams->pfCleanAfterTiling(poParams->poBuffer);
+	BOOL succeed = GMXMakeTilingFromBuffer(p_from_buffer_params->p_tiling_params_,
+						p_from_buffer_params->p_buffer_,
+						p_from_buffer_params->p_bundle_,
+						p_from_buffer_params->ul_x_,
+						p_from_buffer_params->ul_y_,
+						p_from_buffer_params->z_,
+						p_from_buffer_params->tiles_expected_,
+						p_from_buffer_params->p_tiles_generated_,
+						p_from_buffer_params->p_tile_container_);
+	p_from_buffer_params->pfCleanAfterTiling(p_from_buffer_params->p_buffer_);
 	GMX_CURR_NUM_OF_THREADS--;
-	return result;
+	(*p_from_buffer_params->p_was_error_)=(!succeed);
+  return succeed;
 }
 
-HANDLE GMXAsyncTilingFromBuffer (	GMXTilingParameters			*poTilingParams, 
-								RasterBuffer				*poBuffer, 
-								BundleOfRasterFiles			*poBundle, 
-								int							nX, 
-								int							nY,
+HANDLE GMXAsyncMakeTilingFromBuffer (	GMXTilingParameters		*p_tiling_params, 
+								RasterBuffer				*p_buffer, 
+								BundleOfRasterFiles			*p_bundle, 
+								int							ul_x, 
+								int							ul_y,
 								int							z,
-								int							nTilesExpected, 
-								int							*pnTilesGenerated,
-								ITilePyramid				*poTilePyramid,
-								unsigned long				&threadId)
+								int							tiles_expected, 
+								int							*p_tiles_generated,
+								ITileContainer				*p_tile_container,
+								unsigned long				&thread_id,
+                BOOL                *p_was_error)
 {
-	//запустить GMXTilingFromBuffer в отдельном потоке
-	GMXTilingFromBufferParams	*poParams = new GMXTilingFromBufferParams;
+	//запустить GMXMakeTilingFromBuffer в отдельном потоке
+	GMXTilingFromBufferParams	*p_from_buffer_params = new GMXTilingFromBufferParams;
 	
-	poParams->poTilingParams		= poTilingParams;
-	poParams->poBuffer				= poBuffer;
-	poParams->poBundle				= poBundle;
-	poParams->nTilesExpected		= nTilesExpected;
-	poParams->nULx					= nX;
-	poParams->nULy					= nY;
-	poParams->pnTilesGenerated		= pnTilesGenerated;
-	poParams->poTilePyramid		= poTilePyramid;	
-	poParams->z					= z;
-	poParams->pfCleanAfterTiling	= GMXCleanAfterTilingFromBufer;
+	p_from_buffer_params->p_tiling_params_		= p_tiling_params;
+	p_from_buffer_params->p_buffer_				= p_buffer;
+	p_from_buffer_params->p_bundle_				= p_bundle;
+	p_from_buffer_params->tiles_expected_		= tiles_expected;
+	p_from_buffer_params->ul_x_					= ul_x;
+	p_from_buffer_params->ul_y_					= ul_y;
+	p_from_buffer_params->p_tiles_generated_	= p_tiles_generated;
+	p_from_buffer_params->p_tile_container_		= p_tile_container;	
+	p_from_buffer_params->z_					= z;
+	p_from_buffer_params->pfCleanAfterTiling	=GMXCleanAfterTilingFromBufer;
+  p_from_buffer_params->p_was_error_ = p_was_error;
 
 
 	//Увеличить количество потоков
 	GMX_CURR_NUM_OF_THREADS++;
-	return CreateThread(NULL,0,GMXCallTilingFromBuffer,poParams,0,&threadId);
-	//ToDo
-	//Если ошибка, уменьшить количество потоков
-	//ждать окончание потока, потом закрыть handle 
-	//Уменьшить количество потоков
-	//msdn.microsoft.com/en-us/library/windows/desktop/ms682516(v=vs.85).aspx
-	//return TRUE;
-
+	return CreateThread(NULL,0,GMXCallTilingFromBuffer,p_from_buffer_params,0,&thread_id);
 }
 
 
-BOOL GMXMakeZoomFromBundle	(	GMXTilingParameters		*poParams, 
-								BundleOfRasterFiles		*poBundle, 
-								int						nExpected, 
-								ITilePyramid			*poTilePyramid)
+BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params, 
+								BundleOfRasterFiles		*p_bundle, 
+								ITileContainer			*p_tile_container)
 {
 
-	//получить экстент бандла
-	//вычислить зум
-	//пройти в цикле по экстенту:
-		//формируем под-экстент
-		//проверяем пересение с вектором
-		//перепроицируем в под-экстент
-		//запускаем тайлинг из буфера
-	int			generatedTiles = 0;
-	//OGREnvelope bundleMercEnvelope = poBundle->getMercatorEnvelope();
-	int			zoom = (poParams->baseZoom == 0) ? poBundle->calculateBestMercZoom() : poParams->baseZoom;
-	double		res = MercatorTileGrid::calcResolutionByZoom(zoom);
+  //ToDo
 
-	bool		bStretchTo8Bit = false;
-	double		*stretchMinValues = NULL, *stretchMaxValues = NULL;
-	if (poParams->bAutoStretchTo8Bit)
+	int			tiles_generated = 0;
+	//OGREnvelope bundleMercEnvelope = p_bundle->GetMercatorEnvelope();
+	int			zoom = (p_tiling_params->base_zoom_ == 0) ? p_bundle->CalcBestMercZoom() : p_tiling_params->base_zoom_;
+	double		res = MercatorTileGrid::CalcResolutionByZoom(zoom);
+
+  cout<<"calculating number of tiles: ";
+	int tiles_expected	= p_bundle->CalcNumberOfTiles(zoom);	
+	cout<<tiles_expected<<endl;
+  if (tiles_expected == 0) return FALSE;
+  
+	bool		stretch_to_8bit = false;
+	double		*p_stretch_min_values = NULL, *p_stretch_max_values = NULL;
+	if (p_tiling_params->auto_stretch_to_8bit_)
 	{
-		RasterFile oRF((*poBundle->getFileList().begin()),TRUE);
-		double *min,*max,*mean,*stdDev;
+		RasterFile rf((*p_bundle->GetFileList().begin()),TRUE);
+		double *p_min,*p_max,*p_mean,*p_std_dev;
 		int bands;
-		if ( (poParams->tileType == JPEG_TILE || poParams->tileType == PNG_TILE) && 
-			 (oRF.getGDALDatasetRef()->GetRasterBand(1)->GetRasterDataType() != GDT_Byte))
+		if ( (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
+			 (rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType() != GDT_Byte))
 		{
-			bStretchTo8Bit = true;
+			stretch_to_8bit = true;
 			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
 
-			if (!oRF.computeStatistics(bands,min,max,mean,stdDev))
+			if (!rf.CalcStatistics(bands,p_min,p_max,p_mean,p_std_dev))
 			{
-				cout<<"ERROR: compute statistics failed for "<<(*poBundle->getFileList().begin())<<endl;
+				cout<<"ERROR: compute statistics failed for "<<(*p_bundle->GetFileList().begin())<<endl;
 				return false;
 			}
-			stretchMinValues = new double[bands];
-			stretchMaxValues = new double[bands];
+			p_stretch_min_values = new double[bands];
+			p_stretch_max_values = new double[bands];
 			for (int i=0;i<bands;i++)
 			{
-				stretchMinValues[i] = mean[i] - 2*stdDev[i];
-				stretchMaxValues[i] = mean[i] + 2*stdDev[i];
+				p_stretch_min_values[i] = p_mean[i] - 2*p_std_dev[i];
+				p_stretch_max_values[i] = p_mean[i] + 2*p_std_dev[i];
 			}
-			delete[]min;delete[]max;delete[]mean;delete[]stdDev;
+			delete[]p_min;delete[]p_max;delete[]p_mean;delete[]p_std_dev;
 		}
 	}
 
 	cout<<"0% ";
 	fflush(stdout);
 
-	//if (poBundle->getFileList().size()>1) GMX_MAX_THREADS = 1;
+	//if (p_bundle->getFileList().size()>1) GMX_MAX_THREADS = 1;
 
 	int minx,maxx,miny,maxy;
-	MercatorTileGrid::calcTileRange(poBundle->getEnvelope(),zoom,minx,miny,maxx,maxy);
+	MercatorTileGrid::CalcTileRange(p_bundle->CalcMercEnvelope(),zoom,minx,miny,maxx,maxy);
 
-	HANDLE			threadHandle = NULL;
-	unsigned long	threadId;
+	HANDLE			thread_handle = NULL;
+	unsigned long	thread_id;
+  
+  BOOL tiling_error = FALSE;
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
 	{
 		int curr_max_x =	(curr_min_x + GMX_MAX_BUFFER_WIDTH - 1 > maxx) ? 
@@ -317,72 +328,84 @@ BOOL GMXMakeZoomFromBundle	(	GMXTilingParameters		*poParams,
 								maxy :  
 								curr_min_y + GMX_MAX_BUFFER_WIDTH - 1;
 			
-			OGREnvelope bufferEnvelope = MercatorTileGrid::calcEnvelopeByTileRange(	zoom,
+			OGREnvelope buffer_envp = MercatorTileGrid::CalcEnvelopeByTileRange(	zoom,
 																					curr_min_x,
 																					curr_min_y,
 																					curr_max_x,
 																					curr_max_y);
-			if (!poBundle->intersects(bufferEnvelope)) continue;
-			RasterBuffer *poMercBuffer = new RasterBuffer();
+			if (!p_bundle->Intersects(buffer_envp)) continue;
+			RasterBuffer *p_merc_buffer = new RasterBuffer();
 
-			if (!poBundle->warpToMercBuffer(zoom,bufferEnvelope,poMercBuffer,poParams->pNoDataValue,poParams->pBackgroundColor))
+      if (!p_bundle->WarpToMercBuffer(zoom,buffer_envp,p_merc_buffer,p_tiling_params->gdal_resampling_,p_tiling_params->p_nodata_value_,p_tiling_params->p_background_color_))
 			{
 				cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
 				return FALSE;
 			}
+
+      //p_merc_buffer->SaveBufferToFile("e:\\test_images\\1.tif");
 		
-			if ( poParams->pTransparentColor != NULL ) poMercBuffer->createAlphaBandByColor(poParams->pTransparentColor);
+      if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
 			
-			if (bStretchTo8Bit)
+			if (stretch_to_8bit)
 			{
-				if (!poMercBuffer->stretchDataTo8Bit(stretchMinValues,stretchMaxValues))
+				if (!p_merc_buffer->StretchDataTo8Bit(p_stretch_min_values,p_stretch_max_values))
 				{
 					cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
 					return FALSE;
 				}
 				
 			}
+
+      //p_merc_buffer->SaveBufferToFile("e:\\test_images\\2.png");
 			
 			//ToDo
-			//(при этом требуется проконтролировать: многопоточность записи в ITilePyramid, безопасность mercBuffer).
+			//(при этом требуется проконтролировать: многопоточность записи в ITileContainer, безопасность mercBuffer).
 			if (GMX_MAX_THREADS == 1)
 			{
-				if (!GMXTilingFromBuffer(poParams,
-										poMercBuffer,
-										poBundle,
+				if (!GMXMakeTilingFromBuffer(p_tiling_params,
+										p_merc_buffer,
+										p_bundle,
 										curr_min_x,
 										curr_min_y,
 										zoom,
-										nExpected,
-										&generatedTiles,
-										poTilePyramid))
+										tiles_expected,
+										&tiles_generated,
+										p_tile_container))
 				{
-					cout<<"ERROR: BaseZoomTiling: GMXTilingFromBuffer fail"<<endl;
+					cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
 					return FALSE;
 				}
-				delete(poMercBuffer);
+				delete(p_merc_buffer);
 			}
 			else 
 			{
 				while (GMX_CURR_NUM_OF_THREADS==GMX_MAX_THREADS)
+        {
 					Sleep(250);
-				if (threadHandle!=NULL) 
+        }
+				if (thread_handle!=NULL) 
 				{
-					CloseHandle(threadHandle);
-					threadHandle = NULL;
+					CloseHandle(thread_handle);
+					thread_handle = NULL;
+          if (tiling_error)
+          {
+            cout<<"ERROR: BaseZoomTiling: AsyncMakeTilingFromBuffer fail"<<endl;
+            return FALSE;
+          }
 				}
-				if (!(threadHandle = GMXAsyncTilingFromBuffer(	poParams,
-																poMercBuffer,
-																poBundle,
+				if (!(thread_handle =GMXAsyncMakeTilingFromBuffer(	p_tiling_params,
+																p_merc_buffer,
+																p_bundle,
 																curr_min_x,
 																curr_min_y,
 																zoom,
-																nExpected,
-																&generatedTiles,
-																poTilePyramid,
-																threadId)))
+																tiles_expected,
+																&tiles_generated,
+																p_tile_container,
+																thread_id,
+                                &tiling_error)))
 				{
-					cout<<"ERROR: BaseZoomTiling: GMXTilingFromBuffer fail"<<endl;
+					cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
 					return FALSE;
 				}
 			}
@@ -391,74 +414,86 @@ BOOL GMXMakeZoomFromBundle	(	GMXTilingParameters		*poParams,
 
 	while (GMX_CURR_NUM_OF_THREADS>1)
 		Sleep(250);
-	if (threadHandle!=NULL) 
+	if (thread_handle!=NULL) 
 	{
-		CloseHandle(threadHandle);
-		threadHandle = NULL;
+		CloseHandle(thread_handle);
+		thread_handle = NULL;
+    if (tiling_error)
+    {
+      cout<<"ERROR: BaseZoomTiling: AsyncMakeTilingFromBuffer fail"<<endl;
+      return FALSE;
+    }
 	}
 	return TRUE;
 }
 
 
-BOOL GMXMakePyramidFromBaseZoom (	VectorBorder		&oVectorBorder, 
-								int					nBaseZoom, 
-								int					nMinZoom, 
-								GMXTilingParameters		*poParams, 
-								int					&nExpectedTiles, 
-								int					&nGeneratedTiles, 
-								BOOL					bOnlyCalculate, 
-								ITilePyramid			*ITilePyramid,
-								int					nJpegQuality
+BOOL GMXMakePyramidFromBaseZoom (	VectorBorder		&vb, 
+								int					base_zoom, 
+								int					min_zoom, 
+								GMXTilingParameters		*p_tiling_params, 
+								int					&tiles_expected, 
+								int					&tiles_generated, 
+								BOOL					only_calculate, 
+								ITileContainer			*p_itile_pyramid
 								)
 {
 
 	RasterBuffer oBuffer;
+  BOOL was_error = FALSE;
 	BOOL b;
 
-	GMXMakeZoomOutTile(	oVectorBorder,0,0,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
-							nGeneratedTiles,bOnlyCalculate,ITilePyramid,nJpegQuality);
-
-	if (oVectorBorder.getEnvelope().MaxX>-MercatorTileGrid::getULX())
+	GMXMakePyramidTileRecursively(	vb,0,0,0,base_zoom,min_zoom,p_tiling_params,oBuffer,tiles_expected,
+							tiles_generated,only_calculate,p_itile_pyramid,&was_error);
+  
+  if (vb.GetEnvelope().MaxX>-MercatorTileGrid::ULX())
 	{
-		GMXMakeZoomOutTile(	oVectorBorder,1,2,0,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
-								nGeneratedTiles,bOnlyCalculate,ITilePyramid,nJpegQuality);
-		GMXMakeZoomOutTile(oVectorBorder,1,2,1,nBaseZoom,nMinZoom,poParams,oBuffer,nExpectedTiles,
-								nGeneratedTiles,bOnlyCalculate,ITilePyramid,nJpegQuality);
+		GMXMakePyramidTileRecursively(	vb,1,2,0,base_zoom,min_zoom,p_tiling_params,oBuffer,tiles_expected,
+								tiles_generated,only_calculate,p_itile_pyramid,&was_error);
+		GMXMakePyramidTileRecursively(vb,1,2,1,base_zoom,min_zoom,p_tiling_params,oBuffer,tiles_expected,
+								tiles_generated,only_calculate,p_itile_pyramid,&was_error);
 	}
 
-	return TRUE;
+  if (was_error)
+  {
+    cout<<"ERROR: GMXMakePyramidTileRecursively"<<endl;
+    return FALSE;
+  }
+  else return TRUE;
 }
 
-BOOL GMXMakeZoomOutTile (VectorBorder	&oVectorBorder, 
-					  int				nCurrZoom, 
+
+BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb, 
+					  int				zoom, 
 					  int				nX, 
 					  int				nY, 
-					  int				nBaseZoom, 
-					  int				nMinZoom, 
-					  GMXTilingParameters	*poParams, 
-					  RasterBuffer		&oTileBuffer,  
-					  int				&nExpectedTiles, 
-					  int				&nGeneratedTiles, 
-					  BOOL				bOnlyCalculate, 
-					  ITilePyramid		*ITilePyramid, 
-					  int				nJpegQuality)
+					  int				base_zoom, 
+					  int				min_zoom, 
+					  GMXTilingParameters	*p_tiling_params, 
+					  RasterBuffer		&tile_buffer,  
+					  int				&tiles_expected, 
+					  int				&tiles_generated, 
+					  BOOL				only_calculate, 
+					  ITileContainer		*p_itile_pyramid, 
+            BOOL      *p_was_error
+            )
 {
 
-	if (nCurrZoom==nBaseZoom)
+	if (zoom==base_zoom)
 	{	
-		if (!ITilePyramid->tileExists(nCurrZoom,nX,nY)) return FALSE;
-		if (bOnlyCalculate) return TRUE;
+		if (!p_itile_pyramid->TileExists(zoom,nX,nY)) return FALSE;
+		if (only_calculate) return TRUE;
 
 		unsigned int size	= 0;
-		BYTE		*pData	= NULL;
+		BYTE		*p_data	= NULL;
 	
-		ITilePyramid->getTile(nCurrZoom,nX,nY,pData,size);
+		p_itile_pyramid->GetTile(zoom,nX,nY,p_data,size);
 		if (size ==0) return FALSE;
-		switch (poParams->tileType)
+		switch (p_tiling_params->tile_type_)
 		{
 			case JPEG_TILE:
 				{
-					if(!oTileBuffer.createBufferFromJpegData(pData,size))
+					if(!tile_buffer.CreateBufferFromJpegData(p_data,size))
 					{
 						cout<<"ERROR: reading jpeg-data"<<endl;
 						return FALSE;
@@ -467,51 +502,60 @@ BOOL GMXMakeZoomOutTile (VectorBorder	&oVectorBorder,
 				}
 			case PNG_TILE:
 				{
-					oTileBuffer.createBufferFromPngData(pData,size);
+					tile_buffer.CreateBufferFromPngData(p_data,size);
 					break;
 				}
+      case JP2_TILE:
+        {
+          tile_buffer.createFromJP2Data(p_data,size);
+          break;
+        }
 			default:
-				oTileBuffer.createBufferFromTiffData(pData,size);
+				tile_buffer.CreateBufferFromTiffData(p_data,size);
 		}
-		delete[]((BYTE*)pData);
+		delete[]((BYTE*)p_data);
 	
 		return TRUE;
 	}
 	else
 	{
-		RasterBuffer	quarterTileBuffer[4];
-		BOOL			quarterTileExists[4];
+		RasterBuffer	quarter_tile_buffer[4];
+		BOOL			src_quarter_tile_buffers_def[4];
 
 		for (int i=0;i<2;i++)
 		{
 			for (int j=0;j<2;j++)
 			{
-				if (oVectorBorder.intersects(nCurrZoom+1,2*nX+j,2*nY+i)) 
-					quarterTileExists[i*2+j] = GMXMakeZoomOutTile(oVectorBorder,
-															nCurrZoom+1,
+				if (vb.Intersects(zoom+1,2*nX+j,2*nY+i))
+        {
+					src_quarter_tile_buffers_def[i*2+j] = GMXMakePyramidTileRecursively(vb,
+															zoom+1,
 															2*nX+j,
 															2*nY+i,
-															nBaseZoom,
-															nMinZoom,
-															poParams,quarterTileBuffer[i*2+j],
-															nExpectedTiles,
-															nGeneratedTiles,
-															bOnlyCalculate,
-															ITilePyramid,
-															nJpegQuality);
-				else quarterTileExists[i*2+j] = FALSE;
+															base_zoom,
+															min_zoom,
+															p_tiling_params,
+															quarter_tile_buffer[i*2+j],
+															tiles_expected,
+															tiles_generated,
+															only_calculate,
+															p_itile_pyramid,
+                              p_was_error);
+          if ((*p_was_error)) return FALSE;
+        }
+				else src_quarter_tile_buffers_def[i*2+j] = FALSE;
 			}
 		}
 		
-		if (nCurrZoom < nMinZoom)		return FALSE;
-		if ((!quarterTileExists[0])&&
-			(!quarterTileExists[1])&&
-			(!quarterTileExists[2])&&
-			(!quarterTileExists[3]) )	return FALSE;
+		if (zoom < min_zoom)		return FALSE;
+		if ((!src_quarter_tile_buffers_def[0])&&
+			(!src_quarter_tile_buffers_def[1])&&
+			(!src_quarter_tile_buffers_def[2])&&
+			(!src_quarter_tile_buffers_def[3]) )	return FALSE;
 	
-		if (bOnlyCalculate)
+		if (only_calculate)
 		{
-			nExpectedTiles++;
+			tiles_expected++;
 			return TRUE;
 		}
 
@@ -520,30 +564,42 @@ BOOL GMXMakeZoomOutTile (VectorBorder	&oVectorBorder,
 		//Если < Lmax, то отправить на выполнение
 		//Если >=Lmax, то ждать
 
-		if (!GMXZoomOutTileBuffer(quarterTileBuffer,quarterTileExists, oTileBuffer)) return FALSE;
-		void *pData=NULL;
+		if (!GMXZoomOutTileBuffer(quarter_tile_buffer,src_quarter_tile_buffers_def, tile_buffer)) return FALSE;
+		void *p_data=NULL;
 		int size = 0;
-		switch (poParams->tileType)
+		switch (p_tiling_params->tile_type_)
 		{
-			case JPEG_TILE:
+      case JPEG_TILE:
 				{
-					oTileBuffer.SaveToJpegData(85,pData,size);
+          if ((p_tiling_params->jpeg_quality_>0)&&(p_tiling_params->jpeg_quality_<=100))
+            tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
+          else 
+            tile_buffer.SaveToJpegData(p_data,size);
 					break;
-				}
+        }
 			case PNG_TILE:
 				{
-					oTileBuffer.SaveToPng24Data(pData,size);
+				  tile_buffer.SaveToPngData(p_data,size);
 					break;
 				}
+      case JP2_TILE:
+        {
+          if ((p_tiling_params->jpeg_quality_>=1)&&(p_tiling_params->jpeg_quality_<=50))
+            tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
+          else 
+            tile_buffer.SaveToJP2Data(p_data,size);
+          break;
+        }
 			default:
-				oTileBuffer.SaveToTiffData(pData,size);
-		}
+			  tile_buffer.SaveToTiffData(p_data,size);
+    }
 
 
-		ITilePyramid->addTile(nCurrZoom,nX,nY,(BYTE*)pData,size);
-		delete[]((BYTE*)pData);
-		nGeneratedTiles++;
-		GMXPrintTilingProgress(nExpectedTiles,nGeneratedTiles);
+		(*p_was_error) =  (!p_itile_pyramid->AddTile(zoom,nX,nY,(BYTE*)p_data,size));
+    delete[]((BYTE*)p_data);
+		if (*p_was_error) return FALSE;
+    tiles_generated++;
+		GMXPrintTilingProgress(tiles_expected,tiles_generated);
 	}
 
 	return TRUE;
@@ -553,35 +609,34 @@ BOOL GMXMakeZoomOutTile (VectorBorder	&oVectorBorder,
 
 
 
-BOOL GMXZoomOutTileBuffer (RasterBuffer srcQuarterTile[4], BOOL quarterTileExists[4], RasterBuffer &zoomOutTileBuffer) 
+BOOL GMXZoomOutTileBuffer (RasterBuffer src_quarter_tile_buffers[4], BOOL src_quarter_tile_buffers_def[4], RasterBuffer &zoomed_out_tile_buffer) 
 {
 	int i;
 	for (i = 0; i<4;i++)
-		if (quarterTileExists[i]) break;
+		if (src_quarter_tile_buffers_def[i]) break;
 	if (i==4) return FALSE;
 	
-	int TILE_SIZE = MercatorTileGrid::TILE_SIZE;
-	zoomOutTileBuffer.createBuffer(srcQuarterTile[i].getBandsCount(),
-									TILE_SIZE,
-									TILE_SIZE,
+	int tile_size = MercatorTileGrid::TILE_SIZE;
+	zoomed_out_tile_buffer.CreateBuffer(src_quarter_tile_buffers[i].get_num_bands(),
+									tile_size,
+									tile_size,
 									NULL,
-									srcQuarterTile[i].getDataType(),
-									srcQuarterTile[i].getNoDataValue(),
-									srcQuarterTile[i].isAlphaBand());
+									src_quarter_tile_buffers[i].get_data_type(),
+									src_quarter_tile_buffers[i].get_nodata_value(),
+									src_quarter_tile_buffers[i].IsAlphaBand());
 	for (int n=0;n<4;n++)
 	{
-		if (quarterTileExists[n])
+		if (src_quarter_tile_buffers_def[n])
 		{
-			void *pZoomedData = srcQuarterTile[n].getDataZoomedOut();
-			zoomOutTileBuffer.setDataBlock(	(n%2)*TILE_SIZE/2,
-									(n/2)*TILE_SIZE/2,
-									TILE_SIZE/2,
-									TILE_SIZE/2,
-									pZoomedData);
-			delete[]pZoomedData;
+			void *p_zoomed_data = src_quarter_tile_buffers[n].GetDataZoomedOut();
+			zoomed_out_tile_buffer.SetPixelDataBlock(	(n%2)*tile_size/2,
+									(n/2)*tile_size/2,
+									tile_size/2,
+									tile_size/2,
+									p_zoomed_data);
+			delete[]p_zoomed_data;
 		}
 	}
 
 	return TRUE;
 }
-

@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "TileName.h"
-#include "TilePyramid.h"
+#include "TileContainer.h"
 #include "RasterFile.h"
 
 
@@ -10,163 +10,161 @@ class GMXTilingParameters
 {
 public:
 //обязательные параметры
-	string						inputPath;				//входной файл или шаблон имени файла
-	GMX::MercatorProjType		mercType;				//тип Меркатора
-	GMX::TileType				tileType;				//тип тайлов
+	string						input_path_;				//входной файл или шаблон имени файла
+	gmx::MercatorProjType		merc_type_;				//тип Меркатора
+	gmx::TileType				tile_type_;				//тип тайлов
 	
 
 //дополнительные параметры
-	int							baseZoom;				//максимальный (базовый зум)
-	int							minZoom;				//минимальный зум
-	string						vectorFile;				//векторная граница
-	string						containerFile;			//название файла-контейнера тайлов
-	bool						useContainer;			//писать тайлы в контейнер
-	BYTE						*pBackgroundColor;		//RGB-цвет для заливки фона в тайлах
-	BYTE						*pTransparentColor;		//RGB-цвет для маски прозрачности
-	int							*pNoDataValue;			//значение для маски прозрачности
-	bool						bAutoStretchTo8Bit;		//автоматически пересчитывать значения к 8 бит						
+	int							base_zoom_;				//максимальный (базовый зум)
+	int							min_zoom_;				//минимальный зум
+	string						vector_file_;				//векторная граница
+	string						container_file_;			//название файла-контейнера тайлов
+	bool						use_container_;			//писать тайлы в контейнер
+	BYTE						*p_background_color_;		//RGB-цвет для заливки фона в тайлах
+	BYTE						*p_transparent_color_;		//RGB-цвет для маски прозрачности
+	int							*p_nodata_value_;			//значение для маски прозрачности
+	bool						auto_stretch_to_8bit_;		//автоматически пересчитывать значения к 8 бит		
+  string          gdal_resampling_;				
 
 
-	int							nJpegQuality;
-	double						dShiftX;				//сдвиг по x
-	double						dShiftY;				//сдвиг по y
-	GMX::TileName				*poTileName;			//имена тайлов
-	int							maxTilesInCache;			//максимальное количество тайлов в оперативной памяти
+	int							jpeg_quality_;
+	double						shift_x_;				//сдвиг по x
+	double						shift_y_;				//сдвиг по y
+	gmx::TileName				*p_tile_name_;			//имена тайлов
+	int							max_tiles_in_cache_;			//максимальное количество тайлов в оперативной памяти
 
-	static const int			DEFAULT_JPEG_QUALITY = 80;
+	//static const int			DEFAULT_JPEG_QUALITY = 85;
 
 
-	GMXTilingParameters(string inputPath, GMX::MercatorProjType mercType, GMX::TileType tileType)
+	GMXTilingParameters(string input_path, gmx::MercatorProjType merc_type, gmx::TileType tile_type)
 	{
-		this->inputPath = inputPath;
-		this->mercType	= mercType;
-		this->tileType	= tileType;
+		input_path_ = input_path;
+		merc_type_	= merc_type;
+		tile_type_	= tile_type;
 		
-		this->useContainer = TRUE;
-		this->nJpegQuality = GMXTilingParameters::DEFAULT_JPEG_QUALITY;
-		this->dShiftX = 0;
-		this->dShiftY = 0;
-		this->poTileName = NULL;
-		this->pBackgroundColor	= NULL;
-		this->pTransparentColor = NULL;
-		this->pNoDataValue		= NULL;
-		this->baseZoom	= 0;
-		this->minZoom	= 0;
-		this->maxTilesInCache	= 0;
-		this->bAutoStretchTo8Bit = FALSE;
+		use_container_ = TRUE;
+		jpeg_quality_ = 0;
+		shift_x_ = 0;
+		shift_y_ = 0;
+		p_tile_name_ = NULL;
+		p_background_color_	= NULL;
+		p_transparent_color_ = NULL;
+		p_nodata_value_		= NULL;
+		base_zoom_	= 0;
+		min_zoom_	= 0;
+		max_tiles_in_cache_	= 0;
+		auto_stretch_to_8bit_ = FALSE;
 	}
 
 		
 	~GMXTilingParameters ()
 	{
-		delete(pBackgroundColor);
-		delete(pTransparentColor);
-		delete(pNoDataValue);		
+		delete(p_background_color_);
+		delete(p_transparent_color_);
+		delete(p_nodata_value_);		
 	}
 };
 
-BOOL GMXMakeTiling (	GMXTilingParameters		*poParams);
+BOOL GMXMakeTiling (	GMXTilingParameters		*p_tiling_params);
 
 
-BOOL GMXMakeZoomFromBundle (GMXTilingParameters				*poParams, 
-							GMX::BundleOfRasterFiles		*poBundle, 
-							int								nExpected, 
-							GMX::ITilePyramid				*tileContainer);
+BOOL GMXMakeBaseZoomTiling (GMXTilingParameters				*p_tiling_params, 
+							gmx::BundleOfRasterFiles		*p_bundle, 
+							gmx::ITileContainer				*p_tile_container);
 
 
 
-BOOL GMXMakePyramidFromBaseZoom (	GMX::VectorBorder	&oVectorBorder, 
-								int					nBaseZoom, 
-								int					nMinZoom, 
-								GMXTilingParameters	*poParams, 
-								int					&nExpectedTiles, 
-								int					&nGeneratedTiles, 
-								BOOL				bOnlyCalculate, 
-								GMX::ITilePyramid	*ITilePyramid,
-								int					nJpegQuality	= 80
+BOOL GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb, 
+								int					base_zoom, 
+								int					min_zoom, 
+								GMXTilingParameters	*p_tiling_params, 
+								int					&tiles_expected, 
+								int					&tiles_generated, 
+								BOOL				only_calculate, 
+								gmx::ITileContainer	*p_itile_pyramid
 								);
 
 
 struct GMXTilingFromBufferParams
 {
-	GMXTilingParameters				*poTilingParams;
-	GMX::RasterBuffer				*poBuffer;
-	GMX::BundleOfRasterFiles		*poBundle; 
-	int								nULx; 
-	int								nULy;
-	int								z;
-	int								nTilesExpected; 
-	int								*pnTilesGenerated;
-	GMX::ITilePyramid				*poTilePyramid;
-	BOOL (*pfCleanAfterTiling)(GMX::RasterBuffer*poBuffer);
+	GMXTilingParameters				*p_tiling_params_;
+	gmx::RasterBuffer				*p_buffer_;
+	gmx::BundleOfRasterFiles		*p_bundle_; 
+	int								ul_x_; 
+	int								ul_y_;
+	int								z_;
+	int								tiles_expected_; 
+	int								*p_tiles_generated_;
+  BOOL              *p_was_error_;
+	gmx::ITileContainer				*p_tile_container_;
+	BOOL (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
 };
 
-BOOL GMXPrintTilingProgress (int nExpectedTiles, int nGeneratedTiles);
+BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
 
 
-BOOL GMXTilingFromBuffer	(	GMXTilingParameters				*poTilingParams,
-								GMX::RasterBuffer				*poBuffer, 
-								GMX::BundleOfRasterFiles		*poBundle, 
-								int								nULx, 
-								int								nULy,
+BOOL GMXMakeTilingFromBuffer	(	GMXTilingParameters				*p_tiling_params,
+								gmx::RasterBuffer				*p_buffer, 
+								gmx::BundleOfRasterFiles		*p_bundle, 
+								int								ul_x, 
+								int								ul_y,
 								int								z,
-								int								nTilesExpected, 
-								int								*pnTilesGenerated,
-								GMX::ITilePyramid				*potilePyramid
+								int								tiles_expected, 
+								int								*p_tiles_generated,
+								gmx::ITileContainer				*p_tile_container
 								);
 
-int GMXCalcTilesAtZoomForBundle (GMXTilingParameters						*poParams, 
-									GMX::BundleOfRasterFiles	*poBundle, 
-									int							&nAllTiles, 
-									list<string>				&tilesList );
+/*
+int GMXCalcTilesAtZoomForBundle (GMXTilingParameters			*p_tiling_params, 
+									gmx::BundleOfRasterFiles	*p_bundle, 
+									int							&num_all_tiles, 
+									list<string>				&tile_list );
+*/
+
+DWORD WINAPIGMXCallTilingFromBuffer( LPVOID lpParam);
+
+BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer);
 
 
-DWORD WINAPI GMXCallTilingFromBuffer( LPVOID lpParam);
-
-BOOL GMXCleanAfterTilingFromBufer (GMX::RasterBuffer				*poBuffer);
-
-
-HANDLE GMXAsyncTilingFromBuffer	(GMXTilingParameters			*poTilingParams,
-								GMX::RasterBuffer				*poBuffer, 
-								GMX::BundleOfRasterFiles		*poBundle, 
-								int								nULx, 
-								int								nULy,
+HANDLE GMXAsyncMakeTilingFromBuffer	(GMXTilingParameters			*p_tiling_params,
+								gmx::RasterBuffer				*p_buffer, 
+								gmx::BundleOfRasterFiles		*p_bundle, 
+								int								ul_x, 
+								int								ul_y,
 								int								z,
-								int								nTilesExpected, 
-								int								*pnTilesGenerated,
-								GMX::ITilePyramid				*potilePyramid,
-								unsigned long					&threadId);
+								int								tiles_expected, 
+								int								*p_tiles_generated,
+								gmx::ITileContainer				*p_tile_container,
+								unsigned long					&thread_id,
+                BOOL              *p_was_error);
 	
 
-BOOL GMXMakeZoomOutTile (	GMX::VectorBorder				&oVectorBorder,
-								int								nCurrZoom,
-								int								nX,
-								int								nY,
-								int								nBaseZoom,
-								int								nMinZoom,
-								GMXTilingParameters				*poParams,
-								GMX::RasterBuffer				&oBuffer, 
-								int								&nExpectedTiles,
-								int								&nGeneratedTiles,
-								BOOL							bOnlyCalculate,
-								GMX::ITilePyramid				*ITilePyramid,
-								int								nJpegQuality = 80);
+BOOL GMXMakePyramidTileRecursively (	gmx::VectorBorder				&vb,
+								int								zoom,
+								int								x,
+								int								y,
+								int								base_zoom,
+								int								min_zoom,
+								GMXTilingParameters				*p_tiling_params,
+								gmx::RasterBuffer				&buffer, 
+								int								&tiles_expected,
+								int								&tiles_generated,
+								BOOL							only_calculate,
+								gmx::ITileContainer				*p_itile_pyramid,
+                BOOL              *p_was_error);
 
 
-BOOL GMXZoomOutTileBuffer		(	GMX::RasterBuffer				srcQuarterTile[4], 
-								BOOL							quarterTileExists[4], 
-								GMX::RasterBuffer				&zoomOutTileBuffer); 
+BOOL GMXZoomOutTileBuffer		(	gmx::RasterBuffer			src_quarter_tile_buffers[4], 
+								BOOL							src_quarter_tile_buffers_def[4], 
+								gmx::RasterBuffer				&zoomed_out_tile_buffer); 
 
 
-int GMXCalcTilesAtZoomForImage (	string						strImage, 
-									string						vectorFile, 
-									GMXTilingParameters			*poParams, 
-									GMX::BundleOfRasterFiles	*poBundle, 
-									list<string>				&tilesList);
-
-
-
-
-
-//#endif
+/*
+int GMXCalcTilesAtZoomForImage (	string						image_file, 
+									string						vector_file, 
+									GMXTilingParameters			*p_tiling_params, 
+									gmx::BundleOfRasterFiles	*p_bundle, 
+									list<string>				&tile_list);
+*/

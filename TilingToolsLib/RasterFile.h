@@ -9,7 +9,7 @@
 using namespace std;
 
 
-namespace GMX
+namespace gmx
 {
 
 
@@ -17,57 +17,55 @@ class RasterFile
 {
 
 public:
-	BOOL			init(string strRasterFile, BOOL isGeoReferenced, double dShiftX=0.0, double dShiftY=0.0 );
-	BOOL			close();
-
 	RasterFile();
-	RasterFile(string strRasterFile, BOOL isGeoReferenced = TRUE);
+	RasterFile(string raster_file, BOOL is_geo_referenced = TRUE);
 	~RasterFile(void);
 
-	void			getPixelSize (int &nWidth, int &nHeight);
-	void			getGeoReference (double &dULx, double &dULy, double &dRes);
-	double			getResolution();
+	BOOL			Init(string raster_file, BOOL is_geo_referenced, double shift_x=0.0, double shift_y=0.0 );
+	BOOL			Close();
 
-	BOOL			getSpatialRef(OGRSpatialReference	&oSRS); 
-	BOOL			getDefaultSpatialRef (OGRSpatialReference	&oSRS, MercatorProjType mercType);
+	void			GetPixelSize (int &width, int &height);
+	//void			getGeoReference (double &dULx, double &dULy, double &res);
+	//double		get_resolution();
 
-	GDALDataset*	getGDALDatasetRef();
+	BOOL			GetSpatialRef(OGRSpatialReference	&ogr_sr); 
+	BOOL			GetDefaultSpatialRef (OGRSpatialReference	&ogr_sr, MercatorProjType merc_type);
+
+	GDALDataset*	get_gdal_ds_ref();
 
 	
 
 public: 
-	void			setGeoReference		(double dResolution, double dULx, double dULy);
-	BOOL			computeStatistics	(int &bands, double *&min, double *&max, double *&mean, double *&stdDev);
-	BOOL			getNoDataValue		(int *pNoDataValue);
+	//void			setGeoReference		(double dResolution, double dULx, double dULy);
+	BOOL			CalcStatistics	(int &bands, double *&min, double *&max, double *&mean, double *&std_dev);
+	BOOL			get_nodata_value		(int *p_nodata_value);
 
 
 public:
+	//void			readMetaData ();
+	OGREnvelope*	CalcMercEnvelope (MercatorProjType	merc_type);
+
+	static			BOOL ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference *p_ogr_sr);
 
 
-	void			readMetaData ();
+protected:
+	//void			delete_all();
 	OGREnvelope		GetEnvelope ();
-	OGREnvelope*	calcMercatorEnvelope (MercatorProjType	mercType);
-
-	static			BOOL readSpatialRefFromMapinfoTabFile (string tabFilePath, OGRSpatialReference *poSRS);
-
 
 protected:
-	void			delete_all();
-
-protected:
-	_TCHAR buf[256];
-	string m_strRasterFile;
-	GDALDataset  *m_poDataset;
-	BOOL	m_isGeoReferenced;
-	int		m_nWidth;
-	int		m_nHeight;
-	double	m_dResolution;
-	double	m_dULx;
-	double	m_dULy;
-	int		m_nNoDataValue;
-	BOOL	m_bNoDataValueDefined;
-	int		m_nBands;
-	GDALDataType m_oGDALDataType;
+	_TCHAR	buf[256];
+	string	raster_file_;
+	GDALDataset	*p_gdal_ds_;
+	BOOL	is_georeferenced_;
+	int		width_;
+	int		height_;
+	double	resolution_;
+	double	ul_x_;
+	double	ul_y_;
+	int		nodata_value_;
+	BOOL	nodata_value_defined_;
+	int		num_bands_;
+	GDALDataType gdal_data_type_;
 
 };
 
@@ -75,42 +73,42 @@ protected:
 
 
 
-int _stdcall GMXPrintNoProgress ( double, const char*,void*);
+int _stdcall gmxPrintNoProgress ( double, const char*,void*);
 
 class BundleOfRasterFiles
 {
 public:
 	BundleOfRasterFiles(void);
 	~BundleOfRasterFiles(void);
-	void close_all();
+	void Close();
 
 public:
 	
-	int				init	(string inputPath, MercatorProjType mercType, string vectorFile="", 
-							double dShiftX = 0.0, double dShiftY = 0.0);
+	int				Init	(string input_path, MercatorProjType merc_type, string vector_file="", 
+							double shift_x = 0.0, double shift_y = 0.0);
 	//string			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
 
-	OGREnvelope		getEnvelope();
-	int				calculateNumberOfTiles (int zoom);
-	int				calculateBestMercZoom();
-	BOOL			warpToMercBuffer (	int zoom,	OGREnvelope	oMercEnvelope, RasterBuffer *poBuffer, 
-										int *pNoDataValue = NULL, BYTE *pDefaultColor = NULL);
+	OGREnvelope		CalcMercEnvelope();
+	int				CalcNumberOfTiles (int zoom);
+	int				CalcBestMercZoom();
+	BOOL			WarpToMercBuffer (	int zoom,	OGREnvelope	merc_envp, RasterBuffer *p_buffer, 
+                              string resampling_alg = "", int *p_nodata_value = NULL, BYTE *p_def_color = NULL);
 
-	list<string>	getFileList();
-	list<string>	getFileListByEnvelope(OGREnvelope mercatorEnvelope);
-	BOOL			intersects(OGREnvelope mercatorEnvelope);
+	list<string>	GetFileList();
+	list<string>	GetFileListByEnvelope(OGREnvelope merc_envp);
+	BOOL			Intersects(OGREnvelope merc_envp);
 
 
 
 	//BOOL			createBundleBorder (VectorBorder &border);	
 protected:
 
-	BOOL			addItemToBundle (string rasterFile, string	vectorFile, double dShiftX = 0.0, double dShiftY = 0.0);
+	BOOL			AddItemToBundle (string raster_file, string	vector_file, double shift_x = 0.0, double shift_y = 0.0);
 
 
 protected:
-	list<pair<string,pair<OGREnvelope*,VectorBorder*>>>	dataList;
-	MercatorProjType		mercType;
+	list<pair<string,pair<OGREnvelope*,VectorBorder*>>>	data_list_;
+	MercatorProjType		merc_type_;
 };
 
 

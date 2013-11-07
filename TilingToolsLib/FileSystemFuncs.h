@@ -3,28 +3,28 @@
 #include <windows.h>
 
 
-//string		_GetAbsolutePath(string path, string fileName);
-namespace GMX
+//string		_GetAbsolutePath(string path, string file_name);
+namespace gmx
 {
 
-string		RemovePath	(const string& fileName);
-string		RemoveExtension(string& fileName);
-string		GetPath(string fileName);
-string		RemoveEndingSlash(string	folderName);
-BOOL		FileExists	(string fileName);
+string		RemovePath	(const string& filename);
+string		RemoveExtension(string& filename);
+string		GetPath(string filename);
+string		RemoveEndingSlash(string	foldername);
+BOOL		FileExists	(string filename);
 BOOL		IsDirectory	(string path);
-BOOL		FindFilesInFolderByPattern (list<string> &fileList, string searchPattern);
-BOOL		FindFilesInFolderByExtension (list<string> &fileList, string strFolder, string	strExtension, BOOL bRecursive);
-BOOL		WriteToTextFile(string fileName, string strText);
-BOOL		writeWLDFile	(string fileName, double dULx, double dULy, double dRes);
-BOOL		SaveDataToFile	(string fileName, void *pData, int size);
-BOOL		ReadDataFromFile(string fileName, BYTE *&pData, unsigned int &size);
-string		GetAbsolutePath (string basePath, string relativePath);
+BOOL		FindFilesInFolderByPattern (list<string> &file_list, string search_pattern);
+BOOL		FindFilesInFolderByExtension (list<string> &file_list, string folder, string	extension, BOOL recursive);
+BOOL		WriteToTextFile(string filename, string str_text);
+BOOL		WriteWLDFile	(string filename, double ul_x, double ul_y, double res);
+BOOL		SaveDataToFile	(string filename, void *p_data, int size);
+BOOL		ReadDataFromFile(string filename, BYTE *&p_data, unsigned int &size);
+string		GetAbsolutePath (string base_path, string relative_path);
 string		GetExtension (string path);
 BOOL		CreateDirectory(string path);
 BOOL		DeleteFile(string	path);
-BOOL		RenameFile(string oldPath, string newPath);
-FILE*		OpenFile(string	fileName, string mode);
+BOOL		RenameFile(string old_path, string new_path);
+FILE*		OpenFile(string	file_name, string mode);
 
 
 
