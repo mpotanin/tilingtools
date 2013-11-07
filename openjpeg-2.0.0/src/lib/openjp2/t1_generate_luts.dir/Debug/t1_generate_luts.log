@@ -1,0 +1,33 @@
+﻿Build started 27.07.2013 15:40:11.
+     1>Project "C:\Work\Projects\openjpeg-2.0.0\src\lib\openjp2\t1_generate_luts.vcxproj" on node 2 (rebuild target(s)).
+     1>_PrepareForClean:
+         Deleting file "t1_generate_luts.dir\Debug\t1_generate_luts.lastbuildstate".
+       InitializeBuildStatus:
+         Creating "t1_generate_luts.dir\Debug\t1_generate_luts.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         Building Custom Rule C:/Work/Projects/openjpeg-2.0.0/src/lib/openjp2/CMakeLists.txt
+         CMake does not need to re-run because C:\Work\Projects\openjpeg-2.0.0\src\lib\openjp2\CMakeFiles\generate.stamp is up-to-date.
+       ClCompile:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"C:/Work/Projects/openjpeg-2.0.0/src/lib/openjp2" /Zi /nologo /W3 /WX- /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _CRT_FAR_MAPPINGS_NO_DEPRECATE /D _CRT_IS_WCTYPE_NO_DEPRECATE /D _CRT_MANAGED_FP_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _CRT_SECURE_NO_DEPRECATE /D _CRT_SECURE_NO_DEPRECATE_GLOBALS /D _CRT_SETERRORMODE_BEEP_SLEEP_NO_DEPRECATE /D _CRT_TIME_FUNCTIONS_NO_DEPRECATE /D _CRT_VCCLRIT_NO_DEPRECATE /D _SCL_SECURE_NO_DEPRECATE /D OPJ_EXPORTS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"t1_generate_luts.dir\Debug\\" /Fd"C:/Work/Projects/openjpeg-2.0.0/bin/Debug/t1_generate_luts.pdb" /Gd /TC /analyze- /errorReport:prompt t1_generate_luts.c
+         t1_generate_luts.c
+       ManifestResourceCompile:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\rc.exe /nologo /fo"t1_generate_luts.dir\Debug\t1_generate_luts.exe.embed.manifest.res" t1_generate_luts.dir\Debug\t1_generate_luts_manifest.rc 
+       Link:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Work\Projects\openjpeg-2.0.0\bin\Debug\t1_generate_luts.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /ManifestFile:"t1_generate_luts.dir\Debug\t1_generate_luts.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:/Work/Projects/openjpeg-2.0.0/bin/Debug/t1_generate_luts.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Work/Projects/openjpeg-2.0.0/bin/Debug/t1_generate_luts.lib" /MACHINE:X86 t1_generate_luts.dir\Debug\t1_generate_luts.exe.embed.manifest.res
+         t1_generate_luts.dir\Debug\t1_generate_luts.obj  /machine:X86 /debug 
+       Manifest:
+         Deleting file "t1_generate_luts.dir\Debug\t1_generate_luts.exe.embed.manifest".
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /out:"t1_generate_luts.dir\Debug\t1_generate_luts.exe.embed.manifest" /manifest t1_generate_luts.dir\Debug\t1_generate_luts.exe.intermediate.manifest
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\rc.exe /nologo /fo"t1_generate_luts.dir\Debug\t1_generate_luts.exe.embed.manifest.res" t1_generate_luts.dir\Debug\t1_generate_luts_manifest.rc 
+       LinkEmbedManifest:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Work\Projects\openjpeg-2.0.0\bin\Debug\t1_generate_luts.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /ManifestFile:"t1_generate_luts.dir\Debug\t1_generate_luts.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:/Work/Projects/openjpeg-2.0.0/bin/Debug/t1_generate_luts.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Work/Projects/openjpeg-2.0.0/bin/Debug/t1_generate_luts.lib" /MACHINE:X86 t1_generate_luts.dir\Debug\t1_generate_luts.exe.embed.manifest.res
+         t1_generate_luts.dir\Debug\t1_generate_luts.obj  /machine:X86 /debug 
+         t1_generate_luts.vcxproj -> C:\Work\Projects\openjpeg-2.0.0\bin\Debug\t1_generate_luts.exe
+       FinalizeBuildStatus:
+         Deleting file "t1_generate_luts.dir\Debug\t1_generate_luts.unsuccessfulbuild".
+         Touching "t1_generate_luts.dir\Debug\t1_generate_luts.lastbuildstate".
+     1>Done Building Project "C:\Work\Projects\openjpeg-2.0.0\src\lib\openjp2\t1_generate_luts.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.92
