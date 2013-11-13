@@ -226,7 +226,11 @@ int _tmain(int argc, wchar_t* argvW[])
     gmx::ReplaceAll(argv[i],"\\","/");
   }
   
-  if (!gmx::LoadGDAL(argc,argv)) return -1;
+  if (!gmx::LoadGDAL(argc,argv))
+  {
+    cout<<"ERROR: can't load GDAL"<<endl;
+    return 1;
+  }
   GDALAllRegister();
   OGRRegisterAll();
 
@@ -351,7 +355,12 @@ int _tmain(int argc, wchar_t* argvW[])
 
 
   ///*
-  //input_path		= "C:\\Work\\Projects\\TilingTools\\autotest\\o42073g8.tif";
+  //input_path		= "C:\\Work\\Projects\\TilingTools\\autotest\\Eros-B_16bit_cut.tif";
+  //vector_file	= "C:\\Work\\Projects\\TilingTools\\autotest\\border_erosb\\erosb_border.shp";
+  //max_zoom_str		= "17";
+  //tile_name_template = "standard";
+
+
   //input_path		= "E:\\TestData\\o42073g8.tif";
   //vector_file	= "C:\\Work\\Projects\\TilingTools\\autotest\\border_o42073g8\\border.shp";
   //use_container = "-container";

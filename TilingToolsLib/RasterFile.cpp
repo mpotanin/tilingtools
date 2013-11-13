@@ -510,9 +510,13 @@ BOOL	BundleOfRasterFiles::Intersects(OGREnvelope envp_merc)
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
 		if ((*iter).second.second != NULL)
+    {
 			if ((*iter).second.second->Intersects(envp_merc)) return TRUE;
-		if ((*iter).second.first != NULL)
+    }
+    else if ((*iter).second.first != NULL)
+    {
 			if ((*iter).second.first->Intersects(envp_merc)) return TRUE;
+    }
 	}
 	
 	return FALSE;
