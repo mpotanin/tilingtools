@@ -131,14 +131,14 @@ BOOL CheckArgsAndCallTiling (string input_path,
   if (min_zoom_str != "")	tiling_params.min_zoom_ = (int)atof(min_zoom_str.c_str());
   if (vector_file!="") tiling_params.vector_file_ = vector_file;
   
-  if (use_container=="")
+  tiling_params.use_container_	= !(use_container=="");
+  
+  if (!tiling_params.use_container_)
   {
-    tiling_params.use_container_ = FALSE;
     if (output_path == "")
-    {
       output_path = (file_list.size()>1) ? gmx::RemoveEndingSlash(gmx::GetPath((*file_list.begin())))+"_tiles" :
                                            gmx::RemoveExtension((*file_list.begin()))+"_tiles";
-    }
+    
     if (!gmx::IsDirectory(output_path))
     {
       if (!gmx::CreateDirectory(output_path.c_str()))
@@ -147,35 +147,36 @@ BOOL CheckArgsAndCallTiling (string input_path,
         return FALSE;
       }
     }
-    if ((tile_name_template=="") || (tile_name_template=="kosmosnimki"))
-      tiling_params.p_tile_name_ = new gmx::KosmosnimkiTileName(output_path,tile_type);
-    else if (tile_name_template=="standard") 
-      tiling_params.p_tile_name_ = new gmx::StandardTileName(	output_path,("{z}/{x}/{z}_{x}_{y}." + 
-                              gmx::TileName::TileExtension(tile_type)));
-    else 
-      tiling_params.p_tile_name_ = new gmx::StandardTileName(output_path,tile_name_template);
+    
   }
   else
   {
-    tiling_params.use_container_	= TRUE;
     string containerExt	= (use_container == "-container") ? "tiles" : "mbtiles"; 
-    if (output_path == "")
-       tiling_params.container_file_ = gmx::RemoveExtension((*file_list.begin())) + "." + containerExt;
+    if (gmx::IsDirectory(output_path))
+    {
+      tiling_params.container_file_ =  gmx::GetAbsolutePath(output_path,gmx::RemoveExtension(gmx::RemovePath((*file_list.begin())))+"."+containerExt);
+    }
     else
-       tiling_params.container_file_ =  (gmx::GetExtension(output_path) == containerExt) ? output_path :
-        gmx::GetAbsolutePath(output_path,gmx::RemoveExtension(gmx::RemovePath((*file_list.begin())))+"."+containerExt);
-
-     /*
-    tiling_params.container_file_ = (output_path == "")	?
-                  gmx::RemoveExtension((*file_list.begin())) + "." + containerExt :
-                (gmx::IsDirectory(output_path)) ?
-                  gmx::RemoveEndingSlash(output_path) + "/" + 
-                  gmx::RemoveExtension(gmx::RemovePath((*file_list.begin()))) + "." + containerExt :
-                (gmx::GetExtension(output_path) == containerExt) ?
-                  output_path :
-                  output_path + "." + containerExt;
-    */
+    {
+      if (output_path == "")
+       tiling_params.container_file_ = gmx::RemoveExtension((*file_list.begin())) + "." + containerExt;
+      else
+       tiling_params.container_file_ =  (gmx::GetExtension(output_path) == containerExt) ? output_path : output_path+"."+containerExt;
+    }
   }
+
+
+  if (!tiling_params.use_container_ )
+  {
+    if ((tile_name_template=="") || (tile_name_template=="kosmosnimki"))
+        tiling_params.p_tile_name_ = new gmx::KosmosnimkiTileName(output_path,tile_type);
+    else if (tile_name_template=="standard") 
+        tiling_params.p_tile_name_ = new gmx::StandardTileName(	output_path,("{z}/{x}/{z}_{x}_{y}." + 
+                                gmx::TileName::TileExtension(tile_type)));
+    else 
+        tiling_params.p_tile_name_ = new gmx::StandardTileName(output_path,tile_name_template);
+  }
+
 
   if ((shift_x_str!="")) tiling_params.shift_x_=atof(shift_x_str.c_str());
   if ((shift_y_str!="")) tiling_params.shift_y_=atof(shift_y_str.c_str());
