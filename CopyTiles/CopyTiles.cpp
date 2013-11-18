@@ -56,8 +56,8 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	*/
-	//srcPath			= "e:\\test_images\\po_731070_0000004_merc.tiles";
-	//destPath		= "e:\\test_images\\po_731070_0000004_merc_esri_tiles";
+	//srcPath			= "e:\\test_images\\scn_120719_Vrangel_island_SWA.tiles";
+	//destPath		= "e:\\test_images\\png";
   //strDestTemplate	= "{l}/{r}/{c}.jpg";
 
 	//srcPath			= "C:\\Work\\Projects\\TilingTools\\autotest\\new_rast.mbtiles";
@@ -279,12 +279,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	cout<<"calculating number of tiles: ";
 	cout<<poSrcITileContainer->GetTileList(tile_list,min_zoom,nMaxZoom,borderFilePath)<<endl;
 	
-  BYTE	*tileData = NULL;
-	unsigned int		tileSize = 0;
-	BOOL b = poSrcITileContainer->GetTile(18,158427,82102,tileData,tileSize);
-
-
-	if (tile_list.size()>0)
+  if (tile_list.size()>0)
 	{
 		cout<<"coping tiles: 0% ";
 		int tilesCopied = 0;

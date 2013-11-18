@@ -430,7 +430,7 @@ BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data,
 BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
 	unsigned int n	= TileID(z,x,y);
-	if (n>= max_tiles_ && n<0) return FALSE;
+	if (n>= max_tiles_ || n<0) return FALSE;
 	if (!(size = p_sizes_[n])) return TRUE;
 	
 	if (!p_container_file_)
