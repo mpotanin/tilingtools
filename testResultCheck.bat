@@ -29,7 +29,7 @@ echo ##teamcity[testFailed name='Compare Files2']
 :test3
 echo ##teamcity[testStarted name='Compare Files3']
 set fileSource3=%1\TilingTools\6_0_16.png
-set fileGenerated3=%2\testOutput\copy3\6\0\6_0_16.png
+set fileGenerated3=%2\testOutput\copy3\6\0\16.png
 fc %fileSource3% %fileGenerated3% > nul
 if errorlevel 1 goto errortest3
 :nexttest3
@@ -53,7 +53,7 @@ echo ##teamcity[testFailed name='Compare Files4']
 :test5
 echo ##teamcity[testStarted name='Compare Files5']
 set fileSource5=%1\TilingTools\16_19307_24127.png
-set fileGenerated5=%2\testOutput\o42073g8_tiles\16\19307\16_19307_24127.png
+set fileGenerated5=%2\testOutput\o42073g8_tiles\16\19307\24127.png
 fc %fileSource5% %fileGenerated5% > nul
 if errorlevel 1 goto errortest5
 :nexttest5
@@ -65,7 +65,7 @@ echo ##teamcity[testFailed name='Compare Files5']
 :test6
 echo ##teamcity[testStarted name='Compare Files6']
 set fileSource6=%1\TilingTools\16_19307_24127_2.png
-set fileGenerated6=%2\testOutput\schenectady_tiles\16\19307\16_19307_24127.png
+set fileGenerated6=%2\testOutput\schenectady_tiles\16\19307\24127.png
 fc %fileSource6% %fileGenerated6% > nul
 if errorlevel 1 goto errortest6
 :nexttest6
