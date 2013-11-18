@@ -3,6 +3,7 @@
 #define IMAGE_BUFFER_H
 #include "stdafx.h"
 #include "histogram.h"
+#include "VectorBorder.h"
 
 
 namespace gmx
@@ -59,11 +60,13 @@ public:
 	BOOL			ConvertFromIndexToRGB ();
 	BOOL			ConvertFromPanToRGB();
 	BOOL			CreateAlphaBandByColor(BYTE	*p_rgb);
-	BOOL			IsAlphaBand();
+	BOOL      CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb);
+
+  BOOL			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
 	BOOL			StretchDataTo8Bit(double *min_values, double *max_values);
   BOOL      AddPixelDataToHistogram(Histogram *p_hist);
-
+  
 
 public:
 	BOOL			set_nodata_value(int nodata_value = 0);

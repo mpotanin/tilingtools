@@ -8,6 +8,10 @@
 
 int _tmain(int argc, wchar_t* argvW[])
 {
+  //std::regex rx;
+  //rx = "(L[A-Fa-f0-9]{1,2})";//_(R\\x{8,8})_(C\\x{8,8}).jpg";
+
+
 	if (argc == 1)
 	{
 		cout<<"Usage: "<<endl;
@@ -24,7 +28,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		gmx::ReplaceAll(argv[i],"\\","/");
 	}
 	
-	if (!gmx::LoadGDAL(argc,argv)) return -1;
+	if (!gmx::LoadGDAL(argc,argv)) return 1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
@@ -52,8 +56,10 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	*/
-	//srcPath			= "C:\\Users\\mpotanin\\Downloads\\Layers.mbtiles";
-	//destPath		= "C:\\Users\\mpotanin\\Downloads\\Layers.tiles";
+	//srcPath			= "e:\\test_images\\po_731070_0000004_merc.tiles";
+	//destPath		= "e:\\test_images\\po_731070_0000004_merc_esri_tiles";
+  //strDestTemplate	= "{l}/{r}/{c}.jpg";
+
 	//srcPath			= "C:\\Work\\Projects\\TilingTools\\autotest\\new_rast.mbtiles";
 	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
 	//strZoom			= "9";
@@ -69,27 +75,27 @@ int _tmain(int argc, wchar_t* argvW[])
 	if (srcPath == "")
 	{
 		cout<<"ERROR: missing \"-from\" parameter"<<endl;
-		return -1;
+		return 1;
 	}
 
 	if (destPath == "")
 	{
 		cout<<"ERROR: missing \"-to\" parameter"<<endl;
-		return -1;
+		return 1;
 	}
 
 	/*
 	if (borderFilePath == "")
 	{
 		cout<<"ERROR: missing \"-border\" parameter"<<endl;
-		return -1;
+		return 1;
 	}
 	*/
 
 	if (!gmx::FileExists(srcPath))
 	{
 		cout<<"ERROR: can't find input folder or file: "<<srcPath<<endl;
-		return -1;
+		return 1;
 	}
 
 	//bSrcContainerFile = IsDirectory(srcPath) ? FALSE : TRUE;
@@ -101,7 +107,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			if (!gmx::DeleteFile(destPath))
 			{
 				cout<<"ERROR: can't delete existing file: "<<destPath<<endl;
-				return -1;
+				return 1;
 			}
 		}
 	}
@@ -110,7 +116,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	if ((borderFilePath != "") && !gmx::FileExists(borderFilePath))
 	{
 		cout<<"ERROR: can't open file: "<<borderFilePath<<endl;
-		return -1;
+		return 1;
 	}
 	
 	if (strZooms=="")
@@ -127,22 +133,6 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	
-
-	if ((strDestTemplate!="") &&  
-		(strDestTemplate!="standard")&&
-		(strDestTemplate!="kosmosnimki"))
-		if (!gmx::StandardTileName::ValidateTemplate(strDestTemplate)) return FALSE;
-
-	
-	if ((gmx::IsDirectory(srcPath)) &&
-		(strSrcTemplate!="") && 
-		(strSrcTemplate!="standard")&&
-		(strSrcTemplate!="kosmosnimki"))
-		if (!gmx::StandardTileName::ValidateTemplate(strSrcTemplate))
-		{
-			cout<<"ERROR: can't validate src template: "<<strSrcTemplate<<endl;
-			return -1;
-		}
 
 	gmx::TileType tile_type;
 	gmx::MercatorProjType merc_type;
@@ -168,7 +158,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		if (! poSrcContainer)
 		{
 			cout<<"ERROR: can't init. tile container: "<<srcPath<<endl;
-			return -1;
+			return 1;
 		}
 
 		tile_type = poSrcContainer->GetTileType();
@@ -183,7 +173,7 @@ int _tmain(int argc, wchar_t* argvW[])
 					gmx::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? gmx::PNG_TILE : gmx::TIFF_TILE;
 		}
 
-		cout<<"Input container info: tile_type="<<gmx::TileName::TileExtension(poSrcContainer->GetTileType());
+		cout<<"Input container info: tile_type="<<gmx::TileName::ExtensionByTileType(poSrcContainer->GetTileType());
 		cout<<", proj="<<(poSrcContainer->GetProjType()==gmx::WEB_MERCATOR)<<endl;
 		delete(poSrcContainer);		
 	}
@@ -196,9 +186,16 @@ int _tmain(int argc, wchar_t* argvW[])
 		if ((strSrcTemplate=="") || (strSrcTemplate=="kosmosnimki"))
 			poSrcTileName = new gmx::KosmosnimkiTileName(srcPath,tile_type);
 		else if (strSrcTemplate=="standard") 
-			poSrcTileName = new gmx::StandardTileName(srcPath,("{z}/{x}/{z}_{x}_{y}."+ gmx::TileName::TileExtension(tile_type)));
-		else 
+			poSrcTileName = new gmx::StandardTileName(srcPath,("{z}/{x}/{y}."+ gmx::TileName::ExtensionByTileType(tile_type)));
+    else if (gmx::ESRITileName::ValidateTemplate(strDestTemplate))
+      poSrcTileName = new gmx::ESRITileName(srcPath,strSrcTemplate);
+    else if (gmx::StandardTileName::ValidateTemplate(strSrcTemplate))
 			poSrcTileName = new gmx::StandardTileName(srcPath,strSrcTemplate);
+    else
+    {
+      cout<<"ERROR: can't validate src_template: "<<strSrcTemplate<<endl;
+      return 1;
+    }
 	}
 
 	gmx::ITileContainer	*poSrcITileContainer = NULL;
@@ -217,17 +214,23 @@ int _tmain(int argc, wchar_t* argvW[])
 			if (!gmx::CreateDirectory(destPath.c_str()))
 			{
 				cout<<"ERROR: can't create folder: "<<destPath<<endl;
-				return -1;
+				return 1;
 			}
 		}
-
-		if ((strDestTemplate=="") || (strDestTemplate=="kosmosnimki"))
+    
+    if ((strDestTemplate=="") || (strDestTemplate=="kosmosnimki"))
 			poDestTileName = new gmx::KosmosnimkiTileName(destPath,tile_type);
-		else if (strDestTemplate=="standard") 
-			poDestTileName = new gmx::StandardTileName(destPath,("{z}/{x}/{z}_{x}_{y}."+gmx::TileName::TileExtension(tile_type)));
-		else 
+		else if (gmx::ESRITileName::ValidateTemplate(strDestTemplate))
+      poDestTileName = new gmx::ESRITileName(destPath,strDestTemplate);
+    else if (strDestTemplate=="standard") 
+			poDestTileName = new gmx::StandardTileName(destPath,("{z}/{x}/{y}."+gmx::TileName::ExtensionByTileType(tile_type)));
+    else if (gmx::StandardTileName::ValidateTemplate(strDestTemplate))
 			poDestTileName = new gmx::StandardTileName(destPath,strDestTemplate);
-
+    else
+    {
+      cout<<"ERROR: can't validate dest_template: "<<strDestTemplate<<endl;
+      return 1;
+    }
 		poDestITileContainer = new gmx::TileFolder(poDestTileName,FALSE);
 	}
 	else
@@ -241,7 +244,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			if (!pVB)
 			{
 				cout<<"ERROR: reading vector file: "<<borderFilePath<<endl;
-				return -1;
+				return 1;
 			}
 			merc_envp = pVB->GetEnvelope();
 			delete(pVB);
@@ -251,7 +254,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			if (!poSrcITileContainer->GetTileBounds(tile_bounds))
 			{
 				cout<<"ERROR: reading tile bounds from source: "<<srcPath<<endl;
-				return -1;
+				return 1;
 			}
 		}
 		if (gmx::MakeLower(destPath).find(".mbtiles") != string::npos) 
@@ -276,6 +279,11 @@ int _tmain(int argc, wchar_t* argvW[])
 	cout<<"calculating number of tiles: ";
 	cout<<poSrcITileContainer->GetTileList(tile_list,min_zoom,nMaxZoom,borderFilePath)<<endl;
 	
+  BYTE	*tileData = NULL;
+	unsigned int		tileSize = 0;
+	BOOL b = poSrcITileContainer->GetTile(18,158427,82102,tileData,tileSize);
+
+
 	if (tile_list.size()>0)
 	{
 		cout<<"coping tiles: 0% ";
@@ -291,8 +299,8 @@ int _tmain(int argc, wchar_t* argvW[])
 			if (poSrcITileContainer->GetTile(z,x,y,tileData,tileSize))
 			{
 				if(poDestITileContainer->AddTile(z,x,y,tileData,tileSize)) tilesCopied++;
-			}
-			delete[]tileData;
+      }
+      delete[]tileData;
 			
 			GMXPrintTilingProgress(tile_list.size(),tilesCopied);
 		}

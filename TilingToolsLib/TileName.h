@@ -3,7 +3,6 @@
 #ifndef IMAGE_TILLING_TILENAME_H
 #define IMAGE_TILLING_TILENAME_H
 #include "stdafx.h"
-#include "RasterBuffer.h"
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
@@ -256,7 +255,7 @@ class TileName
 {
 public:
 
-	static string TileExtension(TileType tile_type)
+	static string ExtensionByTileType(TileType tile_type)
 	{
 		switch (tile_type)
 		{
@@ -271,6 +270,34 @@ public:
 		}
 		return "";
 	}
+
+  static BOOL TileTypeByExtension (string tile_extension, TileType &tile_type)
+	{
+    tile_extension = MakeLower(tile_extension);
+		if ((tile_extension == "jpg") || (tile_extension == "jpeg") || (tile_extension == ".jpg"))
+    {
+      tile_type = JPEG_TILE;
+      return TRUE;
+    }
+    else if ((tile_extension == "png") || (tile_extension == ".png"))
+    {
+      tile_type = gmx::PNG_TILE;
+      return TRUE;
+    }
+    else if ((tile_extension == "jp2") || (tile_extension == ".jp2")||(tile_extension == "jpeg2000"))
+    {
+      tile_type = gmx::JP2_TILE;
+      return TRUE;
+    }
+    else if ((tile_extension == "tif") || (tile_extension == ".tif")||(tile_extension == "tiff"))
+    {
+      tile_type = gmx::TIFF_TILE;
+      return TRUE;
+ 	  }
+    else return FALSE;
+ }
+  
+  
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ///Эти методы нужно реализовать в производном классе (см. KosmosnimkiTileName)
@@ -296,7 +323,7 @@ public:
 public:
 	string		base_folder_;
 	TileType	tile_type_;
-	//string	TileExtension;
+	//string	ExtensionByTileType;
 
 protected:
 	char buf[1000];
@@ -326,6 +353,21 @@ public:
 	string	GetTileName (int zoom, int x, int y);
 	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
 	BOOL CreateFolder (int zoom, int x, int y);
+};
+
+
+class ESRITileName : public TileName
+{
+public:
+	ESRITileName (string base_folder, string str_template);
+	static BOOL	ValidateTemplate	(string str_template);
+	string	GetTileName (int zoom, int nX, int nY);
+
+	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	BOOL CreateFolder (int zoom, int nX, int nY);
+protected:
+	string	str_template_;
+	regex	rx_template_;
 };
 
 

@@ -11,6 +11,7 @@ string			MakeLower				(string str);
 void			ReplaceAll				(string	&str, const string	&from, const string	&to);
 BOOL			ConvertStringToRGB		(string str_color, BYTE rgb[3]);			
 string			ConvertIntToString		(int number);
+string    ConvertIntToHexadecimalString8 (int number);
 int				StrLen					(const unsigned char *str);
 
 

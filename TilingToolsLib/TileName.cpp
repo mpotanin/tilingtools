@@ -1,5 +1,7 @@
 #include "StdAfx.h"
 #include "TileName.h"
+
+
 namespace gmx
 {
 
@@ -45,32 +47,33 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 
 BOOL	StandardTileName::ValidateTemplate	(string str_template)
 {
+
 	if (str_template.find("{z}",0)==string::npos)
 	{
-		cout<<"ERROR: bad tile name template: missing {z}"<<endl;
+		//cout<<"ERROR: bad tile name template: missing {z}"<<endl;
 		return FALSE;
 	}
 	if (str_template.find("{x}",0)==string::npos)
 	{
-		cout<<"ERROR: bad tile name template: missing {x}"<<endl;
+		//cout<<"ERROR: bad tile name template: missing {x}"<<endl;
 		return FALSE;
 	}
 	if (str_template.find("{y}",0)==string::npos) 
 	{
-		cout<<"ERROR: bad tile name template: missing {y}"<<endl;
+		//cout<<"ERROR: bad tile name template: missing {y}"<<endl;
 		return FALSE;
 	}
 
 	if (str_template.find(".",0)==string::npos) 
 	{
-		cout<<"ERROR: bad tile name template: missing extension"<<endl;
+		//cout<<"ERROR: bad tile name template: missing extension"<<endl;
 		return FALSE;
 	}
 		
 	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
 	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
 	{
-		cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+		//cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
 		return FALSE;
 	}
 	return TRUE;
@@ -113,6 +116,110 @@ BOOL StandardTileName::CreateFolder (int zoom, int x, int y)
 }
 
 
+BOOL ESRITileName::CreateFolder (int zoom, int x, int y)
+{
+	string tile_name = GetTileName(zoom,x,y);
+	int n = 0;
+	while (tile_name.find("/",n)!=std::string::npos)
+	{
+		if (!FileExists(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
+			if (!CreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+		n = (tile_name.find("/",n)) + 1;
+	}
+	return TRUE;
+}
+
+
+BOOL	ESRITileName::ValidateTemplate	(string str_template)
+{
+  str_template = MakeLower(str_template);
+	if (str_template.find("{l}",0)==string::npos)
+	{
+		//cout<<"ERROR: bad tile name template: missing {L}"<<endl;
+		return FALSE;
+	}
+	if (str_template.find("{c}",0)==string::npos)
+	{
+		//cout<<"ERROR: bad tile name template: missing {C}"<<endl;
+		return FALSE;
+	}
+	if (str_template.find("{r}",0)==string::npos) 
+	{
+		//cout<<"ERROR: bad tile name template: missing {R}"<<endl;
+		return FALSE;
+	}
+
+	if (str_template.find(".",0)==string::npos) 
+	{
+		//cout<<"ERROR: bad tile name template: missing extension"<<endl;
+		return FALSE;
+	}
+		
+	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
+	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
+	{
+		//cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+
+ESRITileName::ESRITileName (string base_folder, string str_template)
+{
+  ReplaceAll(str_template,"\\","/");
+  ReplaceAll(str_template,"{l}","{L}");
+  ReplaceAll(str_template,"{r}","{R}");
+  ReplaceAll(str_template,"{c}","{C}");
+
+	if (!ValidateTemplate(str_template)) return;
+	if (!FileExists(base_folder)) return;
+
+	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
+	tile_type_ =	(MakeLower(tile_ext)=="jpg") ? JPEG_TILE :
+						(MakeLower(tile_ext)=="png") ? PNG_TILE :
+						(MakeLower(tile_ext)=="tif") ? TIFF_TILE : JPEG_TILE;
+	
+  base_folder_	= base_folder;
+	
+	if (str_template[0] == L'/') 	str_template = str_template.substr(1,str_template.length()-1);
+  str_template_ = str_template;
+		
+  ReplaceAll(str_template,"{L}","(L\\d{1,2})");
+  ReplaceAll(str_template,"{C}","(C[A-Fa-f0-9]{8,8})");
+  ReplaceAll(str_template,"{R}","(R[A-Fa-f0-9]{8,8})");
+	rx_template_ = ("(.*)" + str_template) + "(.*)";
+}
+
+
+string	ESRITileName::GetTileName (int zoom, int nX, int nY)
+{
+	string tile_name = str_template_;
+	ReplaceAll(tile_name,"{L}","L"+ConvertIntToString(zoom));
+	ReplaceAll(tile_name,"{C}","C"+ConvertIntToHexadecimalString8(nX));
+	ReplaceAll(tile_name,"{R}","R"+ConvertIntToHexadecimalString8(nY));
+
+  return tile_name;
+}
+
+
+BOOL ESRITileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+{
+	if (!regex_match(tile_name,rx_template_)) return FALSE;
+	match_results<string::const_iterator> mr;
+	regex_search(tile_name, mr, rx_template_);
+  
+  for (int i=0;i<mr.size();i++)
+  {
+    if (mr[i].str()[0]=='L') z = (int)atof(mr[i].str().c_str());
+    if (mr[i].str()[0]=='R') y = (int)atof(mr[i].str().c_str());
+    if (mr[i].str()[0]=='C') x = (int)atof(mr[i].str().c_str());
+  }
+
+ 	return TRUE;
+}
+
+
 KosmosnimkiTileName::KosmosnimkiTileName (string tiles_folder, TileType tile_type)
 {
 	base_folder_	= tiles_folder;
@@ -128,7 +235,7 @@ string	KosmosnimkiTileName::GetTileName (int zoom, int x, int y)
 		x = x-(1<<(zoom-1));
 		y = (1<<(zoom-1))-y-1;
 	}
-	sprintf(buf,"%d\\%d\\%d_%d_%d.%s",zoom,x,zoom,x,y,this->TileExtension(tile_type_).c_str());
+	sprintf(buf,"%d\\%d\\%d_%d_%d.%s",zoom,x,zoom,x,y,this->ExtensionByTileType(tile_type_).c_str());
 	return buf;
 }
 

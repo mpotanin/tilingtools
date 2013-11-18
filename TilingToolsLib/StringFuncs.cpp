@@ -31,6 +31,19 @@ void ReplaceAll(string	&str, const string	&from, const string	&to) {
     }
 }
 
+string    ConvertIntToHexadecimalString8 (int number)
+{
+  char buf[8];
+  string str;
+  
+  sprintf(buf,"%x",number);
+  str=buf;
+
+  for (int i=8-str.size();i>0;i--)
+    str = "0"+str;
+  
+  return str;
+}
 
 
 string ConvertIntToString(int number)

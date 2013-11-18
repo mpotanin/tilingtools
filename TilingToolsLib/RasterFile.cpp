@@ -654,7 +654,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 		if ((*iter).second.second)
 		{
 			VectorBorder	*p_vb = (*iter).second.second;
-			OGRGeometry		*p_ogr_geom = p_vb->GetOGRGeometryTransformed(&input_ogr_sr);
+			//OGRGeometry		*p_ogr_geom = p_vb->GetOGRGeometryTransformed(&input_ogr_sr);
 			double	gdal_transform[6];
 			if (CE_None == input_rf.get_gdal_ds_ref()->GetGeoTransform(gdal_transform))
 			{

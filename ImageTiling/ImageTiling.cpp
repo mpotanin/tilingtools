@@ -70,7 +70,7 @@ BOOL CheckArgsAndCallTiling (string input_path,
   if (input_path == "")
   {
     cout<<"ERROR: missing \"-file\" parameter"<<endl;
-    return -1;
+    return FALSE;
   }
 
 
@@ -79,7 +79,7 @@ BOOL CheckArgsAndCallTiling (string input_path,
   if (file_list.size()==0)
   {
     cout<<"ERROR: can't find input files by path: "<<input_path<<endl;
-    return -1;
+    return FALSE;
   }
 
   //синициализируем обязательные параметры для тайлинга
@@ -87,17 +87,6 @@ BOOL CheckArgsAndCallTiling (string input_path,
                       || (proj_type_str == "epsg:3395")
                     ) ? gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
 
-
-  if ( (use_container=="") && 
-     (tile_name_template!="") && 
-     (tile_name_template!="kosmosnimki") && 
-     (tile_name_template!="standard") 
-    )
-  {
-    if (!gmx::StandardTileName::ValidateTemplate(tile_name_template)) return FALSE;
-  }
-
-  
   gmx::TileType tile_type;
   if ((tile_type_str == ""))
   {
@@ -106,23 +95,13 @@ BOOL CheckArgsAndCallTiling (string input_path,
                                                 tile_name_template.length()-tile_name_template.rfind(".")-1
                                                 );
     else
-      tile_type = (gmx::MakeLower(gmx::GetExtension((*file_list.begin())))== "png") ? gmx::PNG_TILE : gmx::JPEG_TILE;
+      tile_type_str =  (gmx::MakeLower(gmx::GetExtension((*file_list.begin())))== "png") ? "png" : "jpg";
   }
-  else if ((tile_type_str == "jpg") || (tile_type_str == "jpeg") || (tile_type_str == ".jpg"))
+
+  if (!gmx::TileName::TileTypeByExtension(tile_type_str,tile_type))
   {
-    tile_type = gmx::JPEG_TILE;
-  }
-  else if ((tile_type_str == "png") || (tile_type_str == ".png"))
-  {
-    tile_type = gmx::PNG_TILE;
-  }
-  else if ((tile_type_str == "jp2") || (tile_type_str == ".jp2")||(tile_type_str == "jpeg2000"))
-  {
-    tile_type = gmx::JP2_TILE;
-  }
-  else if ((tile_type_str == "tif") || (tile_type_str == ".tif")||(tile_type_str == "tiff"))
-  {
-    tile_type = gmx::TIFF_TILE;
+    cout<<"ERROR: not valid tile type: "<<tile_type_str;
+    return FALSE;
   }
   
   GMXTilingParameters tiling_params(input_path,merc_type,tile_type);
@@ -171,10 +150,17 @@ BOOL CheckArgsAndCallTiling (string input_path,
     if ((tile_name_template=="") || (tile_name_template=="kosmosnimki"))
         tiling_params.p_tile_name_ = new gmx::KosmosnimkiTileName(output_path,tile_type);
     else if (tile_name_template=="standard") 
-        tiling_params.p_tile_name_ = new gmx::StandardTileName(	output_path,("{z}/{x}/{z}_{x}_{y}." + 
-                                gmx::TileName::TileExtension(tile_type)));
-    else 
+        tiling_params.p_tile_name_ = new gmx::StandardTileName(	output_path,("{z}/{x}/{y}." + 
+                                gmx::TileName::ExtensionByTileType(tile_type)));
+    else if (gmx::ESRITileName::ValidateTemplate(tile_name_template))
+        tiling_params.p_tile_name_ = new gmx::ESRITileName(output_path,tile_name_template);
+    else if (gmx::StandardTileName::ValidateTemplate(tile_name_template))
         tiling_params.p_tile_name_ = new gmx::StandardTileName(output_path,tile_name_template);
+    else
+    {
+      cout<<"ERROR: can't validate \"-template\" parameter: "<<tile_name_template<<endl;
+      return FALSE;
+    }
   }
 
 
@@ -356,7 +342,8 @@ int _tmain(int argc, wchar_t* argvW[])
 
 
   ///*
-  //input_path		= "C:\\Work\\Projects\\TilingTools\\autotest\\Eros-B_16bit_cut.tif";
+  //input_path		= "E:\\test_images\\png\\171013.png";
+  //tile_name_template = "{l}\\{r}\\{c}.png";
   //vector_file	= "C:\\Work\\Projects\\TilingTools\\autotest\\border_erosb\\erosb_border.shp";
   //max_zoom_str		= "17";
   //tile_name_template = "standard";

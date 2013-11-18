@@ -1426,6 +1426,18 @@ BOOL	RasterBuffer::IsAlphaBand()
 	return alpha_band_defined_;
 }
 
+
+BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb)
+{
+
+  //в качестве входящих параметров нужна информация о привязке растрового буфера 
+
+
+  return TRUE;
+}
+
+
+
 BOOL	RasterBuffer::CreateAlphaBandByColor(BYTE	*pRGB)
 {
 	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3) || (p_color_table_)) return FALSE;

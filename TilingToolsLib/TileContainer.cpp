@@ -446,7 +446,7 @@ BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_d
 		
 	p_data			= new BYTE[p_sizes_[n]];
 	//Huge file _fseeki64 _ftelli64 in Visual C++
-	fread(p_data,1,size,p_container_file_);
+	return (size==fread(p_data,1,size,p_container_file_));
 };
 
 BOOL	GMXTileContainer::WriteTilesToContainerFileFromCache()
@@ -1010,7 +1010,7 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 	}
 
 	list<string> file_list;
-	FindFilesInFolderByExtension(file_list,p_tile_name_->GetBaseFolder(),TileName::TileExtension(p_tile_name_->tile_type_),TRUE);
+	FindFilesInFolderByExtension(file_list,p_tile_name_->GetBaseFolder(),TileName::ExtensionByTileType(p_tile_name_->tile_type_),TRUE);
 
   pair<int,pair<int,int>> p;
 	for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
