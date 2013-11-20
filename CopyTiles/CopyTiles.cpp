@@ -12,6 +12,7 @@ int _tmain(int argc, wchar_t* argvW[])
   //rx = "(L[A-Fa-f0-9]{1,2})";//_(R\\x{8,8})_(C\\x{8,8}).jpg";
 
 
+
 	if (argc == 1)
 	{
 		cout<<"Usage: "<<endl;
@@ -56,8 +57,9 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	*/
-	//srcPath			= "e:\\test_images\\scn_120719_Vrangel_island_SWA.tiles";
-	//destPath		= "e:\\test_images\\png";
+	//srcPath			= "e:\\test_images\\po_731070_0000004_merc.tiles";
+	//destPath		= "e:\\test_images\\po_731070_0000004_merc_esri_tiles";
+
   //strDestTemplate	= "{l}/{r}/{c}.jpg";
 
 	//srcPath			= "C:\\Work\\Projects\\TilingTools\\autotest\\new_rast.mbtiles";

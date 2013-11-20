@@ -683,9 +683,10 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 
 		p_warp_options->pfnTransformer = GDALApproxTransform;
 
+    resampling_alg = MakeLower(resampling_alg);
     if (resampling_alg == "bilinear") p_warp_options->eResampleAlg = GRA_Bilinear;
     else if (resampling_alg == "cubic") p_warp_options->eResampleAlg = GRA_Cubic;
-    else if (resampling_alg == "Lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
+    else if (resampling_alg == "lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
     
     
 

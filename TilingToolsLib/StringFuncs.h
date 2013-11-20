@@ -10,8 +10,8 @@ namespace gmx
 string			MakeLower				(string str);
 void			ReplaceAll				(string	&str, const string	&from, const string	&to);
 BOOL			ConvertStringToRGB		(string str_color, BYTE rgb[3]);			
-string			ConvertIntToString		(int number);
-string    ConvertIntToHexadecimalString8 (int number);
+string			ConvertIntToString		(int number, BOOL hexadecimal = FALSE, int adjust_len=0);
+/*string    ConvertIntToHexadecimalString (int number, int adjust_len = 0);*/
 int				StrLen					(const unsigned char *str);
 
 

@@ -185,7 +185,7 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 	if (str_template[0] == L'/') 	str_template = str_template.substr(1,str_template.length()-1);
   str_template_ = str_template;
 		
-  ReplaceAll(str_template,"{L}","(L\\d{1,2})");
+  ReplaceAll(str_template,"{L}","(L\\d{2})");
   ReplaceAll(str_template,"{C}","(C[A-Fa-f0-9]{8,8})");
   ReplaceAll(str_template,"{R}","(R[A-Fa-f0-9]{8,8})");
 	rx_template_ = ("(.*)" + str_template) + "(.*)";
@@ -195,9 +195,9 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	ReplaceAll(tile_name,"{L}","L"+ConvertIntToString(zoom));
-	ReplaceAll(tile_name,"{C}","C"+ConvertIntToHexadecimalString8(nX));
-	ReplaceAll(tile_name,"{R}","R"+ConvertIntToHexadecimalString8(nY));
+	ReplaceAll(tile_name,"{L}","L"+ ConvertIntToString(zoom,FALSE,2));
+	ReplaceAll(tile_name,"{C}","C"+ConvertIntToString(nX,TRUE,8));
+	ReplaceAll(tile_name,"{R}","R"+ConvertIntToString(nY,TRUE,8));
 
   return tile_name;
 }

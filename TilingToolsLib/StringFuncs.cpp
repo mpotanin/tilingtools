@@ -31,26 +31,48 @@ void ReplaceAll(string	&str, const string	&from, const string	&to) {
     }
 }
 
-string    ConvertIntToHexadecimalString8 (int number)
+/*
+string    ConvertIntToHexadecimalString (int number, int adjust_len)
 {
-  char buf[8];
-  string str;
-  
+  char buf[100];
   sprintf(buf,"%x",number);
-  str=buf;
 
-  for (int i=8-str.size();i>0;i--)
-    str = "0"+str;
-  
-  return str;
+  string str_res;
+
+  if (adjust_len==0) return str_res;
+  int buf_len = 0;
+  while (buf[buf_len]!=0)
+  {
+    buf_len++;
+    if ((buf_len>=100)||(buf_len>adjust_len)) return "";
+  }
+  for (int i=0;i<adjust_len;i++)
+    str_res+='0';
+  str_res.copy(buf,buf_len,adjust_len-buf_len);
+
+  return str_res;
 }
+*/
 
-
-string ConvertIntToString(int number)
+string ConvertIntToString(int number, BOOL hexadecimal, int adjust_len)
 {
-  	char buf[10];
-	sprintf(buf,"%d",number);
-	return buf;
+  char buf[100];
+  if (hexadecimal) sprintf(buf,"%x",number);
+  else sprintf(buf,"%d",number);
+  if (adjust_len==0) return buf;
+
+  string str_res(adjust_len,'0');
+
+  int buf_len = 0;
+  while (buf[buf_len]!=0)
+  {
+    buf_len++;
+    if ((buf_len>=100)||(buf_len>adjust_len)) return "";
+  }
+  
+  str_res.replace(adjust_len-buf_len,buf_len,buf);
+
+  return str_res;
 }
 
 BOOL	ConvertStringToRGB (string str_color, BYTE rgb[3])
