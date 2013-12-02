@@ -11,9 +11,7 @@ int _tmain(int argc, wchar_t* argvW[])
   //std::regex rx;
   //rx = "(L[A-Fa-f0-9]{1,2})";//_(R\\x{8,8})_(C\\x{8,8}).jpg";
 
-
-
-	if (argc == 1)
+  if (argc == 1)
 	{
 		cout<<"Usage: "<<endl;
 		cout<<"CopyTiles [-from input folder or container] [-to destination folder or container] [-border vector border] [-type input tiles type (jpg|png|tif)] [-zooms MinZoom-MaxZoom] [-proj input tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-src_template source tile name template] [-dest_template destination tile name template]\n"<<endl;
@@ -57,10 +55,11 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	*/
-	//srcPath			= "e:\\test_images\\po_731070_0000004_merc.tiles";
-	//destPath		= "e:\\test_images\\po_731070_0000004_merc_esri_tiles";
+	//srcPath			= "e:\\test_images\\po_731070_0000004_merc_std_tiles";
+  //destPath		= "e:\\test_images\\po_731070_0000004_merc_esri_5_tiles";
 
   //strDestTemplate	= "{l}/{r}/{c}.jpg";
+  //strSrcTemplate = "standard";
 
 	//srcPath			= "C:\\Work\\Projects\\TilingTools\\autotest\\new_rast.mbtiles";
 	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
