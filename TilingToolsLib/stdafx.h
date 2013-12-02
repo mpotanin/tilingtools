@@ -23,15 +23,15 @@
 #include <cstdlib>
 
 //#include "../pthread/pthread.h"
-#include "../gdal/include/gdal_priv.h"
-#include "../gdal/include/ogrsf_frmts.h"
-#include "../gdal/include/gd.h"
-#include "../gdal/include/vrtdataset.h"
-#include "../gdal/include/gdalwarper.h"
-#include "../gdal/include/sqlite3.h"
+#include "../gdal110/x86/include/gdal_priv.h"
+#include "../gdal110/x86/include/ogrsf_frmts.h"
+#include "../gdal110/x86/include/gd.h"
+#include "../gdal110/x86/include/vrtdataset.h"
+#include "../gdal110/x86/include/gdalwarper.h"
+#include "../gdal110/x86/include/sqlite3.h"
 //#include "../openjpeg-2.0/include/openjpeg.h"
 #include "../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
-//#include "../gdal110/x86/include/openjpeg.h"
+//#include "../gdal110/x86110/x86/include/openjpeg.h"
 
 
 

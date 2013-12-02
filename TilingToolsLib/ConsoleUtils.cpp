@@ -13,8 +13,8 @@ void	SetEnvironmentVariables (string gdal_path)
 	wstring env_PATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
 
 	wstring gdal_path_w, gdal_data_path_w, gdal_driver_path_w;
-	utf8toWStr(gdal_path_w,GetAbsolutePath(gdal_path,"bins"));
-  utf8toWStr(gdal_data_path_w,GetAbsolutePath(gdal_path,"bins\\gdal-data"));
+	utf8toWStr(gdal_path_w,GetAbsolutePath(gdal_path,"bin"));
+  utf8toWStr(gdal_data_path_w,GetAbsolutePath(gdal_path,"bin\\gdal-data"));
   gdal_driver_path_w=L"";
 
 	_wputenv((L"PATH=" + gdal_path_w + L";" + env_PATH).c_str());
@@ -45,6 +45,7 @@ BOOL LoadGDAL (int argc, string argv[])
 	}
 	
 	SetEnvironmentVariables(gdal_path);
+ 
 
 	if (!LoadGDALDLLs(gdal_path))
 	{
@@ -58,7 +59,8 @@ BOOL LoadGDAL (int argc, string argv[])
 BOOL LoadGDALDLLs (string gdal_path)
 {
 	wstring gdal_dll_w;
-	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal18.dll"));
+	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bin\\gdal110.dll"));
+
 	HMODULE b = LoadLibrary(gdal_dll_w.c_str());
 	return (b != NULL);
 }
