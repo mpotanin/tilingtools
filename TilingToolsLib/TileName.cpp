@@ -42,7 +42,8 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 	ReplaceAll(str_template,"{z}","(\\d+)");
 	ReplaceAll(str_template,"{x}","(\\d+)");
 	ReplaceAll(str_template,"{y}","(\\d+)");
-	rx_template_ = ("(.*)" + str_template) + "(.*)";
+	rx_template_ = ("(.*[\\/])" + str_template) + "(.*)";
+  //rx_template_ = str_template;
 }
 
 BOOL	StandardTileName::ValidateTemplate	(string str_template)
@@ -93,6 +94,12 @@ BOOL StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x,
 	if (!regex_match(tile_name,rx_template_)) return FALSE;
 	match_results<string::const_iterator> mr;
 	regex_search(tile_name, mr, rx_template_);
+  for (int i=0;i<mr.size();i++)
+  {
+    string str = mr[i].str();
+    i=i;
+  }
+
 	if ((mr.size()<=zxy_pos_[0])||(mr.size()<=zxy_pos_[1])||(mr.size()<=zxy_pos_[2])) return FALSE;
 	z = (int)atof(mr[zxy_pos_[0]].str().c_str());
 	x = (int)atof(mr[zxy_pos_[1]].str().c_str());

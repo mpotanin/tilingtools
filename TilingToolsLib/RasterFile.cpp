@@ -684,30 +684,25 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 		p_warp_options->pfnTransformer = GDALApproxTransform;
 
     resampling_alg = MakeLower(resampling_alg);
-    if (resampling_alg == "bilinear") p_warp_options->eResampleAlg = GRA_Bilinear;
-    else if (resampling_alg == "cubic") p_warp_options->eResampleAlg = GRA_Cubic;
+    if ((resampling_alg == "near") || (resampling_alg == "nearest")) p_warp_options->eResampleAlg = GRA_NearestNeighbour;
+    else if (resampling_alg == "bilinear") p_warp_options->eResampleAlg = GRA_Bilinear;
     else if (resampling_alg == "lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
-    
+    else p_warp_options->eResampleAlg = GRA_Cubic; 
     
 
 		// Initialize and execute the warp operation. 
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		
-    /*
-    if (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height))
-		{
-			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
-		}
-    */
-
+   
     BOOL  warp_error = FALSE;
+   
     if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
+    //if (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height))
 		{
 			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
       warp_error = TRUE;
 		}
-
     //p_warp_options->panDstBands = NULL;
     //p_warp_options->panSrcBands = NULL;
 
