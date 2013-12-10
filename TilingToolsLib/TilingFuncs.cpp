@@ -5,8 +5,15 @@ using namespace gmx;
 
 const int	GMX_MAX_BUFFER_WIDTH	= 16;
 //const int	GMX_MAX_TILES_IN_CACHE = 0xFFFF;
-int			GMX_MAX_THREADS	= 2;
-int			GMX_CURR_NUM_OF_THREADS = 1;
+int			GMX_MAX_WORK_THREADS	= 2;
+//int			GMX_CURR_NUM_OF_THREADS = 2;
+
+//int     GMX_MAX_WORK_THREADS_X64 = 10;
+
+//int     GMX_MAX_WORK_THREADS = 4;
+int     GMX_CURR_WARP_THREADS = 0;
+int     GMX_CURR_TILING_THREADS = 0;
+
 
 
 BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
@@ -198,63 +205,69 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 	return TRUE;
 }
 
-BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer)
+
+
+
+DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
 {
-	delete(p_buffer);
-	return TRUE;
-}
+  GMX_CURR_WARP_THREADS++;
+  GMXAsyncChunkTilingParams   *p_chunk_tiling_params = (GMXAsyncChunkTilingParams*)lpParam;
+  
+  GMXTilingParameters		*p_tiling_params = p_chunk_tiling_params->p_tiling_params_;
+  BundleOfRasterFiles		*p_bundle = p_chunk_tiling_params->p_bundle_;
+  ITileContainer			  *p_tile_container = p_chunk_tiling_params->p_tile_container_;
+  int                   zoom = p_chunk_tiling_params->z_;
+  OGREnvelope           chunk_envp = p_chunk_tiling_params->chunk_envp_;
+  int                   tiles_expected = p_chunk_tiling_params->tiles_expected_;
+  int                   *p_tiles_generated = p_chunk_tiling_params->p_tiles_generated_;
+  BOOL                  stretch_to_8bit = p_chunk_tiling_params->stretch_to_8bit_;
+  double		            *p_stretch_min_values = p_chunk_tiling_params->p_stretch_min_values_;
+  double                *p_stretch_max_values = p_chunk_tiling_params->p_stretch_max_values_;
+  
+  RasterBuffer *p_merc_buffer = new RasterBuffer();
+        
+  if (!p_bundle->WarpToMercBuffer(zoom,chunk_envp,p_merc_buffer,p_tiling_params->gdal_resampling_,p_tiling_params->p_nodata_value_,p_tiling_params->p_background_color_))
+	{
+		cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
+    //p_chunk_tiling_params->p_was_error_ = TRUE;
+		return FALSE;
+	}
 
-DWORD WINAPI GMXCallTilingFromBuffer( LPVOID lpParam )
-{
-	GMXTilingFromBufferParams	*p_from_buffer_params = (GMXTilingFromBufferParams*)lpParam;
-	//ToDo
-	//Обработка ошибки
-	BOOL succeed = GMXMakeTilingFromBuffer(p_from_buffer_params->p_tiling_params_,
-						p_from_buffer_params->p_buffer_,
-						p_from_buffer_params->p_bundle_,
-						p_from_buffer_params->ul_x_,
-						p_from_buffer_params->ul_y_,
-						p_from_buffer_params->z_,
-						p_from_buffer_params->tiles_expected_,
-						p_from_buffer_params->p_tiles_generated_,
-						p_from_buffer_params->p_tile_container_);
-	p_from_buffer_params->pfCleanAfterTiling(p_from_buffer_params->p_buffer_);
-	GMX_CURR_NUM_OF_THREADS--;
-	(*p_from_buffer_params->p_was_error_)=(!succeed);
-  return succeed;
-}
+  GMX_CURR_WARP_THREADS--;
+  GMX_CURR_TILING_THREADS++;
+  if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
+	if (stretch_to_8bit)
+	{
+		if (!p_merc_buffer->StretchDataTo8Bit(p_stretch_min_values,p_stretch_max_values))
+		{
+			cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
+      GMX_CURR_TILING_THREADS--;
+			return FALSE;
+		}
+				
+	}
 
-HANDLE GMXAsyncMakeTilingFromBuffer (	GMXTilingParameters		*p_tiling_params, 
-								RasterBuffer				*p_buffer, 
-								BundleOfRasterFiles			*p_bundle, 
-								int							ul_x, 
-								int							ul_y,
-								int							z,
-								int							tiles_expected, 
-								int							*p_tiles_generated,
-								ITileContainer				*p_tile_container,
-								unsigned long				&thread_id,
-                BOOL                *p_was_error)
-{
-	//запустить GMXMakeTilingFromBuffer в отдельном потоке
-	GMXTilingFromBufferParams	*p_from_buffer_params = new GMXTilingFromBufferParams;
-	
-	p_from_buffer_params->p_tiling_params_		= p_tiling_params;
-	p_from_buffer_params->p_buffer_				= p_buffer;
-	p_from_buffer_params->p_bundle_				= p_bundle;
-	p_from_buffer_params->tiles_expected_		= tiles_expected;
-	p_from_buffer_params->ul_x_					= ul_x;
-	p_from_buffer_params->ul_y_					= ul_y;
-	p_from_buffer_params->p_tiles_generated_	= p_tiles_generated;
-	p_from_buffer_params->p_tile_container_		= p_tile_container;	
-	p_from_buffer_params->z_					= z;
-	p_from_buffer_params->pfCleanAfterTiling	=GMXCleanAfterTilingFromBufer;
-  p_from_buffer_params->p_was_error_ = p_was_error;
+  int min_x,min_y,max_x,max_y;
+  MercatorTileGrid::CalcTileRange(chunk_envp,zoom,min_x,min_y,max_x,max_y);
 
+  if (!GMXMakeTilingFromBuffer(p_tiling_params,
+										p_merc_buffer,
+										p_bundle,
+										min_x,
+										min_y,
+										zoom,
+										tiles_expected,
+										p_tiles_generated,
+										p_tile_container))
+	{
+			cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
+			GMX_CURR_TILING_THREADS--;
+      return FALSE;
+	}
+	delete(p_merc_buffer);
+  GMX_CURR_TILING_THREADS--;
 
-	//Увеличить количество потоков
-	GMX_CURR_NUM_OF_THREADS++;
-	return CreateThread(NULL,0,GMXCallTilingFromBuffer,p_from_buffer_params,0,&thread_id);
+  return TRUE;
 }
 
 
@@ -307,7 +320,7 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 	cout<<"0% ";
 	fflush(stdout);
 
-	//if (p_bundle->getFileList().size()>1) GMX_MAX_THREADS = 1;
+	//if (p_bundle->getFileList().size()>1) GMX_MAX_WORK_THREADS = 1;
 
 	int minx,maxx,miny,maxy;
 	MercatorTileGrid::CalcTileRange(p_bundle->CalcMercEnvelope(),zoom,minx,miny,maxx,maxy);
@@ -319,14 +332,12 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
 	{
 		int curr_max_x =	(curr_min_x + GMX_MAX_BUFFER_WIDTH - 1 > maxx) ? 
-							maxx :  
-							curr_min_x + GMX_MAX_BUFFER_WIDTH - 1;
+							maxx : curr_min_x + GMX_MAX_BUFFER_WIDTH - 1;
 		
 		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=GMX_MAX_BUFFER_WIDTH)
 		{
 			int curr_max_y =	(curr_min_y + GMX_MAX_BUFFER_WIDTH - 1 > maxy) ? 
-								maxy :  
-								curr_min_y + GMX_MAX_BUFFER_WIDTH - 1;
+								maxy : curr_min_y + GMX_MAX_BUFFER_WIDTH - 1;
 			
 			OGREnvelope buffer_envp = MercatorTileGrid::CalcEnvelopeByTileRange(	zoom,
 																					curr_min_x,
@@ -334,96 +345,41 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 																					curr_max_x,
 																					curr_max_y);
 			if (!p_bundle->Intersects(buffer_envp)) continue;
-			RasterBuffer *p_merc_buffer = new RasterBuffer();
-
-      if (!p_bundle->WarpToMercBuffer(zoom,buffer_envp,p_merc_buffer,p_tiling_params->gdal_resampling_,p_tiling_params->p_nodata_value_,p_tiling_params->p_background_color_))
-			{
-				cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
-				return FALSE;
-			}
-
-      //p_merc_buffer->SaveBufferToFile("e:\\test_images\\1.tif");
-		
-      if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
-			
-			if (stretch_to_8bit)
-			{
-				if (!p_merc_buffer->StretchDataTo8Bit(p_stretch_min_values,p_stretch_max_values))
-				{
-					cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
-					return FALSE;
-				}
-				
-			}
-
-      //p_merc_buffer->SaveBufferToFile("e:\\test_images\\2.png");
-			
 			//ToDo
-			//(при этом требуется проконтролировать: многопоточность записи в ITileContainer, безопасность mercBuffer).
-			if (GMX_MAX_THREADS == 1)
-			{
-				if (!GMXMakeTilingFromBuffer(p_tiling_params,
-										p_merc_buffer,
-										p_bundle,
-										curr_min_x,
-										curr_min_y,
-										zoom,
-										tiles_expected,
-										&tiles_generated,
-										p_tile_container))
-				{
-					cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
-					return FALSE;
-				}
-				delete(p_merc_buffer);
-			}
-			else 
-			{
-				while (GMX_CURR_NUM_OF_THREADS==GMX_MAX_THREADS)
-        {
-					Sleep(250);
-        }
-				if (thread_handle!=NULL) 
-				{
-					CloseHandle(thread_handle);
-					thread_handle = NULL;
-          if (tiling_error)
-          {
-            cout<<"ERROR: BaseZoomTiling: AsyncMakeTilingFromBuffer fail"<<endl;
-            return FALSE;
-          }
-				}
-				if (!(thread_handle =GMXAsyncMakeTilingFromBuffer(	p_tiling_params,
-																p_merc_buffer,
-																p_bundle,
-																curr_min_x,
-																curr_min_y,
-																zoom,
-																tiles_expected,
-																&tiles_generated,
-																p_tile_container,
-																thread_id,
-                                &tiling_error)))
-				{
-					cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
-					return FALSE;
-				}
-			}
-		}
-	}
+      //проверить текущее количество потоков
+      //если много то, ждать
+      //запустить поток на перепроицирование + тайлинг
+      //написать функции GMXAsyncWarpAndTiling (...), GMXCallInThreadWarpAndTiling
+      
+      //вариант 2
+      //проверить: GMX_CURR_WARP_THREADS < GMX_MAX_WARP_THREADS AND GMX_MAX_TILING_THREADS > GMX_CURR_TILING_THREADS
+      //если не выполняется, то ждать
+      //запустить в потоке функцию на перепроицирование + тайлинг
 
-	while (GMX_CURR_NUM_OF_THREADS>1)
-		Sleep(250);
-	if (thread_handle!=NULL) 
-	{
-		CloseHandle(thread_handle);
-		thread_handle = NULL;
-    if (tiling_error)
-    {
-      cout<<"ERROR: BaseZoomTiling: AsyncMakeTilingFromBuffer fail"<<endl;
-      return FALSE;
+      while ((GMX_CURR_TILING_THREADS + GMX_CURR_WARP_THREADS >= GMX_MAX_WORK_THREADS) || (GMX_CURR_WARP_THREADS >=1))
+        Sleep(250);
+      
+      GMXAsyncChunkTilingParams	*p_chunk_tiling_params = new  GMXAsyncChunkTilingParams();
+      
+      p_chunk_tiling_params->p_tiling_params_ = p_tiling_params;
+      p_chunk_tiling_params->chunk_envp_ = buffer_envp;
+      p_chunk_tiling_params->p_bundle_ = p_bundle;
+      p_chunk_tiling_params->p_tile_container_ = p_tile_container;
+      p_chunk_tiling_params->p_tiles_generated_ = &tiles_generated;
+      p_chunk_tiling_params->tiles_expected_ = tiles_expected;
+      p_chunk_tiling_params->stretch_to_8bit_ = stretch_to_8bit;
+      p_chunk_tiling_params->p_stretch_min_values_ = p_stretch_min_values;
+      p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
+      p_chunk_tiling_params->z_ = zoom;
+      //DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
+
+     	CreateThread(NULL,0,GMXAsyncWarpAndTilingFromBuffer,p_chunk_tiling_params,0,&thread_id);
+      Sleep(100);
     }
 	}
+  while (GMX_CURR_TILING_THREADS + GMX_CURR_WARP_THREADS > 0)
+    Sleep(250);
+	
 	return TRUE;
 }
 
@@ -640,3 +596,153 @@ BOOL GMXZoomOutTileBuffer (RasterBuffer src_quarter_tile_buffers[4], BOOL src_qu
 
 	return TRUE;
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer)
+{
+	delete(p_buffer);
+	return TRUE;
+}
+
+
+DWORD WINAPI GMXCallTilingFromBuffer( LPVOID lpParam )
+{
+	GMXTilingFromBufferParams	*p_from_buffer_params = (GMXTilingFromBufferParams*)lpParam;
+	//ToDo
+	//Обработка ошибки
+	BOOL succeed = GMXMakeTilingFromBuffer(p_from_buffer_params->p_tiling_params_,
+						p_from_buffer_params->p_buffer_,
+						p_from_buffer_params->p_bundle_,
+						p_from_buffer_params->ul_x_,
+						p_from_buffer_params->ul_y_,
+						p_from_buffer_params->z_,
+						p_from_buffer_params->tiles_expected_,
+						p_from_buffer_params->p_tiles_generated_,
+						p_from_buffer_params->p_tile_container_);
+	p_from_buffer_params->pfCleanAfterTiling(p_from_buffer_params->p_buffer_);
+	GMX_CURR_NUM_OF_THREADS--;
+	(*p_from_buffer_params->p_was_error_)=(!succeed);
+  return succeed;
+}
+
+HANDLE GMXAsyncMakeTilingFromBuffer (	GMXTilingParameters		*p_tiling_params, 
+								RasterBuffer				*p_buffer, 
+								BundleOfRasterFiles			*p_bundle, 
+								int							ul_x, 
+								int							ul_y,
+								int							z,
+								int							tiles_expected, 
+								int							*p_tiles_generated,
+								ITileContainer				*p_tile_container,
+								unsigned long				&thread_id,
+                BOOL                *p_was_error)
+{
+	//запустить GMXMakeTilingFromBuffer в отдельном потоке
+	GMXTilingFromBufferParams	*p_from_buffer_params = new GMXTilingFromBufferParams;
+	
+	p_from_buffer_params->p_tiling_params_		= p_tiling_params;
+	p_from_buffer_params->p_buffer_				= p_buffer;
+	p_from_buffer_params->p_bundle_				= p_bundle;
+	p_from_buffer_params->tiles_expected_		= tiles_expected;
+	p_from_buffer_params->ul_x_					= ul_x;
+	p_from_buffer_params->ul_y_					= ul_y;
+	p_from_buffer_params->p_tiles_generated_	= p_tiles_generated;
+	p_from_buffer_params->p_tile_container_		= p_tile_container;	
+	p_from_buffer_params->z_					= z;
+	p_from_buffer_params->pfCleanAfterTiling	=GMXCleanAfterTilingFromBufer;
+  p_from_buffer_params->p_was_error_ = p_was_error;
+
+
+	//Увеличить количество потоков
+	GMX_CURR_NUM_OF_THREADS++;
+	return CreateThread(NULL,0,GMXCallTilingFromBuffer,p_from_buffer_params,0,&thread_id);
+}
+*/
+
+
+/*
+  while (GMX_CURR_NUM_OF_THREADS>1)
+		Sleep(250);
+	if (thread_handle!=NULL) 
+	{
+		CloseHandle(thread_handle);
+		thread_handle = NULL;
+    if (tiling_error)
+    {
+      cout<<"ERROR: BaseZoomTiling: AsyncMakeTilingFromBuffer fail"<<endl;
+      return FALSE;
+    }
+	}
+
+ RasterBuffer *p_merc_buffer = new RasterBuffer();
+
+      
+      if (!p_bundle->WarpToMercBuffer(zoom,buffer_envp,p_merc_buffer,p_tiling_params->gdal_resampling_,p_tiling_params->p_nodata_value_,p_tiling_params->p_background_color_))
+			{
+				cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
+				return FALSE;
+			}
+
+      if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
+			
+			if (stretch_to_8bit)
+			{
+				if (!p_merc_buffer->StretchDataTo8Bit(p_stretch_min_values,p_stretch_max_values))
+				{
+					cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
+					return FALSE;
+				}
+				
+			}
+            
+			if (GMX_MAX_WORK_THREADS == 1)
+			{
+				if (!GMXMakeTilingFromBuffer(p_tiling_params,
+										p_merc_buffer,
+										p_bundle,
+										curr_min_x,
+										curr_min_y,
+										zoom,
+										tiles_expected,
+										&tiles_generated,
+										p_tile_container))
+				{
+					cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
+					return FALSE;
+				}
+				delete(p_merc_buffer);
+			}
+			else 
+			{
+				while (GMX_CURR_NUM_OF_THREADS==GMX_MAX_WORK_THREADS)
+        {
+					Sleep(250);
+        }
+				if (thread_handle!=NULL) 
+				{
+					CloseHandle(thread_handle);
+					thread_handle = NULL;
+          if (tiling_error)
+          {
+            cout<<"ERROR: BaseZoomTiling: AsyncMakeTilingFromBuffer fail"<<endl;
+            return FALSE;
+          }
+				}
+				if (!(thread_handle =GMXAsyncMakeTilingFromBuffer(	p_tiling_params,
+																p_merc_buffer,
+																p_bundle,
+																curr_min_x,
+																curr_min_y,
+																zoom,
+																tiles_expected,
+																&tiles_generated,
+																p_tile_container,
+																thread_id,
+                                &tiling_error)))
+				{
+					cout<<"ERROR: BaseZoomTiling: GMXMakeTilingFromBuffer fail"<<endl;
+					return FALSE;
+				}
+			}
+*/

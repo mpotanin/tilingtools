@@ -85,7 +85,7 @@ BOOL GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb,
 								gmx::ITileContainer	*p_itile_pyramid
 								);
 
-
+/*
 struct GMXTilingFromBufferParams
 {
 	GMXTilingParameters				*p_tiling_params_;
@@ -100,6 +100,34 @@ struct GMXTilingFromBufferParams
 	gmx::ITileContainer				*p_tile_container_;
 	BOOL (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
 };
+*/
+
+/*
+
+                                       
+                                        BOOL                  stretch_to_8bit,
+                                        double		            *p_stretch_min_values,
+                                        double                *p_stretch_max_values)
+*/
+
+struct GMXAsyncChunkTilingParams
+{
+	GMXTilingParameters				*p_tiling_params_;
+	gmx::BundleOfRasterFiles	*p_bundle_; 
+	OGREnvelope               chunk_envp_;
+  int								        z_;
+	int								        tiles_expected_; 
+	int								        *p_tiles_generated_;
+  BOOL                      *p_was_error_;
+	gmx::ITileContainer				*p_tile_container_;
+  BOOL                      stretch_to_8bit_;
+  double		                *p_stretch_min_values_;
+  double                    *p_stretch_max_values_;
+  //BOOL (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
+};
+
+
+DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam);
 
 BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
@@ -123,11 +151,12 @@ int GMXCalcTilesAtZoomForBundle (GMXTilingParameters			*p_tiling_params,
 									list<string>				&tile_list );
 */
 
-DWORD WINAPIGMXCallTilingFromBuffer( LPVOID lpParam);
+//DWORD WINAPIGMXCallTilingFromBuffer( LPVOID lpParam);
 
-BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer);
+//BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer);
 
 
+/*
 HANDLE GMXAsyncMakeTilingFromBuffer	(GMXTilingParameters			*p_tiling_params,
 								gmx::RasterBuffer				*p_buffer, 
 								gmx::BundleOfRasterFiles		*p_bundle, 
@@ -138,7 +167,8 @@ HANDLE GMXAsyncMakeTilingFromBuffer	(GMXTilingParameters			*p_tiling_params,
 								int								*p_tiles_generated,
 								gmx::ITileContainer				*p_tile_container,
 								unsigned long					&thread_id,
-                BOOL              *p_was_error);
+                BOOL              p_was_error);
+*/
 	
 
 BOOL GMXMakePyramidTileRecursively (	gmx::VectorBorder				&vb,
