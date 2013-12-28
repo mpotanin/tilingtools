@@ -523,7 +523,14 @@ BOOL	BundleOfRasterFiles::Intersects(OGREnvelope envp_merc)
 }
 
 
-BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, RasterBuffer *p_buffer, string resampling_alg, int *p_nodata_value, BYTE *p_def_color)
+BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	
+                                            OGREnvelope	envp_merc, 
+                                            RasterBuffer *p_buffer, 
+                                            string resampling_alg, 
+                                            int *p_nodata_value, 
+                                            BYTE *p_def_color,
+                                            string temp_file_path,
+                                            int srand_seed)
 {
 	//создать виртуальный растр по envp_merc и zoom
 	//создать объект GDALWarpOptions 
@@ -545,11 +552,13 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
   BOOL			nodata_val_from_file_defined;
 	int				nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
 	
-	double			res			=  MercatorTileGrid::CalcResolutionByZoom(zoom);
+	double		res			=  MercatorTileGrid::CalcResolutionByZoom(zoom);
 	int				buf_width	= int(((envp_merc.MaxX - envp_merc.MinX)/res)+0.5);
 	int				buf_height	= int(((envp_merc.MaxY - envp_merc.MinY)/res)+0.5);
-	srand(0);
-	string			tiff_in_mem = "/vsimem/tiffinmem" + ConvertIntToString(rand());
+	
+  srand(srand_seed);
+  string			tiff_in_mem = (temp_file_path == "" ) ? ("/vsimem/tiffinmem" + ConvertIntToString(rand()))
+                                                    : RemoveEndingSlash(temp_file_path) + "/" + ConvertIntToString(rand()) + ".gdal.temp";
 	GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
 								tiff_in_mem.c_str(),
@@ -629,9 +638,18 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 
 		GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
 
+    //p_warp_options->papszWarpOptions
+
+    //char **papszWarpOptions; 
+    //papszWarpOptions = CSLSetNameValue(NULL,"INIT_DEST","NO_DATA");
+    p_warp_options->papszWarpOptions = NULL;
+    //p_warp_options->papszWarpOptions = CSLSetNameValue(NULL,"INIT_DEST","NO_DATA");
+    p_warp_options->papszWarpOptions = CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS");
+    
 		p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
 		p_warp_options->dfWarpMemoryLimit = 250000000; 
+    //p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
 
 		p_warp_options->nBandCount = 0;
@@ -696,9 +714,9 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 		
    
     BOOL  warp_error = FALSE;
-   
-    if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
     //if (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height))
+
+    if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
 		{
 			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
       warp_error = TRUE;
@@ -715,6 +733,8 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
     if (warp_error) return FALSE;
 	}
 
+  ///*
+
 	p_buffer->CreateBuffer(bands,buf_width,buf_height,NULL,dt,p_nodata_value,FALSE,
 						p_vrt_ds->GetRasterBand(1)->GetColorTable());
 	int nodata_value_from_file = 0;
@@ -724,7 +744,8 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 	p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_buffer->get_data_type(),
 						p_buffer->get_num_bands(),NULL,0,0,0);
-	
+	//*/
+
 	OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());

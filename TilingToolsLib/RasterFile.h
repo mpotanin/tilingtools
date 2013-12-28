@@ -91,8 +91,14 @@ public:
 	OGREnvelope		CalcMercEnvelope();
 	int				CalcNumberOfTiles (int zoom);
 	int				CalcBestMercZoom();
-	BOOL			WarpToMercBuffer (	int zoom,	OGREnvelope	merc_envp, RasterBuffer *p_buffer, 
-                              string resampling_alg = "", int *p_nodata_value = NULL, BYTE *p_def_color = NULL);
+	BOOL			WarpToMercBuffer (	int zoom,	
+                                OGREnvelope	merc_envp, 
+                                RasterBuffer *p_buffer,
+                                string resampling_alg = "", 
+                                int *p_nodata_value = NULL, 
+                                BYTE *p_def_color = NULL,
+                                string  temp_file_path = "",
+                                int srand_seed = 0);
 
 	list<string>	GetFileList();
 	list<string>	GetFileListByEnvelope(OGREnvelope merc_envp);

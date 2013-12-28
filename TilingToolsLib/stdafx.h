@@ -22,6 +22,8 @@
 #include <math.h>
 #include <cstdlib>
 
+///*
+
 //#include "../pthread/pthread.h"
 #include "../gdal110/x86/include/gdal_priv.h"
 #include "../gdal110/x86/include/ogrsf_frmts.h"
@@ -32,7 +34,7 @@
 //#include "../openjpeg-2.0/include/openjpeg.h"
 #include "../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
 //#include "../gdal110/x86110/x86/include/openjpeg.h"
-
+//*/
 
 
 #include <time.h>

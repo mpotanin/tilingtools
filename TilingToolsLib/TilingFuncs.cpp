@@ -5,7 +5,7 @@ using namespace gmx;
 
 const int	GMX_MAX_BUFFER_WIDTH	= 16;
 //const int	GMX_MAX_TILES_IN_CACHE = 0xFFFF;
-int			GMX_MAX_WORK_THREADS	= 2;
+//int			GMX_MAX_WORK_THREADS	= 2;
 //int			GMX_CURR_NUM_OF_THREADS = 2;
 
 //int     GMX_MAX_WORK_THREADS_X64 = 10;
@@ -208,7 +208,7 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 
 
 
-DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
+DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 {
   GMX_CURR_WARP_THREADS++;
   GMXAsyncChunkTilingParams   *p_chunk_tiling_params = (GMXAsyncChunkTilingParams*)lpParam;
@@ -223,10 +223,12 @@ DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
   BOOL                  stretch_to_8bit = p_chunk_tiling_params->stretch_to_8bit_;
   double		            *p_stretch_min_values = p_chunk_tiling_params->p_stretch_min_values_;
   double                *p_stretch_max_values = p_chunk_tiling_params->p_stretch_max_values_;
+  int                   srand_seed = p_chunk_tiling_params->srand_seed_;
+  string                temp_file_path = p_chunk_tiling_params->temp_file_path_;
   
   RasterBuffer *p_merc_buffer = new RasterBuffer();
         
-  if (!p_bundle->WarpToMercBuffer(zoom,chunk_envp,p_merc_buffer,p_tiling_params->gdal_resampling_,p_tiling_params->p_nodata_value_,p_tiling_params->p_background_color_))
+  if (!p_bundle->WarpToMercBuffer(zoom,chunk_envp,p_merc_buffer,p_tiling_params->gdal_resampling_,p_tiling_params->p_nodata_value_,p_tiling_params->p_background_color_,temp_file_path,srand_seed))
 	{
 		cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
     //p_chunk_tiling_params->p_was_error_ = TRUE;
@@ -235,6 +237,7 @@ DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
 
   GMX_CURR_WARP_THREADS--;
   GMX_CURR_TILING_THREADS++;
+  ///*
   if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
 	if (stretch_to_8bit)
 	{
@@ -265,6 +268,7 @@ DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
       return FALSE;
 	}
 	delete(p_merc_buffer);
+  //*/
   GMX_CURR_TILING_THREADS--;
 
   return TRUE;
@@ -277,7 +281,7 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 {
 
   //ToDo
-
+  srand(0);
 	int			tiles_generated = 0;
 	//OGREnvelope bundleMercEnvelope = p_bundle->GetMercatorEnvelope();
 	int			zoom = (p_tiling_params->base_zoom_ == 0) ? p_bundle->CalcBestMercZoom() : p_tiling_params->base_zoom_;
@@ -329,6 +333,16 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 	unsigned long	thread_id;
   
   BOOL tiling_error = FALSE;
+  int srand_seed = 0;
+
+  int max_warp_threads;
+  if (p_tiling_params->temp_file_path_for_warping_ != "")
+    max_warp_threads = (p_tiling_params->max_warp_threads_ == 0) ? 2 : p_tiling_params->max_warp_threads_;
+  else 
+    max_warp_threads = 1;
+  
+  int max_work_threads = (p_tiling_params->max_work_threads_ == 0) ? max_warp_threads + 1 : (int)max(p_tiling_params->max_work_threads_,max_warp_threads + 1);
+
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
 	{
 		int curr_max_x =	(curr_min_x + GMX_MAX_BUFFER_WIDTH - 1 > maxx) ? 
@@ -339,12 +353,12 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 			int curr_max_y =	(curr_min_y + GMX_MAX_BUFFER_WIDTH - 1 > maxy) ? 
 								maxy : curr_min_y + GMX_MAX_BUFFER_WIDTH - 1;
 			
-			OGREnvelope buffer_envp = MercatorTileGrid::CalcEnvelopeByTileRange(	zoom,
+			OGREnvelope chunk_envp = MercatorTileGrid::CalcEnvelopeByTileRange(	zoom,
 																					curr_min_x,
 																					curr_min_y,
 																					curr_max_x,
 																					curr_max_y);
-			if (!p_bundle->Intersects(buffer_envp)) continue;
+			if (!p_bundle->Intersects(chunk_envp)) continue;
 			//ToDo
       //проверить текущее количество потоков
       //если много то, ждать
@@ -356,13 +370,14 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
       //если не выполняется, то ждать
       //запустить в потоке функцию на перепроицирование + тайлинг
 
-      while ((GMX_CURR_TILING_THREADS + GMX_CURR_WARP_THREADS >= GMX_MAX_WORK_THREADS) || (GMX_CURR_WARP_THREADS >=1))
+      while ( (GMX_CURR_TILING_THREADS + GMX_CURR_WARP_THREADS >= max_work_threads) || 
+              (GMX_CURR_WARP_THREADS >= max_warp_threads) )
         Sleep(250);
       
       GMXAsyncChunkTilingParams	*p_chunk_tiling_params = new  GMXAsyncChunkTilingParams();
       
       p_chunk_tiling_params->p_tiling_params_ = p_tiling_params;
-      p_chunk_tiling_params->chunk_envp_ = buffer_envp;
+      p_chunk_tiling_params->chunk_envp_ = chunk_envp;
       p_chunk_tiling_params->p_bundle_ = p_bundle;
       p_chunk_tiling_params->p_tile_container_ = p_tile_container;
       p_chunk_tiling_params->p_tiles_generated_ = &tiles_generated;
@@ -371,9 +386,12 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
       p_chunk_tiling_params->p_stretch_min_values_ = p_stretch_min_values;
       p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
       p_chunk_tiling_params->z_ = zoom;
-      //DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
-
-     	CreateThread(NULL,0,GMXAsyncWarpAndTilingFromBuffer,p_chunk_tiling_params,0,&thread_id);
+      p_chunk_tiling_params->srand_seed_ = srand_seed;
+      p_chunk_tiling_params->temp_file_path_ = p_tiling_params->temp_file_path_for_warping_;
+      
+      srand_seed++;
+ 
+     	CreateThread(NULL,0,GMXAsyncWarpChunkAndMakeTiling,p_chunk_tiling_params,0,&thread_id);
       Sleep(100);
     }
 	}
