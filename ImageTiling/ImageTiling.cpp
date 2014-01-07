@@ -9,7 +9,7 @@ void PrintHelp ()
 
   cout<<"Usage:\n";
   cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-min_zoom pyramid min tiling zoom]"; 
-  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|tif] [-template tile name template] [-nodata_rgb transparent color for png tiles]\n";
+  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|jp2] [-template tile name template] [-nodata transparent value for png tiles] [-nodata_rgb transparent color for png tiles]\n";
     
   cout<<"\nEx.1 - image to simple tiles:\n";
   cout<<"ImageTiling -file c:\\image.tif"<<endl;
@@ -184,7 +184,7 @@ BOOL CheckArgsAndCallTiling (string input_path,
     BYTE	rgb[3];
     if (!gmx::ConvertStringToRGB(transp_color_str,rgb))
     {
-      cout<<"ERROR: bad value of parameter: \"-no_data_rgb\""<<endl;
+      cout<<"ERROR: bad value of parameter: \"-nodata_rgb\""<<endl;
       return FALSE;
     }
     tiling_params.p_transparent_color_ = new BYTE[3];

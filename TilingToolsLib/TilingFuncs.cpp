@@ -152,10 +152,12 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 											p_tile_pixel_data,
 											p_buffer->get_data_type(),
 											p_buffer->get_nodata_value(),
-											p_buffer->IsAlphaBand(),
+											FALSE,
 											p_buffer->get_color_table_ref());
       delete[]p_tile_pixel_data;
-			
+      if ( p_tiling_params->p_transparent_color_ != NULL )
+         tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_);
+      
 
 			if (p_tile_container != NULL)
 			{
@@ -235,8 +237,8 @@ DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam)
 
   GMX_CURR_WARP_THREADS--;
   GMX_CURR_TILING_THREADS++;
-  if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
-	if (stretch_to_8bit)
+  
+  if (stretch_to_8bit)
 	{
 		if (!p_merc_buffer->StretchDataTo8Bit(p_stretch_min_values,p_stretch_max_values))
 		{
@@ -684,7 +686,7 @@ HANDLE GMXAsyncMakeTilingFromBuffer (	GMXTilingParameters		*p_tiling_params,
 				return FALSE;
 			}
 
-      if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByColor(p_tiling_params->p_transparent_color_);
+      if ( p_tiling_params->p_transparent_color_ != NULL ) p_merc_buffer->CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_);
 			
 			if (stretch_to_8bit)
 			{

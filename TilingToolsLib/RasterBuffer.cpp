@@ -1427,18 +1427,97 @@ BOOL	RasterBuffer::IsAlphaBand()
 }
 
 
-BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb)
+BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
 {
 
-  //в качестве входящих параметров нужна информация о привязке растрового буфера 
+  if (x_size_==0 || y_size_==0 || num_bands_==0) return FALSE;
+  BYTE *vector_mask = new BYTE[x_size_*y_size_];
 
+  //OGRGeometry *p_ogr_geom = p_vb->get_ogr_geometry_ref();
+  for (int j=0;j<y_size_;j++)
+  {
+    int num_points = 0;
+    int  *p_x = NULL;
+    
+    int n = j*x_size_;
+    for (int i = 0; i<x_size_; i++)
+        vector_mask[n+i]=0;
+
+    if ((!VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry(j,p_vb->get_ogr_geometry_ref(),num_points,p_x)) || 
+        (num_points == 0) || ((num_points%2)==1))
+      continue;
+            
+    for (int k=0;k<num_points;k+=2)
+    {
+      for (int i=p_x[k];i<=p_x[k+1];i++)
+      {
+        if (i<0) continue;
+        if (i>=x_size_) break;
+        vector_mask[n+i]=1;
+      }
+    }
+
+    delete[]p_x;
+  } 
+
+  RasterBuffer temp_buffer;
+  if (!temp_buffer.CreateBuffer(num_bands_+1,x_size_,y_size_,NULL,data_type_,p_nodata_value_,1,p_color_table_)) return FALSE;
+
+  int n = x_size_*y_size_*num_bands_;
+  int m = x_size_*y_size_;
+  
+  void *p_new_pixel_data = new BYTE[(n+m)*data_size_];
+  if (!p_new_pixel_data ) return FALSE;
+  if (!memcpy(p_new_pixel_data,p_pixel_data_,n))
+  {
+    delete[]p_new_pixel_data;
+    return FALSE;
+  }
+    
+  switch (data_type_)
+	{
+		case GDT_Byte:
+		{
+      BYTE *p_new_pixel_data_B = (BYTE*)p_new_pixel_data;
+      for (int i=0;i<m;i++)
+         p_new_pixel_data_B[i+n]=vector_mask[i];
+    }
+
+    case GDT_UInt16:
+		{
+      unsigned __int16 *p_new_pixel_data_UInt16 = (unsigned __int16*)p_new_pixel_data;
+      for (int i=0;i<m;i++)
+         p_new_pixel_data_UInt16[i+n]=vector_mask[i];
+    }
+
+    case GDT_Int16:
+		{
+      __int16 *p_new_pixel_data_Int16 = (__int16*)p_new_pixel_data;
+      for (int i=0;i<m;i++)
+         p_new_pixel_data_Int16[i+n]=vector_mask[i];
+    }
+
+    case GDT_Float32:
+		{
+      float *p_new_pixel_data_F32 = (float*)p_new_pixel_data;
+      for (int i=0;i<m;i++)
+         p_new_pixel_data_F32[i+n]=vector_mask[i];
+    }
+    default:
+      return FALSE;
+  }
+
+  delete[]p_pixel_data_;
+  p_pixel_data_=p_new_pixel_data;
+  num_bands_++;
+  alpha_band_defined_ = TRUE;
 
   return TRUE;
 }
 
 
 
-BOOL	RasterBuffer::CreateAlphaBandByColor(BYTE	*pRGB)
+BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB)
 {
 	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3) || (p_color_table_)) return FALSE;
 
