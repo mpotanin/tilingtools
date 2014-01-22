@@ -205,6 +205,22 @@ int _tmain(int argc, wchar_t* argvW[])
 {
   //cout.imbue(std::locale("rus_rus.866"));
   //locale myloc("");
+  /*
+  FILE *fp = fopen("c:\\work\\11.txt","w");
+  char  data[4] = {'1','2','3','4'};
+  char  data2[2] = {'7','7'};
+
+  int k = fwrite(data,1,4,fp);
+  fseek(fp,0,0);
+  fwrite(data2,1,2,fp);
+  fclose(fp);
+  */
+  
+
+
+  //gmx::GMXTileContainer tc;
+//  BOOL b = tc.OpenForReading("C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tiles");
+
 
 
   string *argv = new string[argc];
@@ -324,7 +340,11 @@ int _tmain(int argc, wchar_t* argvW[])
   //-no_data_rgb "0 0 0" -tile_type png -border C:\Work\Projects\TilingTools\autotest\border\markers.tab
 
 
-  //input_path		= "\\\\192.168.4.43\\shareH\\spot6\\LENINGRAD-1_5m\\*.tif";
+  //input_path		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+  //use_container = "-container";
+  //max_zoom_str			= "8";
+
+
   //transp_color_str = "0 0 0";
   //tile_type_str = "png";
   //max_zoom_str			= "8";

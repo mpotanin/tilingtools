@@ -127,7 +127,7 @@ struct GMXAsyncChunkTilingParams
 };
 
 
-DWORD WINAPI GMXAsyncWarpAndTilingFromBuffer (LPVOID lpParam);
+DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam);
 
 BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 

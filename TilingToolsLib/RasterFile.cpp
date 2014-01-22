@@ -689,8 +689,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
     else if (resampling_alg == "lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
     else p_warp_options->eResampleAlg = GRA_Cubic; 
     
-
-		// Initialize and execute the warp operation. 
+    // Initialize and execute the warp operation. 
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		
