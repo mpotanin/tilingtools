@@ -199,12 +199,14 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 					default:
 						tile_buffer.SaveToTiffData(p_data,size);
 				}
+        ///*
 				if (!p_tile_container->AddTile(z,x,y,(BYTE*)p_data,size))
         {
           if (p_data) delete[]((BYTE*)p_data);
           cout<<"ERROR: AddTile: writing tile to container"<<endl;
           return FALSE;
         }
+        //*/
 				delete[]((BYTE*)p_data);
 				(*p_tiles_generated)++;
 			}
@@ -268,7 +270,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 
   int min_x,min_y,max_x,max_y;
   MercatorTileGrid::CalcTileRange(chunk_envp,zoom,min_x,min_y,max_x,max_y);
-
+  ///*
   if (!GMXMakeTilingFromBuffer(p_tiling_params,
 										p_merc_buffer,
 										p_bundle,
@@ -283,6 +285,8 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 			GMX_CURR_WORK_THREADS--;
       return FALSE;
 	}
+  //*/
+
 	delete(p_merc_buffer);
   GMX_CURR_WORK_THREADS--;
 
@@ -349,6 +353,8 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 
 	HANDLE			thread_handle = NULL;
 	unsigned long	thread_id;
+
+  //int num_warp = 0;
   
   BOOL tiling_error = FALSE;
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
@@ -384,6 +390,8 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
       p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
       p_chunk_tiling_params->z_ = zoom;
     
+      //num_warp++;
+      //cout<<num_warp<<endl;
      	CreateThread(NULL,0,GMXAsyncWarpChunkAndMakeTiling,p_chunk_tiling_params,0,&thread_id);
       Sleep(100);
     }
