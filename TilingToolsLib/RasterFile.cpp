@@ -626,12 +626,13 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	OGREnvelope	envp_merc, Ras
 		input_ogr_sr.exportToWkt(&p_src_wkt);
 		CPLAssert( p_src_wkt != NULL && strlen(p_src_wkt) > 0 );
 
-
-		GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
+    GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
+    p_warp_options->papszWarpOptions = NULL;
+    p_warp_options->papszWarpOptions = CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS");
 
 		p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
-		p_warp_options->dfWarpMemoryLimit = 250000000; 
+		p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
 
 		p_warp_options->nBandCount = 0;
