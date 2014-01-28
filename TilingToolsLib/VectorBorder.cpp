@@ -64,6 +64,64 @@ OGREnvelope	VectorBorder::InetersectOGREnvelopes (OGREnvelope	&envp1,OGREnvelope
 	return envp;
 }
 
+/*
+
+BOOL VectorBorder::ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom, int &num_segments, OGRLineString **pp_ls)
+{
+  if (p_ogr_geom->getGeometryType()!=OGRWkb 
+  OGRPolygon *p_polygons = NULL;
+
+  return TRUE;
+}
+*/
+
+
+BOOL VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
+{
+  double e = 1e-6;
+
+  num_points = 0;
+  x = NULL;
+  int num_rings = 0;
+  
+  list<double> x_val_list;
+  
+  OGRLinearRing **pp_lr = GetLinearRingsRef(po_ogr_geom,num_rings);
+  if (pp_lr == NULL) return NULL;
+    
+  double x1,x2,y1,y2;
+  for (int i=0;i<num_rings;i++)
+  {
+    if (pp_lr[i]->getNumPoints()>=4)
+    {
+      for (int j=0;j<pp_lr[i]->getNumPoints()-1;j++)
+      {
+        x1 = pp_lr[i]->getX(j);
+        x2 = pp_lr[i]->getX(j+1);
+        y1 = pp_lr[i]->getY(j);
+        y2 = pp_lr[i]->getY(j+1);
+        if (((y_line-y1)*(y_line-y2)<=0)&&(fabs(y2-y1)>e))
+          x_val_list.push_back((x2*(y1-y_line)-x1*(y2-y_line))/(y1-y2));
+      }
+    }
+  }
+
+  if (x_val_list.size()>0)
+  {
+    x_val_list.sort();
+    x = new int[x_val_list.size()];
+    for (list<double>::iterator iter = x_val_list.begin();iter!=x_val_list.end();iter++)
+    {
+      x[num_points] = (int)floor((*iter)+0.5);
+      num_points++;
+    }
+  }
+
+  delete[]pp_lr;
+  return TRUE;
+}
+
+
 BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr)
 {
 	int num_rings;
@@ -367,6 +425,12 @@ OGRPolygon*		VectorBorder::CreateOGRPolygonByOGREnvelope (OGREnvelope &envelope)
 	
 	return p_ogr_poly;
 };
+
+
+OGRGeometry*	VectorBorder::get_ogr_geometry_ref()
+{
+  return p_ogr_geometry_;
+}
 
 
 }

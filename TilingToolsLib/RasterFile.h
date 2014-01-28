@@ -3,9 +3,9 @@
 //#define IMAGETILLING_RasterFile_H
 
 #include "stdafx.h"
+#include "VectorBorder.h"
 #include "RasterBuffer.h"
 #include "TileName.h"
-#include "VectorBorder.h"
 using namespace std;
 
 

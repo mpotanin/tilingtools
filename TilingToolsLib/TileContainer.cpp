@@ -6,12 +6,12 @@ namespace gmx
 {
 
 ///*
-ITileContainer* OpenTileContainerForReading (string file_name)
+ITileContainer* ITileContainer::OpenTileContainerForReading (string file_name)
 {
 	ITileContainer *p_tc = NULL;
-	if (MakeLower(file_name).find(".mbtiles") != string::npos) p_tc = new MBTileContainer();
-	else p_tc = new GMXTileContainer();
-
+  if (MakeLower(GetExtension(file_name)) == "mbtiles") p_tc = new MBTileContainer();
+  else p_tc = new GMXTileContainer();
+  
 	if (p_tc->OpenForReading(file_name)) return p_tc;
 	else
 	{
@@ -20,20 +20,12 @@ ITileContainer* OpenTileContainerForReading (string file_name)
 		return NULL;
 	}
 };
+
+
 //*/
 
-GMXTileContainer::GMXTileContainer (	string				container_file_name, 
-										TileType			tile_type,
-										MercatorProjType	merc_type,
-										int					tile_bounds[128],
-										BOOL				use_cache
-									)
-{
-	Init(tile_bounds,use_cache,container_file_name,tile_type,merc_type);
-};
 
-
-GMXTileContainer::GMXTileContainer	(	string				container_file_name, 
+BOOL GMXTileContainer::OpenForWriting	(	string				container_file_name, 
 										TileType			tile_type,
 										MercatorProjType	merc_type,
 										OGREnvelope			envelope, 
@@ -49,17 +41,29 @@ GMXTileContainer::GMXTileContainer	(	string				container_file_name,
 			MercatorTileGrid::CalcTileRange(envelope,i,tile_bounds[4*i],tile_bounds[4*i+1],tile_bounds[4*i+2],tile_bounds[4*i+3]);
 		}
 	}
-	Init(tile_bounds,use_cache,container_file_name,tile_type,merc_type);
+	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache);
 };
 
 
 GMXTileContainer::GMXTileContainer	() 
 {
+	Init();
+};	
+
+void GMXTileContainer::Init	() 
+{
 	max_tiles_		= 0;
 	p_sizes_			= NULL; 
 	p_offsets_		= NULL;
 	p_tile_cache_	= NULL;
-	use_cache_	= FALSE;
+	use_cache_	  = FALSE;
+  addtile_semaphore_    = NULL;
+  is_opened_    = FALSE;
+  
+  max_volumes_ = 1000;
+  pp_container_volumes_ = new FILE*[max_volumes_];
+  for (int i=0;i<max_volumes_;i++)
+    pp_container_volumes_[i]=NULL;
 
 };	
 
@@ -75,33 +79,29 @@ GMXTileContainer::GMXTileContainer	()
 
 BOOL GMXTileContainer::OpenForReading (string container_file_name)
 {
-	
+	MakeEmpty();
+  Init();
 	read_only_		= TRUE;
-	max_tiles_		= 0;
-	p_sizes_			= NULL; 
-	p_offsets_		= NULL;
-	p_tile_cache_	= NULL;
-	use_cache_	= FALSE;
-	
-	if (!(p_container_file_ = OpenFile(container_file_name,"rb"))) return FALSE;
+
+  if (!(pp_container_volumes_[0] = OpenFile(container_file_name,"rb"))) return FALSE;
 	BYTE	head[12];
-	fread(head,1,12,p_container_file_);
+	fread(head,1,12,pp_container_volumes_[0]);
 	if (!((head[0]=='G')&&(head[1]=='M')&&(head[2]=='T')&&(head[3]=='C'))) 
 	{
 		cout<<"ERROR: incorrect input tile container file: "<<container_file_name<<endl;
+    MakeEmpty();
 		return FALSE;
 	}
 		
-
-
-	MAX_TILES_IN_CONTAINER = 0;
-	merc_type_ = (head[9] == 0) ? WORLD_MERCATOR : WEB_MERCATOR;
+  memcpy(&max_volume_size_,&head[4],4);
+	
+  merc_type_ = (head[9] == 0) ? WORLD_MERCATOR : WEB_MERCATOR;
 	tile_type_ = (head[11] == 0) ? JPEG_TILE : (head[11]==1) ? PNG_TILE : TIFF_TILE;
 	use_cache_ = FALSE;
 	p_tile_cache_ = NULL;
 
 	BYTE bounds[512];
-	fread(bounds,1,512,p_container_file_);
+	fread(bounds,1,512,pp_container_volumes_[0]);
 
 	max_tiles_ = 0;
 	for (int i=0;i<32;i++)
@@ -115,7 +115,7 @@ BOOL GMXTileContainer::OpenForReading (string container_file_name)
 	}
 
 	BYTE*			offset_size = new BYTE[max_tiles_*13];
-	fread(offset_size,1,max_tiles_*13,p_container_file_);
+	fread(offset_size,1,max_tiles_*13,pp_container_volumes_[0]);
 
 
 	p_sizes_		= new unsigned int[max_tiles_];
@@ -130,6 +130,8 @@ BOOL GMXTileContainer::OpenForReading (string container_file_name)
 	}
 
 	delete[]offset_size;
+
+  is_opened_ = TRUE;
 	return TRUE;
 };
 	
@@ -144,23 +146,32 @@ GMXTileContainer::~GMXTileContainer()
 
 BOOL		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
-	__int64 n	= TileID(z,x,y);
+  if (read_only_ || !is_opened_) return FALSE;
+  __int64 n	= TileID(z,x,y);
   if ((n>= max_tiles_)||(n<0)) return FALSE;
+
+  WaitForSingleObject(addtile_semaphore_,INFINITE); 
 
 	if (p_tile_cache_)
 	{
     if (p_tile_cache_->AddTile(z,x,y,p_data,size))
     {
       p_sizes_[n]		= size;
+      ReleaseSemaphore(addtile_semaphore_,1,NULL);
       return TRUE;
     }
 	}
 	
-  return AddTileToContainerFile(z,x,y,p_data,size);
+  BOOL result = AddTileToContainerFile(z,x,y,p_data,size);
+  ReleaseSemaphore(addtile_semaphore_,1,NULL);
+
+  return result;
 };
 
 BOOL		GMXTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
+  if (!is_opened_) return FALSE;
+
 	if (p_tile_cache_)	
   {
     if (p_tile_cache_->GetTile(z,x,y,p_data,size)) return TRUE;
@@ -171,10 +182,13 @@ BOOL		GMXTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int
 
 BOOL		GMXTileContainer::TileExists(int z, int x, int y)
 {
+  if (!is_opened_) return FALSE;
+
 	unsigned int n = TileID(z,x,y);
 	if (n>= max_tiles_ && n<0) return FALSE;
 	return (p_sizes_[n]>0) ? TRUE : FALSE;
 }; 
+
 
 BOOL		GMXTileContainer::Close()
 {
@@ -183,9 +197,19 @@ BOOL		GMXTileContainer::Close()
 		MakeEmpty();
 		return TRUE;
 	}
+
+  if (p_tile_cache_) WriteTilesToContainerFileFromCache();
+
+ 
+  _fseeki64(pp_container_volumes_[0],0,0);
+  BYTE	*header;
+	this->WriteHeaderToByteArray(header);
+  fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
+  delete[]header;
+
+   
 	
-	if (p_tile_cache_) WriteTilesToContainerFileFromCache();
-	
+  /*
 	string	file_temp_name	= container_file_name_ + ".temp";
 	FILE	*p_temp_file = OpenFile(file_temp_name,"wb");
 	if (!p_temp_file) 	return FALSE;
@@ -193,24 +217,25 @@ BOOL		GMXTileContainer::Close()
 	this->WriteHeaderToByteArray(header);
 	fwrite(header,1,HeaderSize(),p_temp_file);
 	delete[]header;
-	fseek(p_container_file_,HeaderSize(),0);
+	fseek(pp_container_volumes_[0],HeaderSize(),0);
 		
 	int blockLen = 10000000;
 	BYTE	*block = new BYTE[blockLen];
 	for (unsigned __int64 i = HeaderSize(); i<container_byte_size_; i+=blockLen)
 	{
 		int blockLen_ = (i+blockLen > container_byte_size_) ? container_byte_size_ - i : blockLen;
-    fread(block,1,blockLen_,p_container_file_);
+    fread(block,1,blockLen_,pp_container_volumes_[0]);
 		fwrite(block,1,blockLen_,p_temp_file);
 	}
 	delete[]block;
 
-	fclose(p_container_file_);
-	p_container_file_ = NULL;
+	fclose(pp_container_volumes_[0]);
+	pp_container_volumes_[0] = NULL;
 
 	fclose(p_temp_file);
 	DeleteFile(container_file_name_.c_str());
 	RenameFile(file_temp_name.c_str(),container_file_name_.c_str());
+  */
 	
 	MakeEmpty();
 	return TRUE;		
@@ -279,6 +304,8 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 	
 __int64		GMXTileContainer::TileID( int z, int x, int y)
 {
+  if (!is_opened_) return -1;
+
 	unsigned int num = 0;
 	for (int s=0;s<z;s++)
 		num+=(maxx_[s]-minx_[s])*(maxy_[s]-miny_[s]);
@@ -287,6 +314,8 @@ __int64		GMXTileContainer::TileID( int z, int x, int y)
 
 BOOL		GMXTileContainer::TileXYZ(__int64 n, int &z, int &x, int &y)
 {
+  if (!is_opened_) return FALSE;
+
 	if ((max_tiles_>0) && (n>=max_tiles_)) return FALSE; 
 	int s = 0;
 	for (z=0;z<32;z++)
@@ -332,19 +361,34 @@ int			GMXTileContainer::GetMaxZoom()
 	return max_z;
 };
 
-BOOL 	GMXTileContainer::Init	(	int					tile_bounds[128], 
-									BOOL				use_cache, 
-									string				container_file_name, 
-									TileType			tile_type,
-									MercatorProjType	merc_type)
+BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name, 
+									                        TileType			tile_type,
+									                        MercatorProjType	merc_type,
+                                          int					tile_bounds[128], 
+									                        BOOL				use_cache)
 {
-	read_only_					= FALSE;
-	tile_type_					= tile_type;
-	merc_type_					= merc_type;
-	container_file_name_			= container_file_name;// + ".tiles";
-	p_container_file_			= NULL;
-	container_byte_size_			= 0;
-	MAX_TILES_IN_CONTAINER	= 0;
+  is_opened_            = TRUE;
+	read_only_					  = FALSE;
+	tile_type_					  = tile_type;
+	merc_type_					  = merc_type;
+	container_file_name_	= container_file_name;
+ 	container_byte_size_	= 0;
+  addtile_semaphore_            = NULL;
+
+  max_volumes_ = 1000;
+  pp_container_volumes_ = new FILE*[max_volumes_];
+  for (int i=0;i<max_volumes_;i++)
+    pp_container_volumes_[i]=NULL;
+  max_volume_size_	= 0xffffffff;
+
+  this->addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
+
+
+  if (! (pp_container_volumes_[0] = fopen(container_file_name_.c_str(),"wb")))
+  {
+    MakeEmpty();
+    return FALSE;
+  }
 
 	if (use_cache) 
 	{
@@ -382,18 +426,39 @@ BOOL 	GMXTileContainer::Init	(	int					tile_bounds[128],
 		p_sizes_[i]		= 0;
 		p_offsets_[i]		= 0;
 	}
+
+  addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
+  
 	return TRUE;
 };
 
-
-BOOL	GMXTileContainer::WriteContainerFromBuffer()
+int GMXTileContainer::FinishCurrentVolume ()
 {
-	if (use_cache_) 
-	{
-		WriteTilesToContainerFileFromCache();
-		WriteContainerFileHeader();
-	}
-	return TRUE;
+  int volume_num = GetVolumeNum(container_byte_size_);
+  _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  int block_size = container_byte_size_%max_volume_size_;
+  BYTE *block = new BYTE[block_size];
+  for (int i=0;i<block_size;i++)
+    block[i] = 0;
+  fwrite(block,1,block_size,pp_container_volumes_[volume_num]);
+  delete[]block;
+  return block_size;
+};
+
+int  GMXTileContainer::GetVolumeNum (unsigned __int64 tile_offset)
+{
+  return (tile_offset/max_volume_size_);
+}
+
+unsigned __int64  GMXTileContainer::GetTileOffsetInVolume (unsigned __int64 tile_container_offset)
+{
+  return tile_container_offset - GetVolumeNum(tile_container_offset)*max_volume_size_;
+}
+
+
+string GMXTileContainer::GetVolumeName (int num)
+{
+  return (num == 0) ? container_file_name_ : container_file_name_ + "." + ConvertIntToString(num+1);
 }
 
 
@@ -403,28 +468,34 @@ BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data,
 	unsigned int n	= TileID(z,x,y);
 	if (n>= max_tiles_) return FALSE;
 
-	if (!p_container_file_)
-	{
-		if (!(p_container_file_ = OpenFile(container_file_name_,"wb+")))
-		{
-			cout<<"Can't add tile to file: "<<container_file_name_<<endl;
-			return FALSE;
-		}
-		BYTE	*header;
-		this->WriteHeaderToByteArray(header);
-		fwrite(header,1,HeaderSize(),p_container_file_);
+  if (container_byte_size_ == 0)
+  {
+    BYTE	*header = new BYTE[HeaderSize()];
+    if (!header) return NULL;
+    for (int i=0;i<HeaderSize();i++)
+      header[i] = 0;
+    fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
 		delete[]header;
-	}
+    container_byte_size_ = HeaderSize();
+  }
+  
+  if ((container_byte_size_ /max_volume_size_) < ((container_byte_size_ + size - 1)/max_volume_size_))
+     container_byte_size_ += FinishCurrentVolume();
+  
+  int volume_num = GetVolumeNum(container_byte_size_);
+  if (pp_container_volumes_[volume_num] == NULL)
+  {
+    if (!(pp_container_volumes_[volume_num] = fopen(GetVolumeName(volume_num).c_str(),"wb")))
+      return FALSE;
+  }
 
-
-	_fseeki64(p_container_file_,0,SEEK_END);
-	fwrite(p_data,sizeof(BYTE),size,p_container_file_);
-	p_sizes_[n]		= size;
-	if (container_byte_size_ == 0) container_byte_size_ = HeaderSize();
-	p_offsets_[n] = container_byte_size_;
+  _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  fwrite(p_data,sizeof(BYTE),size,pp_container_volumes_[volume_num]);
+  p_offsets_[n] = container_byte_size_;
+ 	p_sizes_[n]		= size;
 	container_byte_size_ +=size;
-	
-	return TRUE;
+
+  return TRUE;
 };
 	
 BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size)
@@ -432,101 +503,106 @@ BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_d
 	unsigned int n	= TileID(z,x,y);
 	if (n>= max_tiles_ || n<0) return FALSE;
 	if (!(size = p_sizes_[n])) return TRUE;
-	
-	if (!p_container_file_)
-	{
-		if (!(p_container_file_ =  OpenFile(container_file_name_,"rb")))
-		{
-			cout<<"Can't read tile from file: "<<container_file_name_<<endl;
-			return FALSE;
-		}
-	}
 
-	_fseeki64(p_container_file_,p_offsets_[n],0);
-		
-	p_data			= new BYTE[p_sizes_[n]];
-	//Huge file _fseeki64 _ftelli64 in Visual C++
-	return (size==fread(p_data,1,size,p_container_file_));
+  int volume_num = GetVolumeNum(p_offsets_[n]);
+  if (!pp_container_volumes_[volume_num])
+  {
+    if (!(pp_container_volumes_[volume_num] = fopen(GetVolumeName(volume_num).c_str(),"rb")))
+    {
+      cout<<"ERROR: can't open file: "<<GetVolumeName(volume_num).c_str()<<endl;
+      return FALSE;
+    }
+  }
+
+  _fseeki64(pp_container_volumes_[volume_num],GetTileOffsetInVolume(p_offsets_[n]),0);
+  p_data			= new BYTE[p_sizes_[n]];
+	return (size==fread(p_data,1,size,pp_container_volumes_[0]));
 };
 
 BOOL	GMXTileContainer::WriteTilesToContainerFileFromCache()
 {
-	if (!p_container_file_)
+  if (container_byte_size_ == 0 && (p_tile_cache_->cache_size() + HeaderSize() < max_volume_size_) )
 	{
-		if (!(p_container_file_ = OpenFile(container_file_name_,"wb+")))
-		{
-			cout<<"Can't create file: "<<container_file_name_<<endl;
-			return FALSE;
-		}
-    fseek(p_container_file_,HeaderSize(),0);
-    container_byte_size_=HeaderSize();
-	}
-	
-  int k=0;
- 	BYTE	*tile_data = NULL;
-  int max_tiles_in_block = 1000;
-  unsigned int tile_size;
-  int x,y,z;
+		BYTE	*header = new BYTE[HeaderSize()];
+    for (int i=0;i<HeaderSize();i++)
+      header[i] = 0;
+    fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
+		delete[]header;
+    container_byte_size_ = HeaderSize();
+    		
+    int k=0;
+ 	  BYTE	*tile_data = NULL;
+    int max_tiles_in_block = 1000;
+    unsigned int tile_size;
+    int x,y,z;
 
-  while (k<max_tiles_)
+    while (k<max_tiles_)
+    {
+      int n=k;
+      int block_size = 0;
+      int tiles_in_block=0;
+      while ((tiles_in_block<max_tiles_in_block)&&(n<max_tiles_))
+      {
+        this->TileXYZ(n,z,x,y);
+        if (p_tile_cache_->GetTile(z,x,y,tile_data,tile_size))
+        {
+          block_size+=tile_size;
+          tiles_in_block++;
+          delete[]tile_data;
+        }
+        n++;
+      }
+    
+      if (block_size==0) break;
+    
+      BYTE *p_block = new BYTE[block_size];
+      n=k;
+      tiles_in_block =0;
+      block_size =0;
+      while ((tiles_in_block<max_tiles_in_block)&&(n<max_tiles_))
+      {
+        this->TileXYZ(n,z,x,y);
+        if (p_tile_cache_->GetTile(z,x,y,tile_data,tile_size))
+        {
+          memcpy(p_block+block_size,tile_data,tile_size);
+          delete[]tile_data;
+          p_offsets_[n]=container_byte_size_+block_size;
+          block_size+=tile_size;
+          tiles_in_block++;
+        }
+        n++;
+      }
+
+      if (!fwrite(p_block,sizeof(BYTE),block_size,pp_container_volumes_[0]))
+        return FALSE;
+      container_byte_size_+=block_size;
+		  delete[]p_block;
+      k=n;
+    }
+  }
+  else
   {
-    int n=k;
-    int block_size = 0;
-    int tiles_in_block=0;
-    while ((tiles_in_block<max_tiles_in_block)&&(n<max_tiles_))
-    {
-      this->TileXYZ(n,z,x,y);
-      if (p_tile_cache_->GetTile(z,x,y,tile_data,tile_size))
-      {
-        block_size+=tile_size;
-        tiles_in_block++;
-        delete[]tile_data;
-      }
-      n++;
-    }
-    
-    if (block_size==0) break;
-    
-    BYTE *p_block = new BYTE[block_size];
-    n=k;
-    tiles_in_block =0;
-    block_size =0;
-    while ((tiles_in_block<max_tiles_in_block)&&(n<max_tiles_))
-    {
-      this->TileXYZ(n,z,x,y);
-      if (p_tile_cache_->GetTile(z,x,y,tile_data,tile_size))
-      {
-        memcpy(p_block+block_size,tile_data,tile_size);
-        delete[]tile_data;
-        p_offsets_[n]=container_byte_size_+block_size;
-        block_size+=tile_size;
-        tiles_in_block++;
-      }
-      n++;
-    }
+    int x,y,z;
+    BYTE	*tile_data = NULL;
+    unsigned int tile_size;
 
-    fwrite(p_block,sizeof(BYTE),block_size,p_container_file_);
-    container_byte_size_+=block_size;
-		delete[]p_block;
-    k=n;
+    for (int n=0;n<max_tiles_;n++)
+    {
+      TileXYZ(n,z,x,y);
+      if (p_tile_cache_->GetTile(z,x,y,tile_data,tile_size))
+      {
+        if (!this->AddTileToContainerFile(z,x,y,tile_data,tile_size))
+        {
+          cout<<"ERROR: can't write tile to container volume"<<endl;
+          return FALSE;
+        }
+      }
+    }
   }
 	
   return TRUE;
 };
 
-BOOL	GMXTileContainer::WriteContainerFileHeader()
-{
-	if (!p_container_file_) return FALSE;
-	fseek(p_container_file_,0,SEEK_SET);
-	
-	BYTE	*p_container_head_data;
-	WriteHeaderToByteArray(p_container_head_data);
-	fwrite(p_container_head_data,1,HeaderSize(),p_container_file_);
-	fclose(p_container_file_);
-	p_container_file_ = NULL;
-	delete[]p_container_head_data;
-	return TRUE;
-};
 
 
 BOOL	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
@@ -534,7 +610,7 @@ BOOL	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 	p_data = new BYTE[HeaderSize()];
 	string file_type = "GMTC";
 	memcpy(p_data,file_type.c_str(),4);
-	memcpy(&p_data[4],&MAX_TILES_IN_CONTAINER,4);
+	memcpy(&p_data[4],&max_volume_size_,4);
 	p_data[8]	= 0;
 	p_data[9]	= merc_type_;
 	p_data[10]	= 0;
@@ -583,11 +659,24 @@ void GMXTileContainer::MakeEmpty ()
 	delete[]p_offsets_;
 	p_offsets_ = NULL;
 	max_tiles_ = 0;
-		
+	
+  is_opened_    = FALSE;
+  
+  if (addtile_semaphore_) CloseHandle(addtile_semaphore_);
+  addtile_semaphore_ = NULL;
+  
 	for (int i=0;i<32;i++)
 		maxx_[i]=(minx_[i]=(maxy_[i]=(miny_[i]=0)));
 	delete(p_tile_cache_);
 	p_tile_cache_ = NULL;
+
+  if (pp_container_volumes_)
+  {
+    for (int i=0;i<max_volumes_;i++)
+      if (pp_container_volumes_[i]) fclose(pp_container_volumes_[i]);
+    delete[]pp_container_volumes_;
+    pp_container_volumes_ = NULL;
+  }
 };
 	
 

@@ -155,7 +155,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	else
 	{
 		//ToDo
-		gmx::ITileContainer *poSrcContainer = gmx::OpenTileContainerForReading(srcPath);
+		gmx::ITileContainer *poSrcContainer = gmx::ITileContainer::OpenTileContainerForReading(srcPath);
 		if (! poSrcContainer)
 		{
 			cout<<"ERROR: can't init. tile container: "<<srcPath<<endl;
@@ -201,7 +201,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	gmx::ITileContainer	*poSrcITileContainer = NULL;
 	if (gmx::IsDirectory(srcPath))	poSrcITileContainer = new gmx::TileFolder(poSrcTileName, FALSE);	
-	else						poSrcITileContainer = gmx::OpenTileContainerForReading(srcPath);
+	else						poSrcITileContainer = gmx::ITileContainer::OpenTileContainerForReading(srcPath);
 	
 
 	gmx::TileName		*poDestTileName		= NULL;
@@ -258,21 +258,29 @@ int _tmain(int argc, wchar_t* argvW[])
 				return 1;
 			}
 		}
+
 		if (gmx::MakeLower(destPath).find(".mbtiles") != string::npos) 
 			poDestITileContainer = new gmx::MBTileContainer(destPath,tile_type,merc_type,merc_envp); 
 		else
 		{
-			poDestITileContainer =  (borderFilePath!="") ?  new gmx::GMXTileContainer(destPath,
-																				tile_type,
-																				merc_type,
-																				merc_envp,
-																				(nMaxZoom == -1) ? poSrcITileContainer->GetMaxZoom() : nMaxZoom,
-																				FALSE)
-													: new gmx::GMXTileContainer(destPath,
-																				tile_type,
-																				merc_type,
-																				tile_bounds,
-																				FALSE);
+      poDestITileContainer = new gmx::GMXTileContainer();
+      BOOL opened = (borderFilePath!="") ? ((gmx::GMXTileContainer*)poDestITileContainer)->OpenForWriting(destPath,
+																				                                    tile_type,
+																				                                    merc_type,
+																				                                    merc_envp,
+																				                                    (nMaxZoom == -1) ? poSrcITileContainer->GetMaxZoom() : nMaxZoom,
+																				                                    FALSE)
+                                                                            :
+                                           ((gmx::GMXTileContainer*)poDestITileContainer)->OpenForWriting(destPath,
+																			                                      tile_type,
+																			                                      merc_type,
+																			                                      tile_bounds,
+			      													                                      FALSE);
+      if (!opened)
+      {
+        cout<<"Error: can't open gmx-container: "<<destPath<<" for writing"<<endl;
+        return 1;
+      }
 		}
 	}
 	

@@ -9,7 +9,7 @@ void PrintHelp ()
 
   cout<<"Usage:\n";
   cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-min_zoom pyramid min tiling zoom]"; 
-  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|tif] [-template tile name template] [-nodata_rgb transparent color for png tiles]\n";
+  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|jp2] [-template tile name template] [-nodata transparent value for png tiles] [-nodata_rgb transparent color for png tiles]\n";
     
   cout<<"\nEx.1 - image to simple tiles:\n";
   cout<<"ImageTiling -file c:\\image.tif"<<endl;
@@ -296,7 +296,7 @@ BOOL CheckArgsAndCallTiling (string input_path,
     BYTE	rgb[3];
     if (!gmx::ConvertStringToRGB(transp_color_str,rgb))
     {
-      cout<<"ERROR: bad value of parameter: \"-no_data_rgb\""<<endl;
+      cout<<"ERROR: bad value of parameter: \"-nodata_rgb\""<<endl;
       return FALSE;
     }
     tiling_params.p_transparent_color_ = new BYTE[3];
@@ -325,6 +325,22 @@ int _tmain(int argc, wchar_t* argvW[])
 {
   //cout.imbue(std::locale("rus_rus.866"));
   //locale myloc("");
+  /*
+  FILE *fp = fopen("c:\\work\\11.txt","w");
+  char  data[4] = {'1','2','3','4'};
+  char  data2[2] = {'7','7'};
+
+  int k = fwrite(data,1,4,fp);
+  fseek(fp,0,0);
+  fwrite(data2,1,2,fp);
+  fclose(fp);
+  */
+  
+
+
+  //gmx::GMXTileContainer tc;
+//  BOOL b = tc.OpenForReading("C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tiles");
+
 
 
   string *argv = new string[argc];
@@ -455,7 +471,11 @@ int _tmain(int argc, wchar_t* argvW[])
   //-no_data_rgb "0 0 0" -tile_type png -border C:\Work\Projects\TilingTools\autotest\border\markers.tab
 
 
-  //input_path		= "\\\\192.168.4.43\\shareH\\spot6\\LENINGRAD-1_5m\\*.tif";
+  //input_path		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+  //use_container = "-container";
+  //max_zoom_str			= "8";
+
+
   //transp_color_str = "0 0 0";
   //tile_type_str = "png";
   //max_zoom_str			= "8";

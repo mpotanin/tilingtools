@@ -19,6 +19,8 @@ public:
 	static OGREnvelope			InetersectOGREnvelopes				(OGREnvelope	&envp1, OGREnvelope	&envp2);
 	static OGRLinearRing**		GetLinearRingsRef					(OGRGeometry	*p_ogr_geom, int &num_rings);
 	static BOOL					Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr);
+  static BOOL         CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x);
+  //static BOOL         ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom, int &num_segments, OGRLineString **pp_ls);
 
 	VectorBorder	();
 	VectorBorder	(OGREnvelope merc_envp, MercatorProjType	merc_type);

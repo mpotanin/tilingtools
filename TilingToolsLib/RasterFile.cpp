@@ -635,21 +635,13 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 		input_ogr_sr.exportToWkt(&p_src_wkt);
 		CPLAssert( p_src_wkt != NULL && strlen(p_src_wkt) > 0 );
 
-
-		GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
-
-    //p_warp_options->papszWarpOptions
-
-    //char **papszWarpOptions; 
-    //papszWarpOptions = CSLSetNameValue(NULL,"INIT_DEST","NO_DATA");
+    GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
     p_warp_options->papszWarpOptions = NULL;
-    //p_warp_options->papszWarpOptions = CSLSetNameValue(NULL,"INIT_DEST","NO_DATA");
     p_warp_options->papszWarpOptions = CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS");
-    
+
 		p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
-		p_warp_options->dfWarpMemoryLimit = 250000000; 
-    //p_warp_options->dfWarpMemoryLimit = 150000000; 
+		p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
 
 		p_warp_options->nBandCount = 0;
@@ -702,20 +694,17 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 		p_warp_options->pfnTransformer = GDALApproxTransform;
 
     resampling_alg = MakeLower(resampling_alg);
-    if ((resampling_alg == "near") || (resampling_alg == "nearest")) p_warp_options->eResampleAlg = GRA_NearestNeighbour;
+    if ((resampling_alg == "near") || (resampling_alg == "nearest") || (p_vrt_ds->GetRasterBand(1)->GetColorTable())) p_warp_options->eResampleAlg = GRA_NearestNeighbour;
     else if (resampling_alg == "bilinear") p_warp_options->eResampleAlg = GRA_Bilinear;
     else if (resampling_alg == "lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
     else p_warp_options->eResampleAlg = GRA_Cubic; 
     
-
-		// Initialize and execute the warp operation. 
+    // Initialize and execute the warp operation. 
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		
    
     BOOL  warp_error = FALSE;
-    //if (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height))
-
     if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
 		{
 			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
