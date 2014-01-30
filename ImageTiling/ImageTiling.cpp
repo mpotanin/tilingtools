@@ -40,107 +40,6 @@ BOOL CalcPixelOffset (double geo_tr1[6], double geo_tr2[6], int &offset_x, int &
   return TRUE;
 }
 
-BOOL CombineMODIS (string ch1_file, string ch2_file, string ch7_file, string ch31_file, string combined_file)
-{
-  GDALAllRegister();
-  OGRRegisterAll();
-  GDALDataset	*p_ch1_ds = (GDALDataset*)GDALOpen(ch1_file.c_str(),GA_ReadOnly );
-  GDALDataset	*p_ch2_ds = (GDALDataset*)GDALOpen(ch2_file.c_str(),GA_ReadOnly );
-  GDALDataset	*p_ch7_ds = (GDALDataset*)GDALOpen(ch7_file.c_str(),GA_ReadOnly );
-  GDALDataset	*p_ch31_ds = (GDALDataset*)GDALOpen(ch31_file.c_str(),GA_ReadOnly );
-
-  int width_ch1 = p_ch1_ds->GetRasterXSize();
-  int height_ch1 = p_ch1_ds->GetRasterYSize();
-
-  GDALDataset*	p_combined_ds = (GDALDataset*)GDALCreate(
-								GDALGetDriverByName("GTiff"),
-								combined_file.c_str(),
-								width_ch1,
-								height_ch1,
-								3,
-								GDT_UInt16,
-								NULL
-								);
-
-  p_combined_ds->SetProjection(p_ch1_ds->GetProjectionRef());
-  
-  double geo_transform_ch1[6];
-  p_ch1_ds->GetGeoTransform(geo_transform_ch1);
-  p_combined_ds->SetGeoTransform(geo_transform_ch1);
-
-  int block_size = 10000;
-  int data_size = block_size*block_size*3;
-  unsigned __int16  *pixel_data = new unsigned __int16[data_size];
-
-  double geo_transform_ch2[6];
-  p_ch2_ds->GetGeoTransform(geo_transform_ch2);
-  int offset_x_ch2, offset_y_ch2;
-  CalcPixelOffset(geo_transform_ch1,geo_transform_ch2,offset_x_ch2,offset_y_ch2);
-
-  double geo_transform_ch7[6];
-  p_ch7_ds->GetGeoTransform(geo_transform_ch7);
-  int offset_x_ch7, offset_y_ch7;
-  CalcPixelOffset(geo_transform_ch1,geo_transform_ch7,offset_x_ch7,offset_y_ch7);
-
-
-  OGRSpatialReference ogr_sr(p_ch1_ds->GetProjectionRef());
-  OGRSpatialReference ogr_wgs84;
-  ogr_wgs84.SetWellKnownGeogCS("WGS84");
-  OGRCoordinateTransformation *poCT = OGRCreateCoordinateTransformation( &ogr_sr,&ogr_wgs84);
-  double lon,lat;
-  double x_proj,y_proj;
-
-  for (int x = max(0,max(-offset_x_ch2,-offset_x_ch7)); x<width_ch1; x+=block_size)
-  {
-    for (int y = max(0,max(-offset_y_ch2,-offset_y_ch7)); y<height_ch1; y+=block_size)
-    {
-      for (int i=0;i<data_size;i++)
-        pixel_data[i]=0;
-
-      int block_width = (int)min(block_size, min(width_ch1-x, 
-                                                 min(p_ch2_ds->GetRasterXSize()-x-offset_x_ch2, p_ch7_ds->GetRasterXSize()-x-offset_x_ch7)
-                                                 ));
-      int block_height = (int)min(block_size, min(height_ch1-y, 
-                                                 min(p_ch2_ds->GetRasterYSize()-y-offset_y_ch2, p_ch7_ds->GetRasterYSize()-y-offset_y_ch7)
-                                                 ));
-      block_height = block_height;
-
-      ///*
-      for (int i=0;i<block_width;i++)
-      {
-        for (int j=0;j<block_height;j++)
-        {
-          x_proj = geo_transform_ch1[0] + geo_transform_ch1[1]*(x+i);
-          y_proj = geo_transform_ch1[3] - geo_transform_ch1[1]*(y+j);
-          poCT->Transform(1,&x_proj,&y_proj);
-          lon = x_proj;
-          lat = y_proj;
-        }
-      }
-
-      p_ch1_ds->RasterIO(GF_Read,x,y,block_width,block_height,pixel_data,block_width,block_height,GDT_UInt16,1,NULL,0,2*block_size,0);
-      
-      p_ch2_ds->RasterIO(GF_Read,x+offset_x_ch2,y+offset_y_ch2,block_width,block_height,&pixel_data[block_size*block_size],block_width,block_height,GDT_UInt16,1,NULL,0,2*block_size,0);
-      
-      p_ch7_ds->RasterIO(GF_Read,x+offset_x_ch7,y+offset_y_ch7,block_width,block_height,&pixel_data[2*block_size*block_size],block_width,block_height,GDT_UInt16,1,NULL,0,2*block_size,0);
-
-      p_combined_ds->RasterIO(GF_Write,x,y,block_width,block_height,pixel_data,block_width,block_height,GDT_UInt16,3,NULL,0,2*block_size,2*block_size*block_size);
-      //*/
-    }
-  }
-
-
-
-  delete[]pixel_data;
-  GDALClose( p_ch1_ds);
-  GDALClose( p_ch2_ds);
-  GDALClose( p_ch7_ds);
-  GDALClose( p_ch31_ds);
-  GDALClose( p_combined_ds);
-
-  return TRUE;
-}
-
 
 BOOL CheckArgsAndCallTiling (string input_path,
               string use_container,		
@@ -358,12 +257,7 @@ int _tmain(int argc, wchar_t* argvW[])
   GDALAllRegister();
   OGRRegisterAll();
 
-  CombineMODIS("E:\\test_images\\MODIS\\2\\AM1_7.tif",
-                "E:\\test_images\\MODIS\\2\\AM1_2.tif",
-                "E:\\test_images\\MODIS\\2\\AM1_1.tif",
-                "E:\\test_images\\MODIS\\PM1_1KM_31.tif",
-                "E:\\test_images\\MODIS\\2\\combined_721.tif");
-
+  
   if (argc == 1)
   {
     PrintHelp();

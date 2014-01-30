@@ -55,8 +55,9 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	*/
-	//srcPath			= "e:\\test_images\\po_731070_0000004_merc_std_tiles";
-  //destPath		= "e:\\test_images\\po_731070_0000004_merc_esri_5_tiles";
+	//srcPath			= "e:\\test_images\\po_734104_0000001_merc.tiles";
+  //destPath		= "e:\\test_images\\po_734104_0000001_merc_tiles";
+
 
   //strDestTemplate	= "{l}/{r}/{c}.jpg";
   //strSrcTemplate = "standard";

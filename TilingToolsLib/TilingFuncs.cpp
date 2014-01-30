@@ -5,7 +5,7 @@ using namespace gmx;
 
 const int	GMX_MAX_BUFFER_WIDTH	= 16;
 
-//int			GMX_MAX_WORK_THREADS	= 2;
+int			GMX_MAX_WORK_THREADS	= 2;
 int			GMX_MAX_WARP_THREADS	= 1;
 int			GMX_CURR_WORK_THREADS	= 0;
 HANDLE  GMX_WARP_SEMAPHORE = NULL;

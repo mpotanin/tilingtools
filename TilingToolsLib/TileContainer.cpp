@@ -84,6 +84,7 @@ BOOL GMXTileContainer::OpenForReading (string container_file_name)
 	read_only_		= TRUE;
 
   if (!(pp_container_volumes_[0] = OpenFile(container_file_name,"rb"))) return FALSE;
+  container_file_name_ = container_file_name;
 	BYTE	head[12];
 	fread(head,1,12,pp_container_volumes_[0]);
 	if (!((head[0]=='G')&&(head[1]=='M')&&(head[2]=='T')&&(head[3]=='C'))) 
@@ -94,6 +95,7 @@ BOOL GMXTileContainer::OpenForReading (string container_file_name)
 	}
 		
   memcpy(&max_volume_size_,&head[4],4);
+  if (max_volume_size_ == 65535) max_volume_size_ = 0;
 	
   merc_type_ = (head[9] == 0) ? WORLD_MERCATOR : WEB_MERCATOR;
 	tile_type_ = (head[11] == 0) ? JPEG_TILE : (head[11]==1) ? PNG_TILE : TIFF_TILE;
@@ -447,7 +449,7 @@ int GMXTileContainer::FinishCurrentVolume ()
 
 int  GMXTileContainer::GetVolumeNum (unsigned __int64 tile_offset)
 {
-  return (tile_offset/max_volume_size_);
+  return (max_volume_size_ == 0) ? 0 : (tile_offset/max_volume_size_);
 }
 
 unsigned __int64  GMXTileContainer::GetTileOffsetInVolume (unsigned __int64 tile_container_offset)
