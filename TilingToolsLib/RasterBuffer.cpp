@@ -1517,7 +1517,7 @@ BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
 
 
 
-BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB)
+BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
 {
 	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3) || (p_color_table_)) return FALSE;
 
@@ -1525,9 +1525,8 @@ BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB)
 	BYTE	*p_pixel_data_new = new BYTE[(num_bands_+1) * n];
 	memcpy(p_pixel_data_new,p_pixel_data_,num_bands_ * n);
 	int d = (num_bands_ == 3) ? 1 : 0;
-	int tolerance = 5;
 
-	for (int i=0; i<y_size_; i++)
+  for (int i=0; i<y_size_; i++)
 	{
 		for (int j=0; j<x_size_; j++)
 			p_pixel_data_new[i*x_size_ + j + n + d*(n+n)] = (	abs(p_pixel_data_new[i*x_size_ + j] - pRGB[0]) + 

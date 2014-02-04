@@ -86,41 +86,42 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 	cout<<" done."<<endl;
 
 	int min_zoom = (p_tiling_params->min_zoom_ <=0) ? 1 : p_tiling_params->min_zoom_;
-	if (min_zoom == base_zoom) return TRUE;
-
-	cout<<"Pyramid tiles: ";//<<endl;
-	cout<<"calculating number of tiles: ";
-  VectorBorder	bundle_envp(raster_bundle.CalcMercEnvelope(),p_tiling_params->merc_type_);
-	int tiles_generated = 0;
-	int tiles_expected = 0;
-	GMXMakePyramidFromBaseZoom(	bundle_envp,
-								base_zoom,
-								min_zoom,
-								p_tiling_params,
-								tiles_expected,
-								tiles_generated,
-								TRUE,
-								p_itile_pyramid);
-	cout<<tiles_expected<<endl;
-	if (tiles_expected > 0) 
-	{
-		cout<<"0% ";
-		if (!GMXMakePyramidFromBaseZoom(	bundle_envp,
-									base_zoom,
-									min_zoom,
-									p_tiling_params,
-									tiles_expected,
-									tiles_generated,
-									FALSE,
-									p_itile_pyramid))
-    {
-      cout<<"ERROR: GMXMakePyramidFromBaseZoom"<<endl;
-      p_itile_pyramid->Close();
-	    delete(p_itile_pyramid);
-      return FALSE;
-    }
-		cout<<" done."<<endl;
-	}
+	if (min_zoom < base_zoom)
+  {
+	  cout<<"Pyramid tiles: ";//<<endl;
+	  cout<<"calculating number of tiles: ";
+    VectorBorder	bundle_envp(raster_bundle.CalcMercEnvelope(),p_tiling_params->merc_type_);
+	  int tiles_generated = 0;
+	  int tiles_expected = 0;
+	  GMXMakePyramidFromBaseZoom(	bundle_envp,
+								  base_zoom,
+								  min_zoom,
+								  p_tiling_params,
+								  tiles_expected,
+								  tiles_generated,
+								  TRUE,
+								  p_itile_pyramid);
+	  cout<<tiles_expected<<endl;
+	  if (tiles_expected > 0) 
+	  {
+		  cout<<"0% ";
+		  if (!GMXMakePyramidFromBaseZoom(	bundle_envp,
+									  base_zoom,
+									  min_zoom,
+									  p_tiling_params,
+									  tiles_expected,
+									  tiles_generated,
+									  FALSE,
+									  p_itile_pyramid))
+      {
+        cout<<"ERROR: GMXMakePyramidFromBaseZoom"<<endl;
+        p_itile_pyramid->Close();
+	      delete(p_itile_pyramid);
+        return FALSE;
+      }
+		  cout<<" done."<<endl;
+	  }
+  }
 
 	if (!p_itile_pyramid->Close())
   {
@@ -165,7 +166,7 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 											p_buffer->get_color_table_ref());
       delete[]p_tile_pixel_data;
       if ( p_tiling_params->p_transparent_color_ != NULL )
-         tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_);
+        tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, p_tiling_params->nodata_tolerance_);
       
 
 			if (p_tile_container != NULL)

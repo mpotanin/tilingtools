@@ -2,7 +2,7 @@
 #include "TileCache.h"
 #include "StringFuncs.h"
 const int	GMX_TILE_CACHE_MAX_SIZE = 800000000;
-
+//const int	GMX_TILE_CACHE_MAX_SIZE = 0;
 
 namespace gmx
 {

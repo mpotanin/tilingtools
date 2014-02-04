@@ -10,25 +10,26 @@ class GMXTilingParameters
 {
 public:
 //обязательные параметры
-	string						    input_path_;				//входной файл или шаблон имени файла
+	string						    input_path_;			//входной файл или шаблон имени файла
 	gmx::MercatorProjType	merc_type_;				//тип Меркатора
-	gmx::TileType				  tile_type_;				//тип тайлов
+	gmx::TileType				  tile_type_;				//формат тайлов
 	
 
 //дополнительные параметры
-	int							base_zoom_;				//максимальный (базовый зум)
+	int							base_zoom_;				//максимальный зум (базовый зум)
 	int							min_zoom_;				//минимальный зум
-	string					vector_file_;				//векторная граница
-	string					container_file_;			//название файла-контейнера тайлов
+	string					vector_file_;			//векторная граница
+	string					container_file_;		//название файла-контейнера тайлов
 	bool						use_container_;			//писать тайлы в контейнер
 	BYTE						*p_background_color_;		//RGB-цвет для заливки фона в тайлах
 	BYTE						*p_transparent_color_;		//RGB-цвет для маски прозрачности
 	int							*p_nodata_value_;			//значение для маски прозрачности
+  int             nodata_tolerance_;     //радиус цвета для маски прозрачности
 	bool						auto_stretch_to_8bit_;		//автоматически пересчитывать значения к 8 бит		
-  string          gdal_resampling_;				
+  string          gdal_resampling_;	      //название фильтра для ресемплинга			
 
 
-	int							jpeg_quality_;
+	int							jpeg_quality_;  //уровень сжатия (jpeg, jpeg2000)
 	double					shift_x_;				//сдвиг по x
 	double					shift_y_;				//сдвиг по y
 	gmx::TileName		*p_tile_name_;			//имена тайлов
@@ -55,6 +56,7 @@ public:
 		p_background_color_	= NULL;
 		p_transparent_color_ = NULL;
 		p_nodata_value_		= NULL;
+    nodata_tolerance_ = 5;
 		base_zoom_	= 0;
 		min_zoom_	= 0;
 		max_tiles_in_cache_	= 0;

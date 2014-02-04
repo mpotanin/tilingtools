@@ -115,7 +115,7 @@ protected:
 	void MakeEmpty ();
   void Init ();
 
-  int               FinishCurrentVolume();
+  int               FillUpCurrentVolume();
 
   int                 GetVolumeNum (unsigned __int64 tile_offset);
   string              GetVolumeName (int num);

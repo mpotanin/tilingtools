@@ -59,7 +59,7 @@ public:
 	void*			GetDataZoomedOut	();	
 	BOOL			ConvertFromIndexToRGB ();
 	BOOL			ConvertFromPanToRGB();
-	BOOL			CreateAlphaBandByRGBColor(BYTE	*p_rgb);
+	BOOL			CreateAlphaBandByRGBColor(BYTE	*p_rgb, int tolerance = 0);
 
 	BOOL      CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb);
 

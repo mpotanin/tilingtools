@@ -9,7 +9,7 @@ void PrintHelp ()
 
   cout<<"Usage:\n";
   cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-min_zoom pyramid min tiling zoom]"; 
-  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|jp2] [-template tile name template] [-nodata transparent value for png tiles] [-nodata_rgb transparent color for png tiles]\n";
+  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|jp2] [-template tile name template] [-nodata transparent value for png tiles] [-nodata_rgb transparent color for png tiles] [-nodata_tolerance tolerance value for \"no_data\" parameter]\n";
     
   cout<<"\nEx.1 - image to simple tiles:\n";
   cout<<"ImageTiling -file c:\\image.tif"<<endl;
@@ -40,7 +40,7 @@ BOOL CalcPixelOffset (double geo_tr1[6], double geo_tr2[6], int &offset_x, int &
   return TRUE;
 }
 
-
+/*
 BOOL CheckArgsAndCallTiling (string input_path,
               string use_container,		
               string max_zoom_str,
@@ -63,21 +63,34 @@ BOOL CheckArgsAndCallTiling (string input_path,
               string temp_file_warp_path,
               string max_work_threads_str,
               string max_warp_threads_str)
+*/
+BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 {
+  string input_path = console_params.at("-file");
+  string use_container = console_params.at("-gmxtiles") != "" ? console_params.at("-gmxtiles") : console_params.at("-mbtiles");		
+  string max_zoom_str = console_params.at("-zoom");
+  string min_zoom_str = console_params.at("-min_zoom");
+  string vector_file = console_params.at("-border");
+  string output_path = console_params.at("-tiles");
+  string tile_type_str = console_params.at("-tile_type");
+  string proj_type_str = console_params.at("-proj");
+  string quality_str = console_params.at("-quality");
+  string tile_name_template = console_params.at("-template");
+  string no_data_str = console_params.at("-nodata");
+  string transp_color_str = console_params.at("-nodata_rgb");
+  string nodata_tolerance_str = console_params.at("-nodata_tolerance");
+  string shift_x_str = console_params.at("-shiftX");
+  string shift_y_str = console_params.at("-shiftY");
+  string use_pixel_tiling = console_params.at("-pixel_tiling");
+  string background_color = console_params.at("-background");
+  string log_file = console_params.at("-log_file");
+  string cache_size_str = console_params.at("-cache");
+  string gdal_resampling = console_params.at("-resampling");
+  string temp_file_warp_path = console_params.at("-temp_file_warp");
+  string max_work_threads_str = console_params.at("-work_threads");
+  string max_warp_threads_str = console_params.at("-warp_threads");
 
 
-  /*
-  FILE *logFile = NULL;
-  if (strLogFile!="")
-  {
-    if((logFile = _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
-    {
-      wcout<<"ERROR: can't open log file: "<<strLogFile<<endl;
-      exit(-1);
-    }
-  }
-  */
-  //проверяем входной файл или директорию
   if (input_path == "")
   {
     cout<<"ERROR: missing \"-file\" parameter"<<endl;
@@ -202,6 +215,13 @@ BOOL CheckArgsAndCallTiling (string input_path,
     memcpy(tiling_params.p_transparent_color_,rgb,3);
   }
 
+  if (nodata_tolerance_str != "")
+  {
+    if (((int)atof(nodata_tolerance_str.c_str()))>0 && ((int)atof(nodata_tolerance_str.c_str()))<=100)
+      tiling_params.nodata_tolerance_ = (int)atof(nodata_tolerance_str.c_str());
+  }
+
+
   tiling_params.gdal_resampling_ = gdal_resampling;
 
   tiling_params.auto_stretch_to_8bit_ = true;
@@ -219,29 +239,8 @@ BOOL CheckArgsAndCallTiling (string input_path,
 }
 
 
-
 int _tmain(int argc, wchar_t* argvW[])
 {
-  //cout.imbue(std::locale("rus_rus.866"));
-  //locale myloc("");
-  /*
-  FILE *fp = fopen("c:\\work\\11.txt","w");
-  char  data[4] = {'1','2','3','4'};
-  char  data2[2] = {'7','7'};
-
-  int k = fwrite(data,1,4,fp);
-  fseek(fp,0,0);
-  fwrite(data2,1,2,fp);
-  fclose(fp);
-  */
-  
-
-
-  //gmx::GMXTileContainer tc;
-//  BOOL b = tc.OpenForReading("C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tiles");
-
-
-
   string *argv = new string[argc];
   for (int i=0;i<argc;i++)
   {
@@ -256,250 +255,122 @@ int _tmain(int argc, wchar_t* argvW[])
   }
   GDALAllRegister();
   OGRRegisterAll();
-
-  
+    
   if (argc == 1)
   {
     PrintHelp();
     return 0;
   }
 
-  //обязательный параметр
-  string input_path	= gmx::ReadConsoleParameter("-file",argc,argv);
-
-  //дополнительные параметры
-  string mosaic_mode = gmx::ReadConsoleParameter("-mosaic",argc,argv,TRUE);
-  string use_container = (gmx::ReadConsoleParameter("-container",argc,argv,TRUE) != "") ? 
-                      gmx::ReadConsoleParameter("-container",argc,argv,TRUE) : 
-                      gmx::ReadConsoleParameter("-mbtiles",argc,argv,TRUE);
-  string max_zoom_str	= gmx::ReadConsoleParameter("-zoom",argc,argv);
-  string min_zoom_str	= gmx::ReadConsoleParameter("-min_zoom",argc,argv);	
-  string vector_file = gmx::ReadConsoleParameter("-border",argc,argv);
-  string output_path = gmx::ReadConsoleParameter("-tiles",argc,argv);
-  string tile_type_str = gmx::ReadConsoleParameter("-tile_type",argc,argv);
-  string proj_type_str = gmx::ReadConsoleParameter("-proj",argc,argv);
-  string tile_name_template = gmx::ReadConsoleParameter("-template",argc,argv);
-  string no_data_str = gmx::ReadConsoleParameter("-nodata",argc,argv) != "" ?
-                      gmx::ReadConsoleParameter("-nodata",argc,argv) :
-                      gmx::ReadConsoleParameter("-no_data",argc,argv);
-  string transp_color_str	= gmx::ReadConsoleParameter("-nodata_rgb",argc,argv) != "" ?
-                            gmx::ReadConsoleParameter("-nodata_rgb",argc,argv) :
-                            gmx::ReadConsoleParameter("-no_data_rgb",argc,argv);
-
-  string quality_str = gmx::ReadConsoleParameter("-quality",argc,argv);
-
-  string gdal_resampling = gmx::ReadConsoleParameter("-resampling",argc,argv);
-
-  //скрытые параметры
-  //string need_Edges				=  gmx::ReadConsoleParameter("-edges",argc,argv);
-  string shift_x_str = gmx::ReadConsoleParameter("-shiftX",argc,argv);
-  string shift_y_str = gmx::ReadConsoleParameter("-shiftY",argc,argv);
-  string use_pixel_tiling	= gmx::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE);
-  string background_color	= gmx::ReadConsoleParameter("-background",argc,argv);
-  string log_file	= gmx::ReadConsoleParameter("-log_file",argc,argv);
-  string cache_size_str	= gmx::ReadConsoleParameter("-cache",argc,argv);
-  string temp_file_warp_path = gmx::ReadConsoleParameter("-temp_file_warp",argc,argv);
-
-  string max_work_threads_str = gmx::ReadConsoleParameter("-work_threads",argc,argv);
-  string max_warp_threads_str = gmx::ReadConsoleParameter("-warp_threads",argc,argv);
-
-  //string	strN
-
-  if (argc == 2)				input_path	= argv[1];
-  wcout<<endl;
-
-
-  //  opj_stream_t* p_opj_stream = opj_stream_default_create(false);
-  //FILE *p_f = fopen("E:\\TestData\\Ikonos\\ch1-4_16bit_ip.tif","rb");
-  //for (int i=0;i<100;i++)
-  //{
- // cout<<i<<endl;
-  /*
-  for (int i=0;i<10000;i++)
-  {
-    cout<<i<<endl;
-  BYTE *p_input_data;
-  unsigned int size;
-  void *p_data;int size2;
-  gmx::RasterBuffer buffer;
-  gmx::ReadDataFromFile("e:\\ch1-4_16bit.tif",p_input_data,size);
-  buffer.CreateBufferFromTiffData(p_input_data,size);
-  delete[]p_input_data;
-  buffer.SaveToJP2Data(p_data,size2);
-  buffer.createFromJP2Data(p_data,size2);
-  delete[]p_data;
-  buffer.SaveToTiffData(p_data,size2);
-  gmx::SaveDataToFile("e:\\ch1-4_16bit_out.tif",p_data,size2);
-  delete[]p_data;
-  }*/
-  //gmx::ReadDataFromFile("E:\\TestData\\Ikonos\\ch1-4_16bit_ip.tif",p_input_data,size);
+  map<string,string> console_params;
   
+  console_params.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",argc,argv)));
+  console_params.insert(pair<string,string>("-mosaic",gmx::ReadConsoleParameter("-mosaic",argc,argv,TRUE)));
+  console_params.insert(pair<string,string>("-gmxtiles",gmx::ReadConsoleParameter("-container",argc,argv,TRUE)));
+  console_params.insert(pair<string,string>("-mbtiles",gmx::ReadConsoleParameter("-mbtiles",argc,argv,TRUE)));
+  console_params.insert(pair<string,string>("-zoom",gmx::ReadConsoleParameter("-zoom",argc,argv)));
+  console_params.insert(pair<string,string>("-min_zoom",gmx::ReadConsoleParameter("-min_zoom",argc,argv)));
 
-  //gmx::ReadDataFromFile("e:\\erosb_16bit.jp2",p_input_data,size);
-  //buffer.createFromJP2Data(p_input_data,size);
-  //delete[]p_input_data;
-  //buffer.SaveToTiffData(p_data,size2);
-  //gmx::SaveDataToFile("e:\\erosb_16bit.tif",p_data,size2);
+  console_params.insert(pair<string,string>("-border",gmx::ReadConsoleParameter("-border",argc,argv)));
+  console_params.insert(pair<string,string>("-tiles",gmx::ReadConsoleParameter("-tiles",argc,argv)));
+  console_params.insert(pair<string,string>("-tile_type",gmx::ReadConsoleParameter("-tile_type",argc,argv)));
+  console_params.insert(pair<string,string>("-proj",gmx::ReadConsoleParameter("-proj",argc,argv)));
 
-  /*
-  gmx::ReadDataFromFile("e:\\Landsat8\\landsat_8_cut.tif",p_input_data,size);
-  buffer.CreateBufferFromTiffData(p_input_data,size);
-  delete[]p_input_data;
-  buffer.SaveToJP2Data(p_data,size2);
-  gmx::SaveDataToFile("e:\\landsat8_ch1-5_16bit.jp2",p_data,size2);
-  delete[]p_data;
-  */
+  console_params.insert(pair<string,string>("-template",gmx::ReadConsoleParameter("-template",argc,argv)));
+  console_params.insert(pair<string,string>("-nodata",gmx::ReadConsoleParameter("-nodata",argc,argv) != "" ?
+                                                      gmx::ReadConsoleParameter("-nodata",argc,argv) :
+                                                      gmx::ReadConsoleParameter("-no_data",argc,argv)));
+  console_params.insert(pair<string,string>("-nodata_rgb",gmx::ReadConsoleParameter("-nodata_rgb",argc,argv) != "" ?
+                                                          gmx::ReadConsoleParameter("-nodata_rgb",argc,argv) :
+                                                          gmx::ReadConsoleParameter("-no_data_rgb",argc,argv)));
+    
+  console_params.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",argc,argv)));
+  console_params.insert(pair<string,string>("-quality",gmx::ReadConsoleParameter("-quality",argc,argv)));
+  console_params.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",argc,argv)));
+  console_params.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",argc,argv)));
   
+  console_params.insert(pair<string,string>("-shiftX",gmx::ReadConsoleParameter("-shiftX",argc,argv)));
+  console_params.insert(pair<string,string>("-shiftY",gmx::ReadConsoleParameter("-shiftY",argc,argv)));
+  console_params.insert(pair<string,string>("-cache",gmx::ReadConsoleParameter("-cache",argc,argv)));
+  console_params.insert(pair<string,string>("-temp_file_warp",gmx::ReadConsoleParameter("-temp_file_warp",argc,argv)));
+  console_params.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",argc,argv)));
+  console_params.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE)));
+  console_params.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",argc,argv)));
+  console_params.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",argc,argv)));
 
-  //buffer.SaveToJpegData(85,p_data,size2);
-  //}
-
-   //C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10
-
-
-  //max_zoom			= "8";
-  //proj_type	= "1";
-  //tile_name_template		= "standard";
-  //vector_file	= "E:\\MODIS_IRK\\A1304191903.mif";
-
-  //-no_data_rgb "0 0 0" -tile_type png -border C:\Work\Projects\TilingTools\autotest\border\markers.tab
-
-
-  //input_path		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-  //use_container = "-container";
-  //max_zoom_str			= "8";
-
-
-  //transp_color_str = "0 0 0";
-  //tile_type_str = "png";
-  //max_zoom_str			= "8";
-
-  //tile_name_template = "standard";
-  //use_container = "-container";
-
-  //mosaic_mode = "mosaic";
-  //vector_file	  = "C:\\Work\\Projects\\TilingTools\\autotest\\Black_png\\20131007_101711_NPP_SVI.shp";
-  //output_path		= "e:\\spot6_tiles";
-  //tile_type_str = "jpg";
-  //max_zoom_str			= "16";
-  //quality_str = "4";
   
+  if (argc == 2)
+     console_params.at("-file") = argv[1];
 
+  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
 
-
-  ///*
-  //input_path		= "c:\\share_upload\\po_1411849_0000005_cut2.tif";
-  //use_container = "-container";
-  //gdal_resampling = "nearest";
-
-  //tile_name_template = "{l}\\{r}\\{c}.png";
-  //vector_file	= "C:\\Work\\Projects\\TilingTools\\autotest\\border_erosb\\erosb_border.shp";
-  //max_zoom_str		= "17";
-  //tile_name_template = "standard";
-
-
-  //input_path		= "E:\\TestData\\o42073g8.tif";
-  //vector_file	= "C:\\Work\\Projects\\TilingTools\\autotest\\border_o42073g8\\border.shp";
-  //use_container = "-container";
-  //max_zoom_str		= "20";
-  //tile_type_str	= "png";
-  //*/
   
-  if (input_path == "")
+  if (console_params.at("-file") == "")
   {
     cout<<"ERROR: missing \"-file\" parameter"<<endl;
     return 1;
   }
 
 
- 
-  if (mosaic_mode=="")
+  wcout<<endl;
+  if (console_params.at("-mosaic")=="")
   {
     std::list<string> input_file_list;
-    if (!gmx::FindFilesInFolderByPattern (input_file_list,input_path))
+    if (!gmx::FindFilesInFolderByPattern (input_file_list,console_params.at("-file")))
     {
-      cout<<"Can't find input files by pattern: "<<input_path<<endl;
+      cout<<"Can't find input files by pattern: "<<console_params.at("-file")<<endl;
       return 1;
     }
 
-
+    BOOL use_container = (console_params.at("-gmxtiles")!="" || console_params.at("-mbtiles")!="");
+    
     for (std::list<string>::iterator iter = input_file_list.begin(); iter!=input_file_list.end();iter++)
     {
       cout<<"Tiling file: "<<(*iter)<<endl;
+      
       if (input_file_list.size()>1)
-        vector_file = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
-      string output_path_fix = output_path;
-      if ((input_file_list.size()>1)&&(output_path!=""))
       {
-        if (!gmx::FileExists(output_path)) 
+        if (console_params.at("-border") == "") 
+          console_params.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
+      }
+      
+      string ouput_path_init = console_params.at("-tiles");
+      if (input_file_list.size()>1 && console_params.at("-tiles")!="")
+      {
+        if (!gmx::FileExists(console_params.at("-tiles"))) 
         {
-          if (!gmx::CreateDirectory(output_path.c_str()))
+          if (!gmx::CreateDirectory(console_params.at("-tiles").c_str()))
           {
-            cout<<"ERROR: can't create directory: "<<output_path<<endl;
+            cout<<"ERROR: can't create directory: "<<console_params.at("-tiles")<<endl;
             return 1;
           }
-        }
-        output_path_fix = (use_container == "") ? gmx::RemoveEndingSlash(output_path) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles" 
-                            : (use_container == "-mbtiles") ? gmx::RemoveEndingSlash(output_path) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" 
-                                            : gmx::RemoveEndingSlash(output_path) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
-      }
+        }        
 
-      if ((! CheckArgsAndCallTiling (	(*iter),
-                    use_container,		
-                    max_zoom_str,
-                    min_zoom_str,
-                    vector_file,
-                    output_path_fix,
-                    tile_type_str,
-                    proj_type_str,
-                    quality_str,
-                    tile_name_template,
-                    no_data_str,
-                    transp_color_str,
-                    shift_x_str,
-                    shift_y_str,
-                    use_pixel_tiling,
-                    background_color,
-                    log_file,
-                    cache_size_str,
-                    gdal_resampling,
-                    temp_file_warp_path,
-                    max_work_threads_str,
-                    max_warp_threads_str)) && input_file_list.size()==1) 
-      {
-        return 2;
+        if (use_container)
+        {
+          console_params.at("-tiles") = (console_params.at("-mbtiles") != "") ? 
+                                        gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" :
+                                        gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
+        }
+        else
+        {
+          console_params.at("-tiles") = gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
+        }
       }
+      
+      console_params.at("-file") = (*iter);
+   
+      if ((!CheckArgsAndCallTiling (console_params)) && input_file_list.size()==1) 
+        return 2;
+           
       wcout<<endl;
+      console_params.at("-tiles") = ouput_path_init;
     }
   }
   else
   {
-    if (! CheckArgsAndCallTiling (	input_path,
-                  use_container,		
-                  max_zoom_str,
-                  min_zoom_str,
-                  vector_file,
-                  output_path,
-                  tile_type_str,
-                  quality_str,
-                  proj_type_str,
-                  tile_name_template,
-                  no_data_str,
-                  transp_color_str,
-                  shift_x_str,
-                  shift_y_str,
-                  use_pixel_tiling,
-                  background_color,
-                  log_file,
-                  cache_size_str,
-                  gdal_resampling,
-                  temp_file_warp_path,
-                  max_work_threads_str,
-                  max_warp_threads_str))
-                 
-    {
+    if (! CheckArgsAndCallTiling (console_params))
      return 2;
-    }
   }
 
   return 0;

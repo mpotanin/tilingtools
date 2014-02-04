@@ -55,8 +55,9 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 	}
 	*/
-	//srcPath			= "e:\\test_images\\po_734104_0000001_merc.tiles";
-  //destPath		= "e:\\test_images\\po_734104_0000001_merc_tiles";
+	//srcPath			= "E:\\test_images\\MODIS\\scn_120719_Vrangel_island_SWA.tiles";
+  //destPath		= "E:\\test_images\\MODIS\\scn_120719_Vrangel_island_SWA_new_tiles3";
+  //strDestTemplate	= "standard";
 
 
   //strDestTemplate	= "{l}/{r}/{c}.jpg";
@@ -299,7 +300,7 @@ int _tmain(int argc, wchar_t* argvW[])
       int x = (*iter).second.first;
       int y = (*iter).second.second;
 
-			BYTE	*tileData = NULL;
+      BYTE	*tileData = NULL;
 			unsigned int		tileSize = 0;
 			if (poSrcITileContainer->GetTile(z,x,y,tileData,tileSize))
 			{
