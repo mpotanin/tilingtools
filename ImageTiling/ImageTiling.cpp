@@ -302,9 +302,8 @@ int _tmain(int argc, wchar_t* argvW[])
   if (argc == 2)
      console_params.at("-file") = argv[1];
 
-  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
+  //console_params.at("-file") = "Eros-B_16bit_cut.tif";
 
-  
   if (console_params.at("-file") == "")
   {
     cout<<"ERROR: missing \"-file\" parameter"<<endl;

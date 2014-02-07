@@ -69,7 +69,7 @@ string		GetAbsolutePath (string base_path, string relative_path)
 		base_path		= base_path.substr(0,base_path.rfind(L'/'));
 	}
 
-	return (base_path+ "/" + relative_path);
+	return base_path == "" ? relative_path : base_path+ "/" + relative_path;
 }
 
 
@@ -91,11 +91,15 @@ BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
 	WIN32_FIND_DATA find_file_data;
 	HANDLE hFind;
 
+  //if ()
 	wstring search_pattern_w;
 	utf8toWStr(search_pattern_w, search_pattern);
 
 	hFind = FindFirstFile(search_pattern_w.data(), &find_file_data);
-	if (hFind == INVALID_HANDLE_VALUE) return FALSE;
+	if (hFind == INVALID_HANDLE_VALUE)
+  {
+    return FALSE;
+  }
 	
 	while (true)
 	{

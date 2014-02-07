@@ -52,7 +52,7 @@ public:
 	static int CalcZoomByResolution (double res)
 	{
 		double a = CalcResolutionByZoom(0);
-		for (int i=0;i<22;i++)
+		for (int i=0;i<23;i++)
 		{
 			if (fabs(a-res)<0.0001) return i;
 			a/=2;
