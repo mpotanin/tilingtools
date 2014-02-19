@@ -133,20 +133,38 @@ BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialRefer
 
 	for (int i=0;i<num_rings;i++)
 	{
+    OGRLinearRing *p_temp_ring = (OGRLinearRing*) p_rings[i]->clone();
+
+    p_temp_ring->assignSpatialReference(p_ogr_sr);
+    OGRErr error_transform =	p_temp_ring->transformTo(&ogr_wgs84);
+    for (int l=0; l<p_temp_ring->getNumPoints()-1; l++)
+		{
+			if(	((p_temp_ring->getX(l)>90)&&(p_temp_ring->getX(l+1)<-90)) || ((p_temp_ring->getX(l)<-90)&&(p_temp_ring->getX(l+1)>90)) ||
+				((p_temp_ring->getX(l)>180.00001)&&(p_temp_ring->getX(l+1)<179.9999)) || ((p_temp_ring->getX(l)<179.9999)&&(p_temp_ring->getX(l+1)>180.00001)) || 
+				((p_temp_ring->getX(l)>-179.9999)&&(p_temp_ring->getX(l+1)<-180.00001)) || ((p_temp_ring->getX(l)<-180.00001)&&(p_temp_ring->getX(l+1)>-179.9999)))
+			{
+        p_temp_ring->empty();
+				delete[]p_rings;
+				return TRUE;
+			}
+		}
+    p_temp_ring->empty();
+
+
+    /*
 		for (int k=0;k<p_rings[i]->getNumPoints()-1;k++)
 		{
 			OGRLineString ls;
-			for (double j=0;j<=1.0001;j+=0.1)
+
+
+			
+      for (double j=0;j<=1.0001;j+=0.1)
+      {
 				ls.addPoint(	p_rings[i]->getX(k)*(1-j) + p_rings[i]->getX(k+1)*j,
 								p_rings[i]->getY(k)*(1-j) + p_rings[i]->getY(k+1)*j);
-			if (k==9)
-			{
-				double x1 = p_rings[0]->getX(9);
-				double y1 = p_rings[0]->getY(9);
-				double x2 = p_rings[0]->getX(10);
-				double y2 = p_rings[0]->getY(10);
-				y2=y2;
-			}
+      }
+			
+
 			ls.assignSpatialReference(p_ogr_sr);
 			//ToDo
 			OGRErr error_transform =	ls.transformTo(&ogr_wgs84);
@@ -169,6 +187,7 @@ BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialRefer
 				}
 			}
 		}
+    */
 	}
 	
 	delete[]p_rings;

@@ -302,7 +302,12 @@ int _tmain(int argc, wchar_t* argvW[])
   if (argc == 2)
      console_params.at("-file") = argv[1];
 
-  //console_params.at("-file") = "Eros-B_16bit_cut.tif";
+  //console_params.at("-file") = "E:\\test_images\\L8\\LC80930132014036LGN00.tif";
+  //console_params.at("-border") = "E:\\test_images\\L8\\LC80930132014036LGN00.shp";
+  //console_params.at("-nodata_rgb") = "0 0 0";
+  //console_params.at("-tile_type") = "png";
+
+
 
   if (console_params.at("-file") == "")
   {

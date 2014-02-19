@@ -33,9 +33,9 @@ BOOL LoadGDAL (int argc, string argv[])
 	{
 		wchar_t exe_filename_w[_MAX_PATH + 1];
 		GetModuleFileName(NULL,exe_filename_w,_MAX_PATH); 
-		string exe_file_name;
-		wstrToUtf8(exe_file_name,exe_filename_w);
-		gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_file_name));
+		string exe_filename;
+		wstrToUtf8(exe_filename,exe_filename_w);
+		gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_filename));
 	}
 
 	if (gdal_path=="")
@@ -45,11 +45,10 @@ BOOL LoadGDAL (int argc, string argv[])
 	}
 	
 	SetEnvironmentVariables(gdal_path);
- 
-
+   
 	if (!LoadGDALDLLs(gdal_path))
 	{
-		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified"<<endl;
+		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified: "<<gdal_path<<endl;
 		return FALSE;
 	}
 
@@ -62,7 +61,10 @@ BOOL LoadGDALDLLs (string gdal_path)
 	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal110.dll"));
 
 	HMODULE b = LoadLibrary(gdal_dll_w.c_str());
-	return (b != NULL);
+  if (b==NULL)
+    cout<<"gdal dll path: "<<gdal_dll_w<<endl;
+  
+  return (b != NULL);
 }
 
 ///*
@@ -71,7 +73,12 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 	string	configFile = (config_file_path=="") ? "TilingTools.config" : GetAbsolutePath (config_file_path,"TilingTools.config");
 	
 	FILE *fp = fopen(configFile.c_str(),"r");
-	if (!fp) return "";
+	if (!fp)
+  {
+    cout<<"ERROR: can't open config. file: "<<configFile<<endl;
+    return "";
+  }
+
 	string s;
 	char c;
 	while (1==fscanf(fp,"%c",&c))
