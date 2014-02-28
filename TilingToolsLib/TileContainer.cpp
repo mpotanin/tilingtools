@@ -98,8 +98,8 @@ BOOL GMXTileContainer::OpenForReading (string container_file_name)
   if (max_volume_size_ == 65535) max_volume_size_ = 0;
 	
   merc_type_ = (head[9] == 0) ? WORLD_MERCATOR : WEB_MERCATOR;
-	tile_type_ = (head[11] == 0) ? JPEG_TILE : (head[11]==1) ? PNG_TILE : TIFF_TILE;
-	use_cache_ = FALSE;
+	tile_type_ = (TileType)head[11];
+  use_cache_ = FALSE;
 	p_tile_cache_ = NULL;
 
 	BYTE bounds[512];
