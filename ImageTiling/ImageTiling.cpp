@@ -7,20 +7,25 @@
 void PrintHelp ()
 {
 
-  cout<<"Usage:\n";
-  cout<<"ImageTiling [-file input path] [-tiles output path] [-border vector border] [-zoom tiling zoom] [-min_zoom pyramid min tiling zoom]"; 
-  cout<<" [-container write to geomixer container file] [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles file] [-proj tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-tile_type jpg|png|jp2] [-template tile name template] [-nodata transparent value for png tiles] [-nodata_rgb transparent color for png tiles] [-nodata_tolerance tolerance value for \"no_data\" parameter]\n";
-    
-  cout<<"\nEx.1 - image to simple tiles:\n";
+  cout<<"Usage: ImageTiling [-file input path] [-tiles output path]"<<endl;
+  cout<<"       [-border vector border] [-zoom tiling zoom]"<<endl; 
+  cout<<"       [-min_zoom min tiling zoom] [-container write to geomixer container]"<<endl;
+  cout<<"       [-quality jpeg/jpeg2000 quality 0-100] [-mbtiles write to MBTiles]"<<endl;
+  cout<<"       [-proj tiles projection (0 - EPSG:3395, 1 - EPSG:3857)]"<<endl;
+  cout<<"       [-tile_type jpg|png|jp2] [-template tile name template]"<<endl;
+  cout<<"       [-nodata transparent color for png tiles]"<<endl;
+  cout<<"       [-nodata_tolerance tolerance value for \"no_data\" parameter]"<<endl;
+
+  cout<<"\nExample 1 - image to simple tiles:"<<endl;
   cout<<"ImageTiling -file c:\\image.tif"<<endl;
   cout<<"(default values: -tiles=c:\\image_tiles -min_zoom=1 -proj=0 -template=kosmosnimki -tile_type=jpg)"<<endl;
   
-  cout<<"\nEx.2 - image to tiles packed into geomixer container:\n";
+  cout<<"\nExample 2 - image to tiles packed into geomixer container:"<<endl;
   cout<<"ImageTiling -file c:\\image.tif -container -quality 90"<<endl;
   cout<<"(default values: -tiles=c:\\image.tiles -min_zoom=1 -proj=0 -tile_type=jpg)"<<endl;
 
-  cout<<"\nEx.3 - tiling folder of images:\n";
-  cout<<"ImageTiling -file c:\\images\\*.tif -container -template {z}/{x}/{z}_{x}_{y}.png  -tile_type png -nodata_rgb \"0 0 0\""<<endl;
+  cout<<"\nExample 3 - tiling folder of images:"<<endl;
+  cout<<"ImageTiling -file c:\\images\\*.tif -container -template {z}/{x}/{z}_{x}_{y}.png  -tile_type png -nodata \"0 0 0\""<<endl;
   cout<<"(default values: -min_zoom=1 -proj=0)"<<endl;
 
 }
@@ -40,30 +45,7 @@ BOOL CalcPixelOffset (double geo_tr1[6], double geo_tr2[6], int &offset_x, int &
   return TRUE;
 }
 
-/*
-BOOL CheckArgsAndCallTiling (string input_path,
-              string use_container,		
-              string max_zoom_str,
-              string min_zoom_str,
-              string vector_file,
-              string output_path,
-              string tile_type_str,
-              string proj_type_str,
-              string quality_str,
-              string tile_name_template,
-              string no_data_str,
-              string transp_color_str,
-              string shift_x_str,
-              string shift_y_str,
-              string use_pixel_tiling,
-              string background_color,
-              string log_file,
-              string cache_size_str,
-              string gdal_resampling,
-              string temp_file_warp_path,
-              string max_work_threads_str,
-              string max_warp_threads_str)
-*/
+
 BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 {
   string input_path = console_params.at("-file");
@@ -76,13 +58,12 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   string proj_type_str = console_params.at("-proj");
   string quality_str = console_params.at("-quality");
   string tile_name_template = console_params.at("-template");
-  string no_data_str = console_params.at("-nodata");
-  string transp_color_str = console_params.at("-nodata_rgb");
+  string nodata_str = console_params.at("-nodata");
   string nodata_tolerance_str = console_params.at("-nodata_tolerance");
   string shift_x_str = console_params.at("-shiftX");
   string shift_y_str = console_params.at("-shiftY");
   string use_pixel_tiling = console_params.at("-pixel_tiling");
-  string background_color = console_params.at("-background");
+  string background_str = console_params.at("-background");
   string log_file = console_params.at("-log_file");
   string cache_size_str = console_params.at("-cache");
   string gdal_resampling = console_params.at("-resampling");
@@ -197,18 +178,13 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   if (quality_str!="")
     tiling_params.jpeg_quality_ = (int)atof(quality_str.c_str());
   
-  if (no_data_str!="")
-  {
-    tiling_params.p_nodata_value_ = new int[1];
-    tiling_params.p_nodata_value_[0] = atof(no_data_str.c_str());
-  }
-
-  if (transp_color_str!="")
+  
+  if (nodata_str!="")
   {
     BYTE	rgb[3];
-    if (!gmx::ConvertStringToRGB(transp_color_str,rgb))
+    if (!gmx::ConvertStringToRGB(nodata_str,rgb))
     {
-      cout<<"ERROR: bad value of parameter: \"-nodata_rgb\""<<endl;
+      cout<<"ERROR: bad value of parameter: \"-nodata\""<<endl;
       return FALSE;
     }
     tiling_params.p_transparent_color_ = new BYTE[3];
@@ -221,6 +197,17 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
       tiling_params.nodata_tolerance_ = (int)atof(nodata_tolerance_str.c_str());
   }
 
+  if (background_str!="")
+  {
+    BYTE	rgb[3];
+    if (!gmx::ConvertStringToRGB(background_str,rgb))
+    {
+      cout<<"ERROR: bad value of parameter: \"-background\""<<endl;
+      return FALSE;
+    }
+    tiling_params.p_background_color_ = new BYTE[3];
+    memcpy(tiling_params.p_background_color_,rgb,3);
+  }
 
   tiling_params.gdal_resampling_ = gdal_resampling;
 
@@ -278,13 +265,9 @@ int _tmain(int argc, wchar_t* argvW[])
 
   console_params.insert(pair<string,string>("-template",gmx::ReadConsoleParameter("-template",argc,argv)));
   console_params.insert(pair<string,string>("-nodata",gmx::ReadConsoleParameter("-nodata",argc,argv) != "" ?
-                                                      gmx::ReadConsoleParameter("-nodata",argc,argv) :
-                                                      gmx::ReadConsoleParameter("-no_data",argc,argv)));
-  console_params.insert(pair<string,string>("-nodata_rgb",gmx::ReadConsoleParameter("-nodata_rgb",argc,argv) != "" ?
-                                                          gmx::ReadConsoleParameter("-nodata_rgb",argc,argv) :
-                                                          gmx::ReadConsoleParameter("-no_data_rgb",argc,argv)));
-    
-  console_params.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",argc,argv)));
+                                                          gmx::ReadConsoleParameter("-nodata",argc,argv) :
+                                                          gmx::ReadConsoleParameter("-nodata_rgb",argc,argv)));
+   console_params.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",argc,argv)));
   console_params.insert(pair<string,string>("-quality",gmx::ReadConsoleParameter("-quality",argc,argv)));
   console_params.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",argc,argv)));
   console_params.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",argc,argv)));

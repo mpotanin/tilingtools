@@ -46,6 +46,7 @@ public:
 	OGREnvelope*	CalcMercEnvelope (MercatorProjType	merc_type);
 
 	static			BOOL ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference *p_ogr_sr);
+  static      BOOL SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
 
 
 protected:
@@ -95,7 +96,6 @@ public:
                                 OGREnvelope	merc_envp, 
                                 RasterBuffer *p_buffer,
                                 string resampling_alg = "", 
-                                int *p_nodata_value = NULL, 
                                 BYTE *p_def_color = NULL,
                                 string  temp_file_path = "",
                                 int srand_seed = 0);

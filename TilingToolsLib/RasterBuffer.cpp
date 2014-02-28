@@ -180,7 +180,6 @@ RasterBuffer::RasterBuffer(void)
 	p_pixel_data_ = NULL;	
 	p_color_table_ = NULL;
 	alpha_band_defined_	= FALSE;
-	p_nodata_value_ = NULL;
 }
 
 
@@ -190,25 +189,9 @@ RasterBuffer::~RasterBuffer(void)
 }
 
 
-int* RasterBuffer::get_nodata_value()
-{
-	return p_nodata_value_;
-}
-
-
-BOOL RasterBuffer::set_nodata_value(int nodata_value)
-{
-	p_nodata_value_ = new int[1];
-	p_nodata_value_[0] = nodata_value;
-	return TRUE;
-}
-
-
 
 void RasterBuffer::ClearBuffer()
 {
-	delete(p_nodata_value_);
-	p_nodata_value_ = NULL;
 	if (p_pixel_data_!=NULL)
 	{
 		switch (data_type_)
@@ -243,7 +226,6 @@ BOOL RasterBuffer::CreateBuffer	(int			num_bands,
 								 int			y_size,
 								 void			*p_pixel_data_src,
 								 GDALDataType	data_type,
-								 int			*p_nodata_value,
 								 BOOL			alpha_band_defined,
 								 GDALColorTable *p_color_table					
 								 )
@@ -255,7 +237,6 @@ BOOL RasterBuffer::CreateBuffer	(int			num_bands,
 	y_size_		= y_size;
 	data_type_		= data_type;
 	alpha_band_defined_	= alpha_band_defined;
-	if (p_nodata_value) set_nodata_value(p_nodata_value[0]);
 	p_color_table_ = (p_color_table) ? p_color_table->Clone() : NULL;
 
 	switch (data_type_)
@@ -281,7 +262,6 @@ BOOL RasterBuffer::CreateBuffer	(int			num_bands,
 	}
 
 	if (p_pixel_data_src !=NULL) memcpy(this->p_pixel_data_,p_pixel_data_src,data_size_*num_bands_*x_size_*y_size_);
-	else if (p_nodata_value_) InitByValue(p_nodata_value_[0]);
 	else InitByValue(0);
 
 	return TRUE;
@@ -295,7 +275,6 @@ BOOL RasterBuffer::CreateBuffer		(RasterBuffer *pSrcBuffer)
 						pSrcBuffer->get_y_size(),
 						pSrcBuffer->get_pixel_data_ref(),
 						pSrcBuffer->get_data_type(),
-						pSrcBuffer->p_nodata_value_,						
 						pSrcBuffer->alpha_band_defined_,
 						pSrcBuffer->p_color_table_
 						)) return FALSE;
@@ -339,10 +318,6 @@ BOOL	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
 
 	CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),NULL,p_ds->GetRasterBand(1)->GetRasterDataType());
 	p_ds->RasterIO(GF_Read,0,0,x_size_,y_size_,p_pixel_data_,x_size_,y_size_,data_type_,num_bands_,NULL,0,0,0); 
-	int	is_nodata;
-	int nodata_value = p_ds->GetRasterBand(1)->GetNoDataValue(&is_nodata);
-	if (is_nodata) set_nodata_value(nodata_value);
-
 	GDALClose(p_ds);
 	VSIUnlink("/vsimem/tiffinmem");
 	return TRUE;
@@ -387,7 +362,7 @@ BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
 	gdImagePtr im;
 	if (!  (im =	gdImageCreateFromPngPtr(size, p_data_src))) return FALSE;
 	
-	if (im->alphaBlendingFlag) CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,NULL,TRUE);
+	if (im->alphaBlendingFlag) CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,TRUE);
 	else CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
 
 	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
@@ -669,7 +644,6 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
                       image->comps[0].h,
                       NULL,
                       (image->comps[0].prec == 8) ? GDT_Byte : GDT_UInt16,
-                      NULL,
                       FALSE,
                       NULL);
 
@@ -859,26 +833,6 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
       }
 		}
 	}
-	else if (p_nodata_value_)	// ((num_bands_ == 3) || (num_bands_ == 1))
-	{
-		im->alphaBlendingFlag = 1;
-		im->saveAlphaFlag	= 1;
-		
-		for (int j=0;j<y_size_;j++)
-		{
-			for (int i=0;i<x_size_;i++)
-			{
-				transparency = (	(p_pixel_data_byte[j*x_size_+i]			== p_nodata_value_[0]) &&
-							(p_pixel_data_byte[j*x_size_+ i + n]		== p_nodata_value_[0]) &&
-							(p_pixel_data_byte[j*x_size_ + i + n +n]	== p_nodata_value_[0])
-								) ? 127 : 0;
-				im->tpixels[j][i] = gdTrueColorAlpha(	p_pixel_data_byte[j*x_size_+i],
-														p_pixel_data_byte[j*x_size_+i+n],
-														p_pixel_data_byte[j*x_size_+i+n+n],
-														transparency);
-			}
-		}
-	}
 	else // ((num_bands_ == 3) || (num_bands_ == 1))
 	{
 		im->alphaBlendingFlag	= 0;
@@ -941,9 +895,13 @@ BOOL RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 
 BOOL	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 {
+  
+  srand(999);
+  string			tiff_in_mem = ("/vsimem/tiffinmem" + ConvertIntToString(rand()));
+
 	GDALDataset* p_ds = (GDALDataset*)GDALCreate(
 		GDALGetDriverByName("GTiff"),
-        "/vsimem/tiffinmem",
+    tiff_in_mem.c_str(),
 		x_size_,
 		y_size_,
 		num_bands_,
@@ -955,11 +913,11 @@ BOOL	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 	GDALClose(p_ds);
 	vsi_l_offset length; 
 	
-	BYTE * p_data_dstBuf = VSIGetMemFileBuffer("/vsimem/tiffinmem",&length, FALSE);
+	BYTE * p_data_dstBuf = VSIGetMemFileBuffer(tiff_in_mem.c_str(),&length, FALSE);
 	size = length;
 	//GDALClose(p_ds);
 	memcpy((p_data_dst = new BYTE[size]),p_data_dstBuf,size);
-	VSIUnlink("/vsimem/tiffinmem");
+  VSIUnlink(tiff_in_mem.c_str());
 	
 	//SaveDataToFile("e:\\1.tif",p_data_dst,size);
 	//delete[]p_data_dst;
@@ -968,54 +926,6 @@ BOOL	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 }
 
 
-BOOL	RasterBuffer::IsAnyNoDataPixel()
-{
-	if (p_nodata_value_ == NULL) return FALSE;
-	if (this->p_pixel_data_ == NULL)		return FALSE;
-
-	switch (data_type_)
-	{
-		case GDT_Byte:
-		{
-			BYTE t  = 1;
-			return IsAnyNoDataPixel(t);
-		}
-		case GDT_UInt16:
-		{
-			unsigned __int16 t = 257;
-			return IsAnyNoDataPixel(t);
-		}
-		case GDT_Int16:
-		{
-			__int16 t = -257;
-			return IsAnyNoDataPixel(t);
-		}
-		case GDT_Float32:
-		{
-			float t = 1.1;
-			return IsAnyNoDataPixel(t);
-		}
-		default:
-			return FALSE;
-	}
-	return FALSE;
-}
-
-
-template <typename T>	
-BOOL	RasterBuffer::IsAnyNoDataPixel	(T type)
-{
-	int n = x_size_*y_size_;
-	T *p_pixel_data_t= (T*)p_pixel_data_;
-	int i;
-	for (int k = 0;k<n;k++)
-	{
-		for (i=0;i<num_bands_;i++)
-			if (p_pixel_data_t[k + i*n] != p_nodata_value_[0]) break;
-		if (i==num_bands_) return TRUE; 
-	}
-	return FALSE;
-}
 
 
 
@@ -1142,11 +1052,6 @@ BOOL RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LO
 }
 */
 
-BOOL RasterBuffer::InitByNoDataValue(int nodata_value)
-{
-	set_nodata_value(nodata_value);
-	return InitByValue(nodata_value);
-}
 
 BOOL RasterBuffer::InitByValue(int value)
 {
@@ -1461,7 +1366,7 @@ BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
   } 
 
   RasterBuffer temp_buffer;
-  if (!temp_buffer.CreateBuffer(num_bands_+1,x_size_,y_size_,NULL,data_type_,p_nodata_value_,1,p_color_table_)) return FALSE;
+  if (!temp_buffer.CreateBuffer(num_bands_+1,x_size_,y_size_,NULL,data_type_,1,p_color_table_)) return FALSE;
 
   int n = x_size_*y_size_*num_bands_;
   int m = x_size_*y_size_;

@@ -23,7 +23,6 @@ public:
 									 int			y_size,
 									 void			*p_data_src				= NULL,
 									 GDALDataType	data_type				= GDT_Byte,
-									 int			*p_nodata_value			= NULL,
 									 BOOL			is_alpha_band			= FALSE,
 									 GDALColorTable *p_color_table			= NULL
 									 );
@@ -51,7 +50,6 @@ public:
 	//BOOL			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
 	BOOL			InitByRGBColor	 (BYTE rgb[3]);
 	BOOL			InitByValue(int value = 0);	
-	BOOL			InitByNoDataValue(int nodata_value = 0);
 
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h, BOOL stretch_to_8bit = FALSE, 
 										 double *p_min_values = 0, double *p_max_values = 0);
@@ -70,8 +68,6 @@ public:
   
 
 public:
-	BOOL			set_nodata_value(int nodata_value = 0);
-	int*			get_nodata_value();				
 	void*			get_pixel_data_ref();
 	int				get_num_bands();
 	int				get_x_size();
@@ -104,7 +100,6 @@ protected:
 	int				y_size_;
 
 	GDALColorTable	*p_color_table_;
-	int				*p_nodata_value_;			
 };
 
 

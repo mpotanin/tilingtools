@@ -5,9 +5,17 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -21,7 +29,18 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -33,7 +52,13 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -41,11 +66,36 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>../Debug</OutDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>../Debug</OutDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>../Release</OutDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>../x64/Release</OutDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../gdal110/x86/include;../openjpeg-2.0.0/src/lib/openjp2;</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;../openjpeg-2.0.0/bin/Debug/openjp2.lib;TilingToolsLib.lib;agg.lib;cairo.lib;cfitsio.lib;fontconfig.lib;freetype239.lib;freetype2411.lib;freexl.lib;freexl_i.lib;fribidi.lib;ftgl.lib;gd.lib;gdal_i.lib;geos_c_i.lib;giflib.lib;hdf5dll.lib;iconv.lib;libcurl_imp.lib;libeay32.lib;libecwj2.lib;libexpat.lib;libfcgi.lib;libjbig.lib;libjpeg.lib;libming.lib;libmysql.lib;libpng.lib;libpq.lib;libpqdll.lib;libsvg-cairo.lib;libsvg.lib;libtiff_i.lib;libxml2.lib;minizip.lib;netcdf.lib;pdflib.lib;pixman-1.lib;poppler.lib;proj.lib;proj_i.lib;spatialite.lib;spatialite_i.lib;sqlite3_i.lib;ssleay32.lib;vld.lib;xerces-c_2.lib;zdll.lib;zlib.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../Debug;../gdal110/x86/lib;</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>cairo.dll;cfitsio.dll;freexl.dll;fribidi.dll;ftgl.dll;gdal110.dll;geos_c.dll;hdf5dll.dll;iconv.dll;libcurl.dll;libeay32.dll;libecwj2.dll;libexpat.dll;libfcgi.dll;libmap.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk.dll;lti_lidar_dsdk.dll;mapserver.dll;netcdf.dll;pdflib.dll;proj.dll;spatialite.dll;sqlite3.dll;ssleay32.dll;xerces-c_2_8.dll;zlib1.dll;</DelayLoadDLLs>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -81,6 +131,27 @@
       <AdditionalLibraryDirectories>../openjpeg-2.0.0/bin/Release;../gdal110/x86/lib; ../Release;</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;../openjpeg-2.0.0/bin/Release/openjp2.lib;TilingToolsLib.lib;agg.lib;cairo.lib;cfitsio.lib;fontconfig.lib;freetype239.lib;freetype2411.lib;freexl.lib;freexl_i.lib;fribidi.lib;ftgl.lib;gd.lib;gdal_i.lib;geos_c_i.lib;giflib.lib;hdf5dll.lib;iconv.lib;libcurl_imp.lib;libeay32.lib;libecwj2.lib;libexpat.lib;libfcgi.lib;libjbig.lib;libjpeg.lib;libming.lib;libmysql.lib;libpng.lib;libpq.lib;libpqdll.lib;libsvg-cairo.lib;libsvg.lib;libtiff_i.lib;libxml2.lib;minizip.lib;netcdf.lib;pdflib.lib;pixman-1.lib;poppler.lib;proj.lib;proj_i.lib;spatialite.lib;spatialite_i.lib;sqlite3_i.lib;ssleay32.lib;vld.lib;xerces-c_2.lib;zdll.lib;zlib.lib;</AdditionalDependencies>
       <DelayLoadDLLs>cairo.dll;cfitsio.dll;freexl.dll;fribidi.dll;ftgl.dll;gdal110.dll;geos_c.dll;hdf5dll.dll;iconv.dll;libcurl.dll;libeay32.dll;libecwj2.dll;libexpat.dll;libfcgi.dll;libmap.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk.dll;lti_lidar_dsdk.dll;mapserver.dll;netcdf.dll;pdflib.dll;proj.dll;spatialite.dll;sqlite3.dll;ssleay32.dll;xerces-c_2_8.dll;zlib1.dll;</DelayLoadDLLs>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../openjpeg-2.0.0/src /lib/openjp2; ../gdal110/x64/include;</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>../gdal110/x64/lib; ../x64/Release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;openjp2.lib;TilingToolsLib.lib;agg.lib;cairo.lib;cfitsio.lib;fontconfig.lib;freetype239.lib;freetype2411.lib;freexl.lib;freexl_i.lib;fribidi.lib;ftgl.lib;gd.lib;gdal_i.lib;geos_c_i.lib;giflib.lib;hdf5dll.lib;iconv.lib;libcurl_imp.lib;libeay32.lib;libecwj2.lib;libexpat.lib;libfcgi.lib;libjbig.lib;libjpeg.lib;libming.lib;libmysql.lib;libpng.lib;libpq.lib;libpqdll.lib;libsvg-cairo.lib;libsvg.lib;libtiff_i.lib;libxml2.lib;minizip.lib;netcdf.lib;pdflib.lib;pixman-1.lib;poppler.lib;proj.lib;proj_i.lib;spatialite.lib;spatialite_i.lib;sqlite3_i.lib;ssleay32.lib;vld.lib;xerces-c_2.lib;zdll.lib;zlib.lib;</AdditionalDependencies>
+      <DelayLoadDLLs>cairo.dll;cfitsio.dll;freexl.dll;fribidi.dll;ftgl.dll;gdal110.dll;geos_c.dll;hdf5dll.dll;iconv.dll;libcurl.dll;libeay32.dll;libecwj2.dll;libexpat.dll;libfcgi.dll;libmap.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk.dll;lti_lidar_dsdk.dll;mapserver.dll;netcdf.dll;pdflib.dll;proj.dll;msplugin_sde91.dll;msplugin_sde92.dll;spatialite.dll;sqlite3.dll;ssleay32.dll;xerces-c_2_8.dll;zlib1.dll;</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

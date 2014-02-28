@@ -23,8 +23,7 @@ public:
 	bool						use_container_;			//писать тайлы в контейнер
 	BYTE						*p_background_color_;		//RGB-цвет для заливки фона в тайлах
 	BYTE						*p_transparent_color_;		//RGB-цвет для маски прозрачности
-	int							*p_nodata_value_;			//значение для маски прозрачности
-  int             nodata_tolerance_;     //радиус цвета для маски прозрачности
+	int             nodata_tolerance_;     //радиус цвета для маски прозрачности
 	bool						auto_stretch_to_8bit_;		//автоматически пересчитывать значения к 8 бит		
   string          gdal_resampling_;	      //название фильтра для ресемплинга			
 
@@ -55,8 +54,7 @@ public:
 		p_tile_name_ = NULL;
 		p_background_color_	= NULL;
 		p_transparent_color_ = NULL;
-		p_nodata_value_		= NULL;
-    nodata_tolerance_ = 5;
+	  nodata_tolerance_ = 5;
 		base_zoom_	= 0;
 		min_zoom_	= 0;
 		max_tiles_in_cache_	= 0;
@@ -73,7 +71,6 @@ public:
 	{
 		delete(p_background_color_);
 		delete(p_transparent_color_);
-		delete(p_nodata_value_);		
 	}
 };
 
@@ -144,4 +141,5 @@ BOOL GMXMakePyramidTileRecursively (	gmx::VectorBorder				&vb,
 
 BOOL GMXZoomOutTileBuffer		(	gmx::RasterBuffer			src_quarter_tile_buffers[4], 
 								BOOL							src_quarter_tile_buffers_def[4], 
-								gmx::RasterBuffer				&zoomed_out_tile_buffer); 
+								gmx::RasterBuffer				&zoomed_out_tile_buffer,
+                BYTE   *p_background = NULL); 

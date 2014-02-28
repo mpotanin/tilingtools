@@ -50,6 +50,27 @@ BOOL RasterFile::Close()
 }
 
 
+BOOL RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3])
+{
+  if (!p_ds) return FALSE;
+  if (p_ds->GetRasterCount() == 0 || p_ds->GetRasterXSize() == 0 || p_ds->GetRasterYSize()==0 || 
+    p_ds->GetRasterBand(1) == NULL || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return NULL;
+
+  RasterBuffer rb;
+  if (!rb.CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),NULL,p_ds->GetRasterBand(1)->GetRasterDataType(),0,NULL))
+    return FALSE;
+
+  rb.InitByRGBColor(background);
+
+  if (!p_ds->RasterIO(GF_Write,0,0,p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
+                      rb.get_pixel_data_ref(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
+                      rb.get_data_type(),rb.get_num_bands(),NULL,0,0,0)) 
+                      return FALSE;
+  
+  return TRUE;
+}
+
+
 BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x, double shift_y)
 {
 	Close();
@@ -527,7 +548,6 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
                                             OGREnvelope	envp_merc, 
                                             RasterBuffer *p_buffer, 
                                             string resampling_alg, 
-                                            int *p_nodata_value, 
                                             BYTE *p_def_color,
                                             string temp_file_path,
                                             int srand_seed)
@@ -595,7 +615,10 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 	p_vrt_ds->SetProjection(p_dst_wkt);
 
 	if (nodata_val_from_file_defined) p_vrt_ds->GetRasterBand(1)->SetNoDataValue(nodata_val_from_file);
+  if (p_def_color) RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_def_color);
 	
+
+
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
 		//check if image envelope Intersects destination buffer envelope
@@ -724,12 +747,14 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 
   ///*
 
-	p_buffer->CreateBuffer(bands,buf_width,buf_height,NULL,dt,p_nodata_value,FALSE,
-						p_vrt_ds->GetRasterBand(1)->GetColorTable());
-	int nodata_value_from_file = 0;
-	if	(p_nodata_value) p_buffer->InitByNoDataValue(p_nodata_value[0]);
-	else if (p_def_color) p_buffer->InitByRGBColor(p_def_color); 
-	else if (nodata_val_from_file_defined) p_buffer->InitByNoDataValue(nodata_val_from_file);
+	p_buffer->CreateBuffer(bands,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+	
+  //int nodata_value_from_file = 0;
+	//if	(p_nodata_value) p_buffer->InitByNoDataValue(p_nodata_value[0]);
+	//else 
+  //if (p_def_color) p_buffer->InitByRGBColor(p_def_color); 
+	//else if (nodata_val_from_file_defined) p_buffer->InitByValue(nodata_val_from_file);
+
 	p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_buffer->get_data_type(),
 						p_buffer->get_num_bands(),NULL,0,0,0);

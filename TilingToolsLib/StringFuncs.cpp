@@ -80,15 +80,14 @@ BOOL	ConvertStringToRGB (string str_color, BYTE rgb[3])
 	str_color = MakeLower(str_color);
 	regex rgb_dec_pattern("([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");
 	regex rgb_hex_pattern("[0-9,a,b,c,d,e,f]{6}");
-	
+  regex single_value_pattern("[0-9]{1,5}");
+
 	if (regex_match(str_color,rgb_dec_pattern))
 	{
 		match_results<string::const_iterator> mr;
 		regex_search(str_color, mr, rgb_dec_pattern);
-
-		for (int i=1;i<4;i++)
+    for (int i=1;i<4;i++)
 			rgb[i-1] = (int)atof(mr[i].str().c_str());
-		return TRUE;
 	}
 	else if (regex_match(str_color,rgb_hex_pattern))
 	{
@@ -97,9 +96,15 @@ BOOL	ConvertStringToRGB (string str_color, BYTE rgb[3])
 		rgb[0] = nColor>>16;
 		rgb[1] = (nColor>>8)%256;
 		rgb[2] = nColor%256;
-		return TRUE;
-	}
-	return FALSE;
+  }
+  else if (regex_match(str_color,single_value_pattern))
+  {
+    rgb[0] = (int)atof(str_color.c_str());
+    rgb[1]=(rgb[2]=0);
+  }
+  else return FALSE;
+
+  return TRUE;
 }
 
 	
