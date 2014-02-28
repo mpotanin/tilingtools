@@ -14,6 +14,7 @@ void PrintHelp ()
   cout<<"       [-proj tiles projection (0 - EPSG:3395, 1 - EPSG:3857)]"<<endl;
   cout<<"       [-tile_type jpg|png|jp2] [-template tile name template]"<<endl;
   cout<<"       [-nodata transparent color for png tiles]"<<endl;
+  cout<<"       [-background rgb-color for tiles backgroud]"<<endl;
   cout<<"       [-nodata_tolerance tolerance value for \"no_data\" parameter]"<<endl;
 
   cout<<"\nExample 1 - image to simple tiles:"<<endl;
