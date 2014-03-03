@@ -386,7 +386,7 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
   //max_volume_size_=1000000;
 
 
-  this->addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
+  addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
 
 
   if (! (pp_container_volumes_[0] = fopen(container_file_name_.c_str(),"wb+")))
@@ -1021,6 +1021,7 @@ TileFolder::TileFolder (TileName *p_tile_name, BOOL use_cache)
 	p_tile_name_	= p_tile_name;
 	use_cache_	= use_cache;
 	p_tile_cache_		= (use_cache) ? new TileCache() :  NULL;
+  addtile_semaphore_    = CreateSemaphore(NULL,1,1,NULL);
 };
 
 
@@ -1034,7 +1035,8 @@ BOOL TileFolder::Close()
 {
 	delete(p_tile_cache_);
 	p_tile_cache_ = NULL;
-	return TRUE;
+	if (addtile_semaphore_) CloseHandle(addtile_semaphore_);
+  return TRUE;
 };
 
 BOOL	TileFolder::OpenForReading (string folder_name)
@@ -1058,8 +1060,11 @@ MercatorProjType		TileFolder::GetProjType()
 
 BOOL	TileFolder::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
+  WaitForSingleObject(addtile_semaphore_,INFINITE); 
 	if (use_cache_)	p_tile_cache_->AddTile(z,x,y,p_data,size);
-	return writeTileToFile(z,x,y,p_data,size);
+	BOOL result = writeTileToFile(z,x,y,p_data,size);
+  ReleaseSemaphore(addtile_semaphore_,1,NULL);
+  return result;
 };
 
 

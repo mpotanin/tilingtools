@@ -209,6 +209,8 @@ protected:
 	TileName	*p_tile_name_;
 	BOOL		use_cache_;
 	TileCache	*p_tile_cache_;
+  HANDLE addtile_semaphore_;
+
 };
 
 
