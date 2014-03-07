@@ -38,14 +38,71 @@ void Exit()
   cin>>c;
 }
 
-BOOL CalcPixelOffset (double geo_tr1[6], double geo_tr2[6], int &offset_x, int &offset_y)
+BOOL CreateJGW (string jpg_file, int z, int x, int y, int size)
 {
-  offset_x = (int)(0.5 + ((geo_tr1[0]-geo_tr2[0])/geo_tr1[1]));
-  offset_y = (int)(0.5 + ((geo_tr2[3]-geo_tr1[3])/geo_tr1[1]));
+  gmx::RasterFile rf;
+  if (!rf.Init(jpg_file,FALSE)) return FALSE;
+
+  int w,h;
+  rf.GetPixelSize(w,h);
+
+  OGREnvelope envp = gmx::MercatorTileGrid::CalcEnvelopeByTile(z,x,y);
+  double res = gmx::MercatorTileGrid::CalcResolutionByZoom(z)* (((double)size)/(max(w,h)));
+  //return gmx::WriteWLDFile(jpg_file,envp.MinX+res*0.5,envp.MaxY-res*0.5,res);
+  return gmx::WriteWLDFile(jpg_file,envp.MinX + (res*0.5),envp.MaxY - (res*0.5),res);
+
+}
+
+
+BOOL CreateGeoreference(list<string> jpg_files, int z, int size)
+{
+  list<string>::iterator iter = jpg_files.begin();
+  for (int i=0;i<(1<<z);i+=2*(size/gmx::MercatorTileGrid::TILE_SIZE))
+  {
+    for (int j=0;j<(1<<z);j+=2*(size/gmx::MercatorTileGrid::TILE_SIZE))
+    {
+      if (iter != jpg_files.end())
+      {
+        CreateJGW((*iter),z,i,j,size);
+        iter++;
+      }
+    }
+  }
 
   return TRUE;
 }
 
+
+BOOL ProcessFolder (string input_folder, int z, int size)
+{
+  list<string> files;
+  if (!gmx::FindFilesInFolderByExtension(files,input_folder, "jpg", FALSE)) return FALSE;
+  int num = files.size();
+  if (num==0) return FALSE;
+
+  string *arr = new string[num];
+  for (int i=0;i<num;i++)
+    arr[i]="";
+  srand(0);
+  for (list<string>::iterator iter = files.begin();iter!=files.end();iter++)
+  {
+    int k = rand()%num;
+    for (int i = 0; i<num; i++)
+    {
+      if (arr[(k+i)%num]=="")
+      {
+        arr[(k+i)%num] = (*iter);
+        break;
+      }
+    }
+  }
+  
+  list<string> files_rand;
+  for (int i = 0; i<num; i++)
+    files_rand.push_back(arr[i]);
+
+  return CreateGeoreference(files_rand,z,size);
+}
 
 BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 {
@@ -244,6 +301,9 @@ int _tmain(int argc, wchar_t* argvW[])
   GDALAllRegister();
   OGRRegisterAll();
     
+  //ProcessFolder("C:\\share_upload\\foto\\zoom 6",6,1024);
+  //ProcessFolder("C:\\share_upload\\8марта\\фотки\\backup",5,1024);
+
   if (argc == 1)
   {
     PrintHelp();
@@ -286,7 +346,20 @@ int _tmain(int argc, wchar_t* argvW[])
   if (argc == 2)
      console_params.at("-file") = argv[1];
 
-  //console_params.at("-file") = "E:\\test_images\\L8\\LC80930132014036LGN00.tif";
+  //wstring fileW = L"C:\\share_upload\\Иванова Ирина.jpg";
+  //gmx::wstrToUtf8(console_params.at("-file"),fileW);
+  //console_params.at("-gmxtiles")="-container";
+  
+  //console_params.at("-file") = "C:\\share_upload\\Иванова Ирина.jpg";
+
+  //console_params.at("-zoom") = "8";
+
+  //C:\Work\Projects\TilingTools\Release\imagetiling -file C:\Work\Projects\TilingTools\autotest\scn_120719_Vrangel_island_SWA.tif -container -tiles C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10 -resampling cubic
+
+  //console_params.at("-file") = "C:\\share_upload\\foto\\Voronina Marina.jpg";
+  //console_params.at("-gmxtiles")="-container";
+
+  //console_params.at("-template")="{z}/{x}/{y}.jpg";
   //console_params.at("-border") = "E:\\test_images\\L8\\LC80930132014036LGN00.shp";
   //console_params.at("-nodata_rgb") = "0 0 0";
   //console_params.at("-tile_type") = "png";

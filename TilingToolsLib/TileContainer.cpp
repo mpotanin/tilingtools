@@ -187,7 +187,7 @@ BOOL		GMXTileContainer::TileExists(int z, int x, int y)
   if (!is_opened_) return FALSE;
 
 	unsigned int n = TileID(z,x,y);
-	if (n>= max_tiles_ && n<0) return FALSE;
+	if (n>= max_tiles_ || n<0) return FALSE;
 	return (p_sizes_[n]>0) ? TRUE : FALSE;
 }; 
 
@@ -307,6 +307,7 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 __int64		GMXTileContainer::TileID( int z, int x, int y)
 {
   if (!is_opened_) return -1;
+  if ((x<minx_[z]) || (x>=maxx_[z]) || (y<miny_[z]) || (y>=maxy_[z])) return -1;
 
 	unsigned int num = 0;
 	for (int s=0;s<z;s++)
@@ -389,7 +390,7 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
   addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
 
 
-  if (! (pp_container_volumes_[0] = fopen(container_file_name_.c_str(),"wb+")))
+  if (! (pp_container_volumes_[0] = OpenFile(container_file_name_.c_str(),"wb+")))
   {
     MakeEmpty();
     return FALSE;
@@ -490,7 +491,7 @@ BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data,
   int volume_num = GetVolumeNum(container_byte_size_);
   if (pp_container_volumes_[volume_num] == NULL)
   {
-    if (!(pp_container_volumes_[volume_num] = fopen(GetVolumeName(volume_num).c_str(),"wb+")))
+    if (!(pp_container_volumes_[volume_num] = OpenFile(GetVolumeName(volume_num).c_str(),"wb+")))
       return FALSE;
   }
 
@@ -513,7 +514,7 @@ BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_d
   int volume_num = GetVolumeNum(p_offsets_[n]);
   if (!pp_container_volumes_[volume_num])
   {
-    if (!(pp_container_volumes_[volume_num] = fopen(GetVolumeName(volume_num).c_str(),"rb")))
+    if (!(pp_container_volumes_[volume_num] = OpenFile(GetVolumeName(volume_num).c_str(),"rb")))
     {
       cout<<"ERROR: can't open file: "<<GetVolumeName(volume_num).c_str()<<endl;
       return FALSE;

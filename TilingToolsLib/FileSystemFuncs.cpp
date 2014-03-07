@@ -88,6 +88,36 @@ string RemoveExtension (string &filename)
 
 BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
 {
+	WIN32_FIND_DATAW find_file_data;
+	HANDLE hFind;
+
+  //if ()
+	wstring search_pattern_w;
+	utf8toWStr(search_pattern_w, search_pattern);
+
+	hFind = FindFirstFileW(search_pattern_w.data(), &find_file_data);
+	if (hFind == INVALID_HANDLE_VALUE)
+  {
+    return FALSE;
+  }
+	
+	while (true)
+	{
+		if (find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
+		{
+			string find_filename;
+			wstrToUtf8(find_filename,find_file_data.cFileName);
+			file_list.push_back(GetAbsolutePath(GetPath(search_pattern),find_filename));
+		}
+		if (!FindNextFileW(hFind,&find_file_data)) break;
+	}
+
+	return TRUE;
+}
+
+/*
+BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
+{
 	WIN32_FIND_DATA find_file_data;
 	HANDLE hFind;
 
@@ -114,8 +144,41 @@ BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
 
 	return TRUE;
 }
+*/
 
 
+BOOL FindFilesInFolderByExtension (list<string> &file_list, string folder, string	extension, BOOL is_recursive)
+{
+	WIN32_FIND_DATAW find_file_data;
+	HANDLE hFind;
+	
+	wstring path_w;
+	utf8toWStr(path_w,GetAbsolutePath(folder,"*"));
+  hFind = FindFirstFileW(path_w.c_str(), &find_file_data);
+	
+	if (hFind == INVALID_HANDLE_VALUE) return FALSE;
+	
+	while (true)
+	{
+		string find_filename;
+		wstrToUtf8(find_filename,find_file_data.cFileName);
+		if ((find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) && (find_file_data.dwFileAttributes!=48))
+		{
+			if (MakeLower(find_filename).rfind("." + MakeLower(extension)) != string::npos)
+				file_list.push_back(GetAbsolutePath(folder,find_filename));
+		}
+		else if (is_recursive)
+		{
+			if ((find_filename != ".") && (find_filename != ".."))	
+				FindFilesInFolderByExtension (file_list,GetAbsolutePath(folder,find_filename),extension,TRUE);
+		}
+		if (!FindNextFileW(hFind,&find_file_data)) break;
+	}
+
+	return TRUE;
+}
+
+/*
 BOOL FindFilesInFolderByExtension (list<string> &file_list, string folder, string	extension, BOOL is_recursive)
 {
 	WIN32_FIND_DATA find_file_data;
@@ -146,7 +209,7 @@ BOOL FindFilesInFolderByExtension (list<string> &file_list, string folder, strin
 
 	return TRUE;
 }
-
+*/
 
 BOOL WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
 {

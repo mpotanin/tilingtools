@@ -500,7 +500,7 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 		RasterBuffer	quarter_tile_buffer[4];
 		BOOL			src_quarter_tile_buffers_def[4];
 
-		for (int i=0;i<2;i++)
+    for (int i=0;i<2;i++)
 		{
 			for (int j=0;j<2;j++)
 			{
@@ -533,7 +533,7 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 	
 		if (only_calculate)
 		{
-			tiles_expected++;
+     	tiles_expected++;
 			return TRUE;
 		}
 
