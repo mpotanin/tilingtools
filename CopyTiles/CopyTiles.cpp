@@ -13,10 +13,19 @@ int _tmain(int argc, wchar_t* argvW[])
 
   if (argc == 1)
 	{
-		cout<<"Usage: "<<endl;
-		cout<<"CopyTiles [-from input folder or container] [-to destination folder or container] [-border vector border] [-type input tiles type (jpg|png|tif)] [-zooms MinZoom-MaxZoom] [-proj input tiles projection (0 - World_Mercator, 1 - Web_Mercator)] [-src_template source tile name template] [-dest_template destination tile name template]\n"<<endl;
-		cout<<"Example  (copy tiles, default: type=jpg, proj=0 ):"<<endl;
+		cout<<"Usage: CopyTiles [-from input folder or container]"<<endl;
+    cout<<"       [-to output] [-border vector border]"<<endl;
+    cout<<"       [-tile_type input tiles type (jpg|png|jp2)]"<<endl;
+    cout<<"       [-zooms min-max zooms]"<<endl;
+    cout<<"       [-proj input proj. (0 - World_Mercator, 1 - Web_Mercator)]"<<endl;
+    cout<<"       [-src_template source tile template]"<<endl;
+    cout<<"       [-dest_template destination tile template]"<<endl;
+		
+    cout<<"\nExample 1:"<<endl;
 		cout<<"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg_tiles -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
+
+    cout<<"\nExample 2:"<<endl;
+		cout<<"CopyTiles -from c:\\all_tiles -to c:\\moscow_reg.mbtiles -src_template standard -border c:\\moscow_reg.shp -zooms 6-14"<<endl;
 		return 0;
 	}
 
