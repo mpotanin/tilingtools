@@ -123,7 +123,8 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   string use_pixel_tiling = console_params.at("-pixel_tiling");
   string background_str = console_params.at("-background");
   string log_file = console_params.at("-log_file");
-  string cache_size_str = console_params.at("-cache");
+  string cache_size_str = console_params.at("-cache_size");
+  string gmx_volume_size_str = console_params.at("-gmx_volume_size");
   string gdal_resampling = console_params.at("-resampling");
   string temp_file_warp_path = console_params.at("-temp_file_warp");
   string max_work_threads_str = console_params.at("-work_threads");
@@ -231,7 +232,11 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   if ((shift_y_str!="")) tiling_params.shift_y_=atof(shift_y_str.c_str());
 
   if (cache_size_str!="") 
-    tiling_params.max_tiles_in_cache_ = atof(cache_size_str.c_str());
+    tiling_params.max_cache_size_ = atof(cache_size_str.c_str());
+  
+  if (gmx_volume_size_str!="") 
+    tiling_params.max_gmx_volume_size_ = atof(gmx_volume_size_str.c_str());
+
 
   if (quality_str!="")
     tiling_params.jpeg_quality_ = (int)atof(quality_str.c_str());
@@ -251,7 +256,7 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 
   if (nodata_tolerance_str != "")
   {
-    if (((int)atof(nodata_tolerance_str.c_str()))>0 && ((int)atof(nodata_tolerance_str.c_str()))<=100)
+    if (((int)atof(nodata_tolerance_str.c_str()))>=0 && ((int)atof(nodata_tolerance_str.c_str()))<=100)
       tiling_params.nodata_tolerance_ = (int)atof(nodata_tolerance_str.c_str());
   }
 
@@ -335,12 +340,14 @@ int _tmain(int argc, wchar_t* argvW[])
   
   console_params.insert(pair<string,string>("-shiftX",gmx::ReadConsoleParameter("-shiftX",argc,argv)));
   console_params.insert(pair<string,string>("-shiftY",gmx::ReadConsoleParameter("-shiftY",argc,argv)));
-  console_params.insert(pair<string,string>("-cache",gmx::ReadConsoleParameter("-cache",argc,argv)));
+  console_params.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",argc,argv)));
+  console_params.insert(pair<string,string>("-gmx_volume_size",gmx::ReadConsoleParameter("-gmx_volume_size",argc,argv)));
   console_params.insert(pair<string,string>("-temp_file_warp",gmx::ReadConsoleParameter("-temp_file_warp",argc,argv)));
   console_params.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",argc,argv)));
   console_params.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE)));
   console_params.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",argc,argv)));
   console_params.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",argc,argv)));
+
 
   
   if (argc == 2)
@@ -350,9 +357,18 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "C:\\share_upload\\Иванова Ирина.jpg";
+  //console_params.at("-file") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi.tif";
+  //console_params.at("-tile_type") = "png";
+  //console_params.at("-nodata_tolerance") = "0";
+  //console_params.at("-nodata") = "0";
+  //console_params.at("-tiles") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi_tiles5";
 
-  //console_params.at("-zoom") = "8";
+
+  //console_params.at("-gmxtiles")="-container";
+  //console_params.at("-gmx_volume_size")="1000000";
+  //console_params.at("-cache_size")="1000000";
+  //console_params.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
+  //console_params.at("-zoom") = "9";
 
   //C:\Work\Projects\TilingTools\Release\imagetiling -file C:\Work\Projects\TilingTools\autotest\scn_120719_Vrangel_island_SWA.tif -container -tiles C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10 -resampling cubic
 

@@ -155,7 +155,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>..\copy_files.bat</Command>
+      <Command>..\copy_files_x64.bat</Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>

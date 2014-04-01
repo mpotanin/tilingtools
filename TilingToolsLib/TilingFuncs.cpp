@@ -3,7 +3,7 @@
 
 using namespace gmx;
 
-const int	GMX_MAX_BUFFER_WIDTH	= 16;
+int	GMX_MAX_BUFFER_WIDTH	= 16;
 
 int			GMX_MAX_WORK_THREADS	= 2;
 int			GMX_MAX_WARP_THREADS	= 1;
@@ -46,7 +46,17 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 		cout<<"ERROR: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
+
+  extern __int64 GMX_TILE_CACHE_MAX_SIZE;
 	
+  GMX_MAX_WARP_THREADS	= p_tiling_params->max_warp_threads_ > 0 ? p_tiling_params->max_warp_threads_ : GMX_MAX_WARP_THREADS;
+  GMX_MAX_WORK_THREADS	= p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : GMX_MAX_WORK_THREADS;
+  GMX_TILE_CACHE_MAX_SIZE   = p_tiling_params->max_cache_size_ > 0 ? p_tiling_params->max_cache_size_  : GMX_TILE_CACHE_MAX_SIZE;
+  
+  unsigned int max_gmx_volume_size   = p_tiling_params->max_gmx_volume_size_ > 0 ? p_tiling_params->max_gmx_volume_size_ 
+                                                                                  : GMXTileContainer::DEFAULT_MAX_VOLUME_SIZE;
+
+
   ITileContainer	*p_itile_pyramid =	NULL;
 
 	if (p_tiling_params->use_container_)
@@ -59,7 +69,8 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 														                                    p_tiling_params->merc_type_,
 														                                    raster_bundle.CalcMercEnvelope(),
 														                                    base_zoom,
-														                                    TRUE))
+														                                    TRUE,
+                                                                max_gmx_volume_size))
       {
         cout<<"ERROR: can't open for writing gmx-container file: "<<p_tiling_params->container_file_<<endl;
         return FALSE;
@@ -355,13 +366,16 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
   BOOL tiling_error = FALSE;
   int srand_seed = 0;
 
+
+  /*
   int max_warp_threads;
   if (p_tiling_params->temp_file_path_for_warping_ != "")
     max_warp_threads = (p_tiling_params->max_warp_threads_ == 0) ? 2 : p_tiling_params->max_warp_threads_;
   else 
     max_warp_threads = 1;
-  
-  int max_work_threads = (p_tiling_params->max_work_threads_ == 0) ? max_warp_threads + 1 : (int)max(p_tiling_params->max_work_threads_,max_warp_threads + 1);
+  */
+
+  //int max_work_threads = (p_tiling_params->max_work_threads_ == 0) ? max_warp_threads + 1 : (int)max(p_tiling_params->max_work_threads_,max_warp_threads + 1);
 
 	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
 	{

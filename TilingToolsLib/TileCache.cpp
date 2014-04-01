@@ -1,8 +1,9 @@
 #include "StdAfx.h"
 #include "TileCache.h"
 #include "StringFuncs.h"
-const int	GMX_TILE_CACHE_MAX_SIZE = 800000000;
 //const int	GMX_TILE_CACHE_MAX_SIZE = 0;
+
+__int64 GMX_TILE_CACHE_MAX_SIZE = 800000000;
 
 namespace gmx
 {

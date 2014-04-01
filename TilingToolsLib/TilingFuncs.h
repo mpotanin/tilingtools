@@ -32,10 +32,10 @@ public:
 	double					shift_x_;				//сдвиг по x
 	double					shift_y_;				//сдвиг по y
 	gmx::TileName		*p_tile_name_;			//имена тайлов
-	int							max_tiles_in_cache_;			//максимальное количество тайлов в оперативной памяти
-
+	unsigned int		max_cache_size_;		//максимальный размер тайлового кэша в оперативной памяти
   int             max_work_threads_;
   int             max_warp_threads_;
+  unsigned int    max_gmx_volume_size_; //максимальный размер файла в gmx-котейнере 
 
   string          temp_file_path_for_warping_;
 	//static const int			DEFAULT_JPEG_QUALITY = 85;
@@ -54,14 +54,16 @@ public:
 		p_tile_name_ = NULL;
 		p_background_color_	= NULL;
 		p_transparent_color_ = NULL;
-	  nodata_tolerance_ = 5;
+	  nodata_tolerance_ = 0;
 		base_zoom_	= 0;
 		min_zoom_	= 0;
-		max_tiles_in_cache_	= 0;
-		auto_stretch_to_8bit_ = FALSE;
+		max_cache_size_	= 0;
+		max_gmx_volume_size_ =0;
+    auto_stretch_to_8bit_ = FALSE;
 
     max_work_threads_= 0;
     max_warp_threads_= 0;
+
 
     temp_file_path_for_warping_ = "";
 	}

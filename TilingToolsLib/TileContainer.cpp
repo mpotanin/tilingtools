@@ -30,7 +30,8 @@ BOOL GMXTileContainer::OpenForWriting	(	string				container_file_name,
 										MercatorProjType	merc_type,
 										OGREnvelope			envelope, 
 										int					max_zoom, 
-										BOOL				use_cache)
+										BOOL				use_cache,
+                    unsigned int max_volume_size)
 {
 	int tile_bounds[128];
 	for (int i=0;i<32;i++)
@@ -41,7 +42,7 @@ BOOL GMXTileContainer::OpenForWriting	(	string				container_file_name,
 			MercatorTileGrid::CalcTileRange(envelope,i,tile_bounds[4*i],tile_bounds[4*i+1],tile_bounds[4*i+2],tile_bounds[4*i+3]);
 		}
 	}
-	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache);
+	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache,max_volume_size);
 };
 
 
@@ -368,7 +369,8 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 									                        TileType			tile_type,
 									                        MercatorProjType	merc_type,
                                           int					tile_bounds[128], 
-									                        BOOL				use_cache)
+									                        BOOL				use_cache,
+                                          unsigned int max_volume_size)
 {
   is_opened_            = TRUE;
 	read_only_					  = FALSE;
@@ -383,12 +385,13 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
   for (int i=0;i<max_volumes_;i++)
     pp_container_volumes_[i]=NULL;
   
-  max_volume_size_	= 0xffffffff;
+  max_volume_size_	= max_volume_size;
   //max_volume_size_=1000000;
 
 
   addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
 
+  if (!DeleteVolumes()) return FALSE;
 
   if (! (pp_container_volumes_[0] = OpenFile(container_file_name_.c_str(),"wb+")))
   {
@@ -450,6 +453,33 @@ int GMXTileContainer::FillUpCurrentVolume ()
   delete[]block;
   return block_size;
 };
+
+BOOL   GMXTileContainer::DeleteVolumes()
+{
+  list<string> file_list;
+
+  FindFilesInFolderByPattern(file_list,container_file_name_ +"*");
+
+  ///*
+  regex pattern("\\.{0,1}[0-9]{0,3}");
+  for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
+  {
+    if ((*iter).length()>container_file_name_.length())
+    {
+      if (regex_match((*iter).substr(container_file_name_.length(),(*iter).length()-container_file_name_.length()),pattern))
+      {      
+        if (! DeleteFile(*iter))
+        {
+          cout<<"ERROR: can't delete file: "<<*iter<<endl;
+          return FALSE;
+        }
+      }
+    }
+  }
+  //*/
+  return TRUE;
+}
+
 
 int  GMXTileContainer::GetVolumeNum (unsigned __int64 tile_offset)
 {

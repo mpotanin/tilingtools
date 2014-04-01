@@ -1,9 +1,11 @@
+#ifndef GMX_TILE_CACHE_H
+#define GMX_TILE_CACHE_H
 #pragma once
 #include	"stdafx.h"
 
+
 namespace gmx
 {
-
 
 class TileCache
 {
@@ -18,9 +20,11 @@ public:
 protected:
 	map<string,BYTE*>			tile_data_map_;
 	map<string,unsigned int>	tile_size_map_;
-  unsigned __int64 cache_size_;
+  __int64 cache_size_;
 
 };
 
 
 }
+
+#endif

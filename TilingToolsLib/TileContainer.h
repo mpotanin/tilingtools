@@ -71,14 +71,16 @@ public:
 									              MercatorProjType	merc_type,
 									              OGREnvelope			envelope, 
 									              int					max_zoom, 
-									              BOOL				use_cache
+									              BOOL				use_cache,
+                                unsigned int max_volume_size = DEFAULT_MAX_VOLUME_SIZE
 								              );
 
   BOOL 		OpenForWriting			( string				container_file_name, 
 									              TileType			tile_type,
 									              MercatorProjType	merc_type,
                                	int					tile_bounds[128], 
-                                BOOL				use_cache
+                                BOOL				use_cache,
+                                unsigned int max_volume_size = DEFAULT_MAX_VOLUME_SIZE
 								              );
 
 	GMXTileContainer				();
@@ -103,6 +105,7 @@ public:
 	MercatorProjType	GetProjType();
 	OGREnvelope			GetMercatorEnvelope();
 	int					GetMaxZoom		();
+  static const unsigned int DEFAULT_MAX_VOLUME_SIZE = 0xffffffff;
 	
 
 protected:
@@ -120,7 +123,7 @@ protected:
   int                 GetVolumeNum (unsigned __int64 tile_offset);
   string              GetVolumeName (int num);
   unsigned __int64    GetTileOffsetInVolume (unsigned __int64 tile_container_offset);
-  
+  BOOL                DeleteVolumes();
 
 protected:
 	BOOL					read_only_;
