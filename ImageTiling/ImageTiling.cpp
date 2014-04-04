@@ -291,6 +291,7 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 
 int _tmain(int argc, wchar_t* argvW[])
 {
+
   string *argv = new string[argc];
   for (int i=0;i<argc;i++)
   {
@@ -305,9 +306,6 @@ int _tmain(int argc, wchar_t* argvW[])
   }
   GDALAllRegister();
   OGRRegisterAll();
-    
-  //ProcessFolder("C:\\share_upload\\foto\\zoom 6",6,1024);
-  //ProcessFolder("C:\\share_upload\\8марта\\фотки\\backup",5,1024);
 
   if (argc == 1)
   {
@@ -357,7 +355,8 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi.tif";
+  //console_params.at("-file") = "e:\\test_images\\SCN1-E2440042.tif";
+  //console_params.at("-border") = "e:\\test_images\\SCN1-E2440042.shp";
   //console_params.at("-tile_type") = "png";
   //console_params.at("-nodata_tolerance") = "0";
   //console_params.at("-nodata") = "0";

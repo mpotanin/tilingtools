@@ -52,6 +52,10 @@ BOOL RasterFile::Close()
 
 BOOL RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3])
 {
+  ///
+  //p_ds->GetRasterBand(1)->GetHistogram(
+  ////
+
   if (!p_ds) return FALSE;
   if (p_ds->GetRasterCount() == 0 || p_ds->GetRasterXSize() == 0 || p_ds->GetRasterYSize()==0 || 
     p_ds->GetRasterBand(1) == NULL || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return NULL;

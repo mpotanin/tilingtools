@@ -164,7 +164,8 @@ VectorBorder*	VectorBorder::CreateFromVectorFile(string vector_file, MercatorPro
 	if( p_ogr_ds == NULL ) return NULL;
 	
 	OGRMultiPolygon *p_ogr_multipoly = ReadMultiPolygonFromOGRDataSource(p_ogr_ds);
-	if (p_ogr_multipoly == NULL) return NULL;
+  if (!p_ogr_multipoly) return NULL;
+  else p_ogr_multipoly->closeRings();
 
 	OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
 	OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
