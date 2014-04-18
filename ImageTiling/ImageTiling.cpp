@@ -355,7 +355,7 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "e:\\test_images\\SCN1-E2440042.tif";
+  //console_params.at("-file") = "E:\\test_images\\L8\\LC81720292014094LGN00.tar\\LC81720292014094LGN00\\LC81720292014094LGN00_B6.TIF";
   //console_params.at("-border") = "e:\\test_images\\SCN1-E2440042.shp";
   //console_params.at("-tile_type") = "png";
   //console_params.at("-nodata_tolerance") = "0";

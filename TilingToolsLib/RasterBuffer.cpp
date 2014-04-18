@@ -1181,10 +1181,14 @@ void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h,
 		{
 			for (int i=top;i<top+h;i++)
 			{
-				if (stretch_to_8bit) 
+				if (stretch_to_8bit)
 				{
-					d = max(min(p_pixel_data_t[m*k+i*x_size_+j],p_max_values[k]),p_min_values[k]);
-					p_pixel_block_byte[n*k+(i-top)*w+j-left] = (int)(0.5+255*((d-p_min_values[k])/(p_max_values[k]-p_min_values[k])));
+          if (p_pixel_data_t[m*k+i*x_size_+j] == 0) p_pixel_block_byte[n*k+(i-top)*w+j-left] = 0;
+          else
+          {  
+					  d = max(min(p_pixel_data_t[m*k+i*x_size_+j],p_max_values[k]),p_min_values[k]);
+					  p_pixel_block_byte[n*k+(i-top)*w+j-left] = (int)(0.5+255*((d-p_min_values[k])/(p_max_values[k]-p_min_values[k])));
+          }
 				}
 				else p_pixel_block_t[n*k+(i-top)*w+j-left] = p_pixel_data_t[m*k+i*x_size_+j];
 			}
