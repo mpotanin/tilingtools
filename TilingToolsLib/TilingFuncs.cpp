@@ -188,11 +188,8 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 				{
 					case JPEG_TILE:
 						{
-              if ((p_tiling_params->jpeg_quality_>0)&&(p_tiling_params->jpeg_quality_<=100))
-                tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
-              else 
-                tile_buffer.SaveToJpegData(p_data,size);
-							break;
+              tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
+              break;
 						}
 					case PNG_TILE:
 						{
@@ -201,10 +198,7 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 						}
           case JP2_TILE:
             {
-              if ((p_tiling_params->jpeg_quality_>=1)&&(p_tiling_params->jpeg_quality_<=50))
-                tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
-              else 
-                tile_buffer.SaveToJP2Data(p_data,size);
+              tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
               break;
             }
 					default:
@@ -563,11 +557,8 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 		{
       case JPEG_TILE:
 				{
-          if ((p_tiling_params->jpeg_quality_>0)&&(p_tiling_params->jpeg_quality_<=100))
-            tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
-          else 
-            tile_buffer.SaveToJpegData(p_data,size);
-					break;
+          tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
+          break;
         }
 			case PNG_TILE:
 				{
@@ -576,10 +567,7 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 				}
       case JP2_TILE:
         {
-          if ((p_tiling_params->jpeg_quality_>=1)&&(p_tiling_params->jpeg_quality_<=50))
-            tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
-          else 
-            tile_buffer.SaveToJP2Data(p_data,size);
+          tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
           break;
         }
 			default:

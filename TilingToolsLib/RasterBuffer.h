@@ -65,7 +65,7 @@ public:
 	//BOOL			createAlphaBandByValue(int	value);
 	BOOL			StretchDataTo8Bit(double *min_values, double *max_values);
   BOOL      AddPixelDataToHistogram(Histogram *p_hist);
-  
+    
 
 public:
 	void*			get_pixel_data_ref();
@@ -78,7 +78,9 @@ public:
 
 protected:
 	//void									initAlphaBand();
-	template <typename T>	BOOL			IsAnyNoDataPixel(T type);
+  void*                           GetPixelDataOrder2();
+  template <typename T>void*      GetPixelDataOrder2(T type);
+  template <typename T>	BOOL			IsAnyNoDataPixel(T type);
 	template <typename T>	BOOL			InitByValue		(T type, int value);
 	template <typename T>	void*			GetPixelDataBlock	(	T type, int left, int top, int w, int h,  
 																BOOL stretch_to_8bit = FALSE, double *p_min_values = 0, double *p_max_values = 0);

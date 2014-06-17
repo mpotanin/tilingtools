@@ -290,7 +290,7 @@ string		GetExtension (string path)
 }
 
 
-BOOL ReadDataFromFile(string filename, BYTE *&p_data, unsigned int &size)
+BOOL ReadDataFromFile(string filename, void *&p_data, int &size)
 {
 	FILE *fp = OpenFile(filename,"rb");
 	if (!fp) return FALSE;

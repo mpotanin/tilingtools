@@ -1211,8 +1211,13 @@ BOOL	TileFolder::writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned in
 	
 BOOL	TileFolder::ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned int &size)
 {
-	return ReadDataFromFile (p_tile_name_->GetFullTileName(z,x,y),p_data,size); 
-};
+  void *_p_data;
+  int _size;
+  BOOL result = ReadDataFromFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
+  size = _size;
+  p_data = (BYTE*)_p_data;
+	return result;
+ };
 
 
 }

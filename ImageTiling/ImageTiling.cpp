@@ -289,6 +289,7 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 }
 
 
+
 int _tmain(int argc, wchar_t* argvW[])
 {
 
@@ -355,27 +356,30 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "E:\\test_images\\L8\\LC81720292014094LGN00.tar\\LC81720292014094LGN00\\LC81720292014094LGN00_B6.TIF";
-  //console_params.at("-border") = "e:\\test_images\\SCN1-E2440042.shp";
-  //console_params.at("-tile_type") = "png";
+  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\*.tif";
+  //console_params.at("-border") = "e:\\7.shp";
+  //console_params.at("-tile_type") = "jp2";
+  //console_params.at("-quality") = "0";
+  //console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\all_bands";
+
   //console_params.at("-nodata_tolerance") = "0";
   //console_params.at("-nodata") = "0";
   //console_params.at("-tiles") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi_tiles5";
-
+  //console_params.at("-template")="standard";
+  //console_params.at("-zoom") = "5";
 
   //console_params.at("-gmxtiles")="-container";
   //console_params.at("-gmx_volume_size")="1000000";
   //console_params.at("-cache_size")="1000000";
-  //console_params.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
-  //console_params.at("-zoom") = "9";
+  //console_params.at("-tiles") = "E:\\test_images\\Arctic.2014142.terra.1km_z5_3.tiles";
+  //console_params.at("-zoom") = "5";
 
   //C:\Work\Projects\TilingTools\Release\imagetiling -file C:\Work\Projects\TilingTools\autotest\scn_120719_Vrangel_island_SWA.tif -container -tiles C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10 -resampling cubic
 
   //console_params.at("-file") = "C:\\share_upload\\foto\\Voronina Marina.jpg";
   //console_params.at("-gmxtiles")="-container";
 
-  //console_params.at("-template")="{z}/{x}/{y}.jpg";
-  //console_params.at("-border") = "E:\\test_images\\L8\\LC80930132014036LGN00.shp";
+   //console_params.at("-border") = "E:\\test_images\\L8\\LC80930132014036LGN00.shp";
   //console_params.at("-nodata_rgb") = "0 0 0";
   //console_params.at("-tile_type") = "png";
 

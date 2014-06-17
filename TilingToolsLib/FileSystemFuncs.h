@@ -18,7 +18,7 @@ BOOL		FindFilesInFolderByExtension (list<string> &file_list, string folder, stri
 BOOL		WriteToTextFile(string filename, string str_text);
 BOOL		WriteWLDFile	(string filename, double ul_x, double ul_y, double res);
 BOOL		SaveDataToFile	(string filename, void *p_data, int size);
-BOOL		ReadDataFromFile(string filename, BYTE *&p_data, unsigned int &size);
+BOOL		ReadDataFromFile(string filename, void *&p_data, int &size);
 string		GetAbsolutePath (string base_path, string relative_path);
 string		GetExtension (string path);
 BOOL		CreateDirectory(string path);

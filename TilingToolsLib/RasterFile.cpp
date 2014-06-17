@@ -687,7 +687,6 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     
 		
 		
-		//Init cutline for source file
 		if ((*iter).second.second)
 		{
 			VectorBorder	*p_vb = (*iter).second.second;
@@ -699,15 +698,8 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 					p_warp_options->hCutline = p_vb->GetOGRPolygonTransformedToPixelLine(&input_ogr_sr,gdal_transform);
 			}
 		}
-		//p_warp_options->hCutline = ((OGRMultiPolygon*)(*iter).second.second)->getGeometryRef(0)->clone();
-		//((OGRPolygon*)p_warp_options->hCutline)->closeRings();
-
-		
-
-		// p_warp_options->pfnProgress = GDALTermProgress;   
-		p_warp_options->pfnProgress = gmxPrintNoProgress;  
-
-		// Establish reprojection transformer. 
+  
+    p_warp_options->pfnProgress = gmxPrintNoProgress;  
 
 		p_warp_options->pTransformerArg = 
 				GDALCreateApproxTransformer( GDALGenImgProjTransform, 
@@ -764,7 +756,9 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 						p_buffer->get_num_bands(),NULL,0,0,0);
 	//*/
 
-	OGRFree(p_dst_wkt);
+  //p_buffer->SaveBufferToFile("e:\\1.tif");
+
+  OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());
 	return TRUE;

@@ -548,7 +548,88 @@ static void info_callback(const char *msg, void *client_data) {
 	fprintf(stdout, "[INFO] %s", msg);
 }
 
-///*
+BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
+{
+ 
+  kdu_simple_buffer_source input(p_data_src, size);
+  kdu_codestream codestream; codestream.create(&input);
+  codestream.set_fussy(); 
+
+  kdu_dims dims; codestream.get_dims(0,dims);
+  int num_components = codestream.get_num_components();
+  
+  codestream.apply_input_restrictions(0,num_components,0,0,NULL);
+  void *p_buffer = codestream.get_bit_depth(0) == 8 ? (void*)new kdu_byte[(int) dims.area()*num_components] :  (void*)new kdu_int16[(int) dims.area()*num_components];
+
+  kdu_stripe_decompressor decompressor;
+  decompressor.start(codestream);
+
+  int *stripe_heights = new int[num_components];
+  for (int b=0;b<num_components;b++)
+    stripe_heights[b]=dims.size.y;
+
+  int bit_depth = codestream.get_bit_depth(0);
+  if (bit_depth == 8) decompressor.pull_stripe((kdu_byte*)p_buffer,stripe_heights);
+  else decompressor.pull_stripe((kdu_int16*)p_buffer,stripe_heights);
+  
+  decompressor.finish();
+  codestream.destroy();
+  input.close(); //ToDo
+  
+   
+  gmx::RasterBuffer rbuf;
+  if (bit_depth == 8) 
+  {
+    CreateBuffer(num_components,dims.size.x,dims.size.y,NULL,GDT_Byte,FALSE);
+    kdu_byte *p_pixel_data_byte = (kdu_byte*)p_pixel_data_;
+    kdu_byte *p_buffer_byte = (kdu_byte*)p_buffer;
+
+    int n =0;
+    int area = x_size_*y_size_;
+    int area2;
+    for (int j=0;j<y_size_;j++)
+    {
+      for (int i=0;i<x_size_;i++)
+      {
+        area2 = j*x_size_;
+        for (int b=0;b<num_bands_;b++)
+        {
+          p_pixel_data_byte[area*b + area2 + i] = p_buffer_byte[n];
+          n++;
+        }
+      }
+    }
+  }
+  else
+  {
+    CreateBuffer(num_components,dims.size.x,dims.size.y,NULL,GDT_UInt16,FALSE);
+    kdu_uint16 *p_pixel_data_uint16 = (kdu_uint16*)p_pixel_data_;
+    kdu_uint16 *p_buffer_uint16 = (kdu_uint16*)p_buffer;
+
+    int n =0;
+    int area = x_size_*y_size_;
+    int area2;
+    for (int j=0;j<y_size_;j++)
+    {
+      for (int i=0;i<x_size_;i++)
+      {
+        area2 = j*x_size_;
+        for (int b=0;b<num_bands_;b++)
+        {
+          p_pixel_data_uint16[area*b + area2 + i] = p_buffer_uint16[n];
+          n++;
+        }
+      }
+    }
+
+  }
+    
+
+  delete[] p_buffer;
+  return TRUE;
+}
+
+/*
 BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 {
   ClearBuffer();
@@ -626,7 +707,8 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 
   //opj_stream_private 
 	// Get the decoded image //
-	if (!(opj_decode(l_codec, l_stream, image) /*&& opj_end_decompress(l_codec,	l_stream)*/)) {
+
+	if (!(opj_decode(l_codec, l_stream, image) )) {//&& opj_end_decompress(l_codec,	l_stream)
 		fprintf(stderr,"ERROR -> opj_decompress: failed to decode image!\n");
 		opj_destroy_codec(l_codec);
 		opj_stream_destroy(l_stream);
@@ -683,10 +765,98 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 
  	return TRUE;
 }
-//*/
+*/
 
 
-///*
+BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
+{
+  int num_components=0, height, width;
+  num_components = num_bands_;
+  height = y_size_;
+  width = x_size_;
+ 
+  /*
+  char *qstep = (compression_rate == 0) ? "Qstep=0.08" :
+                (compression_rate == 50) ? "Qstep=0.004" : "Qstep=0.002";
+  */
+  char *qstep = "Qstep=0.001";
+
+
+  void *p_data_order2 = GetPixelDataOrder2();
+
+  //kdu_byte *_buffer = (kdu_byte*)rbuf.get_pixel_data_ref();
+  //kdu_int16 *_buffer = (kdu_int16*)rbuf.get_pixel_data_ref();
+
+
+  //kdu_byte *buffer = new kdu_byte[num_components*width*height];
+  // kdu_int16 *buffer = new  kdu_int16[num_components*width*height];
+  
+  siz_params siz;
+  siz.set(Scomponents,0,0,num_components);
+  siz.set(Sdims,0,0,height);  // Height of first image component
+  siz.set(Sdims,0,1,width);   // Width of first image component
+  if (data_type_ == GDT_Byte)
+    siz.set(Sprecision,0,0,8);
+  else if ((data_type_ == GDT_Int16)||((data_type_ == GDT_UInt16)))
+    siz.set(Sprecision,0,0,16);
+  //else siz.set(Sprecision,0,0,32);
+  siz.set(Ssigned,0,0,false); // Image samples are originally unsigned
+  kdu_params *siz_ref = &siz; 
+
+  siz_ref->finalize();
+
+  kdu_simple_buffer_target output(1000000);
+
+  kdu_codestream codestream; codestream.create(&siz,&output);
+  codestream.access_siz()->parse_string("Clayers=1"); //ToDo
+  //codestream.access_siz()->parse_string(qstep);
+  //codestream.
+
+  codestream.access_siz()->finalize_all(); 
+  
+  //codestream.f
+  kdu_stripe_compressor compressor;
+  kdu_long *layer_sizes = new kdu_long[1];
+  layer_sizes[0] = 10000;
+  
+  compressor.start(codestream,1,layer_sizes);
+
+  int * stripe_heights= new int[num_components];
+  for (int b=0; b<num_components;b++)
+    stripe_heights[b]=height;
+  switch (data_type_)
+  {
+    case GDT_Byte:
+      compressor.push_stripe((kdu_byte*)p_data_order2,stripe_heights);
+      break;
+    case GDT_Int16:
+      compressor.push_stripe((kdu_int16*)p_data_order2,stripe_heights);
+      break;
+    case GDT_UInt16:
+      compressor.push_stripe((kdu_int16*)p_data_order2,stripe_heights);
+      break;
+    /*
+    case GDT_Float32:
+      compressor.push_stripe((kdu_float32*)p_data_order2,stripe_heights);
+      break;
+    */
+    default:
+      break;
+  }
+  
+  
+  compressor.finish();
+  codestream.destroy();
+  size = output.cur_pos_;
+  p_data_dst = new BYTE[size];
+  memcpy(p_data_dst,output.p_buffer_data_,size);
+  output.close();
+  delete[]p_data_order2;
+
+  return TRUE;
+}
+
+/*
 BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
 	//int subsampling_dx;
@@ -803,7 +973,7 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   
 	return TRUE;
 }
-//*/
+*/
 
 BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 {
@@ -1083,6 +1253,62 @@ BOOL RasterBuffer::InitByValue(int value)
 			return NULL;
 	}
 	return TRUE;	
+}
+
+void* RasterBuffer::GetPixelDataOrder2()
+{
+  if (this->get_pixel_data_ref()==NULL) return NULL;
+  switch (data_type_)
+	{
+		case GDT_Byte:
+		{
+			BYTE t  = 1;
+			return GetPixelDataOrder2(t);
+		}
+		case GDT_UInt16:
+		{
+			__int16 t = 257;
+			return GetPixelDataOrder2(t);
+		}
+		case GDT_Int16:
+		{
+			__int16 t = 257;
+			return GetPixelDataOrder2(t);
+		}
+		case GDT_Float32:
+		{
+			float t = 1.1;
+			return GetPixelDataOrder2(t);;
+		}
+		default:
+			return NULL;
+	}
+  return NULL;
+}
+
+template <typename T>
+void* RasterBuffer::GetPixelDataOrder2(T type)
+{
+  T *p_pixel_data_t = (T*)p_pixel_data_;
+  T *p_data_order2 = new T[x_size_*y_size_*num_bands_];
+  
+  int n =0;
+  int area = x_size_*y_size_;
+  int area2;
+  for (int j=0;j<y_size_;j++)
+  {
+    for (int i=0;i<x_size_;i++)
+    {
+      area2 = j*x_size_;
+      for (int b=0;b<num_bands_;b++)
+      {
+        p_data_order2[n] = p_pixel_data_t[area*b + area2 + i];
+        n++;
+      }
+    }
+  }
+
+	return p_data_order2;
 }
 
 template <typename T>
