@@ -1,3 +1,4 @@
+#ifndef NO_KAKADU
 /*****************************************************************************/
 // File: kdu_stripe_compressor.cpp [scope = APPS/SUPPORT]
 // Version: Kakadu, V7.3.3
@@ -31,6 +32,8 @@
 Description:
    Implements the `kdu_stripe_compressor' object.
 ******************************************************************************/
+
+
 
 #include <assert.h>
 #include <math.h>
@@ -1340,3 +1343,5 @@ bool
   
   return true;
 }
+
+#endif

@@ -19,16 +19,7 @@
 #include <regex>
 using namespace std;
 
-#include "kdu_elementary.h"
-#include "kdu_messaging.h"
-#include "kdu_params.h"
-#include "kdu_compressed.h"
-#include "kdu_sample_processing.h"
 
-// Application level includes
-#include "kdu_file_io.h"
-#include "kdu_stripe_compressor.h"
-#include "kdu_stripe_decompressor.h"
 
 //#include "I:\VS2005\Projects\ImageTillingLib\ImageTillingLib\VectorFile.h"
 //#include "I:\VS2005\Projects\ImageTillingLib\ImageTillingLib\imagebuffer.h"

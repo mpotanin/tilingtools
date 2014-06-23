@@ -36,6 +36,7 @@
 //#include "../gdal110/x86110/x86/include/openjpeg.h"
 //*/
 
+#ifndef NO_KAKADU
 #include "../kakadu/include/kdu_elementary.h"
 #include "../kakadu/include/kdu_messaging.h"
 #include "../kakadu/include/kdu_params.h"
@@ -46,6 +47,7 @@
 #include "../kakadu/include/kdu_file_io.h"
 #include "../kakadu/include/kdu_stripe_compressor.h"
 #include "../kakadu/include/kdu_stripe_decompressor.h"
+#endif
 
 /*
 #include "../kakadu/v7_3_3-01328N/coresys/common/kdu_elementary.h"

@@ -1,3 +1,4 @@
+#ifndef NO_KAKADU
 /*****************************************************************************/
 // File: kdu_stripe_decompressor.cpp [scope = APPS/SUPPORT]
 // Version: Kakadu, V7.3.3
@@ -1471,3 +1472,4 @@ bool
     }
   return !all_done;
 }
+#endif

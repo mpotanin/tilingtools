@@ -548,6 +548,7 @@ static void info_callback(const char *msg, void *client_data) {
 	fprintf(stdout, "[INFO] %s", msg);
 }
 
+#ifndef NO_KAKADU
 BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 {
  
@@ -628,8 +629,9 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
   delete[] p_buffer;
   return TRUE;
 }
+#endif
 
-/*
+#ifdef NO_KAKADU
 BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 {
   ClearBuffer();
@@ -765,9 +767,9 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 
  	return TRUE;
 }
-*/
+#endif
 
-
+#ifndef NO_KAKADU
 BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
   int num_components=0, height, width;
@@ -775,32 +777,18 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   height = y_size_;
   width = x_size_;
  
-  /*
-  char *qstep = (compression_rate == 0) ? "Qstep=0.08" :
-                (compression_rate == 50) ? "Qstep=0.004" : "Qstep=0.002";
-  */
-  char *qstep = "Qstep=0.001";
-
-
   void *p_data_order2 = GetPixelDataOrder2();
 
-  //kdu_byte *_buffer = (kdu_byte*)rbuf.get_pixel_data_ref();
-  //kdu_int16 *_buffer = (kdu_int16*)rbuf.get_pixel_data_ref();
-
-
-  //kdu_byte *buffer = new kdu_byte[num_components*width*height];
-  // kdu_int16 *buffer = new  kdu_int16[num_components*width*height];
-  
   siz_params siz;
   siz.set(Scomponents,0,0,num_components);
-  siz.set(Sdims,0,0,height);  // Height of first image component
-  siz.set(Sdims,0,1,width);   // Width of first image component
+  siz.set(Sdims,0,0,height); 
+  siz.set(Sdims,0,1,width);  
   if (data_type_ == GDT_Byte)
     siz.set(Sprecision,0,0,8);
   else if ((data_type_ == GDT_Int16)||((data_type_ == GDT_UInt16)))
     siz.set(Sprecision,0,0,16);
-  //else siz.set(Sprecision,0,0,32);
-  siz.set(Ssigned,0,0,false); // Image samples are originally unsigned
+ 
+  siz.set(Ssigned,0,0,false);
   kdu_params *siz_ref = &siz; 
 
   siz_ref->finalize();
@@ -808,17 +796,44 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   kdu_simple_buffer_target output(1000000);
 
   kdu_codestream codestream; codestream.create(&siz,&output);
-  codestream.access_siz()->parse_string("Clayers=1"); //ToDo
-  //codestream.access_siz()->parse_string(qstep);
-  //codestream.
-
+  codestream.access_siz()->parse_string("Clayers=1");
+  if ((data_type_ == GDT_Int16)||((data_type_ == GDT_UInt16)))
+    codestream.access_siz()->parse_string("Qstep=0.002");
+  
   codestream.access_siz()->finalize_all(); 
   
-  //codestream.f
   kdu_stripe_compressor compressor;
   kdu_long *layer_sizes = new kdu_long[1];
-  layer_sizes[0] = 10000;
   
+  if ((compression_rate<=0) || (compression_rate>100)) compression_rate=10;
+  else switch ((100-compression_rate)/5)
+  {
+    case 0:
+      compression_rate = 2;
+      break;
+    case 1:
+      compression_rate = 3;
+      break;
+    case 2:
+      compression_rate = 5;
+      break;
+    case 3:
+      compression_rate = 10;
+      break;
+    case 4:
+      compression_rate = 20;
+      break;
+    case 5:
+      compression_rate = 30;
+      break;
+    case 6:
+      compression_rate = 50;
+      break;
+    default:
+      compression_rate = 100;
+      break;
+  }
+  layer_sizes[0] = (((double)(num_bands_*256*256*(2-(data_type_==GDT_Byte))))/compression_rate);
   compressor.start(codestream,1,layer_sizes);
 
   int * stripe_heights= new int[num_components];
@@ -855,13 +870,43 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
 
   return TRUE;
 }
+#endif NO_KAKADU
 
-/*
+#ifdef NO_KAKADU
+
 BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
 	//int subsampling_dx;
 	//int subsampling_dy;
-  compression_rate = compression_rate == 0 ? 10 : compression_rate;
+  if ((compression_rate<=0) || (compression_rate>100)) compression_rate=10;
+  else switch ((100-compression_rate)/5)
+  {
+    case 0:
+      compression_rate = 2;
+      break;
+    case 1:
+      compression_rate = 3;
+      break;
+    case 2:
+      compression_rate = 5;
+      break;
+    case 3:
+      compression_rate = 10;
+      break;
+    case 4:
+      compression_rate = 20;
+      break;
+    case 5:
+      compression_rate = 30;
+      break;
+    case 6:
+      compression_rate = 50;
+      break;
+    default:
+      compression_rate = 100;
+      break;
+  }
+    
 	int j, numcomps, w, h,index;
   OPJ_COLOR_SPACE color_space;
 	opj_image_cmptparm_t cmptparm[4]; // RGBA //
@@ -973,7 +1018,7 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   
 	return TRUE;
 }
-*/
+#endif
 
 BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 {
