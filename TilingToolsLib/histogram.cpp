@@ -5,9 +5,10 @@ using namespace gmx;
 
 
 
-Histogram::Histogram(int num_bands, GDALDataType gdt)
+bool Histogram::Init(int num_bands, GDALDataType gdt)
 {
-  if (num_bands<=0) return;
+  if ((num_bands<=0) || (num_bands_>0)) return false;
+
   num_bands_=num_bands;
   min_val_=0;
   step_=1;
@@ -29,11 +30,13 @@ Histogram::Histogram(int num_bands, GDALDataType gdt)
      for (int j=0;j<num_vals_;j++)
        freqs_[i][j]=0;
   }
+  return true;
 }
 
-Histogram::Histogram(int num_bands, float min_val, float step, float max_val)
+bool Histogram::Init(int num_bands, float min_val, float step, float max_val)
 {
-  if (num_bands<=0) return;
+  if ((num_bands<=0) || (num_bands_>0)) return false;
+
   num_bands_=num_bands;
   step_=step;
   min_val_=min_val;
@@ -46,6 +49,8 @@ Histogram::Histogram(int num_bands, float min_val, float step, float max_val)
      for (int j=0;j<num_vals_;j++)
        freqs_[i][j]=0;
   }
+
+  return true;
 }
 
 

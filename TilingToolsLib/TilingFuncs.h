@@ -27,6 +27,7 @@ public:
 	bool						auto_stretch_to_8bit_;		//автоматически пересчитывать значения к 8 бит		
   string          gdal_resampling_;	      //название фильтра для ресемплинга			
 
+  bool            calculate_histogram_;    //рассчитывать гистограмму
 
 	int							jpeg_quality_;  //уровень сжатия (jpeg, jpeg2000)
 	double					shift_x_;				//сдвиг по x
@@ -66,6 +67,7 @@ public:
 
 
     temp_file_path_for_warping_ = "";
+    calculate_histogram_=false;
 	}
 
 		
@@ -81,7 +83,8 @@ BOOL GMXMakeTiling (	GMXTilingParameters		*p_tiling_params);
 
 BOOL GMXMakeBaseZoomTiling (GMXTilingParameters				*p_tiling_params, 
 							gmx::BundleOfRasterFiles		*p_bundle, 
-							gmx::ITileContainer				*p_tile_container);
+							gmx::ITileContainer				*p_tile_container,
+              gmx::Histogram            *p_histogram = NULL);
 
 BOOL GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb, 
 								int					base_zoom, 
@@ -108,6 +111,8 @@ struct GMXAsyncChunkTilingParams
   double                    *p_stretch_max_values_;
   int                       srand_seed_;
   string                    temp_file_path_;
+  gmx::Histogram            *p_histogram_;
+
   //BOOL (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
 };
 

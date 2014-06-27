@@ -94,9 +94,10 @@ public:
 	int				CalcBestMercZoom();
 	BOOL			WarpToMercBuffer (	int zoom,	
                                 OGREnvelope	merc_envp, 
-                                RasterBuffer *p_buffer,
-                                string resampling_alg = "", 
-                                BYTE *p_def_color = NULL,
+                                RasterBuffer *p_dst_buffer,
+                                string resampling_alg = "",
+                                BYTE *p_nodata = NULL,
+                                BYTE *p_background_color = NULL,
                                 string  temp_file_path = "",
                                 int srand_seed = 0);
 

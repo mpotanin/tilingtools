@@ -278,6 +278,8 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 
   tiling_params.temp_file_path_for_warping_ = temp_file_warp_path;
 
+  //tiling_params.calculate_histogram_ = true;
+
   if (max_work_threads_str != "")
     tiling_params.max_work_threads_ = ((int)atof(max_work_threads_str.c_str())>0) ? (int)atof(max_work_threads_str.c_str()) : 0;
 
@@ -356,16 +358,20 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\*.tif";
+  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\0_LC81600772014090LGN00.tif";
+  //console_params.at("-file") = "C:\\share_upload\\bmp\\L8_22_06_2013_ndvi.bmp";
+
   //console_params.at("-border") = "e:\\7.shp";
-  //console_params.at("-tile_type") = "jp2";
+  //console_params.at("-tile_type") = "png";
   //console_params.at("-quality") = "0";
-  //console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\all_bands";
+  //console_params.at("-tiles") = "C:\\share_upload\\bmp\\L8_22_06_2013_ndvi_nearest";
 
   //console_params.at("-nodata_tolerance") = "0";
-  //console_params.at("-nodata") = "0";
+  //console_params.at("-nodata") = "0 0 0";
+
   //console_params.at("-tiles") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi_tiles5";
   //console_params.at("-template")="standard";
+  //console_params.at("-resampling")="nearest";
   //console_params.at("-zoom") = "5";
 
   //console_params.at("-gmxtiles")="-container";

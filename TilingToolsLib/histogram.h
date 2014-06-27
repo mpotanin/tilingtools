@@ -11,8 +11,21 @@ namespace gmx
 class Histogram
 {
 public:
-  Histogram(int num_bands, GDALDataType gdt);
-  Histogram(int num_bands, float min_val, float step, float max_val);
+  Histogram () 
+  {
+    min_val_=0;
+    step_=0;
+    num_bands_=0;
+    num_vals_=0;
+    freqs_=0;
+  };
+
+  bool Init(int num_bands, GDALDataType gdt);
+  bool Init(int num_bands, float min_val, float step, float max_val);
+  bool IsInitiated() {return num_bands_!=0;};
+
+  //Histogram(int num_bands, GDALDataType gdt);
+  //Histogram(int num_bands, float min_val, float step, float max_val);
   ~Histogram();
   void AddValue(int band, float value);
   __int64 GetFrequency(int band,float value);

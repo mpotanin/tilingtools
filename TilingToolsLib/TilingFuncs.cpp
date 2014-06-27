@@ -88,7 +88,10 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
     p_itile_pyramid = new TileFolder(p_tiling_params->p_tile_name_,TRUE);
   
   cout<<"Base zoom "<<base_zoom<<": ";
-	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid)) 
+
+  Histogram *p_histogram = (p_tiling_params->calculate_histogram_) ? new Histogram() : NULL;
+
+	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid,p_histogram)) 
   {
     p_itile_pyramid->Close();
 	  delete(p_itile_pyramid);
@@ -175,6 +178,9 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 											FALSE,
 											p_buffer->get_color_table_ref());
       delete[]p_tile_pixel_data;
+
+
+
       if ( p_tiling_params->p_transparent_color_ != NULL )
         tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, p_tiling_params->nodata_tolerance_);
       
@@ -244,6 +250,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
   double                *p_stretch_max_values = p_chunk_tiling_params->p_stretch_max_values_;
   int                   srand_seed = p_chunk_tiling_params->srand_seed_;
   string                temp_file_path = p_chunk_tiling_params->temp_file_path_;
+  gmx::Histogram        *p_histogram = p_chunk_tiling_params->p_histogram_;
   
   RasterBuffer *p_merc_buffer = new RasterBuffer();
   WaitForSingleObject(GMX_WARP_SEMAPHORE,INFINITE);  
@@ -251,6 +258,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
                                                 chunk_envp,
                                                 p_merc_buffer,
                                                 p_tiling_params->gdal_resampling_,
+                                                p_tiling_params->p_transparent_color_,
                                                 p_tiling_params->p_background_color_);
   ReleaseSemaphore(GMX_WARP_SEMAPHORE,1,NULL);    
   if (!warp_result)	
@@ -270,9 +278,18 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 		}
 	}
 
+  if (p_histogram) 
+  {
+    if (!p_histogram->IsInitiated())
+      p_histogram->Init(p_merc_buffer->get_num_bands(),p_merc_buffer->get_data_type());
+    p_merc_buffer->AddPixelDataToHistogram(p_histogram);
+  }
+  
   int min_x,min_y,max_x,max_y;
   MercatorTileGrid::CalcTileRange(chunk_envp,zoom,min_x,min_y,max_x,max_y);
   ///*
+
+ 
   if (!GMXMakeTilingFromBuffer(p_tiling_params,
 										p_merc_buffer,
 										p_bundle,
@@ -297,7 +314,8 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 
 BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params, 
 								BundleOfRasterFiles		*p_bundle, 
-								ITileContainer			*p_tile_container)
+								ITileContainer			*p_tile_container,
+                Histogram           *p_histogram)
 {
 
   //ToDo
@@ -401,6 +419,7 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
       p_chunk_tiling_params->p_stretch_min_values_ = p_stretch_min_values;
       p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
       p_chunk_tiling_params->z_ = zoom;
+      p_chunk_tiling_params->p_histogram_ = p_histogram;
     	CreateThread(NULL,0,GMXAsyncWarpChunkAndMakeTiling,p_chunk_tiling_params,0,&thread_id);      Sleep(100);    }
 	}
 
