@@ -149,11 +149,10 @@ BOOL	RasterFile::CalcStatistics(int &bands, double *&min, double *&max, double *
 }
 
 
-BOOL RasterFile::get_nodata_value (int *p_nodata_value)
+double RasterFile::get_nodata_value (BOOL &nodata_defined)
 {
-	if (!nodata_value_defined_) return FALSE;
-	(*p_nodata_value) = nodata_value_;
-	return TRUE;
+  nodata_defined = nodata_value_defined_;
+  return nodata_value_;
 }
 
 
@@ -167,6 +166,7 @@ RasterFile::RasterFile()
 	//m_strImageFormat	= "";
 	is_georeferenced_ = FALSE;
 	nodata_value_ = 0;
+  nodata_value_defined_ = FALSE;
 }
 
 RasterFile::RasterFile(string raster_file, BOOL is_geo_referenced)
@@ -489,6 +489,14 @@ int	BundleOfRasterFiles::CalcNumberOfTiles (int zoom)
 	return n;
 }
 
+double BundleOfRasterFiles::GetNodataValue(BOOL &nodata_defined)
+{
+  if (data_list_.size()==0) return NULL;
+  RasterFile rf((*data_list_.begin()).first,1);
+  return rf.get_nodata_value(nodata_defined);
+}
+
+
 
 
 int		BundleOfRasterFiles::CalcBestMercZoom()
@@ -567,12 +575,6 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
                                             string temp_file_path,
                                             int srand_seed)
 {
-	//создать виртуальный растр по envp_merc и zoom
-	//создать объект GDALWarpOptions 
-	//вызвать ChunkAndWarpImage
-	//вызвать RasterIO для виртуального растра
-	//удалить виртуальный растр, удалить все объекты
-	//создать RasterBuffer
 
 	if (data_list_.size()==0) return FALSE;
 	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*data_list_.begin()).first.c_str(),GA_ReadOnly );
@@ -584,8 +586,8 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 	GDALDataType	dt		= GDALGetRasterDataType(GDALGetRasterBand(p_src_ds,1));
 	int				bands	= p_src_ds->GetRasterCount();
 	//int				bands	= 3;
-  BOOL			nodata_val_from_file_defined;
-	int				nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
+  BOOL			nodata_val_from_file_defined = false;
+  double			nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
 	
 	double		res			=  MercatorTileGrid::CalcResolutionByZoom(zoom);
 	int				buf_width	= int(((envp_merc.MaxX - envp_merc.MinX)/res)+0.5);
@@ -594,7 +596,8 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
   srand(srand_seed);
   string			tiff_in_mem = (temp_file_path == "" ) ? ("/vsimem/tiffinmem" + ConvertIntToString(rand()))
                                                     : RemoveEndingSlash(temp_file_path) + "/" + ConvertIntToString(rand()) + ".gdal.temp";
-	GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
+	
+  GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
 								tiff_in_mem.c_str(),
 								buf_width,
@@ -603,6 +606,8 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 								dt,
 								NULL
 								);
+
+
 	if (p_src_ds->GetRasterBand(1)->GetColorTable())
 		p_vrt_ds->GetRasterBand(1)->SetColorTable(p_src_ds->GetRasterBand(1)->GetColorTable());
 	GDALClose(p_src_ds);
@@ -629,9 +634,19 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 	output_ogr_sr.exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
 
-	if (nodata_val_from_file_defined) p_vrt_ds->GetRasterBand(1)->SetNoDataValue(nodata_val_from_file);
-  if (p_background_color) RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
 	
+  if (p_background_color)
+  {
+    RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
+  }
+  else if ((p_nodata || nodata_val_from_file_defined) && (bands<=3) ) 
+  {
+    BYTE rgb[3];
+    if (p_nodata) memcpy(rgb,p_nodata,3);
+    else rgb[0] = (rgb[1] = (rgb[2] = (int)nodata_val_from_file));
+    
+    RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,rgb);
+  }
 
 
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
@@ -681,10 +696,17 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 		p_warp_options->hDstDS = p_vrt_ds;
 		p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
-
-		p_warp_options->nBandCount = 0;
-    		
-		
+    
+		p_warp_options->nBandCount = bands;
+    p_warp_options->panSrcBands = new int[bands];
+    p_warp_options->panDstBands = new int[bands];
+    
+    for( int i = 0; i < bands; i++ )
+    {
+       p_warp_options->panSrcBands[i] = i+1;
+       p_warp_options->panDstBands[i] = i+1;
+    }
+    				
 		if ((*iter).second.second)
 		{
 			VectorBorder	*p_vb = (*iter).second.second;
@@ -697,21 +719,38 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 			}
 		}
   
+    ///*
     if (p_nodata)
     {
       p_warp_options->padfSrcNoDataReal = new double[bands];
+      p_warp_options->padfSrcNoDataImag = new double[bands];
       if (bands==3)
       {
         p_warp_options->padfSrcNoDataReal[0] = p_nodata[0];
         p_warp_options->padfSrcNoDataReal[1] = p_nodata[1];
         p_warp_options->padfSrcNoDataReal[2] = p_nodata[2];
+        p_warp_options->padfSrcNoDataImag[0] = (p_warp_options->padfSrcNoDataImag[1] = (p_warp_options->padfSrcNoDataImag[2] = 0));
       }
       else
       {
         for (int i=0;i<bands;i++)
+        {
           p_warp_options->padfSrcNoDataReal[i] = p_nodata[0];
+          p_warp_options->padfSrcNoDataImag[i] = 0;
+        }
       }
     }
+    else if (nodata_val_from_file_defined)
+    {
+      p_warp_options->padfSrcNoDataReal = new double[bands];
+      p_warp_options->padfSrcNoDataImag = new double[bands];
+      for (int i=0;i<bands;i++)
+      {
+          p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file;
+          p_warp_options->padfSrcNoDataImag[i] = 0;
+      }
+    }
+   //*/
     
     p_warp_options->pfnProgress = gmxPrintNoProgress;  
 
@@ -732,9 +771,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     else if (resampling_alg == "lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
     else p_warp_options->eResampleAlg = GRA_Cubic; 
     
-    if (p_nodata) p_warp_options->eResampleAlg = GRA_NearestNeighbour;
-
-    // Initialize and execute the warp operation. 
+     // Initialize and execute the warp operation. 
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		
@@ -745,16 +782,21 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
       warp_error = TRUE;
 		}
-    //p_warp_options->panDstBands = NULL;
-    //p_warp_options->panSrcBands = NULL;
-
-
+    
 		GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
     if (p_warp_options->padfSrcNoDataReal)
     {
       delete[]p_warp_options->padfSrcNoDataReal;
+      delete[]p_warp_options->padfSrcNoDataImag;
       p_warp_options->padfSrcNoDataReal = NULL;
+      p_warp_options->padfSrcNoDataImag = NULL;
     }
+
+    delete[]p_warp_options->panSrcBands;
+    delete[]p_warp_options->panDstBands;
+    p_warp_options->panSrcBands = NULL;
+    p_warp_options->panDstBands = NULL;
+   
 		GDALDestroyWarpOptions( p_warp_options );
 		OGRFree(p_src_wkt);
 		input_rf.Close();
@@ -762,26 +804,14 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     if (warp_error) return FALSE;
 	}
 
-  ///*
-
 	p_dst_buffer->CreateBuffer(bands,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 	
-  //int nodata_value_from_file = 0;
-	//if	(p_nodata_value) p_dst_buffer->InitByNoDataValue(p_nodata_value[0]);
-	//else 
-  //if (p_background_color) p_dst_buffer->InitByRGBColor(p_background_color); 
-	//else if (nodata_val_from_file_defined) p_dst_buffer->InitByValue(nodata_val_from_file);
-
 	p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),NULL,0,0,0);
   
-  //p_dst_buffer->SaveBufferToFile("C:\\share_upload\\bmp\\1.tif");
-
-  //p_vrt_ds->GetRasterBand(1)->
-	//*/
-
-  //p_dst_buffer->SaveBufferToFile("e:\\1.tif");
+  //WriteWLDFile("E:\\test_images\\L8\\for_test\\all_bands\\2.tif",envp_merc.MinX,envp_merc.MaxY,res);
+  //p_dst_buffer->SaveBufferToFile("E:\\test_images\\L8\\for_test\\all_bands\\2.tif");
 
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);

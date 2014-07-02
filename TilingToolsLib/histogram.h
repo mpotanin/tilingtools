@@ -21,21 +21,21 @@ public:
   };
 
   bool Init(int num_bands, GDALDataType gdt);
-  bool Init(int num_bands, float min_val, float step, float max_val);
+  bool Init(int num_bands, double min_val, double step, double max_val);
   bool IsInitiated() {return num_bands_!=0;};
 
   //Histogram(int num_bands, GDALDataType gdt);
-  //Histogram(int num_bands, float min_val, float step, float max_val);
+  //Histogram(int num_bands, double min_val, double step, double max_val);
   ~Histogram();
-  void AddValue(int band, float value);
-  __int64 GetFrequency(int band,float value);
-  void CalcStatistics(int band, float &min, float &max, float &mean, float &stdev);
+  void AddValue(int band, double value);
+  __int64 GetFrequency(int band,double value);
+  void CalcStatistics(int band, double &min, double &max, double &mean, double &stdev, double *p_nodata = NULL);
   int CalcNumOfExistingValues(int band);
-  BOOL GetHistogram(int band, float &min_val, float &step, int &num_vals, __int64 *&freqs);
+  BOOL GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
 
 private:
-  float min_val_;
-  float step_;
+  double min_val_;
+  double step_;
   int num_bands_;
   int num_vals_;
   __int64 **freqs_;

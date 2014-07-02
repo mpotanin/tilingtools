@@ -226,8 +226,8 @@ BOOL WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
 	fprintf(fp,"%lf\n",0.0);
 	fprintf(fp,"%lf\n",0.0);
 	fprintf(fp,"%.10lf\n",-res);
-	fprintf(fp,"%.10lf\n",ul_x);
-	fprintf(fp,"%.10lf\n",ul_y);
+	fprintf(fp,"%.10lf\n",ul_x+0.5*res);
+	fprintf(fp,"%.10lf\n",ul_y-0.5*res);
 	
 	fclose(fp);
 

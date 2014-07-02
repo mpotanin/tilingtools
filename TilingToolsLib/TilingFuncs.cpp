@@ -99,6 +99,29 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
   }
 	cout<<" done."<<endl;
 
+  if (p_histogram)
+  {
+    /*
+    FILE *fp = fopen("E:\\test_images\\L8\\for_test\\histogram.txt","w");
+    double min_val,step;
+    int num_vals;
+    __int64 *freqs;
+    p_histogram->GetHistogram(0,min_val,step,num_vals,freqs);
+    for (int i=0;i<num_vals;i++)
+    {
+      fprintf(fp,"%d %d\n",(int)(min_val+step*i),freqs[i]);
+    }
+
+    fclose(fp);
+    */
+    //double min,max,mean,stddev;
+    //BOOL nodata_defined = FALSE;
+    //double nodata_val = raster_bundle.GetNodataValue(nodata_defined);    
+    //p_histogram->CalcStatistics(0,min,max,mean,stddev,(nodata_defined) ? &nodata_val:NULL);
+    //cout<<min<<" "<<max<<" "<<mean<<" "<<stddev<<endl;
+  }
+
+
 	int min_zoom = (p_tiling_params->min_zoom_ <=0) ? 1 : p_tiling_params->min_zoom_;
 	if (min_zoom < base_zoom)
   {
@@ -280,9 +303,11 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 
   if (p_histogram) 
   {
+    //time_t start = time(0);
     if (!p_histogram->IsInitiated())
       p_histogram->Init(p_merc_buffer->get_num_bands(),p_merc_buffer->get_data_type());
     p_merc_buffer->AddPixelDataToHistogram(p_histogram);
+    //cout<<time(0)-start<<endl;
   }
   
   int min_x,min_y,max_x,max_y;

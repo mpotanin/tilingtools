@@ -19,7 +19,7 @@ bool Histogram::Init(int num_bands, GDALDataType gdt)
       num_vals_=256;
       break;
     default:
-      num_vals_=0xFFFF;
+      num_vals_=0xFFFF + 1;
       break;
   }
   
@@ -33,7 +33,7 @@ bool Histogram::Init(int num_bands, GDALDataType gdt)
   return true;
 }
 
-bool Histogram::Init(int num_bands, float min_val, float step, float max_val)
+bool Histogram::Init(int num_bands, double min_val, double step, double max_val)
 {
   if ((num_bands<=0) || (num_bands_>0)) return false;
 
@@ -61,7 +61,7 @@ Histogram::~Histogram()
   delete[]freqs_;
 }
 
-void Histogram::AddValue(int band, float value)
+void Histogram::AddValue(int band, double value)
 {
   if (band>=num_bands_) return;
   int n = (int)(((value-min_val_)/step_)+0.5);
@@ -69,7 +69,7 @@ void Histogram::AddValue(int band, float value)
   freqs_[band][n]++;
 }
 
-__int64 Histogram::GetFrequency(int band, float value)
+__int64 Histogram::GetFrequency(int band, double value)
 {
   if (band>=num_bands_) return 0;
   int n = (int)(((value-min_val_)/step_)+0.5);
@@ -79,15 +79,19 @@ __int64 Histogram::GetFrequency(int band, float value)
 } 
 
 
-void Histogram::CalcStatistics(int band, float &min, float &max, float &mean, float &stdev)
+void Histogram::CalcStatistics(int band, double &min, double &max, double &mean, double &stdev, double *p_nodata)
 {
   min=0;
   max=0;
 
   if (band>=num_bands_) return;
 
+  int num_nodata = (p_nodata==NULL) ? -1 : (int)(0.5+ ((p_nodata[0] - min_val_)/step_));
+  
+
   for (int i=0;i<num_vals_;i++)
   {
+    if (i==num_nodata) continue;
     if (freqs_[band][i] !=0)
     {
       min = min_val_ + i*step_;
@@ -97,6 +101,7 @@ void Histogram::CalcStatistics(int band, float &min, float &max, float &mean, fl
 
   for (int i = num_vals_-1; i>=0; i--)
   {
+    if (i==num_nodata) continue;
     if (freqs_[band][i] !=0)
     {
       max = min_val_ + i*step_;
@@ -108,6 +113,7 @@ void Histogram::CalcStatistics(int band, float &min, float &max, float &mean, fl
 
   for (int i = 0; i<num_vals_; i++)
   {
+    if (i==num_nodata) continue;
     total_freqs+=freqs_[band][i];
   }
 
@@ -118,10 +124,11 @@ void Histogram::CalcStatistics(int band, float &min, float &max, float &mean, fl
 
   for (int i = 0; i<num_vals_;i++)
   {
+    if (i==num_nodata) continue;
     if (freqs_[band][i]!=0)
     {
-      mean+=((float)freqs_[band][i]/(float)total_freqs)*v;
-      stdev+=((float)freqs_[band][i]/(float)total_freqs)*v*v;
+      mean+=((double)freqs_[band][i]/(double)total_freqs)*v;
+      stdev+=((double)freqs_[band][i]/(double)total_freqs)*v*v;
     }
     v+=step_;
   }
@@ -142,7 +149,7 @@ int Histogram::CalcNumOfExistingValues(int band)
   return num;
 }
 
-BOOL Histogram::GetHistogram(int band, float &min_val, float &step, int &num_vals, __int64 *&freqs)
+BOOL Histogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs)
 {
   if (band>=num_bands_) return FALSE;
 
