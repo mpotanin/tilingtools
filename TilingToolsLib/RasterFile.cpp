@@ -766,7 +766,10 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 		p_warp_options->pfnTransformer = GDALApproxTransform;
 
     resampling_alg = MakeLower(resampling_alg);
-    if ((resampling_alg == "near") || (resampling_alg == "nearest") || (p_vrt_ds->GetRasterBand(1)->GetColorTable())) p_warp_options->eResampleAlg = GRA_NearestNeighbour;
+    if (  resampling_alg == "near" || 
+          resampling_alg == "nearest" || 
+          p_vrt_ds->GetRasterBand(1)->GetColorTable()
+       ) p_warp_options->eResampleAlg = GRA_NearestNeighbour;
     else if (resampling_alg == "bilinear") p_warp_options->eResampleAlg = GRA_Bilinear;
     else if (resampling_alg == "lanczos") p_warp_options->eResampleAlg = GRA_Lanczos;
     else p_warp_options->eResampleAlg = GRA_Cubic; 
@@ -810,9 +813,6 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),NULL,0,0,0);
   
-  //WriteWLDFile("E:\\test_images\\L8\\for_test\\all_bands\\2.tif",envp_merc.MinX,envp_merc.MaxY,res);
-  //p_dst_buffer->SaveBufferToFile("E:\\test_images\\L8\\for_test\\all_bands\\2.tif");
-
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());

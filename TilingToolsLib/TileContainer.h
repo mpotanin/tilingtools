@@ -3,6 +3,7 @@
 #include "TileName.h"
 #include "TileCache.h"
 #include "VectorBorder.h"
+#include "histogram.h"
 
 namespace gmx
 {
@@ -31,6 +32,7 @@ public:
   virtual BOOL		          OpenForReading (string path) = 0;
 	virtual TileType				  GetTileType() = 0;
 	virtual MercatorProjType	GetProjType() = 0;
+  virtual Metadata* GetMetadata () {return NULL;}; 
   
 
 	virtual __int64		TileID( int z, int x, int y)
@@ -72,6 +74,7 @@ public:
 									              OGREnvelope			envelope, 
 									              int					max_zoom, 
 									              BOOL				use_cache,
+                                Metadata    *p_metadata = NULL,
                                 unsigned int max_volume_size = DEFAULT_MAX_VOLUME_SIZE
 								              );
 
@@ -80,6 +83,7 @@ public:
 									              MercatorProjType	merc_type,
                                	int					tile_bounds[128], 
                                 BOOL				use_cache,
+                                Metadata    *p_metadata = NULL,
                                 unsigned int max_volume_size = DEFAULT_MAX_VOLUME_SIZE
 								              );
 
@@ -98,6 +102,7 @@ public:
 										);
 	BOOL		GetTileBounds (int tile_bounds[128]);
 
+  virtual Metadata* GetMetadata (); 
 
 	__int64				TileID			( int z, int x, int y);
 	BOOL				TileXYZ			(__int64 n, int &z, int &x, int &y);
@@ -147,6 +152,7 @@ protected:
 	//FILE*					p_container_file_;
   FILE**        pp_container_volumes_;
 	unsigned __int64		container_byte_size_;
+  Metadata      *p_metadata_ref_;
 
   HANDLE addtile_semaphore_;
 
@@ -190,18 +196,19 @@ class TileFolder : public ITileContainer
 public:
 	TileFolder (TileName *p_tile_name, BOOL use_cache);
 	~TileFolder ();
-	BOOL Close();
+	BOOL  Close();
 	BOOL	AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL		GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
-	BOOL		TileExists(int z, int x, int y);
-	int			GetMaxZoom();
-	int 		GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "",  
+	BOOL	GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
+	BOOL	TileExists(int z, int x, int y);
+	int		GetMaxZoom();
+	int 	GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "",  
 							MercatorProjType merc_type = WORLD_MERCATOR);
 	OGREnvelope GetMercatorEnvelope();
 	BOOL		GetTileBounds (int tile_bounds[128]);
 	BOOL				OpenForReading			(string folder_name);
   TileType				GetTileType();
 	MercatorProjType		GetProjType();
+  void GetMetadata (Metadata* &p_metadata); 
 	
 protected:
 	BOOL	writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned int size);

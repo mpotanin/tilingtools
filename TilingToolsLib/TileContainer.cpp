@@ -31,6 +31,7 @@ BOOL GMXTileContainer::OpenForWriting	(	string				container_file_name,
 										OGREnvelope			envelope, 
 										int					max_zoom, 
 										BOOL				use_cache,
+                    Metadata    *p_metadata,
                     unsigned int max_volume_size)
 {
 	int tile_bounds[128];
@@ -42,7 +43,7 @@ BOOL GMXTileContainer::OpenForWriting	(	string				container_file_name,
 			MercatorTileGrid::CalcTileRange(envelope,i,tile_bounds[4*i],tile_bounds[4*i+1],tile_bounds[4*i+2],tile_bounds[4*i+3]);
 		}
 	}
-	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache,max_volume_size);
+	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache,p_metadata,max_volume_size);
 };
 
 
@@ -60,6 +61,7 @@ void GMXTileContainer::Init	()
 	use_cache_	  = FALSE;
   addtile_semaphore_    = NULL;
   is_opened_    = FALSE;
+  p_metadata_ref_=NULL;
   
   max_volumes_ = 1000;
   pp_container_volumes_ = new FILE*[max_volumes_];
@@ -145,6 +147,40 @@ GMXTileContainer::~GMXTileContainer()
 }
 	
 //fclose(containerFileData);
+
+Metadata* GMXTileContainer::GetMetadata ()
+{
+  Metadata *p_metadata = NULL;
+  if (read_only_ == false || pp_container_volumes_[0] == NULL) return NULL;
+  
+  fseek(pp_container_volumes_[0],10,SEEK_SET);
+  char num_tags;
+  if (fread(&num_tags,1,1,pp_container_volumes_[0])!=1) return NULL;
+  if (num_tags==0) return NULL;
+
+  p_metadata = new Metadata();
+  fseek(pp_container_volumes_[0],524 + 13*max_tiles_,SEEK_SET);
+  char buf[5];
+  buf[4]=0;
+
+  for (int i=0;i<num_tags;i++)
+  {
+    fread(buf,1,4,pp_container_volumes_[0]);
+    string tag_name(buf);
+    if (tag_name.size()!=4) break;
+    unsigned int tag_size;
+    fread(&tag_size,1,4,pp_container_volumes_[0]);
+    if (tag_size == 0) continue;
+    char *tag_data = new char[tag_size];
+    fread(tag_data,1,tag_size,pp_container_volumes_[0]);
+
+    Metatag *p_metatag = Metadata::DeserializeTag(tag_name,tag_size,tag_data);
+    if (p_metatag) p_metadata->AddTagRef(p_metatag);
+  }
+
+  return (p_metadata->TagCount()) ? p_metadata : NULL;
+}
+
 
 
 BOOL		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
@@ -370,6 +406,7 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 									                        MercatorProjType	merc_type,
                                           int					tile_bounds[128], 
 									                        BOOL				use_cache,
+                                          Metadata    *p_metadata,
                                           unsigned int max_volume_size)
 {
   is_opened_            = TRUE;
@@ -379,6 +416,7 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 	container_file_name_	= container_file_name;
  	container_byte_size_	= 0;
   addtile_semaphore_            = NULL;
+  p_metadata_ref_ = p_metadata;
 
   max_volumes_ = 1000;
   pp_container_volumes_ = new FILE*[max_volumes_];
@@ -650,7 +688,7 @@ BOOL	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 	memcpy(&p_data[4],&max_volume_size_,4);
 	p_data[8]	= 0;
 	p_data[9]	= merc_type_;
-	p_data[10]	= 0;
+  p_data[10]	= (p_metadata_ref_) ? p_metadata_ref_->TagCount() : 0;
 	p_data[11]	= tile_type_;
 
 	for (int z=0;z<32;z++)
@@ -664,7 +702,7 @@ BOOL	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 	//memcpy(&p_data[12+32*16],t,144);
 
 	BYTE	tile_info[13];
-	for (unsigned int i = 0; i<max_tiles_; i++)
+  for (unsigned int i = 0; i<max_tiles_; i++)
 	{
 		if (p_sizes_[i]==0)
 		{
@@ -680,13 +718,24 @@ BOOL	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 		memcpy(&p_data[12 + 512 + 13*i],tile_info,13);
 	}
 
+  if (p_metadata_ref_)
+  {
+    int m_size;
+    void *pm_data = 0;
+    if (p_metadata_ref_->GetAllSerialized(m_size,pm_data))
+    {
+      memcpy(&p_data[12 + 512 + 13*max_tiles_],pm_data,m_size);
+    }
+    delete[]pm_data;
+  }
+
 	return TRUE;
 };
 
 	
 unsigned int GMXTileContainer::HeaderSize()
 {
-	return (4+4+4+512+max_tiles_*(4+8+1));
+  return (4+4+4+512+max_tiles_*(4+8+1)) + ((p_metadata_ref_) ? p_metadata_ref_->GetAllSerializedSize() : 0);
 };
 
 void GMXTileContainer::MakeEmpty ()
@@ -714,6 +763,8 @@ void GMXTileContainer::MakeEmpty ()
     delete[]pp_container_volumes_;
     pp_container_volumes_ = NULL;
   }
+
+  p_metadata_ref_ = NULL;
 };
 	
 

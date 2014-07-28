@@ -51,39 +51,15 @@ int _tmain(int argc, wchar_t* argvW[])
 	string strLogFile		= gmx::ReadConsoleParameter("-log_file",argc,argv);
 	string strSrcTemplate	= gmx::MakeLower( gmx::ReadConsoleParameter("-src_template",argc,argv));
 	string strDestTemplate	= gmx::MakeLower( gmx::ReadConsoleParameter("-dest_template",argc,argv));
+  string metadata_file = gmx::MakeLower( gmx::ReadConsoleParameter("-metadata",argc,argv)); 
+
+  //srcPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float.tiles";
+  //destPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float_tiles";
+  //histogram_file = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float.txt";
 
 
  	FILE *logFile = NULL;
-	/*
-	if (strLogFile!="")
-	{
-		if((logFile = gmx::OpenFile _wfreopen(strLogFile.c_str(), "w", stdout)) == NULL)
-		{
-			cout<<"ERROR: can't open log file: "<<strLogFile<<endl;
-			exit(-1);
-		}
-	}
-	*/
-	//srcPath			= "E:\\test_images\\MODIS\\scn_120719_Vrangel_island_SWA.tiles";
-  //destPath		= "E:\\test_images\\MODIS\\scn_120719_Vrangel_island_SWA_new_tiles3";
-  //strDestTemplate	= "standard";
-
-
-  //strDestTemplate	= "{l}/{r}/{c}.jpg";
-  //strSrcTemplate = "standard";
-
-	//srcPath			= "C:\\Work\\Projects\\TilingTools\\autotest\\new_rast.mbtiles";
-	//strInput		= "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-	//strZoom			= "9";
-
-	//strContainer	= "-container";
-	//strTemplate		= "standard";
-
-
-	//destPath		= "C:\\Work\\Projects\\TilingTools\\autotest\\new_rast_mbtiles";
-
-
-
+	
 	if (srcPath == "")
 	{
 		cout<<"ERROR: missing \"-from\" parameter"<<endl;
@@ -148,6 +124,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	gmx::TileType tile_type;
 	gmx::MercatorProjType merc_type;
+  gmx::Metadata *p_metadata = NULL;
 
 	if (gmx::IsDirectory(srcPath))
 	{
@@ -175,6 +152,8 @@ int _tmain(int argc, wchar_t* argvW[])
 
 		tile_type = poSrcContainer->GetTileType();
 		merc_type	= poSrcContainer->GetProjType();
+    p_metadata = poSrcContainer->GetMetadata();
+
 		if ((gmx::MakeLower(srcPath).find(".mbtiles") != string::npos))
 		{
 			if (strProjType!="")
@@ -186,11 +165,18 @@ int _tmain(int argc, wchar_t* argvW[])
 		}
 
 		cout<<"Input container info: tile_type="<<gmx::TileName::ExtensionByTileType(poSrcContainer->GetTileType());
-		cout<<", proj="<<(poSrcContainer->GetProjType()==gmx::WEB_MERCATOR)<<endl;
-		delete(poSrcContainer);		
+		cout<<", proj="<<(poSrcContainer->GetProjType()==gmx::WEB_MERCATOR);
+		if (p_metadata)
+    {
+      cout<<", metadata_tags="<<p_metadata->TagCount();
+      if (metadata_file!="") p_metadata->SaveToTextFile(metadata_file);
+      p_metadata->DeleteAll();
+    }
+    cout<<endl;
+    delete(poSrcContainer);		
 	}
 
-
+  if (p_metadata) delete(p_metadata);
 	
 	gmx::TileName		*poSrcTileName = NULL;
 	if (gmx::IsDirectory(srcPath))
@@ -330,4 +316,3 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	return 0;
 }
-

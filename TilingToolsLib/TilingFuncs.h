@@ -84,7 +84,7 @@ BOOL GMXMakeTiling (	GMXTilingParameters		*p_tiling_params);
 BOOL GMXMakeBaseZoomTiling (GMXTilingParameters				*p_tiling_params, 
 							gmx::BundleOfRasterFiles		*p_bundle, 
 							gmx::ITileContainer				*p_tile_container,
-              gmx::Histogram            *p_histogram = NULL);
+              gmx::MetaHistogram            *p_histogram = NULL);
 
 BOOL GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb, 
 								int					base_zoom, 
@@ -111,7 +111,7 @@ struct GMXAsyncChunkTilingParams
   double                    *p_stretch_max_values_;
   int                       srand_seed_;
   string                    temp_file_path_;
-  gmx::Histogram            *p_histogram_;
+  gmx::MetaHistogram            *p_histogram_;
 
   //BOOL (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
 };

@@ -1472,29 +1472,29 @@ void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h,
 //*/
 
 
-BOOL		RasterBuffer::AddPixelDataToHistogram(Histogram *p_hist)
+BOOL		RasterBuffer::AddPixelDataToMetaHistogram(MetaHistogram *p_hist)
 {
 	switch (data_type_)
 	{
 		case GDT_Byte:
 		{
 			BYTE t = 1;
-			return AddPixelDataToHistogram(t,p_hist);
+			return AddPixelDataToMetaHistogram(t,p_hist);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return AddPixelDataToHistogram(t,p_hist);
+			return AddPixelDataToMetaHistogram(t,p_hist);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return AddPixelDataToHistogram(t,p_hist);
+			return AddPixelDataToMetaHistogram(t,p_hist);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return AddPixelDataToHistogram(t,p_hist);
+			return AddPixelDataToMetaHistogram(t,p_hist);
 		}
 		default:
 			return NULL;
@@ -1564,7 +1564,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type)
 
 
 template <typename T>	
-BOOL    RasterBuffer::AddPixelDataToHistogram(T type, Histogram *p_hist)
+BOOL    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
 {
   T *p_pixel_data_t = (T*)p_pixel_data_;
   unsigned int n = x_size_*y_size_;

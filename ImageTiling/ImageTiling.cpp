@@ -358,13 +358,11 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\Arctic_r06c03.2012193.terra.250m.jpg";
-  //console_params.at("-file") = "C:\\share_upload\\bmp\\L8_22_06_2013_ndvi.bmp";
-
-  //console_params.at("-border") = "e:\\7.shp";
-  //console_params.at("-tile_type") = "png";
+  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00.TIF";
+  //console_params.at("-tile_type") = "jp2";
   //console_params.at("-quality") = "0";
-  //console_params.at("-tiles") = "C:\\share_upload\\bmp\\L8_22_06_2013_ndvi_nearest";
+  //console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float.tiles";
+  //console_params.at("-gmxtiles")="-container";
 
   //console_params.at("-nodata_tolerance") = "0";
   //console_params.at("-nodata") = "ffffff";

@@ -58,18 +58,59 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 
 
   ITileContainer	*p_itile_pyramid =	NULL;
+  Metadata metadata;
+  MetaHistogram histogram;
+  MetaNodataValue nodata_value;
+  MetaHistogramStatistics hist_stat;
+
+  BOOL nodata_defined = false;
+  double  nodata_val;
+  if (p_tiling_params->p_transparent_color_)
+  {
+    nodata_defined = true;
+    nodata_val = p_tiling_params->p_transparent_color_[0];
+  }
+  else nodata_val = raster_bundle.GetNodataValue(nodata_defined);
+  if (nodata_defined) nodata_value.nodv_ = nodata_val;
+  
 
 	if (p_tiling_params->use_container_)
 	{
 		if (GetExtension(p_tiling_params->container_file_) == "tiles" || GetExtension(p_tiling_params->container_file_) == "gmxtiles") 
 		{
       p_itile_pyramid = new GMXTileContainer();
+     
+      RasterFile rf(*raster_bundle.GetFileList().begin(),1);
+      if (!rf.get_gdal_ds_ref()) 
+      {
+        cout<<"ERROR: can't init. gdaldataset from file: "<<(*raster_bundle.GetFileList().begin())<<endl;
+        return FALSE;
+      }
+
+      GDALDataType input_type = rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType();
+      int input_num_bands = rf.get_gdal_ds_ref()->GetRasterCount();
+
+      GDALDataType output_type = (p_tiling_params->tile_type_ == JPEG_TILE || 
+                                  p_tiling_params->tile_type_ == PNG_TILE) ?  GDT_Byte : input_type;
+
+      int output_num_bands;
+      if (p_tiling_params->tile_type_ == JPEG_TILE) output_num_bands = min(3,input_num_bands);
+      else if (p_tiling_params->tile_type_ == PNG_TILE) output_num_bands = min(3,input_num_bands);
+      else output_num_bands = input_num_bands;
+
+      if (nodata_defined) metadata.AddTagRef(&nodata_value);
+      histogram.Init(output_num_bands,output_type);
+      metadata.AddTagRef(&histogram);
+      hist_stat.Init(output_num_bands);
+      metadata.AddTagRef(&hist_stat);
+      
       if ( !((GMXTileContainer*)p_itile_pyramid)->OpenForWriting(p_tiling_params->container_file_,
 														                                    p_tiling_params->tile_type_,
 														                                    p_tiling_params->merc_type_,
 														                                    raster_bundle.CalcMercEnvelope(),
 														                                    base_zoom,
 														                                    TRUE,
+                                                                &metadata,
                                                                 max_gmx_volume_size))
       {
         cout<<"ERROR: can't open for writing gmx-container file: "<<p_tiling_params->container_file_<<endl;
@@ -89,9 +130,7 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
   
   cout<<"Base zoom "<<base_zoom<<": ";
 
-  Histogram *p_histogram = (p_tiling_params->calculate_histogram_) ? new Histogram() : NULL;
-
-	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid,p_histogram)) 
+	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid,&histogram)) 
   {
     p_itile_pyramid->Close();
 	  delete(p_itile_pyramid);
@@ -99,29 +138,9 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
   }
 	cout<<" done."<<endl;
 
-  if (p_histogram)
-  {
-    /*
-    FILE *fp = fopen("E:\\test_images\\L8\\for_test\\histogram.txt","w");
-    double min_val,step;
-    int num_vals;
-    __int64 *freqs;
-    p_histogram->GetHistogram(0,min_val,step,num_vals,freqs);
-    for (int i=0;i<num_vals;i++)
-    {
-      fprintf(fp,"%d %d\n",(int)(min_val+step*i),freqs[i]);
-    }
-
-    fclose(fp);
-    */
-    //double min,max,mean,stddev;
-    //BOOL nodata_defined = FALSE;
-    //double nodata_val = raster_bundle.GetNodataValue(nodata_defined);    
-    //p_histogram->CalcStatistics(0,min,max,mean,stddev,(nodata_defined) ? &nodata_val:NULL);
-    //cout<<min<<" "<<max<<" "<<mean<<" "<<stddev<<endl;
-  }
-
-
+  if (histogram.IsInitiated())
+    histogram.CalcStatistics(&hist_stat,(nodata_defined) ? &nodata_val : 0); 
+  
 	int min_zoom = (p_tiling_params->min_zoom_ <=0) ? 1 : p_tiling_params->min_zoom_;
 	if (min_zoom < base_zoom)
   {
@@ -204,8 +223,10 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 
 
 
-      if ( p_tiling_params->p_transparent_color_ != NULL )
-        tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, p_tiling_params->nodata_tolerance_);
+      if (p_tiling_params->p_transparent_color_ != NULL  && 
+          p_tiling_params->tile_type_ == PNG_TILE)
+        tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, 
+                                              p_tiling_params->nodata_tolerance_);
       
 
 			if (p_tile_container != NULL)
@@ -273,7 +294,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
   double                *p_stretch_max_values = p_chunk_tiling_params->p_stretch_max_values_;
   int                   srand_seed = p_chunk_tiling_params->srand_seed_;
   string                temp_file_path = p_chunk_tiling_params->temp_file_path_;
-  gmx::Histogram        *p_histogram = p_chunk_tiling_params->p_histogram_;
+  gmx::MetaHistogram        *p_histogram = p_chunk_tiling_params->p_histogram_;
   
   RasterBuffer *p_merc_buffer = new RasterBuffer();
   WaitForSingleObject(GMX_WARP_SEMAPHORE,INFINITE);  
@@ -306,7 +327,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
     //time_t start = time(0);
     if (!p_histogram->IsInitiated())
       p_histogram->Init(p_merc_buffer->get_num_bands(),p_merc_buffer->get_data_type());
-    p_merc_buffer->AddPixelDataToHistogram(p_histogram);
+    p_merc_buffer->AddPixelDataToMetaHistogram(p_histogram);
     //cout<<time(0)-start<<endl;
   }
   
@@ -340,7 +361,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params, 
 								BundleOfRasterFiles		*p_bundle, 
 								ITileContainer			*p_tile_container,
-                Histogram           *p_histogram)
+                MetaHistogram           *p_histogram)
 {
 
   //ToDo

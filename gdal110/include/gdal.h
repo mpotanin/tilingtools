@@ -473,21 +473,21 @@ void CPL_DLL CPL_STDCALL
 GDALComputeRasterMinMax( GDALRasterBandH hBand, int bApproxOK,
                          double adfMinMax[2] );
 CPLErr CPL_DLL CPL_STDCALL GDALFlushRasterCache( GDALRasterBandH hBand );
-CPLErr CPL_DLL CPL_STDCALL GDALGetRasterHistogram( GDALRasterBandH hBand,
+CPLErr CPL_DLL CPL_STDCALL GDALGetRasterMetaHistogram( GDALRasterBandH hBand,
                                        double dfMin, double dfMax,
-                                       int nBuckets, int *panHistogram,
+                                       int nBuckets, int *panMetaHistogram,
                                        int bIncludeOutOfRange, int bApproxOK,
                                        GDALProgressFunc pfnProgress,
                                        void * pProgressData );
-CPLErr CPL_DLL CPL_STDCALL GDALGetDefaultHistogram( GDALRasterBandH hBand,
+CPLErr CPL_DLL CPL_STDCALL GDALGetDefaultMetaHistogram( GDALRasterBandH hBand,
                                        double *pdfMin, double *pdfMax,
-                                       int *pnBuckets, int **ppanHistogram,
+                                       int *pnBuckets, int **ppanMetaHistogram,
                                        int bForce,
                                        GDALProgressFunc pfnProgress,
                                        void * pProgressData );
-CPLErr CPL_DLL CPL_STDCALL GDALSetDefaultHistogram( GDALRasterBandH hBand,
+CPLErr CPL_DLL CPL_STDCALL GDALSetDefaultMetaHistogram( GDALRasterBandH hBand,
                                        double dfMin, double dfMax,
-                                       int nBuckets, int *panHistogram );
+                                       int nBuckets, int *panMetaHistogram );
 int CPL_DLL CPL_STDCALL
 GDALGetRandomRasterSample( GDALRasterBandH, int, float * );
 GDALRasterBandH CPL_DLL CPL_STDCALL
@@ -672,7 +672,7 @@ typedef enum {
 /** Field usage of raster attribute table */
 typedef enum {
     /*! General purpose field. */          GFU_Generic = 0,  
-    /*! Histogram pixel count */           GFU_PixelCount = 1,
+    /*! MetaHistogram pixel count */           GFU_PixelCount = 1,
     /*! Class name */                      GFU_Name = 2,
     /*! Class range minimum */             GFU_Min = 3,
     /*! Class range maximum */             GFU_Max = 4,

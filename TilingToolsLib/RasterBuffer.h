@@ -64,7 +64,7 @@ public:
   BOOL			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
 	BOOL			StretchDataTo8Bit(double *min_values, double *max_values);
-  BOOL      AddPixelDataToHistogram(Histogram *p_hist);
+  BOOL      AddPixelDataToMetaHistogram(MetaHistogram *p_hist);
     
 
 public:
@@ -87,7 +87,7 @@ protected:
 	template <typename T>	BOOL			SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
 																void *p_block_data, int bands = 0);
 	template <typename T>	void*			GetDataZoomedOut(T type);
-  template <typename T>	BOOL    AddPixelDataToHistogram(T type, Histogram *p_hist);
+  template <typename T>	BOOL    AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist);
 
 
 protected:
