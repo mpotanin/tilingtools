@@ -359,10 +359,12 @@ int _tmain(int argc, wchar_t* argvW[])
   //console_params.at("-gmxtiles")="-container";
   
   //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00.TIF";
+  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\rgb\\LC81120742014154LGN00.TIF";
   //console_params.at("-tile_type") = "jp2";
   //console_params.at("-quality") = "0";
-  //console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float.tiles";
-  //console_params.at("-gmxtiles")="-container";
+ // console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\rgb\\LC81120742014154LGN00_jp2.tiles";
+ // console_params.at("-gmxtiles")="-container";
+  //console_params.at("-zoom") = "13";
 
   //console_params.at("-nodata_tolerance") = "0";
   //console_params.at("-nodata") = "ffffff";

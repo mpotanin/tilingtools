@@ -247,7 +247,7 @@ typedef enum {
 	JPEG_TILE=0,
 	PNG_TILE=1,
 	TIFF_TILE=4,
-  JP2_TILE=8
+  JP2_TILE=16
 } TileType;
 
 
