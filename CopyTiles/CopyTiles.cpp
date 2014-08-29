@@ -8,7 +8,7 @@
 
 int _tmain(int argc, wchar_t* argvW[])
 {
-  //std::regex rx;
+    //std::regex rx;
   //rx = "(L[A-Fa-f0-9]{1,2})";//_(R\\x{8,8})_(C\\x{8,8}).jpg";
 
   if (argc == 1)
@@ -53,9 +53,10 @@ int _tmain(int argc, wchar_t* argvW[])
 	string strDestTemplate	= gmx::MakeLower( gmx::ReadConsoleParameter("-dest_template",argc,argv));
   string metadata_file = gmx::MakeLower( gmx::ReadConsoleParameter("-metadata",argc,argv)); 
 
-  //srcPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float.tiles";
-  //destPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float_tiles";
-  //histogram_file = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00_hist_jp2_float.txt";
+  //srcPath = "\\\\192.168.4.43\\share\\spot6\\Saratovskay.tiles";
+  //destPath = "\\\\192.168.4.43\\share\\spot6\\Saratovskay_tiles2";
+  //metadata_file = "\\\\192.168.4.43\\share\\spot6\\saratov.txt";
+  //strZooms = "1-16";
 
 
  	FILE *logFile = NULL;

@@ -481,6 +481,7 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 
 int GMXTileContainer::FillUpCurrentVolume ()
 {
+
   int volume_num = GetVolumeNum(container_byte_size_);
   _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
   int block_size = max_volume_size_ - (container_byte_size_ % max_volume_size_);
@@ -526,7 +527,7 @@ int  GMXTileContainer::GetVolumeNum (unsigned __int64 tile_offset)
 
 unsigned __int64  GMXTileContainer::GetTileOffsetInVolume (unsigned __int64 tile_container_offset)
 {
-  return tile_container_offset - GetVolumeNum(tile_container_offset)*max_volume_size_;
+  return tile_container_offset - GetVolumeNum(tile_container_offset)*((unsigned __int64)max_volume_size_);
 }
 
 
@@ -536,25 +537,39 @@ string GMXTileContainer::GetVolumeName (int num)
 }
 
 
+BOOL  GMXTileContainer::IfFirstTileWriteEmptyHeader()
+{
+  if (!this->is_opened_) return FALSE;
+  else if (this->read_only_) return FALSE;
+  else if (pp_container_volumes_ == NULL) return FALSE;
+  else if (pp_container_volumes_[0]) return FALSE;
+  else if (container_byte_size_ != 0) return FALSE;
+  
+  BYTE	*header = new BYTE[HeaderSize()];
+  if (!header) return NULL;
+  for (int i=0;i<HeaderSize();i++)
+    header[i] = 0;
+  fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
+	delete[]header;
+  container_byte_size_ = HeaderSize();
+
+  return TRUE;
+}
+
+
 BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
 	//ToDo - fix if n<0
 	unsigned int n	= TileID(z,x,y);
 	if (n>= max_tiles_) return FALSE;
 
-  if (container_byte_size_ == 0)
-  {
-    BYTE	*header = new BYTE[HeaderSize()];
-    if (!header) return NULL;
-    for (int i=0;i<HeaderSize();i++)
-      header[i] = 0;
-    fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
-		delete[]header;
-    container_byte_size_ = HeaderSize();
-  }
+  IfFirstTileWriteEmptyHeader();
   
-  if ((container_byte_size_ /max_volume_size_) < ((container_byte_size_ + size - 1)/max_volume_size_))
-     container_byte_size_ += FillUpCurrentVolume();
+  if (max_volume_size_ > 0)
+  {
+    if ((container_byte_size_ /max_volume_size_) < ((container_byte_size_ + size - 1)/max_volume_size_))
+       container_byte_size_ += FillUpCurrentVolume();
+  }
   
   int volume_num = GetVolumeNum(container_byte_size_);
   if (pp_container_volumes_[volume_num] == NULL)

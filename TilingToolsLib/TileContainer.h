@@ -118,6 +118,7 @@ protected:
 	BOOL	GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size);
 	BOOL	WriteTilesToContainerFileFromCache();
 	
+  BOOL  IfFirstTileWriteEmptyHeader();
 	BOOL	WriteHeaderToByteArray(BYTE*	&p_data);
 	unsigned int HeaderSize();
 	void MakeEmpty ();

@@ -316,6 +316,7 @@ int _tmain(int argc, wchar_t* argvW[])
     return 0;
   }
 
+
   map<string,string> console_params;
   
   console_params.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",argc,argv)));
@@ -358,13 +359,12 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\LC81120742014154LGN00.TIF";
-  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\rgb\\LC81120742014154LGN00.TIF";
+  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
   //console_params.at("-tile_type") = "jp2";
   //console_params.at("-quality") = "0";
  // console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\rgb\\LC81120742014154LGN00_jp2.tiles";
- // console_params.at("-gmxtiles")="-container";
-  //console_params.at("-zoom") = "13";
+ //console_params.at("-gmxtiles")="-container";
+ //console_params.at("-zoom") = "8";
 
   //console_params.at("-nodata_tolerance") = "0";
   //console_params.at("-nodata") = "ffffff";
@@ -375,6 +375,7 @@ int _tmain(int argc, wchar_t* argvW[])
   //console_params.at("-zoom") = "5";
 
   //console_params.at("-gmxtiles")="-container";
+  // -gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
   //console_params.at("-gmx_volume_size")="1000000";
   //console_params.at("-cache_size")="1000000";
   //console_params.at("-tiles") = "E:\\test_images\\Arctic.2014142.terra.1km_z5_3.tiles";
