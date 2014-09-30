@@ -63,27 +63,27 @@ int _tmain(int argc, wchar_t* argvW[])
 	
 	if (srcPath == "")
 	{
-		cout<<"ERROR: missing \"-from\" parameter"<<endl;
+		cout<<"Error: missing \"-from\" parameter"<<endl;
 		return 1;
 	}
 
 	if (destPath == "")
 	{
-		cout<<"ERROR: missing \"-to\" parameter"<<endl;
+		cout<<"Error: missing \"-to\" parameter"<<endl;
 		return 1;
 	}
 
 	/*
 	if (borderFilePath == "")
 	{
-		cout<<"ERROR: missing \"-border\" parameter"<<endl;
+		cout<<"Error: missing \"-border\" parameter"<<endl;
 		return 1;
 	}
 	*/
 
 	if (!gmx::FileExists(srcPath))
 	{
-		cout<<"ERROR: can't find input folder or file: "<<srcPath<<endl;
+		cout<<"Error: can't find input folder or file: "<<srcPath<<endl;
 		return 1;
 	}
 
@@ -95,7 +95,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			if (!gmx::DeleteFile(destPath))
 			{
-				cout<<"ERROR: can't delete existing file: "<<destPath<<endl;
+				cout<<"Error: can't delete existing file: "<<destPath<<endl;
 				return 1;
 			}
 		}
@@ -104,7 +104,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	if ((borderFilePath != "") && !gmx::FileExists(borderFilePath))
 	{
-		cout<<"ERROR: can't open file: "<<borderFilePath<<endl;
+		cout<<"Error: can't open file: "<<borderFilePath<<endl;
 		return 1;
 	}
 	
@@ -147,7 +147,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		gmx::ITileContainer *poSrcContainer = gmx::ITileContainer::OpenTileContainerForReading(srcPath);
 		if (! poSrcContainer)
 		{
-			cout<<"ERROR: can't init. tile container: "<<srcPath<<endl;
+			cout<<"Error: can't init. tile container: "<<srcPath<<endl;
 			return 1;
 		}
 
@@ -192,7 +192,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			poSrcTileName = new gmx::StandardTileName(srcPath,strSrcTemplate);
     else
     {
-      cout<<"ERROR: can't validate src_template: "<<strSrcTemplate<<endl;
+      cout<<"Error: can't validate src_template: "<<strSrcTemplate<<endl;
       return 1;
     }
 	}
@@ -212,7 +212,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			if (!gmx::CreateDirectory(destPath.c_str()))
 			{
-				cout<<"ERROR: can't create folder: "<<destPath<<endl;
+				cout<<"Error: can't create folder: "<<destPath<<endl;
 				return 1;
 			}
 		}
@@ -227,7 +227,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			poDestTileName = new gmx::StandardTileName(destPath,strDestTemplate);
     else
     {
-      cout<<"ERROR: can't validate dest_template: "<<strDestTemplate<<endl;
+      cout<<"Error: can't validate dest_template: "<<strDestTemplate<<endl;
       return 1;
     }
 		poDestITileContainer = new gmx::TileFolder(poDestTileName,FALSE);
@@ -242,7 +242,7 @@ int _tmain(int argc, wchar_t* argvW[])
 			gmx::VectorBorder *pVB = gmx::VectorBorder::CreateFromVectorFile(borderFilePath,merc_type);
 			if (!pVB)
 			{
-				cout<<"ERROR: reading vector file: "<<borderFilePath<<endl;
+				cout<<"Error: reading vector file: "<<borderFilePath<<endl;
 				return 1;
 			}
 			merc_envp = pVB->GetEnvelope();
@@ -252,7 +252,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		{
 			if (!poSrcITileContainer->GetTileBounds(tile_bounds))
 			{
-				cout<<"ERROR: reading tile bounds from source: "<<srcPath<<endl;
+				cout<<"Error: reading tile bounds from source: "<<srcPath<<endl;
 				return 1;
 			}
 		}

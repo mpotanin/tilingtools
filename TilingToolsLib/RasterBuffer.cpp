@@ -678,7 +678,7 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 
 	// Setup the decoder decoding parameters using user parameters //
 	if ( !opj_setup_decoder(l_codec, &parameters) ){
-		fprintf(stderr, "ERROR -> j2k_dump: failed to setup the decoder\n");
+		fprintf(stderr, "Error -> j2k_dump: failed to setup the decoder\n");
 		opj_stream_destroy(l_stream);
 		//fclose(fsrc);
 		opj_destroy_codec(l_codec);
@@ -688,7 +688,7 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 
 	// Read the main header of the codestream and if necessary the JP2 boxes //
 	if(! opj_read_header(l_stream, l_codec, &image)){
-		fprintf(stderr, "ERROR -> opj_decompress: failed to read the header\n");
+		fprintf(stderr, "Error -> opj_decompress: failed to read the header\n");
 		opj_stream_destroy(l_stream);
 	  delete[]opj_stream_data.p_data;
 		opj_destroy_codec(l_codec);
@@ -699,7 +699,7 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 	// Optional if you want decode the entire image //
 	if (!opj_set_decode_area(l_codec, image, parameters.DA_x0,
 			parameters.DA_y0, parameters.DA_x1, parameters.DA_y1)){
-		fprintf(stderr,	"ERROR -> opj_decompress: failed to set the decoded area\n");
+		fprintf(stderr,	"Error -> opj_decompress: failed to set the decoded area\n");
 		opj_stream_destroy(l_stream);
 		opj_destroy_codec(l_codec);
 		opj_image_destroy(image);
@@ -711,7 +711,7 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 	// Get the decoded image //
 
 	if (!(opj_decode(l_codec, l_stream, image) )) {//&& opj_end_decompress(l_codec,	l_stream)
-		fprintf(stderr,"ERROR -> opj_decompress: failed to decode image!\n");
+		fprintf(stderr,"Error -> opj_decompress: failed to decode image!\n");
 		opj_destroy_codec(l_codec);
 		opj_stream_destroy(l_stream);
 		opj_image_destroy(image);

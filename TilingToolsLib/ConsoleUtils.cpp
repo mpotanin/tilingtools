@@ -40,7 +40,7 @@ BOOL LoadGDAL (int argc, string argv[])
 
 	if (gdal_path=="")
 	{
-		cout<<"ERROR: GDAL path isn't specified"<<endl;
+		cout<<"Error: GDAL path isn't specified"<<endl;
 		return FALSE;
 	}
 	
@@ -48,7 +48,7 @@ BOOL LoadGDAL (int argc, string argv[])
    
 	if (!LoadGDALDLLs(gdal_path))
 	{
-		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified: "<<gdal_path<<endl;
+		cout<<"Error: can't load gdal dlls: bad path to gdal specified: "<<gdal_path<<endl;
 		return FALSE;
 	}
 
@@ -75,7 +75,7 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 	FILE *fp = fopen(configFile.c_str(),"r");
 	if (!fp)
   {
-    cout<<"ERROR: can't open config. file: "<<configFile<<endl;
+    cout<<"Error: can't open config. file: "<<configFile<<endl;
     return "";
   }
 
@@ -93,7 +93,7 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 	regex_search(s, mr, rx_template);
 	if (mr.size()<2)
 	{
-		cout<<"ERROR: can't read GdalPath from file: "<<configFile<<endl;
+		cout<<"Error: can't read GdalPath from file: "<<configFile<<endl;
 		return "";
 	}
 

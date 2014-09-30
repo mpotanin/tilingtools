@@ -76,11 +76,11 @@ protected:
 
 int _stdcall gmxPrintNoProgress ( double, const char*,void*);
 
-class BundleOfRasterFiles
+class RasterFileBundle
 {
 public:
-	BundleOfRasterFiles(void);
-	~BundleOfRasterFiles(void);
+	RasterFileBundle(void);
+	~RasterFileBundle(void);
 	void Close();
 
 public:
@@ -96,11 +96,13 @@ public:
 	BOOL			WarpToMercBuffer (	int zoom,	
                                 OGREnvelope	merc_envp, 
                                 RasterBuffer *p_dst_buffer,
+                                int         bands_num = 0,
+                                int         *p_bands = NULL,
                                 string resampling_alg = "",
                                 BYTE *p_nodata = NULL,
-                                BYTE *p_background_color = NULL,
-                                string  temp_file_path = "",
-                                int srand_seed = 0);
+                                BYTE *p_background_color = NULL);
+                                //string  temp_file_path = "",
+                                //int srand_seed = 0);
 
 	list<string>	GetFileList();
 	list<string>	GetFileListByEnvelope(OGREnvelope merc_envp);

@@ -377,6 +377,10 @@ BOOL	VectorBorder::Intersects(OGREnvelope &envelope)
 {
   if (p_ogr_geometry_ == NULL) return FALSE;
 	OGRPolygon *p_poly_from_envp = CreateOGRPolygonByOGREnvelope (envelope);
+
+  OGREnvelope envp;
+  this->p_ogr_geometry_->getEnvelope(&envp);
+
 	BOOL result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
   p_poly_from_envp->empty();
   OGRGeometryFactory::destroyGeometry(p_poly_from_envp);

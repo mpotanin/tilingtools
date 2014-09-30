@@ -75,6 +75,42 @@ string ConvertIntToString(int number, BOOL hexadecimal, int adjust_len)
   return str_res;
 }
 
+int			ConvertStringToIntegers	(string str, int *&arr)
+{
+
+  regex reg("\\s*([0-9]+)([\\s\\,]+[0-9]+)*");
+  regex reg1("([0-9]+)(\\s[0-9]+)*");
+  regex reg2("([0-9]+)(\\,[0-9]+)*");
+  regex reg3("([0-9]+)(\\,\\s[0-9]+)*");
+  
+  if (! ( regex_match(str,reg) || regex_match(str,reg1) || 
+          regex_match(str,reg2) || regex_match(str,reg3) ) )
+    return 0;
+  
+  int len=0;
+  ReplaceAll(str," ",",");
+  
+  for (int i=0;i<10;i++)
+    ReplaceAll(str,",,",",");
+  str = (str[0] == ',') ? str.substr(1,str.length()-1): str;
+  
+  int pos = -1;
+  while ((pos=str.find(',',pos+1))>=0)
+    len++;
+  arr = new int [(len++)];
+
+  for (int i=0;i<len-1;i++)
+  {
+    pos = str.find(',',0);
+    arr[i] = (int)atof(str.substr(0,pos).c_str());
+    str = str.substr(pos+1,str.length()-pos-1);
+  }
+  arr[len-1] =(int)atof(str.c_str());
+  
+  return len;
+}
+
+
 BOOL	ConvertStringToRGB (string str_color, BYTE rgb[3])
 {
 	str_color = MakeLower(str_color);

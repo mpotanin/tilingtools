@@ -84,7 +84,7 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 	
 	if (p_gdal_ds_==NULL)
 	{
-		cout<<"ERROR: RasterFile::init: can't open raster image"<<endl;
+		cout<<"Error: RasterFile::init: can't open raster image"<<endl;
 		return FALSE;
 	}
 	
@@ -92,7 +92,7 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 
 	if (!(poDriver = p_gdal_ds_->GetDriver()))
 	{
-		cout<<"ERROR: RasterFile::Init: can't get GDALDriver from image"<<endl;
+		cout<<"Error: RasterFile::Init: can't get GDALDriver from image"<<endl;
 		return FALSE;
 	}
 
@@ -115,7 +115,7 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 		}
 		else
 		{
-			cout<<"ERROR: RasterFile::Init: can't read georeference"<<endl;
+			cout<<"Error: RasterFile::Init: can't read georeference"<<endl;
 			return FALSE;
 		}
 	}
@@ -370,13 +370,13 @@ void RasterFile::readMetaData ()
 */
 
 
-BundleOfRasterFiles::BundleOfRasterFiles(void)
+RasterFileBundle::RasterFileBundle(void)
 {
 	//this->m_poImages = NULL;
 	//this->m_nLength = 0;
 }
 
-void BundleOfRasterFiles::Close(void)
+void RasterFileBundle::Close(void)
 {
 	
 	//m_nLength = 0;
@@ -394,13 +394,13 @@ void BundleOfRasterFiles::Close(void)
 
 }
 
-BundleOfRasterFiles::~BundleOfRasterFiles(void)
+RasterFileBundle::~RasterFileBundle(void)
 {
 	Close();
 }
 
 
-int	BundleOfRasterFiles::Init (string inputPath, MercatorProjType merc_type, string vector_file, double shift_x, double shift_y)
+int	RasterFileBundle::Init (string inputPath, MercatorProjType merc_type, string vector_file, double shift_x, double shift_y)
 {
 	Close();
 	list<string> file_list;
@@ -420,13 +420,13 @@ int	BundleOfRasterFiles::Init (string inputPath, MercatorProjType merc_type, str
 
 
 
-BOOL	BundleOfRasterFiles::AddItemToBundle (string raster_file, string vector_file, double shift_x, double shift_y)
+BOOL	RasterFileBundle::AddItemToBundle (string raster_file, string vector_file, double shift_x, double shift_y)
 {	
 	RasterFile image;
 
 	if (!image.Init(raster_file,TRUE,shift_x,shift_y))
 	{
-		cout<<"ERROR: can't init. image: "<<raster_file<<endl;
+		cout<<"Error: can't init. image: "<<raster_file<<endl;
 		return 0;
 	}
 
@@ -440,7 +440,7 @@ BOOL	BundleOfRasterFiles::AddItemToBundle (string raster_file, string vector_fil
 	return TRUE;
 }
 
-list<string>	BundleOfRasterFiles::GetFileList()
+list<string>	RasterFileBundle::GetFileList()
 {
 	std::list<string> file_list;
 	for (std::list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end(); iter++)
@@ -450,7 +450,7 @@ list<string>	BundleOfRasterFiles::GetFileList()
 	//return this->m_strFilesList;
 }
 
-OGREnvelope BundleOfRasterFiles::CalcMercEnvelope()
+OGREnvelope RasterFileBundle::CalcMercEnvelope()
 {
 	OGREnvelope	envp;
 
@@ -461,15 +461,18 @@ OGREnvelope BundleOfRasterFiles::CalcMercEnvelope()
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
 		if ((*iter).second.second != NULL)
-			envp = VectorBorder::CombineOGREnvelopes(envp,(*iter).second.second->GetEnvelope());
-		else if ((*iter).second.first != NULL)
+			envp = VectorBorder::CombineOGREnvelopes(envp, 
+             VectorBorder::InetersectOGREnvelopes((*iter).second.second->GetEnvelope(),
+                                                  *(*iter).second.first
+                                                  ));
+    else if ((*iter).second.first != NULL)
 			envp = VectorBorder::CombineOGREnvelopes(envp,*(*iter).second.first);
 	}
 	return envp; 
 }
 
 
-int	BundleOfRasterFiles::CalcNumberOfTiles (int zoom)
+int	RasterFileBundle::CalcNumberOfTiles (int zoom)
 {
 	int n = 0;
 	double		res = MercatorTileGrid::CalcResolutionByZoom(zoom);
@@ -489,7 +492,7 @@ int	BundleOfRasterFiles::CalcNumberOfTiles (int zoom)
 	return n;
 }
 
-double BundleOfRasterFiles::GetNodataValue(BOOL &nodata_defined)
+double RasterFileBundle::GetNodataValue(BOOL &nodata_defined)
 {
   if (data_list_.size()==0) return NULL;
   RasterFile rf((*data_list_.begin()).first,1);
@@ -499,7 +502,7 @@ double BundleOfRasterFiles::GetNodataValue(BOOL &nodata_defined)
 
 
 
-int		BundleOfRasterFiles::CalcBestMercZoom()
+int		RasterFileBundle::CalcBestMercZoom()
 {
 	if (data_list_.size()==0) return -1;
 
@@ -524,7 +527,7 @@ int		BundleOfRasterFiles::CalcBestMercZoom()
 }
 
 
-list<string>	 BundleOfRasterFiles::GetFileListByEnvelope(OGREnvelope envp_merc)
+list<string>	 RasterFileBundle::GetFileListByEnvelope(OGREnvelope envp_merc)
 {
 	std::list<string> file_list;
 	
@@ -538,7 +541,7 @@ list<string>	 BundleOfRasterFiles::GetFileListByEnvelope(OGREnvelope envp_merc)
 }
 
 
-BOOL	BundleOfRasterFiles::Intersects(OGREnvelope envp_merc)
+BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 {
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
@@ -566,25 +569,42 @@ BOOL	BundleOfRasterFiles::Intersects(OGREnvelope envp_merc)
                                 int srand_seed = 0);
 */
 
-BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,	
+BOOL RasterFileBundle::WarpToMercBuffer (int zoom,	
                                             OGREnvelope	envp_merc, 
                                             RasterBuffer *p_dst_buffer, 
+                                            int         bands_num,
+                                            int         *p_bands,
                                             string resampling_alg, 
                                             BYTE  *p_nodata,
-                                            BYTE *p_background_color,
-                                            string temp_file_path,
-                                            int srand_seed)
+                                            BYTE *p_background_color)
+                                            //string temp_file_path,
+                                            //int srand_seed)
 {
 
 	if (data_list_.size()==0) return FALSE;
 	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*data_list_.begin()).first.c_str(),GA_ReadOnly );
 	if (p_src_ds==NULL)
 	{
-		cout<<"ERROR: can't open raster file: "<<(*data_list_.begin()).first<<endl;
+		cout<<"Error: can't open raster file: "<<(*data_list_.begin()).first<<endl;
 		return FALSE;
 	}
 	GDALDataType	dt		= GDALGetRasterDataType(GDALGetRasterBand(p_src_ds,1));
-	int				bands	= p_src_ds->GetRasterCount();
+	int       bands_input   = p_src_ds->GetRasterCount();
+  int				bands_output	= (bands_num==0) ? bands_input : bands_num;
+  if (bands_num != 0)
+  {
+    for (int i=0; i<bands_output;i++)
+    {
+      if (p_bands[i]<=0 || p_bands[i] >bands_input)
+      {
+        cout<<"Error: not valid band number "<<p_bands[i]<<
+              ", must be greater than zero and less or equal to input bands number"<<endl;
+        GDALClose(p_src_ds);
+        return FALSE;
+      }
+    }
+  }
+  
 	//int				bands	= 3;
   BOOL			nodata_val_from_file_defined = false;
   double			nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
@@ -593,16 +613,16 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 	int				buf_width	= int(((envp_merc.MaxX - envp_merc.MinX)/res)+0.5);
 	int				buf_height	= int(((envp_merc.MaxY - envp_merc.MinY)/res)+0.5);
 	
-  srand(srand_seed);
-  string			tiff_in_mem = (temp_file_path == "" ) ? ("/vsimem/tiffinmem" + ConvertIntToString(rand()))
-                                                    : RemoveEndingSlash(temp_file_path) + "/" + ConvertIntToString(rand()) + ".gdal.temp";
+  srand(0);
+  string			tiff_in_mem = ("/vsimem/tiffinmem" + ConvertIntToString(rand()));
+  //: RemoveEndingSlash(temp_file_path) + "/" + ConvertIntToString(rand()) + ".gdal.temp";
 	
   GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
 								tiff_in_mem.c_str(),
 								buf_width,
 								buf_height,
-								bands,
+								bands_output,
 								dt,
 								NULL
 								);
@@ -639,7 +659,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
   {
     RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
   }
-  else if ((p_nodata || nodata_val_from_file_defined) && (bands<=3) ) 
+  else if ((p_nodata || nodata_val_from_file_defined) && (bands_output<=3) ) //(bands_output<=3) - why?
   {
     BYTE rgb[3];
     if (p_nodata) memcpy(rgb,p_nodata,3);
@@ -669,7 +689,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 	
 		if (p_src_ds==NULL)
 		{
-			cout<<"ERROR: can't open raster file: "<<(*iter).first<<endl;
+			cout<<"Error: can't open raster file: "<<(*iter).first<<endl;
 			continue;
 		}
 			
@@ -681,7 +701,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 		{
 			if(!input_rf.GetDefaultSpatialRef(input_ogr_sr,merc_type_))
 			{
-				cout<<"ERROR: can't read spatial reference from input file: "<<(*data_list_.begin()).first<<endl;
+				cout<<"Error: can't read spatial reference from input file: "<<(*data_list_.begin()).first<<endl;
 				return FALSE;
 			}
 		}
@@ -697,14 +717,14 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
 		p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
     
-		p_warp_options->nBandCount = bands;
-    p_warp_options->panSrcBands = new int[bands];
-    p_warp_options->panDstBands = new int[bands];
+		p_warp_options->nBandCount = bands_output;
+    p_warp_options->panSrcBands = new int[bands_output];
+    p_warp_options->panDstBands = new int[bands_output];
     
-    for( int i = 0; i < bands; i++ )
+    for( int i = 0; i < bands_output; i++ )
     {
-       p_warp_options->panSrcBands[i] = i+1;
-       p_warp_options->panDstBands[i] = i+1;
+      p_warp_options->panSrcBands[i] = (p_bands == NULL) ? i+1 : p_bands[i];
+      p_warp_options->panDstBands[i] = i+1;
     }
     				
 		if ((*iter).second.second)
@@ -722,9 +742,9 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     ///*
     if (p_nodata)
     {
-      p_warp_options->padfSrcNoDataReal = new double[bands];
-      p_warp_options->padfSrcNoDataImag = new double[bands];
-      if (bands==3)
+      p_warp_options->padfSrcNoDataReal = new double[bands_output];
+      p_warp_options->padfSrcNoDataImag = new double[bands_output];
+      if (bands_output==3)
       {
         p_warp_options->padfSrcNoDataReal[0] = p_nodata[0];
         p_warp_options->padfSrcNoDataReal[1] = p_nodata[1];
@@ -733,7 +753,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
       }
       else
       {
-        for (int i=0;i<bands;i++)
+        for (int i=0;i<bands_output;i++)
         {
           p_warp_options->padfSrcNoDataReal[i] = p_nodata[0];
           p_warp_options->padfSrcNoDataImag[i] = 0;
@@ -742,9 +762,9 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     }
     else if (nodata_val_from_file_defined)
     {
-      p_warp_options->padfSrcNoDataReal = new double[bands];
-      p_warp_options->padfSrcNoDataImag = new double[bands];
-      for (int i=0;i<bands;i++)
+      p_warp_options->padfSrcNoDataReal = new double[bands_output];
+      p_warp_options->padfSrcNoDataImag = new double[bands_output];
+      for (int i=0;i<bands_output;i++)
       {
           p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file;
           p_warp_options->padfSrcNoDataImag[i] = 0;
@@ -782,7 +802,7 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     BOOL  warp_error = FALSE;
     if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
 		{
-			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
+			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
       warp_error = TRUE;
 		}
     
@@ -807,12 +827,14 @@ BOOL BundleOfRasterFiles::WarpToMercBuffer (int zoom,
     if (warp_error) return FALSE;
 	}
 
-	p_dst_buffer->CreateBuffer(bands,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+	p_dst_buffer->CreateBuffer(bands_output,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+
+
 	
 	p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),NULL,0,0,0);
-  
+
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());

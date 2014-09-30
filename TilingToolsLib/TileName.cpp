@@ -51,30 +51,30 @@ BOOL	StandardTileName::ValidateTemplate	(string str_template)
 
 	if (str_template.find("{z}",0)==string::npos)
 	{
-		//cout<<"ERROR: bad tile name template: missing {z}"<<endl;
+		//cout<<"Error: bad tile name template: missing {z}"<<endl;
 		return FALSE;
 	}
 	if (str_template.find("{x}",0)==string::npos)
 	{
-		//cout<<"ERROR: bad tile name template: missing {x}"<<endl;
+		//cout<<"Error: bad tile name template: missing {x}"<<endl;
 		return FALSE;
 	}
 	if (str_template.find("{y}",0)==string::npos) 
 	{
-		//cout<<"ERROR: bad tile name template: missing {y}"<<endl;
+		//cout<<"Error: bad tile name template: missing {y}"<<endl;
 		return FALSE;
 	}
 
 	if (str_template.find(".",0)==string::npos) 
 	{
-		//cout<<"ERROR: bad tile name template: missing extension"<<endl;
+		//cout<<"Error: bad tile name template: missing extension"<<endl;
 		return FALSE;
 	}
 		
 	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
 	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
 	{
-		//cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+		//cout<<"Error: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
 		return FALSE;
 	}
 	return TRUE;
@@ -142,30 +142,30 @@ BOOL	ESRITileName::ValidateTemplate	(string str_template)
   str_template = MakeLower(str_template);
 	if (str_template.find("{l}",0)==string::npos)
 	{
-		//cout<<"ERROR: bad tile name template: missing {L}"<<endl;
+		//cout<<"Error: bad tile name template: missing {L}"<<endl;
 		return FALSE;
 	}
 	if (str_template.find("{c}",0)==string::npos)
 	{
-		//cout<<"ERROR: bad tile name template: missing {C}"<<endl;
+		//cout<<"Error: bad tile name template: missing {C}"<<endl;
 		return FALSE;
 	}
 	if (str_template.find("{r}",0)==string::npos) 
 	{
-		//cout<<"ERROR: bad tile name template: missing {R}"<<endl;
+		//cout<<"Error: bad tile name template: missing {R}"<<endl;
 		return FALSE;
 	}
 
 	if (str_template.find(".",0)==string::npos) 
 	{
-		//cout<<"ERROR: bad tile name template: missing extension"<<endl;
+		//cout<<"Error: bad tile name template: missing extension"<<endl;
 		return FALSE;
 	}
 		
 	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
 	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
 	{
-		//cout<<"ERROR: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+		//cout<<"Error: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
 		return FALSE;
 	}
 	return TRUE;

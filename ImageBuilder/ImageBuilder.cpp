@@ -86,25 +86,25 @@ int _tmain(int argc, wchar_t* argv[])
 
 	if (strTilesFolder == L"")
 	{
-		cout<<"ERROR: missing \"-tiles\" parameter"<<endl;
+		cout<<"Error: missing \"-tiles\" parameter"<<endl;
 		return 0;
 	}
 
 	if (strImageFile == L"")
 	{
-		cout<<"ERROR: missing \"-file\" parameter"<<endl;
+		cout<<"Error: missing \"-file\" parameter"<<endl;
 		return 0;
 	}
 
 	if (strZoom == L"")
 	{
-		cout<<"ERROR: missing \"-zoom\" parameter"<<endl;
+		cout<<"Error: missing \"-zoom\" parameter"<<endl;
 		return 0;
 	}
 
 	if (strVectorFile == L"")
 	{
-		cout<<"ERROR: missing \"-border\" parameter"<<endl;
+		cout<<"Error: missing \"-border\" parameter"<<endl;
 		return 0;
 	}
 
@@ -114,19 +114,19 @@ int _tmain(int argc, wchar_t* argv[])
 
 	if (!FileExists(strTilesFolder))
 	{
-		wcout<<L"ERROR: parameter -tiles: folder "<<strTilesFolder<<L" doesn't exist"<<endl;
+		wcout<<L"Error: parameter -tiles: folder "<<strTilesFolder<<L" doesn't exist"<<endl;
 		return 0;
 	}
 
 	if (strImageFile==L"") 
 	{
-		wcout<<L"ERROR: parameter -file: you must specify file name"<<endl;
+		wcout<<L"Error: parameter -file: you must specify file name"<<endl;
 		return 0;
 	}
 			
 	if (strZoom==L"")
 	{
-		wcout<<L"ERROR: parameter -zoom: you must specify zoom"<<endl;
+		wcout<<L"Error: parameter -zoom: you must specify zoom"<<endl;
 		return 0;
 	}
 		
@@ -146,7 +146,7 @@ int _tmain(int argc, wchar_t* argv[])
 
 	if (strVectorFile==L"")
 	{
-		cout<<"ERROR: parameter -border: you must specify border"<<endl;
+		cout<<"Error: parameter -border: you must specify border"<<endl;
 		return 0;
 	}
 
@@ -191,7 +191,7 @@ int _tmain(int argc, wchar_t* argv[])
 	{
 		if (!VectorFile::OpenAndCreatePolygonInMercator(strVectorFile,vb))
 		{
-			wcout<<L"ERROR: "<<strVectorFile<<L": can't read border polygon"<<endl;
+			wcout<<L"Error: "<<strVectorFile<<L": can't read border polygon"<<endl;
 			return FALSE;
 		}
 	}	

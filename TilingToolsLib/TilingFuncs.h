@@ -37,6 +37,8 @@ public:
   int             max_work_threads_;
   int             max_warp_threads_;
   unsigned int    max_gmx_volume_size_; //максимальный размер файла в gmx-котейнере 
+  int             bands_num_;
+  int             *p_bands_;
 
   string          temp_file_path_for_warping_;
 	//static const int			DEFAULT_JPEG_QUALITY = 85;
@@ -62,10 +64,12 @@ public:
 		max_gmx_volume_size_ =0;
     auto_stretch_to_8bit_ = FALSE;
 
+    bands_num_ = 0;
+    p_bands_ = NULL;
+
     max_work_threads_= 0;
     max_warp_threads_= 0;
-
-
+    
     temp_file_path_for_warping_ = "";
     calculate_histogram_=false;
 	}
@@ -73,8 +77,10 @@ public:
 		
 	~GMXTilingParameters ()
 	{
-		delete(p_background_color_);
-		delete(p_transparent_color_);
+    if (p_background_color_)  delete(p_background_color_);
+		if (p_transparent_color_) delete(p_transparent_color_);
+    if (p_bands_)               delete(p_bands_);
+    if (p_tile_name_)         delete(p_tile_name_);
 	}
 };
 
@@ -82,7 +88,7 @@ public:
 BOOL GMXMakeTiling (	GMXTilingParameters		*p_tiling_params);
 
 BOOL GMXMakeBaseZoomTiling (GMXTilingParameters				*p_tiling_params, 
-							gmx::BundleOfRasterFiles		*p_bundle, 
+							gmx::RasterFileBundle		*p_bundle, 
 							gmx::ITileContainer				*p_tile_container,
               gmx::MetaHistogram            *p_histogram = NULL);
 
@@ -99,7 +105,7 @@ BOOL GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb,
 struct GMXAsyncChunkTilingParams
 {
 	GMXTilingParameters				*p_tiling_params_;
-	gmx::BundleOfRasterFiles	*p_bundle_; 
+	gmx::RasterFileBundle	*p_bundle_; 
 	OGREnvelope               chunk_envp_;
   int								        z_;
 	int								        tiles_expected_; 
@@ -122,7 +128,7 @@ BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
 BOOL GMXMakeTilingFromBuffer	(	GMXTilingParameters				*p_tiling_params,
 								gmx::RasterBuffer				*p_buffer, 
-								gmx::BundleOfRasterFiles		*p_bundle, 
+								gmx::RasterFileBundle		*p_bundle, 
 								int								ul_x, 
 								int								ul_y,
 								int								z,
