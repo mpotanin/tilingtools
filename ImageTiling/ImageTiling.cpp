@@ -38,71 +38,6 @@ void Exit()
   cin>>c;
 }
 
-BOOL CreateJGW (string jpg_file, int z, int x, int y, int size)
-{
-  gmx::RasterFile rf;
-  if (!rf.Init(jpg_file,FALSE)) return FALSE;
-
-  int w,h;
-  rf.GetPixelSize(w,h);
-
-  OGREnvelope envp = gmx::MercatorTileGrid::CalcEnvelopeByTile(z,x,y);
-  double res = gmx::MercatorTileGrid::CalcResolutionByZoom(z)* (((double)size)/(max(w,h)));
-  //return gmx::WriteWLDFile(jpg_file,envp.MinX+res*0.5,envp.MaxY-res*0.5,res);
-  return gmx::WriteWLDFile(jpg_file,envp.MinX + (res*0.5),envp.MaxY - (res*0.5),res);
-
-}
-
-
-BOOL CreateGeoreference(list<string> jpg_files, int z, int size)
-{
-  list<string>::iterator iter = jpg_files.begin();
-  for (int i=0;i<(1<<z);i+=2*(size/gmx::MercatorTileGrid::TILE_SIZE))
-  {
-    for (int j=0;j<(1<<z);j+=2*(size/gmx::MercatorTileGrid::TILE_SIZE))
-    {
-      if (iter != jpg_files.end())
-      {
-        CreateJGW((*iter),z,i,j,size);
-        iter++;
-      }
-    }
-  }
-
-  return TRUE;
-}
-
-
-BOOL ProcessFolder (string input_folder, int z, int size)
-{
-  list<string> files;
-  if (!gmx::FindFilesInFolderByExtension(files,input_folder, "jpg", FALSE)) return FALSE;
-  int num = files.size();
-  if (num==0) return FALSE;
-
-  string *arr = new string[num];
-  for (int i=0;i<num;i++)
-    arr[i]="";
-  srand(0);
-  for (list<string>::iterator iter = files.begin();iter!=files.end();iter++)
-  {
-    int k = rand()%num;
-    for (int i = 0; i<num; i++)
-    {
-      if (arr[(k+i)%num]=="")
-      {
-        arr[(k+i)%num] = (*iter);
-        break;
-      }
-    }
-  }
-  
-  list<string> files_rand;
-  for (int i = 0; i<num; i++)
-    files_rand.push_back(arr[i]);
-
-  return CreateGeoreference(files_rand,z,size);
-}
 
 BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 {
@@ -140,7 +75,7 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 
 
   list<string> file_list;
-  gmx::FindFilesInFolderByPattern(file_list,input_path);
+  gmx::FindFilesByPattern(file_list,input_path);
   if (file_list.size()==0)
   {
     cout<<"Error: can't find input files by path: "<<input_path<<endl;
@@ -402,7 +337,7 @@ int _tmain(int argc, wchar_t* argvW[])
   //console_params.at("-zoom") = "16";
   //console_params.at("-border") = "\\\\192.168.4.43\\share\\test\\tif\\12SEP11070526-R2AS-052727707060_02_P001_002_merc.mif";
 
-  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\all_bands\\0_LC81600772014090LGN00.tif";
+  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
   //console_params.at("-bands") = "1, 2, 0";
 
 
@@ -449,7 +384,7 @@ int _tmain(int argc, wchar_t* argvW[])
   if (console_params.at("-mosaic")== "")
   {
     std::list<string> input_file_list;
-    if (!gmx::FindFilesInFolderByPattern (input_file_list,console_params.at("-file")))
+    if (!gmx::FindFilesByPattern (input_file_list,console_params.at("-file")))
     {
       cout<<"Can't find input files by pattern: "<<console_params.at("-file")<<endl;
       return 1;

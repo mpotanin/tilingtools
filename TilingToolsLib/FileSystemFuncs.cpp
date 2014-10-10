@@ -86,18 +86,18 @@ string RemoveExtension (string &filename)
 }
 
 
-BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
+BOOL FindFilesByPattern (list<string> &file_list, string search_pattern)
 {
 	WIN32_FIND_DATAW find_file_data;
-	HANDLE hFind;
+	HANDLE hFind ;
 
-  //if ()
 	wstring search_pattern_w;
 	utf8toWStr(search_pattern_w, search_pattern);
 
 	hFind = FindFirstFileW(search_pattern_w.data(), &find_file_data);
 	if (hFind == INVALID_HANDLE_VALUE)
   {
+    if (hFind) FindClose(FindClose);
     return FALSE;
   }
 	
@@ -112,51 +112,28 @@ BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
 		if (!FindNextFileW(hFind,&find_file_data)) break;
 	}
 
+  if (hFind) FindClose(FindClose);
 	return TRUE;
 }
 
-/*
-BOOL FindFilesInFolderByPattern (list<string> &file_list, string search_pattern)
-{
-	WIN32_FIND_DATA find_file_data;
-	HANDLE hFind;
 
-  //if ()
-	wstring search_pattern_w;
-	utf8toWStr(search_pattern_w, search_pattern);
-
-	hFind = FindFirstFile(search_pattern_w.data(), &find_file_data);
-	if (hFind == INVALID_HANDLE_VALUE)
-  {
-    return FALSE;
-  }
-	
-	while (true)
-	{
-		if (find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-		{
-			string find_filename;
-			wstrToUtf8(find_filename,find_file_data.cFileName);
-			file_list.push_back(GetAbsolutePath(GetPath(search_pattern),find_filename));
-		}
-		if (!FindNextFile(hFind,&find_file_data)) break;
-	}
-
-	return TRUE;
-}
-*/
-
-
-BOOL FindFilesInFolderByExtension (list<string> &file_list, string folder, string	extension, BOOL is_recursive)
+BOOL FindFilesByExtensionRecursive (list<string> &file_list, string folder, string	extension)
 {
 	WIN32_FIND_DATAW find_file_data;
 	HANDLE hFind;
 	
-	wstring path_w;
+  extension = (extension[0] == '.') ? extension.substr(1,extension.length()-1) : extension;
+  regex search_pattern(".*\\."+extension+"$");
+  
+  wstring path_w;
 	utf8toWStr(path_w,GetAbsolutePath(folder,"*"));
   hFind = FindFirstFileW(path_w.c_str(), &find_file_data);
 	
-	if (hFind == INVALID_HANDLE_VALUE) return FALSE;
+	if (hFind == INVALID_HANDLE_VALUE)
+  {
+    FindClose(hFind);
+    return FALSE;
+  }
 	
 	while (true)
 	{
@@ -164,52 +141,21 @@ BOOL FindFilesInFolderByExtension (list<string> &file_list, string folder, strin
 		wstrToUtf8(find_filename,find_file_data.cFileName);
 		if ((find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) && (find_file_data.dwFileAttributes!=48))
 		{
-			if (MakeLower(find_filename).rfind("." + MakeLower(extension)) != string::npos)
-				file_list.push_back(GetAbsolutePath(folder,find_filename));
+			if (regex_match(find_filename,search_pattern))
+        file_list.push_back(GetAbsolutePath(folder,find_filename));
 		}
-		else if (is_recursive)
+		else
 		{
 			if ((find_filename != ".") && (find_filename != ".."))	
-				FindFilesInFolderByExtension (file_list,GetAbsolutePath(folder,find_filename),extension,TRUE);
+				FindFilesByExtensionRecursive (file_list,GetAbsolutePath(folder,find_filename),extension);
 		}
 		if (!FindNextFileW(hFind,&find_file_data)) break;
 	}
 
+  if (hFind) FindClose(FindClose);
 	return TRUE;
 }
 
-/*
-BOOL FindFilesInFolderByExtension (list<string> &file_list, string folder, string	extension, BOOL is_recursive)
-{
-	WIN32_FIND_DATA find_file_data;
-	HANDLE hFind;
-	
-	wstring path_w;
-	utf8toWStr(path_w,GetAbsolutePath(folder,"*"));
-	hFind = FindFirstFile(path_w.c_str(), &find_file_data);
-	
-	if (hFind == INVALID_HANDLE_VALUE) return FALSE;
-	
-	while (true)
-	{
-		string find_filename;
-		wstrToUtf8(find_filename,find_file_data.cFileName);
-		if ((find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) && (find_file_data.dwFileAttributes!=48))
-		{
-			if (MakeLower(find_filename).rfind("." + MakeLower(extension)) != string::npos)
-				file_list.push_back(GetAbsolutePath(folder,find_filename));
-		}
-		else if (is_recursive)
-		{
-			if ((find_filename != ".") && (find_filename != ".."))	
-				FindFilesInFolderByExtension (file_list,GetAbsolutePath(folder,find_filename),extension,TRUE);
-		}
-		if (!FindNextFile(hFind,&find_file_data)) break;
-	}
-
-	return TRUE;
-}
-*/
 
 BOOL WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
 {

@@ -13,8 +13,10 @@ string		GetPath(string filename);
 string		RemoveEndingSlash(string	foldername);
 BOOL		FileExists	(string filename);
 BOOL		IsDirectory	(string path);
-BOOL		FindFilesInFolderByPattern (list<string> &file_list, string search_pattern);
-BOOL		FindFilesInFolderByExtension (list<string> &file_list, string folder, string	extension, BOOL recursive);
+
+BOOL		FindFilesByPattern (list<string> &file_list, string search_pattern);
+BOOL		FindFilesByExtensionRecursive (list<string> &file_list, string folder, string	extension);
+
 BOOL		WriteToTextFile(string filename, string str_text);
 BOOL		WriteWLDFile	(string filename, double ul_x, double ul_y, double res);
 BOOL		SaveDataToFile	(string filename, void *p_data, int size);

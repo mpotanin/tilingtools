@@ -404,7 +404,7 @@ int	RasterFileBundle::Init (string inputPath, MercatorProjType merc_type, string
 {
 	Close();
 	list<string> file_list;
-	if (!FindFilesInFolderByPattern(file_list,inputPath)) return 0;
+	if (!FindFilesByPattern(file_list,inputPath)) return 0;
 
 	merc_type_ = merc_type;
 	for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
