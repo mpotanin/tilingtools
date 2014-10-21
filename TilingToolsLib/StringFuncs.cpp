@@ -149,6 +149,7 @@ void utf8toWStr(WStr& dest, const Str& input){
 	wchar_t w = 0;
 	int bytes = 0;
 	wchar_t err = L'�';
+
 	for (size_t i = 0; i < input.size(); i++){
 		unsigned char c = (unsigned char)input[i];
 		if (c <= 0x7f){//first byte

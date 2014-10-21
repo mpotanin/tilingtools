@@ -378,13 +378,6 @@ RasterFileBundle::RasterFileBundle(void)
 
 void RasterFileBundle::Close(void)
 {
-	
-	//m_nLength = 0;
-	//m_poImages = NULL;
-	//m_strFilesList.MakeEmpty();
-	//this->m_oImagesBounds.MakeEmpty();
-	//this->m_poImagesBorders.MakeEmpty();
-
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
 		delete((*iter).second.second);
@@ -407,14 +400,13 @@ int	RasterFileBundle::Init (string inputPath, MercatorProjType merc_type, string
 	if (!FindFilesByPattern(file_list,inputPath)) return 0;
 
 	merc_type_ = merc_type;
-	for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
+
+ 	for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
 	{
 		if (file_list.size()==1) AddItemToBundle((*iter),vector_file,shift_x,shift_y);
 		else AddItemToBundle((*iter),VectorBorder::GetVectorFileNameByRasterFileName(*iter),shift_x,shift_y);
 	}
 	return data_list_.size();
-
-	return 1;
 }
 
 
@@ -547,7 +539,8 @@ BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 	{
 		if ((*iter).second.second != NULL)
     {
-			if ((*iter).second.second->Intersects(envp_merc)) return TRUE;
+			if ((*iter).second.second->Intersects(envp_merc) && 
+          (*iter).second.first->Intersects(envp_merc) ) return TRUE;
     }
     else if ((*iter).second.first != NULL)
     {
@@ -557,17 +550,6 @@ BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 	
 	return FALSE;
 }
-
-/*
-(	int zoom,	
-                                OGREnvelope	merc_envp, 
-                                RasterBuffer *p_dst_buffer,
-                                string resampling_alg = "",
-                                BYTE *p_nodata = NULL,
-                                BYTE *p_background_color = NULL,
-                                string  temp_file_path = "",
-                                int srand_seed = 0);
-*/
 
 BOOL RasterFileBundle::WarpToMercBuffer (int zoom,	
                                             OGREnvelope	envp_merc, 
@@ -588,7 +570,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 		cout<<"Error: can't open raster file: "<<(*data_list_.begin()).first<<endl;
 		return FALSE;
 	}
-	GDALDataType	dt		= GDALGetRasterDataType(GDALGetRasterBand(p_src_ds,1));
+  GDALDataType	dt		= GDALGetRasterDataType(GDALGetRasterBand(p_src_ds,1));
 	int       bands_input   = p_src_ds->GetRasterCount();
   int				bands_output	= (bands_num==0) ? bands_input : bands_num;
   if (bands_num != 0)
@@ -605,17 +587,17 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
     }
   }
   
-	//int				bands	= 3;
+
+  
   BOOL			nodata_val_from_file_defined = false;
   double			nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
 	
 	double		res			=  MercatorTileGrid::CalcResolutionByZoom(zoom);
 	int				buf_width	= int(((envp_merc.MaxX - envp_merc.MinX)/res)+0.5);
 	int				buf_height	= int(((envp_merc.MaxY - envp_merc.MinY)/res)+0.5);
-	
+
   srand(0);
   string			tiff_in_mem = ("/vsimem/tiffinmem" + ConvertIntToString(rand()));
-  //: RemoveEndingSlash(temp_file_path) + "/" + ConvertIntToString(rand()) + ".gdal.temp";
 	
   GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
@@ -739,7 +721,6 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 			}
 		}
   
-    ///*
     if (p_nodata)
     {
       p_warp_options->padfSrcNoDataReal = new double[bands_output];
@@ -770,7 +751,6 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
           p_warp_options->padfSrcNoDataImag[i] = 0;
       }
     }
-   //*/
     
     p_warp_options->pfnProgress = gmxPrintNoProgress;  
 
@@ -805,7 +785,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
       warp_error = TRUE;
 		}
-    
+
 		GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
     if (p_warp_options->padfSrcNoDataReal)
     {
@@ -829,12 +809,10 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 
 	p_dst_buffer->CreateBuffer(bands_output,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 
-
-	
-	p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
+  p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),NULL,0,0,0);
-
+  
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());

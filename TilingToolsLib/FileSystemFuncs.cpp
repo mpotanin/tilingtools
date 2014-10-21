@@ -92,10 +92,11 @@ BOOL FindFilesByPattern (list<string> &file_list, string search_pattern)
 	HANDLE hFind ;
 
 	wstring search_pattern_w;
-	utf8toWStr(search_pattern_w, search_pattern);
+  utf8toWStr(search_pattern_w, search_pattern);
 
 	hFind = FindFirstFileW(search_pattern_w.data(), &find_file_data);
-	if (hFind == INVALID_HANDLE_VALUE)
+    
+  if (hFind == INVALID_HANDLE_VALUE)
   {
     if (hFind) FindClose(FindClose);
     return FALSE;
@@ -112,7 +113,7 @@ BOOL FindFilesByPattern (list<string> &file_list, string search_pattern)
 		if (!FindNextFileW(hFind,&find_file_data)) break;
 	}
 
-  if (hFind) FindClose(FindClose);
+  if (hFind) FindClose(hFind);
 	return TRUE;
 }
 
@@ -152,7 +153,7 @@ BOOL FindFilesByExtensionRecursive (list<string> &file_list, string folder, stri
 		if (!FindNextFileW(hFind,&find_file_data)) break;
 	}
 
-  if (hFind) FindClose(FindClose);
+  if (hFind) FindClose(hFind);
 	return TRUE;
 }
 

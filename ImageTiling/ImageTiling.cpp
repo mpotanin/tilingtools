@@ -289,7 +289,6 @@ int _tmain(int argc, wchar_t* argvW[])
     return 0;
   }
 
-
   map<string,string> console_params;
   
   console_params.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",argc,argv)));
@@ -332,9 +331,9 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "\\\\192.168.4.43\\share\\test\\tif\\12SEP11070526-R2AS-052727707060_02_P001_000_merc.tif";
+  //console_params.at("-file") = "c:\\share\\RR\\*.tif";
   //console_params.at("-gmxtiles")="-container";
-  //console_params.at("-zoom") = "16";
+  //console_params.at("-zoom") = "15";
   //console_params.at("-border") = "\\\\192.168.4.43\\share\\test\\tif\\12SEP11070526-R2AS-052727707060_02_P001_002_merc.mif";
 
   //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
@@ -395,6 +394,7 @@ int _tmain(int argc, wchar_t* argvW[])
     for (std::list<string>::iterator iter = input_file_list.begin(); iter!=input_file_list.end();iter++)
     {
       cout<<"Tiling file: "<<(*iter)<<endl;
+
       map<string,string> console_params_fix = console_params;
 
       if (input_file_list.size()>1)

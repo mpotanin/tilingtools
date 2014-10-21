@@ -381,13 +381,11 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
     pp_container_volumes_[i]=NULL;
   
   max_volume_size_	= max_volume_size;
-  //max_volume_size_=1000000;
-
-
+  
   addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
 
   if (!DeleteVolumes()) return FALSE;
-
+    
   if (! (pp_container_volumes_[0] = OpenFile(container_file_name_.c_str(),"wb+")))
   {
     MakeEmpty();
@@ -430,8 +428,6 @@ BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 		p_sizes_[i]		= 0;
 		p_offsets_[i]		= 0;
 	}
-
-  addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
   
 	return TRUE;
 };
@@ -455,8 +451,7 @@ BOOL   GMXTileContainer::DeleteVolumes()
   list<string> file_list;
 
   FindFilesByPattern(file_list,container_file_name_ +"*");
-
-  ///*
+    
   regex pattern("\\.{0,1}[0-9]{0,3}");
   for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
   {
@@ -472,7 +467,6 @@ BOOL   GMXTileContainer::DeleteVolumes()
       }
     }
   }
-  //*/
   return TRUE;
 }
 

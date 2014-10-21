@@ -11,9 +11,13 @@ VectorBorder::VectorBorder ()
 
 VectorBorder::~VectorBorder()
 {
-	if (p_ogr_geometry_!=NULL) p_ogr_geometry_->empty();
-  OGRGeometryFactory::destroyGeometry(p_ogr_geometry_);
-	p_ogr_geometry_	= NULL;
+	if (p_ogr_geometry_!=NULL) 
+  {
+    //p_ogr_geometry_->empty();
+    //OGRGeometryFactory::destroyGeometry(p_ogr_geometry_);
+	  delete(p_ogr_geometry_);
+    p_ogr_geometry_	= NULL;
+  }
 }  
 
 
@@ -129,7 +133,7 @@ BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialRefer
 
 	OGRSpatialReference	ogr_wgs84;
 	ogr_wgs84.SetWellKnownGeogCS("WGS84");
-	
+
   for (int i=0;i<num_rings;i++)
 	{
     OGRLinearRing *p_temp_ring = (OGRLinearRing*) p_rings[i]->clone();
@@ -137,22 +141,20 @@ BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialRefer
     p_temp_ring->assignSpatialReference(p_ogr_sr);
     OGRErr error_transform =	p_temp_ring->transformTo(&ogr_wgs84);
     //insert hack
-
-
     for (int l=0; l<p_temp_ring->getNumPoints()-1; l++)
 		{
       if(	((min(p_temp_ring->getX(l),p_temp_ring->getX(l+1))<-120) && (max(p_temp_ring->getX(l),p_temp_ring->getX(l+1))>120)) ||
           ((min(p_temp_ring->getX(l),p_temp_ring->getX(l+1))<179.99999) && (max(p_temp_ring->getX(l),p_temp_ring->getX(l+1))>180.00001)) ||
           ((min(p_temp_ring->getX(l),p_temp_ring->getX(l+1))<-180.00001) && (max(p_temp_ring->getX(l),p_temp_ring->getX(l+1))>-179.99999)))
 			{
-        p_temp_ring->empty();
+        delete(p_temp_ring);
 				delete[]p_rings;
 				return TRUE;
 			}
 		}
-    p_temp_ring->empty();
+    delete(p_temp_ring);
 	}
-	
+ 
 	delete[]p_rings;
 	return FALSE;
 }
@@ -161,47 +163,67 @@ BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialRefer
 VectorBorder*	VectorBorder::CreateFromVectorFile(string vector_file, MercatorProjType	merc_type)
 {
 	OGRDataSource *p_ogr_ds= OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
-	if( p_ogr_ds == NULL ) return NULL;
+  
+  if( p_ogr_ds == NULL ) return NULL;
 	
 	OGRMultiPolygon *p_ogr_multipoly = ReadMultiPolygonFromOGRDataSource(p_ogr_ds);
-  if (!p_ogr_multipoly) return NULL;
-  else p_ogr_multipoly->closeRings();
+  if (!p_ogr_multipoly)
+  {
+    OGRDataSource::DestroyDataSource(p_ogr_ds); 
+    return NULL;
+  }
+  else
+  {
+    p_ogr_multipoly->closeRings();
 
-	OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
-	OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
-	char	*proj_ref = NULL;
-	if (p_input_ogr_sr!=NULL)
-	{
-		if (OGRERR_NONE!=p_input_ogr_sr->exportToProj4(&proj_ref))
-		{
-			if (OGRERR_NONE!=p_input_ogr_sr->morphFromESRI()) return NULL; 
-			if (OGRERR_NONE!=p_input_ogr_sr->exportToProj4(&proj_ref)) return NULL;
-		}
-		CPLFree(proj_ref);
-	}
-	else
-	{
-		p_input_ogr_sr = new OGRSpatialReference();
-		p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
-	}
-	
-
-	OGRSpatialReference		ogr_sr_merc;
-	MercatorTileGrid::SetMercatorSpatialReference(merc_type,&ogr_sr_merc);
-	
-	p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
-	BOOL	intersects180 = VectorBorder::Intersects180Degree(p_ogr_multipoly,p_input_ogr_sr);
-	if (OGRERR_NONE != p_ogr_multipoly->transformTo(&ogr_sr_merc))
-	{
-		p_ogr_multipoly->empty();
-		return NULL;
-	}
-	if (intersects180) AdjustFor180DegreeIntersection(p_ogr_multipoly);
-		
-	VectorBorder	*p_vb_res	= new VectorBorder();
-	p_vb_res->merc_type_				= merc_type;
-	p_vb_res->p_ogr_geometry_			= p_ogr_multipoly;
-	return p_vb_res;
+    OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
+    OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
+    BOOL is_ogr_sr_valid = TRUE;
+    if (p_input_ogr_sr)
+    {
+      p_input_ogr_sr = p_input_ogr_sr->Clone();
+      char	*proj_ref = NULL;
+	    BOOL is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))  
+                             ? TRUE
+                             : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI()) 
+                             ? FALSE 
+                             : (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref)) 
+                             ? TRUE : FALSE;
+      if (proj_ref !=NULL) CPLFree(proj_ref);
+    }
+    else
+    {
+	    p_input_ogr_sr = new OGRSpatialReference();
+	    p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
+    }
+    
+    OGRDataSource::DestroyDataSource(p_ogr_ds);
+    if (!is_ogr_sr_valid)
+    {
+      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+      delete(p_ogr_multipoly);
+      return NULL;
+    }
+    
+    OGRSpatialReference		ogr_sr_merc;
+    MercatorTileGrid::SetMercatorSpatialReference(merc_type,&ogr_sr_merc);
+	  BOOL	intersects180 = VectorBorder::Intersects180Degree(p_ogr_multipoly,p_input_ogr_sr);
+    p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
+      
+    if (OGRERR_NONE != p_ogr_multipoly->transformTo(&ogr_sr_merc))
+    {
+      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+      delete(p_ogr_multipoly);
+	    return NULL;
+    }
+    if (intersects180) AdjustFor180DegreeIntersection(p_ogr_multipoly);
+		VectorBorder	*p_vb_res	= new VectorBorder();
+    p_ogr_multipoly->assignSpatialReference(NULL);
+    p_vb_res->merc_type_				= merc_type;
+    p_vb_res->p_ogr_geometry_			= p_ogr_multipoly;
+    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+    return p_vb_res;
+  }
 };
 
 
