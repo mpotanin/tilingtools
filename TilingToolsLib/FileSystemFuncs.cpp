@@ -75,14 +75,17 @@ string		GetAbsolutePath (string base_path, string relative_path)
 
 string RemovePath(const string& filename)
 {
-	return filename.substr(filename.find_last_of("/")+1);	
+	return  (filename.find_last_of("/")>=0) ?
+          filename.substr(filename.find_last_of("/")+1) :
+          filename;
 }
 
 
 string RemoveExtension (string &filename)
 {
-	int n = filename.rfind(L'.');
-	return filename.substr(0,n);	
+	int n_point = filename.rfind(L'.');
+  int n_slash = filename.rfind(L'/');
+  return (n_point>n_slash) ? filename.substr(0,n_point) : filename;	
 }
 
 
