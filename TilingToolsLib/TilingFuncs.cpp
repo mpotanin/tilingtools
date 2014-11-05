@@ -440,13 +440,15 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
   MercatorTileGrid::CalcTileRange(p_bundle->CalcMercEnvelope(),zoom,minx,miny,maxx,maxy);
 
 	HANDLE			thread_handle = NULL;
-	unsigned long	thread_id;
+	//unsigned long	thread_id;
 
   //int num_warp = 0;
   
   BOOL tiling_error = FALSE;
-  int srand_seed = 0;
-
+  
+  unsigned long thread_id;
+  list<pair<HANDLE,GMXAsyncChunkTilingParams*>> thread_params_list; 
+  
   for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=GMX_MAX_BUFFER_WIDTH)
 	{
 		int curr_max_x =	(curr_min_x + GMX_MAX_BUFFER_WIDTH - 1 > maxx) ? 
@@ -463,9 +465,28 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 																					curr_max_x,
 																					curr_max_y);
 			if (!p_bundle->Intersects(chunk_envp)) continue;
-	    while (GMX_CURR_WORK_THREADS >= GMX_MAX_WORK_THREADS)        Sleep(250);
+	    while (GMX_CURR_WORK_THREADS >= GMX_MAX_WORK_THREADS)        
+        Sleep(100);
       
+      for (list<pair<HANDLE,GMXAsyncChunkTilingParams*>>::iterator iter = 
+          thread_params_list.begin();iter!=thread_params_list.end();iter++)
+      {
+        DWORD exit_code;
+        if (GetExitCodeThread((*iter).first,&exit_code))
+        {
+          if (exit_code != STILL_ACTIVE)
+          {
+            CloseHandle((*iter).first);
+            delete((*iter).second);
+            thread_params_list.remove(*iter);
+            break;
+          }
+        }
+      }
+
+
       GMXAsyncChunkTilingParams	*p_chunk_tiling_params = new  GMXAsyncChunkTilingParams();
+      unsigned long *p_thread_id = new unsigned long();
       
       p_chunk_tiling_params->p_tiling_params_ = p_tiling_params;
       p_chunk_tiling_params->chunk_envp_ = chunk_envp;
@@ -478,14 +499,26 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
       p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
       p_chunk_tiling_params->z_ = zoom;
       p_chunk_tiling_params->p_histogram_ = p_histogram;
-      //ToDo - should some how free p_chunk_tiling_params
-    	CreateThread(NULL,0,GMXAsyncWarpChunkAndMakeTiling,p_chunk_tiling_params,0,&thread_id);      Sleep(100);    
+      HANDLE hThread = CreateThread(NULL,0,GMXAsyncWarpChunkAndMakeTiling,p_chunk_tiling_params,0,&thread_id);      
+      if (hThread)
+         thread_params_list.push_back(
+        pair<HANDLE,GMXAsyncChunkTilingParams*>(hThread,p_chunk_tiling_params));
+      Sleep(100);    
     }
 	}
 
   while (GMX_CURR_WORK_THREADS > 0)
     Sleep(250);
-	
+
+  for (list<pair<HANDLE,GMXAsyncChunkTilingParams*>>::iterator iter = 
+          thread_params_list.begin();iter!=thread_params_list.end();iter++)
+  {
+    CloseHandle((*iter).first);
+    delete((*iter).second);
+  }
+  thread_params_list.end();
+
+  	
   if (GMX_WARP_SEMAPHORE)
     CloseHandle(GMX_WARP_SEMAPHORE);
 

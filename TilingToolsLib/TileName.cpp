@@ -11,10 +11,12 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 	if (!ValidateTemplate(str_template)) return;
 	if (!FileExists(base_folder)) return;
 
-	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
-	tile_type_ =	(MakeLower(tile_ext)=="jpg") ? JPEG_TILE :
-						(MakeLower(tile_ext)=="png") ? PNG_TILE :
-						(MakeLower(tile_ext)=="tif") ? TIFF_TILE : JPEG_TILE;
+  if (!TileName::TileTypeByExtension(GetExtension(str_template),tile_type_))
+  {
+    cout<<"Error: can't parse tile type from input template: "<<str_template<<endl;
+    return;
+  }
+
 	base_folder_	= base_folder;
 	zxy_pos_[0] = (zxy_pos_[1] = (zxy_pos_[2] = 0));
 
@@ -182,10 +184,11 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 	if (!ValidateTemplate(str_template)) return;
 	if (!FileExists(base_folder)) return;
 
-	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
-	tile_type_ =	(MakeLower(tile_ext)=="jpg") ? JPEG_TILE :
-						(MakeLower(tile_ext)=="png") ? PNG_TILE :
-						(MakeLower(tile_ext)=="tif") ? TIFF_TILE : JPEG_TILE;
+	if (!TileName::TileTypeByExtension(GetExtension(str_template),tile_type_))
+  {
+    cout<<"Error: can't parse tile type from input template: "<<str_template<<endl;
+    return;
+  }
 	
   base_folder_	= base_folder;
 	

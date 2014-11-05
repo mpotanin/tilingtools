@@ -53,9 +53,9 @@ int _tmain(int argc, wchar_t* argvW[])
 	string strDestTemplate	= gmx::MakeLower( gmx::ReadConsoleParameter("-dest_template",argc,argv));
   string metadata_file = gmx::MakeLower( gmx::ReadConsoleParameter("-metadata",argc,argv)); 
 
-  //srcPath = "\\\\192.168.4.43\\share\\spot6\\Saratovskay.tiles";
-  //destPath = "\\\\192.168.4.43\\share\\spot6\\Saratovskay_tiles2";
-  //metadata_file = "\\\\192.168.4.43\\share\\spot6\\saratov.txt";
+  //srcPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81590142014083LGN00_tiles123";
+  //destPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81590142014083LGN00123.tiles";
+  //strSrcTemplate = "{z}\\{x}\\{y}.jp2";
   //strZooms = "1-16";
 
 
@@ -136,8 +136,11 @@ int _tmain(int argc, wchar_t* argvW[])
 												strSrcTemplate.length()-strSrcTemplate.rfind(".") - 1) :
 						"jpg";
 		}
-		tile_type = ((strTileType == "") ||  (strTileType == "jpg") || (strTileType == "jpeg") || (strTileType == ".jpg")) ?
-					gmx::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? gmx::PNG_TILE : gmx::TIFF_TILE;
+		if (!gmx::TileName::TileTypeByExtension(strTileType,tile_type))
+    {
+      cout<<"Error: unknown input tile type: "<<strTileType<<endl;
+		  return 1;
+    }
 		merc_type = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")|| 
 					(strProjType == "epsg:3395")) ? gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
 	}
