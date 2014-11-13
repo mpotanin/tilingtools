@@ -555,7 +555,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
                                             OGREnvelope	envp_merc, 
                                             RasterBuffer *p_dst_buffer, 
                                             int         bands_num,
-                                            int         *p_bands,
+                                            int         *p_band_mapping,
                                             string resampling_alg, 
                                             BYTE  *p_nodata,
                                             BYTE *p_background_color)
@@ -571,15 +571,15 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 		return FALSE;
 	}
   GDALDataType	dt		= GDALGetRasterDataType(GDALGetRasterBand(p_src_ds,1));
-	int       bands_input   = p_src_ds->GetRasterCount();
-  int				bands_output	= (bands_num==0) ? bands_input : bands_num;
+	int       bands_num_src   = p_src_ds->GetRasterCount();
+  int				bands_num_dst	= (bands_num==0) ? bands_num_src : bands_num;
   if (bands_num != 0)
   {
-    for (int i=0; i<bands_output;i++)
+    for (int i=0; i<bands_num_dst;i++)
     {
-      if (p_bands[i]<=0 || p_bands[i] >bands_input)
+      if (p_band_mapping[i]<=0 || p_band_mapping[i] >bands_num_src)
       {
-        cout<<"Error: not valid band number "<<p_bands[i]<<
+        cout<<"Error: not valid band number "<<p_band_mapping[i]<<
               ", must be greater than zero and less or equal to input bands number"<<endl;
         GDALClose(p_src_ds);
         return FALSE;
@@ -604,7 +604,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 								tiff_in_mem.c_str(),
 								buf_width,
 								buf_height,
-								bands_output,
+								bands_num_dst,
 								dt,
 								NULL
 								);
@@ -641,7 +641,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
   {
     RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
   }
-  else if ((p_nodata || nodata_val_from_file_defined) && (bands_output<=3) ) //(bands_output<=3) - why?
+  else if ((p_nodata || nodata_val_from_file_defined) && (bands_num_dst<=3) ) //(bands_num_dst<=3) - why?
   {
     BYTE rgb[3];
     if (p_nodata) memcpy(rgb,p_nodata,3);
@@ -699,13 +699,13 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 		p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
     
-		p_warp_options->nBandCount = bands_output;
-    p_warp_options->panSrcBands = new int[bands_output];
-    p_warp_options->panDstBands = new int[bands_output];
+		p_warp_options->nBandCount = bands_num_dst;
+    p_warp_options->panSrcBands = new int[bands_num_dst];
+    p_warp_options->panDstBands = new int[bands_num_dst];
     
-    for( int i = 0; i < bands_output; i++ )
+    for( int i = 0; i < bands_num_dst; i++ )
     {
-      p_warp_options->panSrcBands[i] = (p_bands == NULL) ? i+1 : p_bands[i];
+      p_warp_options->panSrcBands[i] = (p_band_mapping == NULL) ? i+1 : p_band_mapping[i];
       p_warp_options->panDstBands[i] = i+1;
     }
     				
@@ -723,9 +723,9 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
   
     if (p_nodata)
     {
-      p_warp_options->padfSrcNoDataReal = new double[bands_output];
-      p_warp_options->padfSrcNoDataImag = new double[bands_output];
-      if (bands_output==3)
+      p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
+      p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
+      if (bands_num_dst==3)
       {
         p_warp_options->padfSrcNoDataReal[0] = p_nodata[0];
         p_warp_options->padfSrcNoDataReal[1] = p_nodata[1];
@@ -734,7 +734,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
       }
       else
       {
-        for (int i=0;i<bands_output;i++)
+        for (int i=0;i<bands_num_dst;i++)
         {
           p_warp_options->padfSrcNoDataReal[i] = p_nodata[0];
           p_warp_options->padfSrcNoDataImag[i] = 0;
@@ -743,9 +743,9 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
     }
     else if (nodata_val_from_file_defined)
     {
-      p_warp_options->padfSrcNoDataReal = new double[bands_output];
-      p_warp_options->padfSrcNoDataImag = new double[bands_output];
-      for (int i=0;i<bands_output;i++)
+      p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
+      p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
+      for (int i=0;i<bands_num_dst;i++)
       {
           p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file;
           p_warp_options->padfSrcNoDataImag[i] = 0;
@@ -807,7 +807,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
     if (warp_error) return FALSE;
 	}
 
-	p_dst_buffer->CreateBuffer(bands_output,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 
   p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),

@@ -211,8 +211,8 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
 
   if (bands_str!="")
   {
-    int *p_bands = 0;
-    int bands_num = gmx::ConvertStringToIntegers(bands_str,p_bands);
+    int *p_band_mapping = 0;
+    int bands_num = gmx::ConvertStringToIntegers(bands_str,p_band_mapping);
     if (bands_num==0)
     {
       cout<<"Error: bad value of parameter: \"-bands\""<<endl;
@@ -231,16 +231,16 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
     {
       for (int i=0; i<bands_num;i++)
       {
-        if (p_bands[i]<=0)
+        if (p_band_mapping[i]<=0)
         {
-            cout<<"Error: not valid band number "<<p_bands[i]<<
+            cout<<"Error: not valid band number "<<p_band_mapping[i]<<
             " , must be greater than zero"<<endl;
             return FALSE;
         }
       }
       tiling_params.bands_num_ = bands_num;
       memcpy((tiling_params.p_bands_ = new int[bands_num]),
-              p_bands,sizeof(int)*bands_num);
+              p_band_mapping,sizeof(int)*bands_num);
     }
 
   }
