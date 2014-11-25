@@ -33,9 +33,10 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 	RasterFileBundle		raster_bundle;
 	int tile_size = MercatorTileGrid::TILE_SIZE;
 
-  if (!raster_bundle.Init(p_tiling_params->input_path_,p_tiling_params->merc_type_,p_tiling_params->vector_file_,p_tiling_params->shift_x_,p_tiling_params->shift_y_))
+  
+  if (!raster_bundle.Init(p_tiling_params->file_list_,p_tiling_params->merc_type_,p_tiling_params->vector_file_,p_tiling_params->shift_x_,p_tiling_params->shift_y_))
 	{
-		cout<<"Error: read input data by path: "<<p_tiling_params->input_path_<<endl;
+		cout<<"Error: can't init raster bundle object"<<endl;
 		return FALSE;
 	}
 
@@ -300,7 +301,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
                                                 chunk_envp,
                                                 p_merc_buffer,
                                                 p_tiling_params->bands_num_,
-                                                p_tiling_params->p_bands_,
+                                                p_tiling_params->pp_band_mapping_,
                                                 p_tiling_params->gdal_resampling_,
                                                 p_tiling_params->p_transparent_color_,
                                                 p_tiling_params->p_background_color_);
@@ -316,32 +317,11 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 
   if (p_chunk_tiling_params->stretch_to_8bit_)	
   {
-    BOOL stretch_result = false;
-    if (p_tiling_params->bands_num_ == 0)
+    if (! p_merc_buffer->StretchDataTo8Bit (
+                          p_chunk_tiling_params->p_stretch_min_values_,
+                          p_chunk_tiling_params->p_stretch_max_values_))
     {
-      stretch_result = p_merc_buffer->StretchDataTo8Bit (
-                            p_chunk_tiling_params->p_stretch_min_values_,
-                            p_chunk_tiling_params->p_stretch_max_values_);
-    }
-    else
-    {
-      double *p_stretch_min_values = new double[p_tiling_params->bands_num_];
-      double *p_stretch_max_values = new double[p_tiling_params->bands_num_];
-      for (int i=0; i<p_tiling_params->bands_num_;i++)
-      {
-        p_stretch_min_values[i] = p_chunk_tiling_params->
-                        p_stretch_min_values_[p_tiling_params->p_bands_[i]-1];
-        p_stretch_max_values[i] = p_chunk_tiling_params->
-                        p_stretch_max_values_[p_tiling_params->p_bands_[i]-1];
-      }
-      stretch_result = p_merc_buffer->StretchDataTo8Bit ( p_stretch_min_values,
-                                                          p_stretch_max_values);
-      delete[]p_stretch_min_values;
-      delete[]p_stretch_max_values;
-    }
-		if (!stretch_result)
-		{
-			cout<<"Error: can't stretch raster values to 8 bit"<<endl;
+      cout<<"Error: can't stretch raster values to 8 bit"<<endl;
       GMX_CURR_WORK_THREADS--;
 			return FALSE;
 		}
@@ -405,32 +385,29 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 
   GMX_WARP_SEMAPHORE = CreateSemaphore(NULL,GMX_MAX_WARP_THREADS,GMX_MAX_WARP_THREADS,NULL);
     
-  RasterFile rf((*p_bundle->GetFileList().begin()),TRUE);
   if (p_tiling_params->auto_stretch_to_8bit_)
 	{
-		RasterFile rf((*p_bundle->GetFileList().begin()),TRUE);
-		double *p_min,*p_max,*p_mean,*p_std_dev;
+    RasterFile rf((*p_bundle->GetFileList().begin()),TRUE);
+		double *p_min,*p_max,*p_mean,*p_std;
 		int bands;
 		if ( (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
 			 (rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType() != GDT_Byte))
 		{
 			stretch_to_8bit = true;
 			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
-
-			if (!rf.CalcStatistics(bands,p_min,p_max,p_mean,p_std_dev))
+      double nodata_val = (p_tiling_params->p_transparent_color_) ?
+                           p_tiling_params->p_transparent_color_[0] : 0;
+      if (!p_bundle->CalclValuesForStretchingTo8Bit(p_stretch_min_values,
+                                                    p_stretch_max_values,
+                                                    (p_tiling_params->p_transparent_color_) ?
+                                                    &nodata_val : 0,
+                                                    p_tiling_params->bands_num_,
+                                                    p_tiling_params->pp_band_mapping_))
 			{
-				cout<<"Error: compute statistics failed for "<<(*p_bundle->GetFileList().begin())<<endl;
-				return false;
-			}
-			p_stretch_min_values = new double[bands];
-			p_stretch_max_values = new double[bands];
-			for (int i=0;i<bands;i++)
-			{
-				p_stretch_min_values[i] = p_mean[i] - 2*p_std_dev[i];
-				p_stretch_max_values[i] = p_mean[i] + 2*p_std_dev[i];
-			}
-			delete[]p_min;delete[]p_max;delete[]p_mean;delete[]p_std_dev;
-		}
+        cout<<"Error: can't calculate parameters of auto stretching to 8 bit"<<endl;
+			  return FALSE;
+      }
+    }
 	}
   
 	cout<<"0% ";

@@ -19,7 +19,7 @@ BOOL	WriteToTextFile (string filename, string str_text)
 string	GetPath (string filename)
 {
 	ReplaceAll(filename,"\\","/");
-	if (filename.find_last_of("/")>=0) return filename.substr(0,filename.find_last_of("/")+1);
+	if (filename.find_last_of("/")!=string::npos) return filename.substr(0,filename.find_last_of("/")+1);
 	else return "";
 }
 
@@ -65,7 +65,7 @@ string		GetAbsolutePath (string base_path, string relative_path)
 			if (relative_path[0]=='.') break;
 			else return "";
 		}
-		relative_path	= relative_path.substr(relative_path.find(L'/')+1,relative_path.length()-relative_path.find(L'/')-1);
+		relative_path	= relative_path.substr(relative_path.find(L'/')+1);
 		base_path		= base_path.substr(0,base_path.rfind(L'/'));
 	}
 
@@ -75,7 +75,7 @@ string		GetAbsolutePath (string base_path, string relative_path)
 
 string RemovePath(const string& filename)
 {
-	return  (filename.find_last_of("/")>=0) ?
+	return  (filename.find_last_of("/") != string::npos) ?
           filename.substr(filename.find_last_of("/")+1) :
           filename;
 }
@@ -234,9 +234,10 @@ BOOL	SaveDataToFile(string filename, void *p_data, int size)
 
 string		GetExtension (string path)
 {
-	int n = path.rfind(L'.');
-	if (n<0) return "";
-	else return path.substr(n+1,path.size()-n-1);	
+  ReplaceAll(path,"\\","/");
+	int n = path.rfind('.');
+  if (n>=0 && n > path.rfind('/')) return path.substr(n+1);
+	else return "";
 }
 
 

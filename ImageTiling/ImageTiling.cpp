@@ -67,18 +67,12 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   string bands_str = console_params.at("-bands");
 
   
-  if (input_path == "")
-  {
-    cout<<"Error: missing \"-file\" parameter"<<endl;
-    return FALSE;
-  }
-
-
   list<string> file_list;
-  gmx::FindFilesByPattern(file_list,input_path);
-  if (file_list.size()==0)
+  int output_bands_num;
+  int **pp_band_mapping =0;
+  if (!gmx::ParseFileParameter(input_path,file_list,output_bands_num,pp_band_mapping))
   {
-    cout<<"Error: can't find input files by path: "<<input_path<<endl;
+    cout<<"Error: can't parse \"-file\" parameter"<<endl;
     return FALSE;
   }
 
@@ -104,7 +98,15 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
     return FALSE;
   }
   
-  GMXTilingParameters tiling_params(input_path,merc_type,tile_type);
+  GMXTilingParameters tiling_params(file_list,merc_type,tile_type);
+
+  if (output_bands_num != 0)
+  {
+    tiling_params.bands_num_ = output_bands_num;
+    tiling_params.pp_band_mapping_ = pp_band_mapping;
+  }
+
+ 
 
   if (max_zoom_str != "")		tiling_params.base_zoom_ = (int)atof(max_zoom_str.c_str());
   if (min_zoom_str != "")	tiling_params.min_zoom_ = (int)atof(min_zoom_str.c_str());
@@ -212,7 +214,7 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   if (bands_str!="")
   {
     int *p_band_mapping = 0;
-    int bands_num = gmx::ConvertStringToIntegers(bands_str,p_band_mapping);
+    int bands_num = gmx::ParseCommaSeparatedArray(bands_str,p_band_mapping);
     if (bands_num==0)
     {
       cout<<"Error: bad value of parameter: \"-bands\""<<endl;
@@ -331,8 +333,16 @@ int _tmain(int argc, wchar_t* argvW[])
   //gmx::wstrToUtf8(console_params.at("-file"),fileW);
   //console_params.at("-gmxtiles")="-container";
   
-  //console_params.at("-file") = "c:\\share\\RR\\*.tif";
-  //console_params.at("-gmxtiles")="-container";
+  //console_params.at("-file") = "E:\\test_images\\L8\\Landsat8-13-04-LC80940122013120LGN01\\LC80940122013120LGN01_B4.TIF?1,,|E:\\test_images\\L8\\Landsat8-13-04-LC80940122013120LGN01\\LC80940122013120LGN01_B3.TIF?,1,|E:\\test_images\\L8\\Landsat8-13-04-LC80940122013120LGN01\\LC80940122013120LGN01_B2.TIF?,,1";
+  //console_params.at("-file") = "E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B4.TIF?1,,|E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B3.TIF?,1,|E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B2.TIF?,,1";
+  //console_params.at("-file") = "E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B4.TIF";  
+  //console_params.at("-tiles") = "E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00_tiles";  
+
+  //Landsat8-14-03-LC81750272014083LGN00
+
+  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\rgb\\0_LC81600772014090LGN00.tif";
+  //console_params.at("-mosaic")="-mosaic";
+  //E:\test_images\L8\for_test\rgb\0_LC81600772014090LGN00.tif
   //console_params.at("-zoom") = "15";
   //console_params.at("-file") = "\\\\192.168.4.43\\share\\L8\\*fmask";
 
@@ -347,7 +357,7 @@ int _tmain(int argc, wchar_t* argvW[])
  //console_params.at("-zoom") = "8";
 
   //console_params.at("-nodata_tolerance") = "0";
-  //console_params.at("-nodata") = "ffffff";
+  //console_params.at("-nodata") = "0";
 
   //console_params.at("-tiles") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi_tiles5";
   //console_params.at("-template")="standard";
@@ -382,28 +392,31 @@ int _tmain(int argc, wchar_t* argvW[])
   wcout<<endl;
   if (console_params.at("-mosaic")== "")
   {
-    std::list<string> input_file_list;
-    if (!gmx::FindFilesByPattern (input_file_list,console_params.at("-file")))
+    std::list<string> file_list;
+    
+    int output_bands_num;
+    int **pp_band_mapping =0;
+    if (!gmx::ParseFileParameter(console_params.at("-file"),file_list,output_bands_num,pp_band_mapping))
     {
-      cout<<"Can't find input files by pattern: "<<console_params.at("-file")<<endl;
-      return 1;
+      cout<<"Error: can't parse \"-file\" parameter"<<endl;
+      return FALSE;
     }
 
     BOOL use_container = (console_params.at("-gmxtiles")!="" || console_params.at("-mbtiles")!="");
 
-    for (std::list<string>::iterator iter = input_file_list.begin(); iter!=input_file_list.end();iter++)
+    for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
     {
       cout<<"Tiling file: "<<(*iter)<<endl;
 
       map<string,string> console_params_fix = console_params;
 
-      if (input_file_list.size()>1)
+      if (file_list.size()>1)
       {
         if (console_params.at("-border") == "") 
           console_params_fix.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
       }
       
-      if (input_file_list.size()>1 && console_params.at("-tiles")!="")
+      if (file_list.size()>1 && console_params.at("-tiles")!="")
       {
         if (!gmx::FileExists(console_params.at("-tiles"))) 
         {
@@ -429,7 +442,7 @@ int _tmain(int argc, wchar_t* argvW[])
       console_params_fix.at("-file") = (*iter);
    
       if (  (!CheckArgsAndCallTiling(console_params_fix)) && 
-            input_file_list.size()==1 ) 
+            file_list.size()==1 ) 
         return 2;
            
       wcout<<endl;

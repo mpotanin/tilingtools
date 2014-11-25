@@ -124,24 +124,25 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 }
 
 
-BOOL	RasterFile::CalcStatistics(int &bands, double *&min, double *&max, double *&mean, double *&std_dev)
+BOOL	RasterFile::CalcStatistics(int &bands, double *&min, double *&max, double *&mean, double *&std,  double *p_nodata_val)
 {
 	if (this->p_gdal_ds_ == NULL) return FALSE;
 	bands	= this->num_bands_;
 	min		= new double[bands];
 	max		= new double[bands];
 	mean	= new double[bands];
-	std_dev	= new double[bands];
+	std	= new double[bands];
 
 	for (int i=0;i<bands;i++)
 	{
-		if (CE_None!=this->p_gdal_ds_->GetRasterBand(i+1)->ComputeStatistics(0,&min[i],&max[i],&mean[i],&std_dev[i],NULL,NULL))
+    if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(i+1)->SetNoDataValue(*p_nodata_val);
+		if (CE_None!=this->p_gdal_ds_->GetRasterBand(i+1)->ComputeStatistics(0,&min[i],&max[i],&mean[i],&std[i],NULL,NULL))
 		{
 			bands= 0;
 			delete[]min;	min = NULL;
 			delete[]max;	max = NULL;
 			delete[]mean;	mean = NULL;
-			delete[]std_dev;	std_dev = NULL;
+			delete[]std;	std = NULL;
 		}
 	}
 		
@@ -393,11 +394,11 @@ RasterFileBundle::~RasterFileBundle(void)
 }
 
 
-int	RasterFileBundle::Init (string inputPath, MercatorProjType merc_type, string vector_file, double shift_x, double shift_y)
+int	RasterFileBundle::Init (list<string> file_list, MercatorProjType merc_type, string vector_file, double shift_x, double shift_y)
 {
 	Close();
-	list<string> file_list;
-	if (!FindFilesByPattern(file_list,inputPath)) return 0;
+
+	if (file_list.size() == 0) return 0;
 
 	merc_type_ = merc_type;
 
@@ -551,16 +552,89 @@ BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 	return FALSE;
 }
 
+BOOL  RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
+                                                        double *&p_max_values,
+                                                        double *p_nodata_val,
+                                                        int bands_num, 
+                                                        int **pp_band_mapping)
+{
+  int bands;
+  double *p_min=0, *p_max=0, *p_mean=0, *p_std=0;
+ 
+  p_min_values = (p_max_values = 0);
+  if (pp_band_mapping == 0)
+  {
+    RasterFile rf;
+    rf.Init((*data_list_.begin()).first,TRUE);
+    if (!rf.CalcStatistics(bands,p_min,p_max,p_mean,p_std,p_nodata_val))
+		{
+			cout<<"Error: computing statistics failed for "<<(*data_list_.begin()).first<<endl;
+			return false;
+		}
+  }
+  else
+  {
+    p_min = new double[bands_num];
+    p_max = new double[bands_num];
+    p_mean = new double[bands_num];
+    p_std = new double[bands_num];
+    double nodata_val = -(1e+100);
+    for (int j=0;j<bands_num;j++)
+      p_mean[j]=nodata_val;
+
+    for (int i=0; i<bands_num; i++)
+    {
+      list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter;
+      int n = 0;
+      for (iter = data_list_.begin(); iter!=data_list_.end(); iter++)
+      {
+        if (pp_band_mapping[n][i]>0)
+        {
+          RasterFile rf;
+          rf.Init((*iter).first,TRUE);
+          double *_p_min =NULL, *_p_max = NULL, *_p_mean = NULL, *_p_std = NULL;
+          int bands_input;
+
+          if (!rf.CalcStatistics(bands_input,_p_min,_p_max,_p_mean,_p_std,p_nodata_val))
+	        {
+		        cout<<"Error: computing statistics failed for "<<(*data_list_.begin()).first<<endl;
+            delete[]p_min;delete[]p_max;delete[]p_mean;delete[]p_std;
+            delete[]_p_min;delete[]_p_max;delete[]_p_mean;delete[]_p_std;
+		        return false;
+	        }
+          //ToDo:  error if: bands<pp_band_mapping[n][i]
+          p_mean[i] = _p_mean[pp_band_mapping[n][i]-1];
+          p_std[i] = _p_std[pp_band_mapping[n][i]-1];
+          delete[]_p_min;delete[]_p_max;delete[]_p_mean;delete[]_p_std;
+        }
+        n++;
+      }
+    }
+  }
+
+  bands_num = bands_num == 0 ? bands : bands_num;
+
+  p_min_values = new double[bands_num];
+	p_max_values = new double[bands_num];
+	for (int i=0;i<bands_num;i++)
+	{
+		p_min_values[i] = p_mean[i] - 2*p_std[i];
+		p_max_values[i] = p_mean[i] + 2*p_std[i];
+	}
+	delete[]p_min;delete[]p_max;delete[]p_mean;delete[]p_std;
+    
+  return TRUE;
+}
+
+
 BOOL RasterFileBundle::WarpToMercBuffer (int zoom,	
-                                            OGREnvelope	envp_merc, 
+                                            OGREnvelope	  envp_merc, 
                                             RasterBuffer *p_dst_buffer, 
-                                            int         bands_num,
-                                            int         *p_band_mapping,
-                                            string resampling_alg, 
-                                            BYTE  *p_nodata,
-                                            BYTE *p_background_color)
-                                            //string temp_file_path,
-                                            //int srand_seed)
+                                            int           output_bands_num,
+                                            int           **pp_band_mapping,
+                                            string        resampling_alg, 
+                                            BYTE          *p_nodata,
+                                            BYTE          *p_background_color)
 {
 
 	if (data_list_.size()==0) return FALSE;
@@ -572,8 +646,10 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 	}
   GDALDataType	dt		= GDALGetRasterDataType(GDALGetRasterBand(p_src_ds,1));
 	int       bands_num_src   = p_src_ds->GetRasterCount();
-  int				bands_num_dst	= (bands_num==0) ? bands_num_src : bands_num;
-  if (bands_num != 0)
+  int				bands_num_dst	= (output_bands_num==0) ? bands_num_src : output_bands_num;
+ 
+  /*
+  if (output_bands_num != 0)
   {
     for (int i=0; i<bands_num_dst;i++)
     {
@@ -586,7 +662,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
       }
     }
   }
-  
+  */
 
   
   BOOL			nodata_val_from_file_defined = false;
@@ -650,9 +726,11 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
     RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,rgb);
   }
 
+  int file_num = -1;
 
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
+    file_num++;
 		//check if image envelope Intersects destination buffer envelope
 		if ((*iter).second.first != NULL)
 		{
@@ -699,16 +777,29 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 		p_warp_options->dfWarpMemoryLimit = 150000000; 
 		double			error_threshold = 0.125;
     
-		p_warp_options->nBandCount = bands_num_dst;
     p_warp_options->panSrcBands = new int[bands_num_dst];
     p_warp_options->panDstBands = new int[bands_num_dst];
-    
-    for( int i = 0; i < bands_num_dst; i++ )
+		if (pp_band_mapping)
     {
-      p_warp_options->panSrcBands[i] = (p_band_mapping == NULL) ? i+1 : p_band_mapping[i];
-      p_warp_options->panDstBands[i] = i+1;
+      int warp_bands_num =0;
+      for (int i=0; i<bands_num_dst; i++)
+      {
+        if (pp_band_mapping[file_num][i]>0)
+        {
+          p_warp_options->panSrcBands[warp_bands_num] = pp_band_mapping[file_num][i];
+          p_warp_options->panDstBands[warp_bands_num] = i+1;
+          warp_bands_num++;
+        }
+      }
+      p_warp_options->nBandCount = warp_bands_num;
     }
-    				
+    else
+    {
+      p_warp_options->nBandCount = bands_num_dst;
+      for( int i = 0; i < bands_num_dst; i++ )
+        p_warp_options->panSrcBands[i] = (p_warp_options->panDstBands[i] = i+1);
+    }
+
 		if ((*iter).second.second)
 		{
 			VectorBorder	*p_vb = (*iter).second.second;

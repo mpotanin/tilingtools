@@ -26,33 +26,11 @@ void ReplaceAll(string	&str, const string	&from, const string	&to) {
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
         //size_t end_pos = start_pos + from.length();
-		str = str.replace(start_pos, from.length(), to);
-        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+		  str = str.replace(start_pos, from.length(), to);
+      start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
     }
 }
 
-/*
-string    ConvertIntToHexadecimalString (int number, int adjust_len)
-{
-  char buf[100];
-  sprintf(buf,"%x",number);
-
-  string str_res;
-
-  if (adjust_len==0) return str_res;
-  int buf_len = 0;
-  while (buf[buf_len]!=0)
-  {
-    buf_len++;
-    if ((buf_len>=100)||(buf_len>adjust_len)) return "";
-  }
-  for (int i=0;i<adjust_len;i++)
-    str_res+='0';
-  str_res.copy(buf,buf_len,adjust_len-buf_len);
-
-  return str_res;
-}
-*/
 
 string ConvertIntToString(int number, BOOL hexadecimal, int adjust_len)
 {
@@ -75,38 +53,46 @@ string ConvertIntToString(int number, BOOL hexadecimal, int adjust_len)
   return str_res;
 }
 
-int			ConvertStringToIntegers	(string str, int *&arr)
+
+int			ParseCommaSeparatedArray (string input_str, int *&p_arr, bool is_missing_vals, int nodata_val)	
 {
-
-  regex reg("\\s*([0-9]+)([\\s\\,]+[0-9]+)*");
-  regex reg1("([0-9]+)(\\s[0-9]+)*");
-  regex reg2("([0-9]+)(\\,[0-9]+)*");
-  regex reg3("([0-9]+)(\\,\\s[0-9]+)*");
-  
-  if (! ( regex_match(str,reg) || regex_match(str,reg1) || 
-          regex_match(str,reg2) || regex_match(str,reg3) ) )
-    return 0;
-  
-  int len=0;
-  ReplaceAll(str," ",",");
-  
-  for (int i=0;i<10;i++)
-    ReplaceAll(str,",,",",");
-  str = (str[0] == ',') ? str.substr(1,str.length()-1): str;
-  
-  int pos = -1;
-  while ((pos=str.find(',',pos+1))>=0)
-    len++;
-  arr = new int [(len++)];
-
-  for (int i=0;i<len-1;i++)
+  p_arr = 0;
+  while (input_str!="")
   {
-    pos = str.find(',',0);
-    arr[i] = (int)atof(str.substr(0,pos).c_str());
-    str = str.substr(pos+1,str.length()-pos-1);
+    if (input_str[0] ==' ') input_str=input_str.substr(1);
+    else if (input_str[input_str.size()-1] ==' ') input_str=input_str.substr(0,input_str.size()-1);
+    else break;
   }
-  arr[len-1] =(int)atof(str.c_str());
+  if (input_str=="") return 0;
+
+  regex reg1("([0-9]+)(\\,[0-9]+)*");
+  regex reg2("[\\d\\,]*");
+    
+  if (is_missing_vals)
+  {
+     if (!regex_match(input_str,reg2)) return 0;
+  }
+  else
+  {
+    if (!regex_match(input_str,reg1)) return 0;
+  }
+
+  int pos = -1;
+  int len = 1;
+  while ((pos=input_str.find(',',pos+1))>=0)
+    len++;
+  p_arr = new int [len];
   
+  string str;
+  input_str+=",";
+  for (int i=0;i<len;i++)
+  {
+    str = input_str.substr(0,input_str.find(','));
+    p_arr[i] = !is_missing_vals ? (int)atof(str.c_str()) :
+             str == "" ? nodata_val :
+                         (int)atof(str.c_str());
+    input_str = input_str.substr(input_str.find(',')+1);
+  }
   return len;
 }
 

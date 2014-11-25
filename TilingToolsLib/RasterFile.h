@@ -37,7 +37,7 @@ public:
 
 public: 
 	//void			setGeoReference		(double dResolution, double dULx, double dULy);
-	BOOL			CalcStatistics	(int &bands, double *&min, double *&max, double *&mean, double *&std_dev);
+	BOOL			CalcStatistics	(int &bands, double *&min, double *&max, double *&mean, double *&std, double *p_nodata_val =0);
 	double		get_nodata_value		(BOOL &nodata_defined);
 
 
@@ -86,7 +86,7 @@ public:
 public:
 	
   double   GetNodataValue(BOOL &nodata_defined);
-	int				Init	(string input_path, MercatorProjType merc_type, string vector_file="", 
+	int				Init	(list<string> file_list, MercatorProjType merc_type, string vector_file="", 
 							double shift_x = 0.0, double shift_y = 0.0);
 	//string			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
 
@@ -96,8 +96,8 @@ public:
 	BOOL			WarpToMercBuffer (	int zoom,	
                                 OGREnvelope	merc_envp, 
                                 RasterBuffer *p_dst_buffer,
-                                int         bands_num = 0,
-                                int         *p_band_mapping = NULL,
+                                int         output_bands_num = 0,
+                                int         **pp_band_mapping = NULL,
                                 string resampling_alg = "",
                                 BYTE *p_nodata = NULL,
                                 BYTE *p_background_color = NULL);
@@ -108,7 +108,11 @@ public:
 	list<string>	GetFileListByEnvelope(OGREnvelope merc_envp);
 	BOOL			Intersects(OGREnvelope merc_envp);
 
-
+  BOOL      CalclValuesForStretchingTo8Bit (double *&p_min_values,
+                                            double *&p_max_values,
+                                            double *p_nodata_val = 0,
+                                            int bands_num = 0, 
+                                            int **pp_band_mapping = 0);
 
 	//BOOL			createBundleBorder (VectorBorder &border);	
 protected:

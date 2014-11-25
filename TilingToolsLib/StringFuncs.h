@@ -8,12 +8,12 @@ namespace gmx
 {
 
 string			MakeLower				(string str);
-void			ReplaceAll				(string	&str, const string	&from, const string	&to);
-BOOL			ConvertStringToRGB		(string str_color, BYTE rgb[3]);			
+void			  ReplaceAll				(string	&str, const string	&from, const string	&to);
+BOOL			  ConvertStringToRGB		(string str_color, BYTE rgb[3]);			
 string			ConvertIntToString		(int number, BOOL hexadecimal = FALSE, int adjust_len=0);
 /*string    ConvertIntToHexadecimalString (int number, int adjust_len = 0);*/
-int				StrLen					(const unsigned char *str);
-int			ConvertStringToIntegers	(string str, int *&arr);		
+int				  StrLen					(const unsigned char *str);
+int			    ParseCommaSeparatedArray	(string input_str, int *&p_arr, bool is_missing_vals=false, int nodata_val=0);		
 
 
 

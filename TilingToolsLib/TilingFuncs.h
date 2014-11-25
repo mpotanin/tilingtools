@@ -10,7 +10,7 @@ class GMXTilingParameters
 {
 public:
 //обязательные параметры
-	string						    input_path_;			//входной файл или шаблон имени файла
+	list<string>          file_list_;
 	gmx::MercatorProjType	merc_type_;				//тип Меркатора
 	gmx::TileType				  tile_type_;				//формат тайлов
 	
@@ -39,14 +39,15 @@ public:
   unsigned int    max_gmx_volume_size_; //максимальный размер файла в gmx-котейнере 
   int             bands_num_;
   int             *p_bands_;
+  int             **pp_band_mapping_;
 
   string          temp_file_path_for_warping_;
 	//static const int			DEFAULT_JPEG_QUALITY = 85;
 
 
-	GMXTilingParameters(string input_path, gmx::MercatorProjType merc_type, gmx::TileType tile_type)
+	GMXTilingParameters(list<string> file_list, gmx::MercatorProjType merc_type, gmx::TileType tile_type)
 	{
-		input_path_ = input_path;
+		file_list_ = file_list;
 		merc_type_	= merc_type;
 		tile_type_	= tile_type;
 		
@@ -66,6 +67,7 @@ public:
 
     bands_num_ = 0;
     p_bands_ = NULL;
+    pp_band_mapping_ = 0;
 
     max_work_threads_= 0;
     max_warp_threads_= 0;

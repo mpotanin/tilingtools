@@ -7,6 +7,84 @@
 namespace gmx
 {
 
+BOOL    ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
+{
+  string _str_file_param = str_file_param + '|';
+  output_bands_num = 0;
+  pp_band_mapping = 0;
+  std::string::size_type stdf;
+
+  while (_str_file_param.length()>1)
+  {
+    string item = _str_file_param.substr(0,_str_file_param.find('|'));
+    if (item.find('?')!=  string::npos)
+    {
+      int *p_arr = 0;
+      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
+      if (p_arr) delete[]p_arr;
+      if (len==0) 
+      {
+        cout<<"Error: can't parse output bands order from: "<<item.substr(item.find('?')+1)<<endl;
+        file_list.empty();
+        output_bands_num = 0;
+        return false;
+      }
+      output_bands_num = (int)max(output_bands_num,len);
+      item = item.substr(0,item.find('?'));
+    }
+
+    if (!gmx::FindFilesByPattern(file_list,item))
+    {
+      cout<<"Error: can't find input files by path: "<<item<<endl;
+      file_list.empty();
+      output_bands_num = 0;
+      return false;
+    }
+    
+    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
+  }
+
+  if (output_bands_num>0)
+  {
+    pp_band_mapping = new int*[file_list.size()];
+    for (int i=0;i<file_list.size();i++)
+    {
+       pp_band_mapping[i] = new int[output_bands_num];
+       for (int j=0;j<output_bands_num;j++)
+         pp_band_mapping[i][j] = j+1;
+    }
+  }
+
+  _str_file_param = str_file_param + '|';
+  int i=0;
+  while (_str_file_param.length()>1)
+  {
+    string item = _str_file_param.substr(0,_str_file_param.find('|'));
+    list<string> _file_list;
+    if (item.find('?')!=string::npos)
+    {
+      gmx::FindFilesByPattern(_file_list,item.substr(0,item.find('?')));
+      int *p_arr = 0;
+      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
+      if (p_arr)
+      {
+        for (int j=i;j<i+_file_list.size();j++)
+        {
+          for (int k=0;k<len;k++)
+            pp_band_mapping[j][k]=p_arr[k];
+        }
+        delete[]p_arr;
+      }
+    }
+    else gmx::FindFilesByPattern(_file_list,item);
+       
+    i+=_file_list.size();
+    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
+  }
+
+  return TRUE;
+}
+
 
 void	SetEnvironmentVariables (string gdal_path)
 {

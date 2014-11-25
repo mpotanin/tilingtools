@@ -1076,7 +1076,11 @@ BOOL TileFolder::Close()
 {
 	delete(p_tile_cache_);
 	p_tile_cache_ = NULL;
-	if (addtile_semaphore_) CloseHandle(addtile_semaphore_);
+	if (addtile_semaphore_)
+  {
+    CloseHandle(addtile_semaphore_);
+    addtile_semaphore_ = NULL;
+  }
   return TRUE;
 };
 
