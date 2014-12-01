@@ -506,28 +506,27 @@ BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data,
 	  delete[]header;
     container_byte_size_ = HeaderSize();
   }
-  else
-  {  
-    if (max_volume_size_ > 0)
-    {
-      if ((container_byte_size_ /max_volume_size_) < ((container_byte_size_ + size - 1)/max_volume_size_))
-          container_byte_size_ += FillUpCurrentVolume();
-    }
   
-    int volume_num = GetVolumeNum(container_byte_size_);
-    if (pp_container_volumes_[volume_num] == NULL)
-    {
-      if (!(pp_container_volumes_[volume_num] = OpenFile(GetVolumeName(volume_num).c_str(),"wb+")))
-        return FALSE;
-    }
-
-    _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
-    fwrite(p_data,sizeof(BYTE),size,pp_container_volumes_[volume_num]);
-  
-    p_offsets_[n] = container_byte_size_;
-    p_sizes_[n]		= size;
-    container_byte_size_ +=size;
+  if (max_volume_size_ > 0)
+  {
+    if ((container_byte_size_ /max_volume_size_) < ((container_byte_size_ + size - 1)/max_volume_size_))
+        container_byte_size_ += FillUpCurrentVolume();
   }
+  
+  int volume_num = GetVolumeNum(container_byte_size_);
+  if (pp_container_volumes_[volume_num] == NULL)
+  {
+    if (!(pp_container_volumes_[volume_num] = OpenFile(GetVolumeName(volume_num).c_str(),"wb+")))
+      return FALSE;
+  }
+
+  _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  fwrite(p_data,sizeof(BYTE),size,pp_container_volumes_[volume_num]);
+  
+  p_offsets_[n] = container_byte_size_;
+  p_sizes_[n]		= size;
+  container_byte_size_ +=size;
+  
   return TRUE;
 };
 	

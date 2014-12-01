@@ -235,8 +235,11 @@ BOOL	SaveDataToFile(string filename, void *p_data, int size)
 string		GetExtension (string path)
 {
   ReplaceAll(path,"\\","/");
-	int n = path.rfind('.');
-  if (n>=0 && n > path.rfind('/')) return path.substr(n+1);
+	int n1 = path.rfind('.');
+  if (n1 == string::npos) return "";
+  int n2 = path.rfind('/');
+
+  if (n2==string::npos || n1>n2) return path.substr(n1+1);
 	else return "";
 }
 

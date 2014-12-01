@@ -343,7 +343,7 @@ int _tmain(int argc, wchar_t* argvW[])
   //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\rgb\\0_LC81600772014090LGN00.tif";
   //console_params.at("-mosaic")="-mosaic";
   //E:\test_images\L8\for_test\rgb\0_LC81600772014090LGN00.tif
-  //console_params.at("-zoom") = "15";
+  //console_params.at("-zoom") = "8";
   //console_params.at("-file") = "\\\\192.168.4.43\\share\\L8\\*fmask";
 
   //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
@@ -352,7 +352,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
   //console_params.at("-tile_type") = "jp2";
   //console_params.at("-quality") = "0";
- //console_params.at("-tiles") = "E:\\test_images\\L8\\for_test\\all_bands\\0_LC81600772014090LGN00.tif";rgb\\LC81120742014154LGN00_jp2.tiles";
+ //console_params.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
  //console_params.at("-gmxtiles")="-container";
  //console_params.at("-zoom") = "8";
 

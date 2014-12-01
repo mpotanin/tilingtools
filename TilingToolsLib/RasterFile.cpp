@@ -404,8 +404,9 @@ int	RasterFileBundle::Init (list<string> file_list, MercatorProjType merc_type, 
 
  	for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
 	{
-		if (file_list.size()==1) AddItemToBundle((*iter),vector_file,shift_x,shift_y);
-		else AddItemToBundle((*iter),VectorBorder::GetVectorFileNameByRasterFileName(*iter),shift_x,shift_y);
+    if (file_list.size() > 1 && vector_file == "")
+      AddItemToBundle((*iter),VectorBorder::GetVectorFileNameByRasterFileName(*iter),shift_x,shift_y);
+    else AddItemToBundle((*iter),vector_file,shift_x,shift_y);
 	}
 	return data_list_.size();
 }

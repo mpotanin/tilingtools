@@ -73,10 +73,10 @@ BOOL	StandardTileName::ValidateTemplate	(string str_template)
 		return FALSE;
 	}
 		
-	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
-	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
-	{
-		//cout<<"Error: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+  TileType tt;
+  if (!TileName::TileTypeByExtension(GetExtension(str_template),tt))
+  {
+		cout<<"Error: not valid tile type in template: "<<str_template<<endl;
 		return FALSE;
 	}
 	return TRUE;
@@ -164,10 +164,10 @@ BOOL	ESRITileName::ValidateTemplate	(string str_template)
 		return FALSE;
 	}
 		
-	string tile_ext = str_template.substr(str_template.rfind(".")+1,str_template.length()-str_template.rfind(".")-1);
-	if ( (MakeLower(tile_ext)!="jpg")&& (MakeLower(tile_ext)=="png") && (MakeLower(tile_ext)=="tif") )
-	{
-		//cout<<"Error: bad tile name template: missing extension, must be: .jpg, .png, .tif"<<endl;
+	TileType tt;
+  if (!TileName::TileTypeByExtension(GetExtension(str_template),tt))
+  {
+		cout<<"Error: not valid tile type in template: "<<str_template<<endl;
 		return FALSE;
 	}
 	return TRUE;

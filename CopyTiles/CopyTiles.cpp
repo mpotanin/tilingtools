@@ -53,10 +53,13 @@ int _tmain(int argc, wchar_t* argvW[])
 	string strDestTemplate	= gmx::MakeLower( gmx::ReadConsoleParameter("-dest_template",argc,argv));
   string metadata_file = gmx::MakeLower( gmx::ReadConsoleParameter("-metadata",argc,argv)); 
 
-  //srcPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81590142014083LGN00_tiles123";
-  //destPath = "E:\\test_images\\L8\\for_test\\all_bands\\LC81590142014083LGN00123.tiles";
-  //strSrcTemplate = "{z}\\{x}\\{y}.jp2";
-  //strZooms = "1-16";
+  //srcPath = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\L8";
+  //destPath = "C:\\Work\\Projects\\TilingTools\\autotest\\result";
+  //strSrcTemplate = "standard";
+  //strZooms = "11-11";
+  //strDestTemplate="{z}_{x}_{y}.png2";
+  //strTileType="png";
+  //borderFilePath="C:\\Work\\Projects\\TilingTools\\autotest\\L8\\border2.shp";
 
 
  	FILE *logFile = NULL;
@@ -207,9 +210,9 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	gmx::TileName		*poDestTileName		= NULL;
 	gmx::ITileContainer	*poDestITileContainer	= NULL;
-	BOOL			bDestFolder			= (	(gmx::MakeLower(destPath).find(".mbtiles") == string::npos) && 
+	BOOL			is_dest_tile_folder			= (	(gmx::MakeLower(destPath).find(".mbtiles") == string::npos) && 
 											(gmx::MakeLower(destPath).find(".tiles") == string::npos)) ? TRUE : FALSE;
-	if (bDestFolder)
+	if (is_dest_tile_folder)
 	{
 		if (!gmx::FileExists(destPath))
 		{
