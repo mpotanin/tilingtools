@@ -124,29 +124,12 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 }
 
 
-BOOL	RasterFile::CalcStatistics(int &bands, double *&min, double *&max, double *&mean, double *&std,  double *p_nodata_val)
+BOOL	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
 {
 	if (this->p_gdal_ds_ == NULL) return FALSE;
-	bands	= this->num_bands_;
-	min		= new double[bands];
-	max		= new double[bands];
-	mean	= new double[bands];
-	std	= new double[bands];
-
-	for (int i=0;i<bands;i++)
-	{
-    if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(i+1)->SetNoDataValue(*p_nodata_val);
-		if (CE_None!=this->p_gdal_ds_->GetRasterBand(i+1)->ComputeStatistics(0,&min[i],&max[i],&mean[i],&std[i],NULL,NULL))
-		{
-			bands= 0;
-			delete[]min;	min = NULL;
-			delete[]max;	max = NULL;
-			delete[]mean;	mean = NULL;
-			delete[]std;	std = NULL;
-		}
-	}
-		
-	return TRUE;
+  if (this->p_gdal_ds_->GetRasterCount()<band_num) return FALSE;
+  if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(band_num)->SetNoDataValue(*p_nodata_val);
+  return (CE_None==p_gdal_ds_->GetRasterBand(band_num)->ComputeStatistics(0,&min,&max,&mean,&std,NULL,NULL));
 }
 
 
@@ -412,7 +395,14 @@ int	RasterFileBundle::Init (list<string> file_list, MercatorProjType merc_type, 
 }
 
 
+GDALDataType RasterFileBundle::GetRasterFileType()
+{
+  RasterFile rf;
+  if (data_list_.size()==0) return GDT_Byte;
+  else if (!rf.Init(*GetFileList().begin(),true)) return GDT_Byte;
+  else return rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType();
 
+}
 
 BOOL	RasterFileBundle::AddItemToBundle (string raster_file, string vector_file, double shift_x, double shift_y)
 {	
@@ -553,80 +543,83 @@ BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 	return FALSE;
 }
 
-BOOL  RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
-                                                        double *&p_max_values,
-                                                        double *p_nodata_val,
-                                                        int bands_num, 
-                                                        int **pp_band_mapping)
+///*
+BOOL RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
+                                                       double *&p_max_values,
+                                                       double *p_nodata_val,
+                                                       BandMapping    *p_band_mapping)
 {
-  int bands;
-  double *p_min=0, *p_max=0, *p_mean=0, *p_std=0;
- 
+  if (this->data_list_.size()==0) return FALSE;
   p_min_values = (p_max_values = 0);
-  if (pp_band_mapping == 0)
+  int bands_num;
+  double min,max,mean,std;
+   
+  if (!p_band_mapping)
   {
     RasterFile rf;
-    rf.Init((*data_list_.begin()).first,TRUE);
-    if (!rf.CalcStatistics(bands,p_min,p_max,p_mean,p_std,p_nodata_val))
-		{
-			cout<<"Error: computing statistics failed for "<<(*data_list_.begin()).first<<endl;
-			return false;
-		}
+    if (!rf.Init(*GetFileList().begin(),true)) return FALSE;
+    bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
+    p_min_values = new double[bands_num];
+    p_max_values = new double[bands_num]; 
+    for (int b=0;b<bands_num;b++)
+    {
+      if (!rf.CalcBandStatistics(b+1,min,max,mean,std,p_nodata_val))
+      {
+        delete[]p_min_values;delete[]p_max_values;
+        p_min_values=0;p_max_values=0;
+        return FALSE;
+      }
+     	p_min_values[b] = mean - 2*std;
+  		p_max_values[b] = mean + 2*std;
+    }
   }
   else
   {
-    p_min = new double[bands_num];
-    p_max = new double[bands_num];
-    p_mean = new double[bands_num];
-    p_std = new double[bands_num];
-    double nodata_val = -(1e+100);
-    for (int j=0;j<bands_num;j++)
-      p_mean[j]=nodata_val;
+    if (!(bands_num = p_band_mapping->GetBandsNum())) return FALSE;
+    p_min_values = new double[bands_num];
+    p_max_values = new double[bands_num]; 
+    list<string> file_list = GetFileList();
+    
+    for (int b=0;b<bands_num;b++)
+      p_min_values[b]=(p_max_values[b]=0);
 
-    for (int i=0; i<bands_num; i++)
+    for (int b=0;b<bands_num;b++)
     {
-      list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter;
-      int n = 0;
-      for (iter = data_list_.begin(); iter!=data_list_.end(); iter++)
+      for (list<string>::iterator iter=file_list.begin();iter!=file_list.end();iter++)
       {
-        if (pp_band_mapping[n][i]>0)
+        int _bands_num;
+        int *p_bands=0;
+        p_band_mapping->GetBands((*iter),_bands_num,p_bands);
+        if (p_bands[b]>0)
         {
           RasterFile rf;
-          rf.Init((*iter).first,TRUE);
-          double *_p_min =NULL, *_p_max = NULL, *_p_mean = NULL, *_p_std = NULL;
-          int bands_input;
-
-          if (!rf.CalcStatistics(bands_input,_p_min,_p_max,_p_mean,_p_std,p_nodata_val))
-	        {
-		        cout<<"Error: computing statistics failed for "<<(*data_list_.begin()).first<<endl;
-            delete[]p_min;delete[]p_max;delete[]p_mean;delete[]p_std;
-            delete[]_p_min;delete[]_p_max;delete[]_p_mean;delete[]_p_std;
-		        return false;
-	        }
-          //ToDo:  error if: bands<pp_band_mapping[n][i]
-          p_mean[i] = _p_mean[pp_band_mapping[n][i]-1];
-          p_std[i] = _p_std[pp_band_mapping[n][i]-1];
-          delete[]_p_min;delete[]_p_max;delete[]_p_mean;delete[]_p_std;
+          bool error=false;
+          if (!rf.Init(*iter,true)) error=true;
+          else if (!rf.CalcBandStatistics(p_bands[b],min,max,mean,std,p_nodata_val)) error=true;
+          
+          if (error)
+          {
+            delete[]p_min_values;delete[]p_max_values;
+            return FALSE;
+          }
+          else
+          {
+            p_min_values[b] = mean - 2*std;
+  		      p_max_values[b] = mean + 2*std;
+            delete[]p_bands;
+            break;
+          }
         }
-        n++;
+        else delete[]p_bands;
+    
       }
     }
   }
 
-  bands_num = bands_num == 0 ? bands : bands_num;
 
-  p_min_values = new double[bands_num];
-	p_max_values = new double[bands_num];
-	for (int i=0;i<bands_num;i++)
-	{
-		p_min_values[i] = p_mean[i] - 2*p_std[i];
-		p_max_values[i] = p_mean[i] + 2*p_std[i];
-	}
-	delete[]p_min;delete[]p_max;delete[]p_mean;delete[]p_std;
-    
   return TRUE;
 }
-
+//*/
 
 BOOL RasterFileBundle::WarpToMercBuffer (int zoom,	
                                             OGREnvelope	  envp_merc, 
@@ -649,23 +642,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 	int       bands_num_src   = p_src_ds->GetRasterCount();
   int				bands_num_dst	= (output_bands_num==0) ? bands_num_src : output_bands_num;
  
-  /*
-  if (output_bands_num != 0)
-  {
-    for (int i=0; i<bands_num_dst;i++)
-    {
-      if (p_band_mapping[i]<=0 || p_band_mapping[i] >bands_num_src)
-      {
-        cout<<"Error: not valid band number "<<p_band_mapping[i]<<
-              ", must be greater than zero and less or equal to input bands number"<<endl;
-        GDALClose(p_src_ds);
-        return FALSE;
-      }
-    }
-  }
-  */
-
-  
+    
   BOOL			nodata_val_from_file_defined = false;
   double			nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
 	
@@ -809,7 +786,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 			if (CE_None == input_rf.get_gdal_ds_ref()->GetGeoTransform(gdal_transform))
 			{
 				if (!((gdal_transform[0] == 0.) &&(gdal_transform[1]==1.)))
-					p_warp_options->hCutline = p_vb->GetOGRPolygonTransformedToPixelLine(&input_ogr_sr,gdal_transform);
+					p_warp_options->hCutline = p_vb->GetOGRGeometryTransformedToPixelLine(&input_ogr_sr,gdal_transform);
 			}
 		}
   
@@ -911,5 +888,229 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 	return TRUE;
 }
 
+
+
+
+BandMapping::~BandMapping()
+{
+  bands_num_=0;
+  for ( map<string,int*>::iterator iter = data_map_.begin(); iter!=data_map_.end(); iter++)
+    delete[](*iter).second;
+  data_map_.empty();
+}
+
+
+BOOL BandMapping::GetBandMappingData (int &output_bands_num, int **&pp_band_mapping)
+{
+  output_bands_num = 0;
+  pp_band_mapping = 0;
+
+  if (!bands_num_) return TRUE;
+  else output_bands_num = bands_num_;
+  
+  int i = 0;
+  for ( map<string,int*>::iterator iter = data_map_.begin(); iter!=data_map_.end(); iter++)
+  {
+    if ((*iter).second)
+    {
+      if (!pp_band_mapping)
+      {
+        pp_band_mapping = new int*[data_map_.size()];
+        for (int j=0;j<data_map_.size();j++)
+          pp_band_mapping[j]=0;
+      }
+      pp_band_mapping[i] = new int[bands_num_];
+      memcpy(pp_band_mapping[i],(*iter).second,bands_num_*sizeof(int));
+    }
+    i++;
+  }
+    
+  return TRUE;
+}
+
+
+BOOL BandMapping::GetBands(string file_name, int &bands_num, int *&p_bands)
+{
+  bands_num=0;
+  p_bands = NULL;
+  map<string,int*>::iterator iter;
+
+  if ((iter=data_map_.find(file_name))==data_map_.end()) 
+    return FALSE;
+  else
+  {
+    if (bands_num_ && (*iter).second)
+    {
+      bands_num=bands_num_;
+      p_bands = new int[bands_num_];
+      memcpy(p_bands,(*iter).second,bands_num_*sizeof(int));
+    }
+    return TRUE;
+  }
+}
+
+list<string> BandMapping::GetFileList ()
+{
+  list<string> file_list;
+  for (map<string,int*>::iterator iter = data_map_.begin(); iter != data_map_.end(); iter++)\
+    file_list.push_back((*iter).first);
+  return file_list;
+}
+
+
+BOOL  BandMapping::AddFile(string file_name, int *p_bands)
+{
+  if ((!p_bands) || (bands_num_==0)) return FALSE;
+
+  int *_p_bands = new int[bands_num_];
+  memcpy(_p_bands,p_bands,bands_num_*sizeof(int));
+  map<string,int*>::iterator iter;
+
+  if ((iter=data_map_.find(file_name))!=data_map_.end())
+     data_map_.insert(pair<string,int*>(file_name,_p_bands));
+  else
+  {
+    delete[](*iter).second;
+    (*iter).second = _p_bands;
+  }
+  return TRUE;
+}
+
+
+BOOL  BandMapping::InitLandsat8  (string file_param, string bands_param)
+{
+  regex	rx_landsat8(".*\\?landsat8");
+  if (!regex_match(file_param,rx_landsat8)) return FALSE;
+
+  //ToDo
+  //ParseBands
+  //ReadFiles
+
+  return TRUE;
+}
+
+
+
+BOOL  BandMapping::InitByConsoleParams (string file_param, string bands_param)
+{
+  regex	rx_landsat8(".*\\?landsat8");
+  if (regex_match(file_param,rx_landsat8)) return InitLandsat8(file_param,bands_param);
+  else
+  {
+    list<string> file_list;
+    int **pp_band_mapping = 0;
+    int *p_bands = 0;
+    if (!ParseFileParameter(file_param,file_list,bands_num_,pp_band_mapping))
+      return FALSE;
+    
+    if ((!pp_band_mapping) && (bands_param!=""))
+    {
+      if (!(bands_num_=ParseCommaSeparatedArray(bands_param,p_bands)))
+        return FALSE;
+    }
+
+    int i=0;
+    for (list<string>::iterator iter=file_list.begin();iter!=file_list.end();iter++)
+    {
+      int *_p_bands=0;
+      if (pp_band_mapping)
+      {
+        if (pp_band_mapping[i])
+        {
+          _p_bands = new int[bands_num_];
+          memcpy(_p_bands,pp_band_mapping[i],bands_num_*sizeof(int));
+        }
+      }
+      else if (p_bands)
+      {
+        _p_bands = new int[bands_num_];
+        memcpy(_p_bands,p_bands,bands_num_*sizeof(int));
+      }
+      data_map_.insert(pair<string,int*>(*iter,_p_bands));
+      i++;
+    }
+  }
+
+  return TRUE;
+}
+
+
+BOOL  BandMapping::ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
+{
+  string _str_file_param = str_file_param + '|';
+  output_bands_num = 0;
+  pp_band_mapping = 0;
+  std::string::size_type stdf;
+
+  while (_str_file_param.length()>1)
+  {
+    string item = _str_file_param.substr(0,_str_file_param.find('|'));
+    if (item.find('?')!=  string::npos)
+    {
+      int *p_arr = 0;
+      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
+      if (p_arr) delete[]p_arr;
+      if (len==0) 
+      {
+        cout<<"Error: can't parse output bands order from: "<<item.substr(item.find('?')+1)<<endl;
+        file_list.empty();
+        output_bands_num = 0;
+        return false;
+      }
+      output_bands_num = (int)max(output_bands_num,len);
+      item = item.substr(0,item.find('?'));
+    }
+
+    if (!gmx::FindFilesByPattern(file_list,item))
+    {
+      cout<<"Error: can't find input files by path: "<<item<<endl;
+      file_list.empty();
+      output_bands_num = 0;
+      return false;
+    }
+    
+    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
+  }
+
+  if (output_bands_num>0)
+  {
+    pp_band_mapping = new int*[file_list.size()];
+    for (int i=0;i<file_list.size();i++)
+    {
+       pp_band_mapping[i] = new int[output_bands_num];
+       for (int j=0;j<output_bands_num;j++)
+         pp_band_mapping[i][j] = j+1;
+    }
+  }
+
+  _str_file_param = str_file_param + '|';
+  int i=0;
+  while (_str_file_param.length()>1)
+  {
+    string item = _str_file_param.substr(0,_str_file_param.find('|'));
+    list<string> _file_list;
+    if (item.find('?')!=string::npos)
+    {
+      gmx::FindFilesByPattern(_file_list,item.substr(0,item.find('?')));
+      int *p_arr = 0;
+      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
+      if (p_arr)
+      {
+        for (int j=i;j<i+_file_list.size();j++)
+        {
+          for (int k=0;k<len;k++)
+            pp_band_mapping[j][k]=p_arr[k];
+        }
+        delete[]p_arr;
+      }
+    }
+    else gmx::FindFilesByPattern(_file_list,item);
+       
+    i+=_file_list.size();
+    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
+  }
+
+  return TRUE;
+}
 
 }

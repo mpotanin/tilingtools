@@ -273,10 +273,41 @@ OGRGeometry*	VectorBorder::GetOGRGeometryTransformed (OGRSpatialReference *poOut
 };
 
 
-OGRPolygon*	VectorBorder::GetOGRPolygonTransformedToPixelLine(OGRSpatialReference *poRasterSRS, double *rasterGeoTransform)
+OGRGeometry*	VectorBorder::GetOGRGeometryTransformedToPixelLine(OGRSpatialReference *poRasterSRS, double *rasterGeoTransform)
 {
 	OGRGeometry *p_ogr_geom = GetOGRGeometryTransformed(poRasterSRS);
 
+  if (!p_ogr_geom) return NULL;
+  
+	OGRMultiPolygon *p_ogr_poly_tr = (OGRMultiPolygon*)p_ogr_geom->clone();
+	p_ogr_geom->empty();
+
+  for (int j=0;j<p_ogr_poly_tr->getNumGeometries();j++)
+  {
+    OGRLinearRing	*p_ogr_ring = ((OGRPolygon*)p_ogr_poly_tr->getGeometryRef(j))->getExteriorRing();
+	  p_ogr_ring->closeRings();
+	
+	  for (int i=0;i<p_ogr_ring->getNumPoints();i++)
+	  {
+		  double d = rasterGeoTransform[1]*rasterGeoTransform[5]-rasterGeoTransform[2]*rasterGeoTransform[4];
+		  if ( fabs(d) < 1e-7)
+		  {
+			  p_ogr_poly_tr->empty();
+			  return NULL;
+		  }
+
+		  double x = p_ogr_ring->getX(i)	-	rasterGeoTransform[0];
+		  double y = p_ogr_ring->getY(i)	-	rasterGeoTransform[3];
+		
+		  double l = (rasterGeoTransform[1]*y-rasterGeoTransform[4]*x)/d;
+		  double p = (x - l*rasterGeoTransform[2])/rasterGeoTransform[1];
+
+		  p_ogr_ring->setPoint(i,(int)(p+0.5),(int)(l+0.5));
+	  }
+  }
+  
+
+  /*
 	OGRPolygon *p_ogr_poly_result = (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(0)->clone();
 	p_ogr_geom->empty();
 
@@ -300,7 +331,8 @@ OGRPolygon*	VectorBorder::GetOGRPolygonTransformedToPixelLine(OGRSpatialReferenc
 
 		p_ogr_ring->setPoint(i,(int)(p+0.5),(int)(l+0.5));
 	}
-	return p_ogr_poly_result;
+  */
+	return p_ogr_poly_tr;
 }
 
 OGRLinearRing**		VectorBorder::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &num_rings)

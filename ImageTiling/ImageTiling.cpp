@@ -66,15 +66,15 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   string max_warp_threads_str = console_params.at("-warp_threads");
   string bands_str = console_params.at("-bands");
 
-  
-  list<string> file_list;
-  int output_bands_num;
-  int **pp_band_mapping =0;
-  if (!gmx::ParseFileParameter(input_path,file_list,output_bands_num,pp_band_mapping))
+ 
+  gmx::BandMapping band_mapping_param;
+
+  if (!band_mapping_param.InitByConsoleParams(input_path,bands_str))
   {
-    cout<<"Error: can't parse \"-file\" parameter"<<endl;
+    //ToDo - 
     return FALSE;
   }
+  list<string> file_list = band_mapping_param.GetFileList();
 
   //синициализируем обязательные параметры для тайлинга
   gmx::MercatorProjType merc_type =	(	(proj_type_str == "") || (proj_type_str == "0") || (proj_type_str == "world_mercator")
@@ -100,11 +100,9 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   
   GMXTilingParameters tiling_params(file_list,merc_type,tile_type);
 
-  if (output_bands_num != 0)
-  {
-    tiling_params.bands_num_ = output_bands_num;
-    tiling_params.pp_band_mapping_ = pp_band_mapping;
-  }
+  if (band_mapping_param.GetBandsNum() != 0) 
+    tiling_params.p_band_mapping_ = &band_mapping_param;
+  
 
  
 
@@ -211,49 +209,9 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   }
 
 
-  if (bands_str!="")
-  {
-    int *p_band_mapping = 0;
-    int bands_num = gmx::ParseCommaSeparatedArray(bands_str,p_band_mapping);
-    if (bands_num==0)
-    {
-      cout<<"Error: bad value of parameter: \"-bands\""<<endl;
-      return FALSE;
-    }
-    else if ( (bands_num ==2 || bands_num>3) &&  
-              (tiling_params.tile_type_==gmx::JPEG_TILE || 
-              tiling_params.tile_type_==gmx::PNG_TILE)
-            )
-    {
-      cout<<"Error: "<<bands_num<<" output bands specified"<<
-            ", png or jpg tiles must have 1 or 3 bands"<<endl;
-      return FALSE;
-    }
-    else
-    {
-      for (int i=0; i<bands_num;i++)
-      {
-        if (p_band_mapping[i]<=0)
-        {
-            cout<<"Error: not valid band number "<<p_band_mapping[i]<<
-            " , must be greater than zero"<<endl;
-            return FALSE;
-        }
-      }
-      tiling_params.bands_num_ = bands_num;
-      memcpy((tiling_params.p_bands_ = new int[bands_num]),
-              p_band_mapping,sizeof(int)*bands_num);
-    }
-
-  }
-
- 
   tiling_params.gdal_resampling_ = gdal_resampling;
-
-  tiling_params.auto_stretch_to_8bit_ = true;
-
+  tiling_params.auto_stretching_ = true;
   tiling_params.temp_file_path_for_warping_ = temp_file_warp_path;
-
   tiling_params.calculate_histogram_ = true;
 
   if (max_work_threads_str != "")
@@ -329,58 +287,18 @@ int _tmain(int argc, wchar_t* argvW[])
   if (argc == 2)
      console_params.at("-file") = argv[1];
 
-  //wstring fileW = L"C:\\share_upload\\Иванова Ирина.jpg";
-  //gmx::wstrToUtf8(console_params.at("-file"),fileW);
-  //console_params.at("-gmxtiles")="-container";
-  
-  //console_params.at("-file") = "E:\\test_images\\L8\\Landsat8-13-04-LC80940122013120LGN01\\LC80940122013120LGN01_B4.TIF?1,,|E:\\test_images\\L8\\Landsat8-13-04-LC80940122013120LGN01\\LC80940122013120LGN01_B3.TIF?,1,|E:\\test_images\\L8\\Landsat8-13-04-LC80940122013120LGN01\\LC80940122013120LGN01_B2.TIF?,,1";
-  //console_params.at("-file") = "E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B4.TIF?1,,|E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B3.TIF?,1,|E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B2.TIF?,,1";
-  //console_params.at("-file") = "E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00\\LC81750272014083LGN00_B4.TIF";  
-  //console_params.at("-tiles") = "E:\\test_images\\L8\\Landsat8-14-03-LC81750272014083LGN00_tiles";  
-
-  //Landsat8-14-03-LC81750272014083LGN00
-
-  //console_params.at("-file") = "E:\\test_images\\L8\\for_test\\rgb\\0_LC81600772014090LGN00.tif";
-  //console_params.at("-mosaic")="-mosaic";
-  //E:\test_images\L8\for_test\rgb\0_LC81600772014090LGN00.tif
-  //console_params.at("-zoom") = "8";
-  //console_params.at("-file") = "\\\\192.168.4.43\\share\\L8\\*fmask";
-
-  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA.tif";
-  //console_params.at("-bands") = "1, 2, 0";
-
-
-  //console_params.at("-tile_type") = "jp2";
-  //console_params.at("-quality") = "0";
- //console_params.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA.tiles";
- //console_params.at("-gmxtiles")="-container";
- //console_params.at("-zoom") = "8";
-
-  //console_params.at("-nodata_tolerance") = "0";
-  //console_params.at("-nodata") = "0";
-
-  //console_params.at("-tiles") = "\\\\rum-potanin\\share_upload\\L8_NDVI\\bugs\\LC81750282014083LGN00_ndvi_tiles5";
-  //console_params.at("-template")="standard";
-  //console_params.at("-resampling")="nearest";
-  //console_params.at("-zoom") = "5";
+  //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\L8\\LC81750272014083LGN00_B4.TIF|C:\\Work\\Projects\\TilingTools\\autotest\\L8\\LC81750272014083LGN00_B3.TIF?,1,|C:\\Work\\Projects\\TilingTools\\autotest\\L8\\LC81750272014083LGN00_B2.TIF?,,1";
+  //console_params.at("-file") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.tif";
 
   //console_params.at("-gmxtiles")="-container";
-  // -gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
-  //console_params.at("-gmx_volume_size")="1000000";
-  //console_params.at("-cache_size")="1000000";
-  //console_params.at("-tiles") = "E:\\test_images\\Arctic.2014142.terra.1km_z5_3.tiles";
-  //console_params.at("-zoom") = "5";
-
-  //C:\Work\Projects\TilingTools\Release\imagetiling -file C:\Work\Projects\TilingTools\autotest\scn_120719_Vrangel_island_SWA.tif -container -tiles C:\Work\Projects\TilingTools\autotest\result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -cache 10 -resampling cubic
-
-  //console_params.at("-file") = "C:\\share_upload\\foto\\Voronina Marina.jpg";
-  //console_params.at("-gmxtiles")="-container";
-
-   //console_params.at("-border") = "E:\\test_images\\L8\\LC80930132014036LGN00.shp";
-  //console_params.at("-nodata_rgb") = "0 0 0";
+  //console_params.at("-border") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.mif";
   //console_params.at("-tile_type") = "png";
-
-
+  //console_params.at("-nodata") = "0";
+  //console_params.at("-template")="standard";
+  //console_params.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\L8";
+  
+  //-mosaic -border L8\border.shp -nodata 0 -tile_type png -template standard -min_zoom 11 -tiles result\L8
+  
 
   if (console_params.at("-file") == "")
   {
@@ -390,33 +308,49 @@ int _tmain(int argc, wchar_t* argvW[])
 
 
   wcout<<endl;
-  if (console_params.at("-mosaic")== "")
+  if (console_params.at("-mosaic")== "") //ToDo - file_list.size>1;
   {
-    std::list<string> file_list;
-    
-    int output_bands_num;
-    int **pp_band_mapping =0;
-    if (!gmx::ParseFileParameter(console_params.at("-file"),file_list,output_bands_num,pp_band_mapping))
+    gmx::BandMapping band_mapping;
+    if (!band_mapping.InitByConsoleParams(console_params.at("-file"),
+                                          console_params.at("-bands")))
     {
+      //ToDo - 
       cout<<"Error: can't parse \"-file\" parameter"<<endl;
-      return FALSE;
+      return 1;
     }
+
+    std::list<string> file_list = band_mapping.GetFileList();
 
     BOOL use_container = (console_params.at("-gmxtiles")!="" || console_params.at("-mbtiles")!="");
 
     for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
     {
       cout<<"Tiling file: "<<(*iter)<<endl;
-
       map<string,string> console_params_fix = console_params;
-
-      if (file_list.size()>1)
-      {
-        if (console_params.at("-border") == "") 
-          console_params_fix.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
-      }
+      console_params_fix.at("-file") = (*iter);
       
-      if (file_list.size()>1 && console_params.at("-tiles")!="")
+      int bands_num = 0;
+      int *p_bands = 0;
+      if (!band_mapping.GetBands(*iter,bands_num,p_bands))
+      {
+        //ToDo - Error
+      }
+      else if (p_bands!=0)
+      {
+        string str_bands = gmx::ConvertIntToString(p_bands[0]);
+        for (int i=1;i<bands_num;i++)
+        {
+          str_bands+=",";
+          str_bands+=gmx::ConvertIntToString(p_bands[i]);
+        }
+        console_params_fix.at("-bands") = str_bands;
+        delete[]p_bands;
+      }
+
+      if ((file_list.size()>1) && (console_params.at("-border")=="")) 
+        console_params_fix.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
+      
+      if ((file_list.size()>1)&&(console_params.at("-tiles")!=""))
       {
         if (!gmx::FileExists(console_params.at("-tiles"))) 
         {
@@ -438,13 +372,11 @@ int _tmain(int argc, wchar_t* argvW[])
           console_params_fix.at("-tiles") = gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
         }
       }
-      
-      console_params_fix.at("-file") = (*iter);
    
-      if (  (!CheckArgsAndCallTiling(console_params_fix)) && 
-            file_list.size()==1 ) 
+      
+      if ((!CheckArgsAndCallTiling(console_params_fix)) && file_list.size()==1)
         return 2;
-           
+  
       wcout<<endl;
     }
   }

@@ -11,6 +11,80 @@ int			GMX_CURR_WORK_THREADS	= 0;
 HANDLE  GMX_WARP_SEMAPHORE = NULL;
 
 
+int GMXTilingParameters::CalcOutputBandsNum (gmx::RasterFileBundle *p_bundle)
+{
+  if (!p_bundle) return 0;
+  else if (tile_type_==JPEG_TILE || tile_type_==PNG_TILE) return 3;
+  else if (p_band_mapping_) return p_band_mapping_->GetBandsNum();
+  else
+  {
+    RasterFile rf(*p_bundle->GetFileList().begin(),1);
+    if (!rf.get_gdal_ds_ref()) 
+    {
+      cout<<"Error: can't init. gdaldataset from file: "<<(*p_bundle->GetFileList().begin())<<endl;
+      return 0;
+    }
+    return rf.get_gdal_ds_ref()->GetRasterCount();
+  }
+  return 0;
+}
+
+GDALDataType GMXTilingParameters::GetOutputDataType (gmx::RasterFileBundle *p_bundle)
+{
+  if (!p_bundle) return GDT_Byte;
+  else if (tile_type_==JPEG_TILE || tile_type_==PNG_TILE) return GDT_Byte;
+  else
+  {
+    RasterFile rf(*p_bundle->GetFileList().begin(),1);
+    if (!rf.get_gdal_ds_ref()) 
+    {
+      cout<<"Error: can't init. gdaldataset from file: "<<(*p_bundle->GetFileList().begin())<<endl;
+      return GDT_Byte;
+    }
+    return rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType();
+  }
+  return GDT_Byte;
+}
+
+
+GMXTilingParameters::GMXTilingParameters(list<string> file_list, gmx::MercatorProjType merc_type, gmx::TileType tile_type)
+{
+
+	file_list_ = file_list;
+	merc_type_	= merc_type;
+	tile_type_	= tile_type;
+		
+	use_container_ = TRUE;
+	jpeg_quality_ = 0;
+	shift_x_ = 0;
+	shift_y_ = 0;
+	p_tile_name_ = NULL;
+	p_background_color_	= NULL;
+	p_transparent_color_ = NULL;
+	nodata_tolerance_ = 0;
+	base_zoom_	= 0;
+	min_zoom_	= 0;
+	max_cache_size_	= 0;
+	max_gmx_volume_size_ =0;
+  auto_stretching_ = FALSE;
+
+  p_band_mapping_ = 0;
+
+  max_work_threads_= 0;
+  max_warp_threads_= 0;
+    
+  temp_file_path_for_warping_ = "";
+  calculate_histogram_=false;
+}
+
+		
+GMXTilingParameters::~GMXTilingParameters ()
+{
+  if (p_background_color_)  delete(p_background_color_);
+	if (p_transparent_color_) delete(p_transparent_color_);
+  if (p_tile_name_)         delete(p_tile_name_);
+}
+
 
 
 
@@ -55,8 +129,7 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
   
   unsigned int max_gmx_volume_size   = p_tiling_params->max_gmx_volume_size_ > 0 ? p_tiling_params->max_gmx_volume_size_ 
                                                                                   : GMXTileContainer::DEFAULT_MAX_VOLUME_SIZE;
-
-
+  
   ITileContainer	*p_itile_pyramid =	NULL;
   Metadata metadata;
   MetaHistogram histogram;
@@ -83,33 +156,13 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 	{
     p_itile_pyramid = new GMXTileContainer();
      
-    RasterFile rf(*raster_bundle.GetFileList().begin(),1);
-    if (!rf.get_gdal_ds_ref()) 
-    {
-      cout<<"Error: can't init. gdaldataset from file: "<<(*raster_bundle.GetFileList().begin())<<endl;
-      return FALSE;
-    }
-
-    GDALDataType input_type = rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType();
-    int input_num_bands = rf.get_gdal_ds_ref()->GetRasterCount();
-
-    GDALDataType output_type = (p_tiling_params->tile_type_ == JPEG_TILE || 
-                                p_tiling_params->tile_type_ == PNG_TILE) ?  GDT_Byte : input_type;
-
-    int output_num_bands;
-    if (p_tiling_params->tile_type_ == JPEG_TILE) 
-      output_num_bands = min(3,input_num_bands);
-    else if (p_tiling_params->tile_type_ == PNG_TILE) 
-      output_num_bands = min(3,input_num_bands);
-    else 
-      output_num_bands =  (p_tiling_params->bands_num_ != 0) ? 
-                          min(input_num_bands,p_tiling_params->bands_num_) :
-                          input_num_bands;
+    
 
     if (nodata_defined) metadata.AddTagRef(&nodata_value);
-    histogram.Init(output_num_bands,output_type);
+    histogram.Init( p_tiling_params->CalcOutputBandsNum(&raster_bundle),
+                    p_tiling_params->GetOutputDataType(&raster_bundle));
     metadata.AddTagRef(&histogram);
-    hist_stat.Init(output_num_bands);
+    hist_stat.Init(p_tiling_params->CalcOutputBandsNum(&raster_bundle));
     metadata.AddTagRef(&hist_stat);
       
     if ( !((GMXTileContainer*)p_itile_pyramid)->OpenForWriting(p_tiling_params->container_file_,
@@ -226,9 +279,7 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 											FALSE,
 											p_buffer->get_color_table_ref());
       delete[]p_tile_pixel_data;
-
-
-
+      
       if (p_tiling_params->p_transparent_color_ != NULL  && 
           p_tiling_params->tile_type_ == PNG_TILE)
         tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, 
@@ -296,12 +347,19 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
    
   RasterBuffer *p_merc_buffer = new RasterBuffer();
   WaitForSingleObject(GMX_WARP_SEMAPHORE,INFINITE);
-  
+
+  //ToDo...
+
+  int bands_num=0;
+  int **pp_band_mapping=0;
+  if (p_tiling_params->p_band_mapping_)
+    p_tiling_params->p_band_mapping_->GetBandMappingData(bands_num,pp_band_mapping);
+    
   BOOL warp_result = p_bundle->WarpToMercBuffer(zoom,
                                                 chunk_envp,
                                                 p_merc_buffer,
-                                                p_tiling_params->bands_num_,
-                                                p_tiling_params->pp_band_mapping_,
+                                                bands_num,
+                                                pp_band_mapping,
                                                 p_tiling_params->gdal_resampling_,
                                                 p_tiling_params->p_transparent_color_,
                                                 p_tiling_params->p_background_color_);
@@ -315,7 +373,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 	  return FALSE;
 	}
 
-  if (p_chunk_tiling_params->stretch_to_8bit_)	
+  if (p_chunk_tiling_params->need_stretching_)	
   {
     if (! p_merc_buffer->StretchDataTo8Bit (
                           p_chunk_tiling_params->p_stretch_min_values_,
@@ -380,20 +438,18 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
  
 
   
-	bool		stretch_to_8bit = false;
+	bool		need_stretching = false;
 	double		*p_stretch_min_values = NULL, *p_stretch_max_values = NULL;
 
   GMX_WARP_SEMAPHORE = CreateSemaphore(NULL,GMX_MAX_WARP_THREADS,GMX_MAX_WARP_THREADS,NULL);
     
-  if (p_tiling_params->auto_stretch_to_8bit_)
+  if (p_tiling_params->auto_stretching_)
 	{
-    RasterFile rf((*p_bundle->GetFileList().begin()),TRUE);
-		double *p_min,*p_max,*p_mean,*p_std;
-		int bands;
-		if ( (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
-			 (rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType() != GDT_Byte))
+    if (  (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
+          (p_bundle->GetRasterFileType()!= GDT_Byte)  
+       )
 		{
-			stretch_to_8bit = true;
+			need_stretching = true;
 			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
       double nodata_val = (p_tiling_params->p_transparent_color_) ?
                            p_tiling_params->p_transparent_color_[0] : 0;
@@ -401,8 +457,7 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
                                                     p_stretch_max_values,
                                                     (p_tiling_params->p_transparent_color_) ?
                                                     &nodata_val : 0,
-                                                    p_tiling_params->bands_num_,
-                                                    p_tiling_params->pp_band_mapping_))
+                                                    p_tiling_params->p_band_mapping_))
 			{
         cout<<"Error: can't calculate parameters of auto stretching to 8 bit"<<endl;
 			  return FALSE;
@@ -442,7 +497,8 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 																					curr_max_x,
 																					curr_max_y);
 			if (!p_bundle->Intersects(chunk_envp)) continue;
-	    while (GMX_CURR_WORK_THREADS >= GMX_MAX_WORK_THREADS)        
+	    
+      while (GMX_CURR_WORK_THREADS >= GMX_MAX_WORK_THREADS)        
         Sleep(100);
       
       for (list<pair<HANDLE,GMXAsyncChunkTilingParams*>>::iterator iter = 
@@ -461,7 +517,6 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
         }
       }
 
-
       GMXAsyncChunkTilingParams	*p_chunk_tiling_params = new  GMXAsyncChunkTilingParams();
       unsigned long *p_thread_id = new unsigned long();
       
@@ -471,7 +526,7 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
       p_chunk_tiling_params->p_tile_container_ = p_tile_container;
       p_chunk_tiling_params->p_tiles_generated_ = &tiles_generated;
       p_chunk_tiling_params->tiles_expected_ = tiles_expected;
-      p_chunk_tiling_params->stretch_to_8bit_ = stretch_to_8bit;
+      p_chunk_tiling_params->need_stretching_ = need_stretching;
       p_chunk_tiling_params->p_stretch_min_values_ = p_stretch_min_values;
       p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
       p_chunk_tiling_params->z_ = zoom;
@@ -638,8 +693,11 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 		//Проверить длину очереди на выполнение операций: ZoomOut + SaveData + запись результатов
 		//Если < Lmax, то отправить на выполнение
 		//Если >=Lmax, то ждать
-
-    if (!GMXZoomOutTileBuffer(quarter_tile_buffer,src_quarter_tile_buffers_def, tile_buffer,p_tiling_params->p_background_color_)) return FALSE;
+    if (!GMXZoomOutTileBuffer(quarter_tile_buffer,
+                              src_quarter_tile_buffers_def, 
+                              tile_buffer,
+                              p_tiling_params->gdal_resampling_,
+                              p_tiling_params->p_background_color_)) return FALSE;
 		void *p_data=NULL;
 		int size = 0;
 		switch (p_tiling_params->tile_type_)
@@ -678,8 +736,11 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 
 
 
-BOOL GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4], BOOL src_quarter_tile_buffers_def[4], 
-                            RasterBuffer &zoomed_out_tile_buffer, BYTE *p_background) 
+BOOL GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4], 
+                            BOOL src_quarter_tile_buffers_def[4], 
+                            RasterBuffer &zoomed_out_tile_buffer, 
+                            string      resampling_method,
+                            BYTE *p_background) 
 {
 	int i;
 	for (i = 0; i<4;i++)
@@ -700,7 +761,7 @@ BOOL GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4], BOOL src_q
 	{
 		if (src_quarter_tile_buffers_def[n])
 		{
-			void *p_zoomed_data = src_quarter_tile_buffers[n].GetDataZoomedOut();
+			void *p_zoomed_data = src_quarter_tile_buffers[n].GetDataZoomedOut(resampling_method);
 			zoomed_out_tile_buffer.SetPixelDataBlock(	(n%2)*tile_size/2,
 									(n/2)*tile_size/2,
 									tile_size/2,

@@ -39,7 +39,7 @@ public:
 	BOOL			SaveToTiffData	(void* &p_data_dst, int &size);
 	BOOL			SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate = 0);
 
-	BOOL			IsAnyNoDataPixel			();
+	//BOOL			IsAnyNoDataPixel			();
 
 	BOOL			SaveBufferToFile		(string filename, int quality = 0);
 	BOOL			SaveBufferToFileAndData	(string filename, void* &p_data_dst, int &size, int quality = 0);
@@ -51,10 +51,9 @@ public:
 	BOOL			InitByRGBColor	 (BYTE rgb[3]);
 	BOOL			InitByValue(int value = 0);	
 
-	void*			GetPixelDataBlock	(	int left, int top, int w, int h, BOOL stretch_to_8bit = FALSE, 
-										 double *p_min_values = 0, double *p_max_values = 0);
+	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
 	BOOL			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int bands = 0);
-	void*			GetDataZoomedOut	();	
+	void*			GetDataZoomedOut	(string resampling_method="");	
 	BOOL			ConvertFromIndexToRGB ();
 	BOOL			ConvertFromPanToRGB();
 	BOOL			CreateAlphaBandByRGBColor(BYTE	*p_rgb, int tolerance = 0);
@@ -78,16 +77,16 @@ public:
 
 protected:
 	//void									initAlphaBand();
-  void*                           GetPixelDataOrder2();
-  template <typename T>void*      GetPixelDataOrder2(T type);
-  template <typename T>	BOOL			IsAnyNoDataPixel(T type);
-	template <typename T>	BOOL			InitByValue		(T type, int value);
-	template <typename T>	void*			GetPixelDataBlock	(	T type, int left, int top, int w, int h,  
-																BOOL stretch_to_8bit = FALSE, double *p_min_values = 0, double *p_max_values = 0);
-	template <typename T>	BOOL			SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
-																void *p_block_data, int bands = 0);
-	template <typename T>	void*			GetDataZoomedOut(T type);
+  void*                         GetPixelDataOrder2();
+  template <typename T>void*    GetPixelDataOrder2(T type);
+ //template <typename T>	BOOL		IsAnyNoDataPixel(T type);
+	template <typename T>	BOOL		InitByValue		(T type, int value);
+	template <typename T>	void*		GetPixelDataBlock	(	T type, int left, int top, int w, int h);
+	template <typename T>	BOOL		SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
+																                     void *p_block_data, int bands = 0);
+	template <typename T>	void*		GetDataZoomedOut(T type,string resampling_method="");
   template <typename T>	BOOL    AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist);
+  template <typename T> BOOL    StretchDataTo8Bit(T type, double *min_values, double *max_values);
 
 
 protected:

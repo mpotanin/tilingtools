@@ -37,14 +37,14 @@ public:
 
 public: 
 	//void			setGeoReference		(double dResolution, double dULx, double dULy);
-	BOOL			CalcStatistics	(int &bands, double *&min, double *&max, double *&mean, double *&std, double *p_nodata_val =0);
+	BOOL			CalcBandStatistics	(int band_num, double &min, double &max, double &mean, double &std, double *p_nodata_val =0);
 	double		get_nodata_value		(BOOL &nodata_defined);
 
 
 public:
 	//void			readMetaData ();
 	OGREnvelope*	CalcMercEnvelope (MercatorProjType	merc_type);
-
+  
 	static			BOOL ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference *p_ogr_sr);
   static      BOOL SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
 
@@ -71,10 +71,34 @@ protected:
 };
 
 
-
-
-
 int _stdcall gmxPrintNoProgress ( double, const char*,void*);
+
+class BandMapping
+{
+public:
+  BandMapping()
+  {
+    bands_num_=0;
+  };
+  BOOL  InitByConsoleParams (string file_param, string bands_param);
+  BOOL  InitLandsat8  (string file_param, string bands_param);
+  BOOL  GetBands      (string file_name, int &bands_num, int *&p_bands); 
+  int   GetBandsNum   () {return bands_num_;};
+  //ToDo
+  list<string>  GetFileList();
+  BOOL  GetBandMappingData (int &output_bands_num, int **&pp_band_mapping);
+  ~BandMapping();
+  static BOOL    ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping);
+
+protected:
+  BOOL  AddFile       (string file_name, int *p_bands); 
+
+
+protected:
+  int bands_num_;
+  map<string,int*> data_map_;
+
+};
 
 class RasterFileBundle
 {
@@ -106,13 +130,14 @@ public:
 
 	list<string>	GetFileList();
 	list<string>	GetFileListByEnvelope(OGREnvelope merc_envp);
-	BOOL			Intersects(OGREnvelope merc_envp);
+	BOOL			    Intersects(OGREnvelope merc_envp);
+  BOOL          CalclValuesForStretchingTo8Bit (  double *&p_min_values,
+                                                 double *&p_max_values,
+                                                 double *p_nodata_val = 0,
+                                                 BandMapping    *p_band_mapping=0);
+  GDALDataType  GetRasterFileType();
 
-  BOOL      CalclValuesForStretchingTo8Bit (double *&p_min_values,
-                                            double *&p_max_values,
-                                            double *p_nodata_val = 0,
-                                            int bands_num = 0, 
-                                            int **pp_band_mapping = 0);
+
 
 	//BOOL			createBundleBorder (VectorBorder &border);	
 protected:
@@ -124,6 +149,7 @@ protected:
 	list<pair<string,pair<OGREnvelope*,VectorBorder*>>>	data_list_;
 	MercatorProjType		merc_type_;
 };
+
 
 
 }

@@ -313,7 +313,8 @@ BOOL RasterBuffer::InitByRGBColor	 (BYTE rgb[3])
 BOOL	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
 {
 
-	VSIFileFromMemBuffer("/vsimem/tiffinmem",(BYTE*)p_data_src,size,0);
+	//ToDo - if nodata defined must create alphaband
+  VSIFileFromMemBuffer("/vsimem/tiffinmem",(BYTE*)p_data_src,size,0);
 	GDALDataset *p_ds = (GDALDataset*) GDALOpen("/vsimem/tiffinmem",GA_ReadOnly);
 
 	CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),NULL,p_ds->GetRasterBand(1)->GetRasterDataType());
@@ -362,7 +363,11 @@ BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
 	gdImagePtr im;
 	if (!  (im =	gdImageCreateFromPngPtr(size, p_data_src))) return FALSE;
 	
-	if (im->alphaBlendingFlag) CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,TRUE);
+	if (im->alphaBlendingFlag)
+  {
+    CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,TRUE);
+    alpha_band_defined_ = true;
+  }
 	else CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
 
 	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
@@ -441,19 +446,24 @@ BOOL RasterBuffer::ConvertFromPanToRGB ()
 	if (x_size_==0 || y_size_ == 0 || data_type_ != GDT_Byte) return FALSE;
 	if (num_bands_!=1)		return FALSE;
 	if (this->p_pixel_data_==NULL)	return FALSE;
+  int num_bands_new = IsAlphaBand() ? 4 : 3;
 	
-	BYTE *p_pixel_data_new = new BYTE[3*x_size_*y_size_];
+	BYTE *p_pixel_data_new = new BYTE[num_bands_new*x_size_*y_size_];
 	int n = x_size_*y_size_;
+  int m;
 	for (int j=0;j<y_size_;j++)
 	{
 		for (int i=0;i<x_size_;i++)
 		{
-			p_pixel_data_new[j*x_size_+i + n + n] =
-				(p_pixel_data_new[j*x_size_+i +n] = (p_pixel_data_new[j*x_size_+i] = p_pixel_data_new[j*x_size_+i]));
+      m = j*x_size_+i;
+			p_pixel_data_new[m + n + n] =
+				(p_pixel_data_new[m +n] = (p_pixel_data_new[m] = ((BYTE*)p_pixel_data_)[m]));
+      if (IsAlphaBand())
+        p_pixel_data_new[m + n + n + n] = ((BYTE*)p_pixel_data_)[m + n];
 		}
 	}
 	
-	num_bands_ = 3;
+	num_bands_ = num_bands_new;
 	delete[]((BYTE*)p_pixel_data_);
 	p_pixel_data_ = p_pixel_data_new;
 	return TRUE;
@@ -466,7 +476,9 @@ BOOL	RasterBuffer::ConvertFromIndexToRGB ()
 	if (p_color_table_!=NULL)
 	{
 		int n = x_size_*y_size_;
-		BYTE *p_pixel_data_new = new BYTE[3*n];
+		int num_bands_new = IsAlphaBand() ? 4 : 3;
+    
+    BYTE *p_pixel_data_new = new BYTE[num_bands_new*n];
 		int m;
 		const GDALColorEntry *p_color_entry;
 		for (int i=0;i<x_size_;i++)
@@ -478,11 +490,13 @@ BOOL	RasterBuffer::ConvertFromIndexToRGB ()
 				p_pixel_data_new[m] = p_color_entry->c1;
 				p_pixel_data_new[m+n] = p_color_entry->c2;
 				p_pixel_data_new[m+n+n] = p_color_entry->c3;
-			}
+        if (IsAlphaBand())
+         	p_pixel_data_new[m+n+n+n]=((BYTE*)p_pixel_data_)[n+m];
+ 			}
 		}
 		delete[]((BYTE*)p_pixel_data_);
 		p_pixel_data_ = p_pixel_data_new;
-		num_bands_ = 3;
+		num_bands_ = num_bands_new;
 		GDALDestroyColorTable(p_color_table_);
 		p_color_table_ = NULL;
 	}
@@ -1385,19 +1399,81 @@ BOOL RasterBuffer::InitByValue(T type, int value)
 
 BOOL	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
 {
-	void *p_pixel_data_new = GetPixelDataBlock(0,0,x_size_,y_size_,TRUE,minValues,maxValues);
-	int bands = num_bands_;
-	int width = x_size_;
-	int height = y_size_;
-	ClearBuffer();
-	if (!CreateBuffer(bands,width,height,p_pixel_data_new,GDT_Byte)) return FALSE;
-	delete[]((BYTE*)p_pixel_data_new);
+  if (p_pixel_data_ == NULL || x_size_ == 0 || y_size_==0) return NULL;
 
-	return TRUE;
+	switch (data_type_)
+	{
+		case GDT_Byte:
+		{
+			BYTE t  = 1;
+			return StretchDataTo8Bit(t,minValues,maxValues);
+		}
+		case GDT_UInt16:
+		{
+			unsigned __int16 t = 257;
+			return StretchDataTo8Bit(t,minValues,maxValues);
+		}
+		case GDT_Int16:
+		{
+			__int16 t = -257;
+			return StretchDataTo8Bit(t,minValues,maxValues);
+		}
+		case GDT_Float32:
+		{
+			float t = 1.1;
+			return StretchDataTo8Bit(t,minValues,maxValues);
+		}
+		default:
+			return FALSE;
+	}
+	return FALSE;
+}
+
+template <typename T>
+BOOL	RasterBuffer::StretchDataTo8Bit(T type, double *p_min_values, double *p_max_values)
+{
+  BYTE  *p_pixel_stretched_data = new BYTE[x_size_*y_size_*this->num_bands_];
+  T     *p_pixel_data_t = (T*)p_pixel_data_;
+  int n = x_size_*y_size_;
+  double d;
+  int m;
+
+  int _num_bands = IsAlphaBand() ? num_bands_-1 : num_bands_;
+  for (int i=0;i<y_size_;i++)
+  {
+    for (int j=0;j<x_size_;j++)
+    {
+      for (int b=0;b<_num_bands;b++)
+      {
+        m = i*x_size_+j+b*n;
+        d = max(min(p_pixel_data_t[m],p_max_values[b]),p_min_values[b]);
+        p_pixel_stretched_data[m] = (int)(0.5+255*((d-p_min_values[b])/(p_max_values[b]-p_min_values[b])));
+      }
+    }
+  }
+  
+  if (IsAlphaBand())
+  {
+    n = x_size_*y_size_*(num_bands_-1);
+    for (int i=0;i<y_size_;i++)
+    {
+      for (int j=0;j<x_size_;j++)
+      {
+          m = i*x_size_+j+n;
+          p_pixel_stretched_data[m] = (int)(p_pixel_data_t[m]);
+      }
+    }
+  }
+
+  delete[]p_pixel_data_t;
+  p_pixel_data_= p_pixel_stretched_data;
+  data_type_=GDT_Byte;
+
+  return TRUE;
 }
 
 
-void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h,  BOOL stretchTo8Bit, double *minValues, double *maxValues)
+void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 {
 	if (p_pixel_data_ == NULL || x_size_ == 0 || y_size_==0) return NULL;
 	
@@ -1411,17 +1487,17 @@ void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h,  BOOL st
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return GetPixelDataBlock(t,left,top,w,h,stretchTo8Bit,minValues,maxValues);
+			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return GetPixelDataBlock(t,left,top,w,h,stretchTo8Bit,minValues,maxValues);
+			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return GetPixelDataBlock(t,left,top,w,h,stretchTo8Bit,minValues,maxValues);
+			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		default:
 			return NULL;
@@ -1431,43 +1507,28 @@ void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h,  BOOL st
 
 ///*
 template <typename T>
-void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h,  
-									BOOL stretch_to_8bit, double *p_min_values, double *p_max_values)
+void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h)
 {
 	if (num_bands_==0) return NULL;
 	int					n = w*h;
 	unsigned __int64	m = x_size_*y_size_;
 	T				*p_pixel_block_t;
-	BYTE			*p_pixel_block_byte;
-
-	if (stretch_to_8bit) p_pixel_block_byte	= new BYTE[num_bands_*n];
-	else p_pixel_block_t		= new T[num_bands_*n];
+	p_pixel_block_t		= new T[num_bands_*n];
 
 	
 	T *p_pixel_data_t= (T*)p_pixel_data_;
-	double d;
 	for (int k=0;k<num_bands_;k++)
 	{
 		for (int j=left;j<left+w;j++)
 		{
 			for (int i=top;i<top+h;i++)
 			{
-				if (stretch_to_8bit)
-				{
-          if (p_pixel_data_t[m*k+i*x_size_+j] == 0) p_pixel_block_byte[n*k+(i-top)*w+j-left] = 0;
-          else
-          {  
-					  d = max(min(p_pixel_data_t[m*k+i*x_size_+j],p_max_values[k]),p_min_values[k]);
-					  p_pixel_block_byte[n*k+(i-top)*w+j-left] = (int)(0.5+255*((d-p_min_values[k])/(p_max_values[k]-p_min_values[k])));
-          }
-				}
-				else p_pixel_block_t[n*k+(i-top)*w+j-left] = p_pixel_data_t[m*k+i*x_size_+j];
+				p_pixel_block_t[n*k+(i-top)*w+j-left] = p_pixel_data_t[m*k+i*x_size_+j];
 			}
 		}
 	}			
 
-	if (stretch_to_8bit)	return p_pixel_block_byte;
-	else return p_pixel_block_t;
+	return p_pixel_block_t;
 }
 //*/
 
@@ -1501,7 +1562,7 @@ BOOL		RasterBuffer::AddPixelDataToMetaHistogram(MetaHistogram *p_hist)
 	}
 }
 
-void*		RasterBuffer::GetDataZoomedOut	()
+void*		RasterBuffer::GetDataZoomedOut	(string resampling_method)
 {
 	void *p_pixel_data_zoomedout;
 	switch (data_type_)
@@ -1509,22 +1570,22 @@ void*		RasterBuffer::GetDataZoomedOut	()
 		case GDT_Byte:
 		{
 			BYTE t = 1;
-			return GetDataZoomedOut(t);
+			return GetDataZoomedOut(t,resampling_method);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return GetDataZoomedOut(t);
+			return GetDataZoomedOut(t,resampling_method);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return GetDataZoomedOut(t);
+			return GetDataZoomedOut(t,resampling_method);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return GetDataZoomedOut(t);
+			return GetDataZoomedOut(t,resampling_method);
 		}
 		default:
 			return NULL;
@@ -1532,34 +1593,122 @@ void*		RasterBuffer::GetDataZoomedOut	()
 }
 
 template<typename T>
-void* RasterBuffer::GetDataZoomedOut	(T type)
+void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
 {
-	unsigned int a	= x_size_*y_size_/4;
-	unsigned w = x_size_/2;
-	unsigned h = y_size_/2;
+  int n	= x_size_*y_size_;
+	int n_4	= x_size_*y_size_/4;
+	int w = x_size_/2;
+	int h = y_size_/2;
 	T	*p_pixel_data_zoomedout	= NULL;
-	if(! (p_pixel_data_zoomedout = new T[num_bands_*a]) )
+
+	if(! (p_pixel_data_zoomedout = new T[num_bands_*n_4]) )
 	{
 		return NULL;
 	}
-	unsigned int m =0;
-	T	*p_pixel_data_t		= (T*)p_pixel_data_;
 
-	for (int k=0;k<num_bands_;k++)
+  int m,k,q,l,i,j,b,num_def_pix;
+  T	*p_pixel_data_t		= (T*)p_pixel_data_;
+  
+  int _num_bands = (IsAlphaBand()) ? num_bands_-1 : num_bands_;
+
+  T min, dist;
+  T *mean = new T[_num_bands];
+  int mean_int[100];
+  float mean_float[100];
+  int r[4], l_min;
+
+  resampling_method = (resampling_method=="nearest" || resampling_method=="near") ?
+                      "nearest" : resampling_method;
+
+  //проверить, еть ли значимые пикселы
+  //если нет, то в альфаканале 0, в остальных по общему правилу
+  //если есть, то в альфаканале 255, в остальных по общему правилу
+  //если альфаканала нет, то по общему правилу
+
+  for (i=0;i<h;i++)
 	{
-		for (int i=0;i<h;i++)
+		for (j=0;j<w;j++)
 		{
-			for (int j=0;j<w;j++)
-			{
-				p_pixel_data_zoomedout[m + i*w + j] = (	p_pixel_data_t[(m<<2) + (i<<1)*(x_size_) + (j<<1)]+
-												p_pixel_data_t[(m<<2) + ((i<<1)+1)*(x_size_) + (j<<1)]+
-												p_pixel_data_t[(m<<2) + (i<<1)*(x_size_) + (j<<1) +1]+
-												p_pixel_data_t[(m<<2) + ((i<<1)+1)*(x_size_) + (j<<1) + 1])/4;
-			}
-		}
-		m+=a;
-	}
-	return p_pixel_data_zoomedout;
+      m = i*w;
+      if (!IsAlphaBand())
+      {
+        for (l=0;l<4;l++)
+          r[l] = (m<<2) + (j<<1) + l%2 + (l>>1)*x_size_;
+        num_def_pix = 4;
+      }
+      else
+      {
+        num_def_pix=0;
+        k = n_4*(num_bands_-1);
+        for (l=0;l<4;l++)
+        {
+          q = (m<<2) + (j<<1) + l%2 + (l>>1)*x_size_;
+          if (p_pixel_data_t[q + (k<<2)] != 0)
+          {
+            r[num_def_pix] = q;
+            num_def_pix++;
+          }
+        }
+
+        if (num_def_pix==0 ||
+            (num_def_pix==1 && resampling_method!="nearest")
+            )
+        {
+          p_pixel_data_zoomedout[m+j+k] = 0;
+          for (b=0;b<_num_bands;b++)
+            p_pixel_data_zoomedout[m+j+n_4*b] = p_pixel_data_t[(m<<2) + (j<<1) +b*n];
+          continue;
+        }
+        else p_pixel_data_zoomedout[m+j+k] = 255;
+      }
+                
+      for (b=0;b<_num_bands;b++)
+      {
+        if (sizeof(T)<4)
+        {
+          mean_int[b]=0;
+          for (l=0;l<num_def_pix;l++)
+            mean_int[b]+=p_pixel_data_t[r[l]+b*n];
+          mean[b]=(mean_int[b]/num_def_pix) + (((mean_int[b]%num_def_pix)<<1)>num_def_pix);
+        }
+        else
+        {
+          mean_float[b]=0;
+          for (l=0;l<num_def_pix;l++)
+            mean_float[b]+=p_pixel_data_t[r[l]+b*n];
+          mean[b]=mean_float[b]/num_def_pix;
+        }
+      }
+        
+      if (resampling_method!="nearest")
+      {
+        for (b=0;b<_num_bands;b++)
+           p_pixel_data_zoomedout[m+j+b*n_4]=mean[b];
+      }
+      else
+      {
+        min = sizeof(T)==1 ? 255 : 32000;
+        l_min=0;
+        for (l=0;l<num_def_pix;l++)
+        {
+          dist=0;
+          for (b=0;b<_num_bands;b++)
+             dist+= (mean[b]-p_pixel_data_t[r[l]+b*n] >0) ? mean[b]-p_pixel_data_t[r[l]+b*n] :
+                                                          p_pixel_data_t[r[l]+b*n]-mean[b];
+          if (dist<min)
+          {
+            l_min=l;
+            min=dist;
+          }
+        }
+        for (b=0;b<_num_bands;b++)
+           p_pixel_data_zoomedout[m+j+b*n_4]=p_pixel_data_t[r[l_min]+b*n];
+      }
+    }
+  }
+  delete[]mean;
+
+  return p_pixel_data_zoomedout;
 }
 
 
@@ -1569,11 +1718,13 @@ BOOL    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
   T *p_pixel_data_t = (T*)p_pixel_data_;
   unsigned int n = x_size_*y_size_;
   unsigned int m = 0;
+
+  int _num_bands = IsAlphaBand() ? num_bands_-1 : num_bands_;
   for (int i=0;i<y_size_;i++)
   {
     for (int j=0;j<x_size_;j++)
     {
-      for (int k=0;k<num_bands_;k++)
+      for (int k=0;k<_num_bands;k++)
       {
         p_hist->AddValue(k,p_pixel_data_t[k*n+m]);
       }
@@ -1633,7 +1784,7 @@ BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
       {
         if (i<0) continue;
         if (i>=x_size_) break;
-        vector_mask[n+i]=1;
+        vector_mask[n+i]=255;
       }
     }
 

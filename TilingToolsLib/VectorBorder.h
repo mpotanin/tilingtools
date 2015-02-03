@@ -33,7 +33,7 @@ public:
 	BOOL						Intersects(int tile_z, int tile_x, int tile_y);
 	OGRGeometry*				get_ogr_geometry_ref();
 	OGRGeometry*				GetOGRGeometryTransformed (OGRSpatialReference *poOutputSRS);
-	OGRPolygon*					GetOGRPolygonTransformedToPixelLine(OGRSpatialReference *poRasterSRS, double *rasterGeoTransform);
+	OGRGeometry*				GetOGRGeometryTransformedToPixelLine(OGRSpatialReference *poRasterSRS, double *rasterGeoTransform);
 	OGREnvelope					GetEnvelope ();
 
 
