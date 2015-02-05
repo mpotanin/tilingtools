@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 
-
 void PrintHelp ()
 {
 
@@ -242,6 +241,16 @@ int _tmain(int argc, wchar_t* argvW[])
   }
   GDALAllRegister();
   OGRRegisterAll();
+
+  //begin-test
+  //WritePRCPByYear("e:\\meteo","e:\\meteo\\stations_rus.shp",2013,"e:\\meteo\\prcp_by_stations_2013.shp");
+  //std::list<string> file_list;
+  
+  //gmx::FindFilesByPattern(file_list,"e:\\meteo\\2014\\*.op");
+  
+  //end-test
+
+  
 
   if (argc == 1)
   {

@@ -856,6 +856,12 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 		}
 
 		GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
+    if (p_warp_options->hCutline)
+    {
+      ((OGRGeometry*)p_warp_options->hCutline)->empty();
+      p_warp_options->hCutline = NULL;
+    }
+
     if (p_warp_options->padfSrcNoDataReal)
     {
       delete[]p_warp_options->padfSrcNoDataReal;
