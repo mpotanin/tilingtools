@@ -136,7 +136,7 @@ BOOL LoadGDAL (int argc, string argv[])
 BOOL LoadGDALDLLs (string gdal_path)
 {
 	wstring gdal_dll_w;
-	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal110.dll"));
+	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal111.dll"));
 
 	HMODULE b = LoadLibrary(gdal_dll_w.c_str());
   if (b==NULL)

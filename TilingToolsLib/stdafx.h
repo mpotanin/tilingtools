@@ -25,15 +25,15 @@
 ///*
 
 //#include "../pthread/pthread.h"
-#include "../gdal110/include/gdal_priv.h"
-#include "../gdal110/include/ogrsf_frmts.h"
-#include "../gdal110/include/gd.h"
-#include "../gdal110/include/vrtdataset.h"
-#include "../gdal110/include/gdalwarper.h"
-#include "../gdal110/include/sqlite3.h"
+#include "../gdal111/include/gdal_priv.h"
+#include "../gdal111/include/ogrsf_frmts.h"
+#include "../gdal111/include/gd.h"
+#include "../gdal111/include/vrtdataset.h"
+#include "../gdal111/include/gdalwarper.h"
+#include "../gdal111/include/sqlite3.h"
 //#include "../openjpeg-2.0/include/openjpeg.h"
 #include "../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
-//#include "../gdal110/x86110/x86/include/openjpeg.h"
+//#include "../gdal111/x86110/x86/include/openjpeg.h"
 //*/
 
 #ifndef NO_KAKADU

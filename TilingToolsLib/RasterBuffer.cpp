@@ -1039,8 +1039,9 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
 	
 	gdImagePtr im		= gdImageCreateTrueColor(x_size_,y_size_);
-	
-	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+
+ 
+ 	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
 	int n = (num_bands_ == 3 || num_bands_ == 4) ? 	y_size_*x_size_ : 0;
 	int transparency = 0;
 
@@ -1049,8 +1050,6 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 		im->alphaBlendingFlag	= 1;
 		im->saveAlphaFlag		= 1;
 		int n = (num_bands_ == 4) ? 	y_size_*x_size_ : 0;
-		int opaque = 0;
-    int l;
 		for (int j=0;j<y_size_;j++)
 		{
 			for (int i=0;i<x_size_;i++){
@@ -1595,6 +1594,36 @@ void*		RasterBuffer::GetDataZoomedOut	(string resampling_method)
 template<typename T>
 void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
 {
+  /*
+  unsigned int a	= x_size_*y_size_/4;
+	unsigned w = x_size_/2;
+	unsigned h = y_size_/2;
+	T	*p_pixel_data_zoomedout	= NULL;
+	if(! (p_pixel_data_zoomedout = new T[num_bands_*a]) )
+	{
+		return NULL;
+	}
+	unsigned int m =0;
+	T	*p_pixel_data_t		= (T*)p_pixel_data_;
+
+	for (int k=0;k<num_bands_;k++)
+	{
+		for (int i=0;i<h;i++)
+		{
+			for (int j=0;j<w;j++)
+			{
+				p_pixel_data_zoomedout[m + i*w + j] = (	p_pixel_data_t[(m<<2) + (i<<1)*(x_size_) + (j<<1)]+
+												p_pixel_data_t[(m<<2) + ((i<<1)+1)*(x_size_) + (j<<1)]+
+												p_pixel_data_t[(m<<2) + (i<<1)*(x_size_) + (j<<1) +1]+
+												p_pixel_data_t[(m<<2) + ((i<<1)+1)*(x_size_) + (j<<1) + 1])/4;
+			}
+		}
+		m+=a;
+	}
+  */
+	//return p_pixel_data_zoomedout;
+
+  ///*
   int n	= x_size_*y_size_;
 	int n_4	= x_size_*y_size_/4;
 	int w = x_size_/2;
@@ -1707,6 +1736,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
     }
   }
   delete[]mean;
+  //*/
 
   return p_pixel_data_zoomedout;
 }
