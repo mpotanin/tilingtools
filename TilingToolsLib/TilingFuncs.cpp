@@ -188,10 +188,6 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 	else 
     p_itile_pyramid = new TileFolder(p_tiling_params->p_tile_name_,TRUE);
   
-  //debug
-  time_t start = time(0);
-  //end-debug
-
   cout<<"Base zoom "<<base_zoom<<": ";
 	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid,&histogram)) 
   {
@@ -200,19 +196,13 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
     return FALSE;
   }
 	cout<<" done."<<endl;
-  //debug
-  cout<<time(0)-start<<endl;
-  //end-debug
-
+  
 
   if (histogram.IsInitiated())
     histogram.CalcStatistics(&hist_stat,(nodata_defined) ? &nodata_val : 0); 
   
   int min_zoom = (p_tiling_params->min_zoom_ <=0) ? 1 : p_tiling_params->min_zoom_;
 	
-  //debug
-  start = time(0);
-  //end-debug
   if (min_zoom < base_zoom)
   {
 	  cout<<"Pyramid tiles: ";//<<endl;
@@ -249,10 +239,7 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 		  cout<<" done."<<endl;
 	  }
   }
-  //debug
-  cout<<time(0)-start<<endl;
-  //end-debug
-
+ 
 	if (!p_itile_pyramid->Close())
   {
     cout<<"Error: can't save tile container to disk"<<endl;

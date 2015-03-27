@@ -1087,20 +1087,36 @@ BOOL RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 {
 
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
-	if (p_color_table_==NULL) return SaveToPng24Data(p_data_dst,size);
-	
-	gdImagePtr im	= gdImageCreate(x_size_,y_size_);
-	im->colorsTotal = p_color_table_->GetColorEntryCount();
-	//im->
-	for (int i=0;(i<im->colorsTotal)&&(i<gdMaxColors);i++)
-	{
-		const GDALColorEntry *p_color_entry = p_color_table_->GetColorEntry(i);
+	//if (p_color_table_==NULL) return SaveToPng24Data(p_data_dst,size);
+  if (num_bands_>1) return SaveToPng24Data(p_data_dst,size);
+  
+  gdImagePtr im	= gdImageCreate(x_size_,y_size_);
+
+  if (p_color_table_==NULL)
+  {
+    im->colorsTotal = 256;
+    for (int i=0;i<256;i++)
+    {
+	    im->red[i]		= i;
+	    im->green[i]	= i;
+	    im->blue[i]		= i;
+	    im->open[i]		= 0;
+    }
+  }
+  else
+  {
+    im->colorsTotal = p_color_table_->GetColorEntryCount();
+    //im->
+    for (int i=0;(i<im->colorsTotal)&&(i<gdMaxColors);i++)
+    {
+	    const GDALColorEntry *p_color_entry = p_color_table_->GetColorEntry(i);
 		
-		im->red[i]		= p_color_entry->c1;
-		im->green[i]	= p_color_entry->c2;
-		im->blue[i]		= p_color_entry->c3;
-		im->open[i]		= 0;
-	}
+	    im->red[i]		= p_color_entry->c1;
+	    im->green[i]	= p_color_entry->c2;
+	    im->blue[i]		= p_color_entry->c3;
+	    im->open[i]		= 0;
+    }
+  }
 
 	for (int j=0;j<y_size_;j++)
 	{
