@@ -368,11 +368,14 @@ BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
     CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,TRUE);
     alpha_band_defined_ = true;
   }
-	else CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
+	else if (im->tpixels!=NULL) CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
+  else CreateBuffer(1,im->sx,im->sy,NULL,GDT_Byte);
+
+
 
 	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
 
-	int n = im->sx * im->sy;
+	int n = (num_bands_==1) ? 0 : im->sx * im->sy;
 	int color, k;
 	for (int j=0;j<im->sy;j++)
 	{
@@ -1034,6 +1037,18 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
 }
 #endif
 
+/*
+1 канал - png8
+
+>1 канала - png24/32:
+   альфаканал - png32 (исп. gdTrueColorAlpha)
+   !альфаканал - Png24 (исп. gdTrueColor)
+   таблица цветов - запись цвета по таблице
+   !таблица цветов - запись цвета по значению
+
+*/
+
+
 BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 {
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
@@ -1042,37 +1057,56 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 
  
  	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
-	int n = (num_bands_ == 3 || num_bands_ == 4) ? 	y_size_*x_size_ : 0;
+	int n = y_size_*x_size_;
 	int transparency = 0;
 
-	if ((num_bands_ == 4) || (num_bands_ == 2))
+
+	if ((num_bands_ == 4) || (num_bands_ == 2))  //alpha_band_defined_ == true
 	{
 		im->alphaBlendingFlag	= 1;
 		im->saveAlphaFlag		= 1;
-		int n = (num_bands_ == 4) ? 	y_size_*x_size_ : 0;
-		for (int j=0;j<y_size_;j++)
-		{
-			for (int i=0;i<x_size_;i++){
-        im->tpixels[j][i] = gdTrueColorAlpha(p_pixel_data_byte[j*x_size_+i],
-									p_pixel_data_byte[j*x_size_+i+n],
-									p_pixel_data_byte[j*x_size_+i+n + n],
-									(p_pixel_data_byte[j*x_size_+ i + n + n + y_size_*x_size_ ] >= 100) ? 0 : 127);
+	  if ((this->p_color_table_) && (num_bands_ == 2))
+    {
+      const GDALColorEntry *p_color_entry = NULL; 
+      for (int j=0;j<y_size_;j++)
+		  {
+			  for (int i=0;i<x_size_;i++){
+          p_color_entry = p_color_table_->GetColorEntry(p_pixel_data_byte[j*x_size_+i]);
+          im->tpixels[j][i] = gdTrueColorAlpha(p_color_entry->c1,
+                                               p_color_entry->c2,
+                                               p_color_entry->c3,
+									                             (p_pixel_data_byte[j*x_size_+ i + n] >= 100) ? 0 : 127);
 
-      }
-		}
+        }
+		  }
+    }
+    else
+    {
+      int m = (num_bands_ == 4) ? y_size_*x_size_ : 0;
+		  for (int j=0;j<y_size_;j++)
+		  {
+			  for (int i=0;i<x_size_;i++){
+          im->tpixels[j][i] = gdTrueColorAlpha(p_pixel_data_byte[j*x_size_+i],
+									                             p_pixel_data_byte[j*x_size_ + i + m],
+									                             p_pixel_data_byte[j*x_size_+ i + m + m],
+									                             (p_pixel_data_byte[j*x_size_+ i + m + m + n] >= 100) ? 0 : 127);
+        }
+		  }
+    }
 	}
-	else // ((num_bands_ == 3) || (num_bands_ == 1))
+	else //num_bands_==3 && alpha_band_defined_ == false
 	{
 		im->alphaBlendingFlag	= 0;
 		im->saveAlphaFlag		= 0;
 		for (int j=0;j<y_size_;j++)
 		{
 			for (int i=0;i<x_size_;i++)
-				im->tpixels[j][i] = gdTrueColor(p_pixel_data_byte[j*x_size_+i],p_pixel_data_byte[j*x_size_+i+n],p_pixel_data_byte[j*x_size_+i+n+n]);
+				im->tpixels[j][i] = gdTrueColor(p_pixel_data_byte[j*x_size_+i],
+                                        p_pixel_data_byte[j*x_size_+i+n],
+                                        p_pixel_data_byte[j*x_size_+i+n+n]);
 		}
 	}
-
-
+  
 	if (!(p_data_dst = (BYTE*)gdImagePngPtr(im,&size)))
 	{
 		gdImageDestroy(im);
@@ -1896,7 +1930,7 @@ BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
 
 BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
 {
-	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>4) || (p_color_table_)) return FALSE;
+	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3)) return FALSE;
 
 	int n = x_size_ *y_size_;
 	int num_bands_new = (num_bands_==1 || num_bands_==3) ? num_bands_+1 : num_bands_;

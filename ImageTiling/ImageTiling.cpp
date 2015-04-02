@@ -297,7 +297,13 @@ int _tmain(int argc, wchar_t* argvW[])
      console_params.at("-file") = argv[1];
 
   //console_params.at("-file") = "C:\\Work\\Projects\\TilingTools\\autotest\\L8\\LC81750272014083LGN00_B4.TIF|C:\\Work\\Projects\\TilingTools\\autotest\\L8\\LC81750272014083LGN00_B3.TIF?,1,|C:\\Work\\Projects\\TilingTools\\autotest\\L8\\LC81750272014083LGN00_B2.TIF?,,1";
-  //console_params.at("-file") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.tif";
+  //console_params.at("-file") = "e:\\test_images\\Glad_res300315merc.tif";
+  //console_params.at("-tile_type") = "png";
+  //console_params.at("-nodata") = "255";
+  //console_params.at("-gmxtiles")="-container";
+  //console_params.at("-resampling")="-nearest";
+  //console_params.at("-tiles")="e:\\test_images\\Glad_res300315merc_near.tiles";
+
 
   //console_params.at("-gmxtiles")="-container";
   //console_params.at("-border") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.mif";
