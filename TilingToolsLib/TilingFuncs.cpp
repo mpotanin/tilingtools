@@ -621,7 +621,8 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 	
 		p_itile_pyramid->GetTile(zoom,nX,nY,p_data,size);
 		if (size ==0) return FALSE;
-		switch (p_tiling_params->tile_type_)
+
+   	switch (p_tiling_params->tile_type_)
 		{
 			case JPEG_TILE:
 				{
@@ -695,6 +696,7 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 		//Проверить длину очереди на выполнение операций: ZoomOut + SaveData + запись результатов
 		//Если < Lmax, то отправить на выполнение
 		//Если >=Lmax, то ждать
+    
     if (!GMXZoomOutTileBuffer(quarter_tile_buffer,
                               src_quarter_tile_buffers_def, 
                               tile_buffer,
@@ -755,7 +757,10 @@ BOOL GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4],
 									tile_size,
 									NULL,
 									src_quarter_tile_buffers[i].get_data_type(),
-									src_quarter_tile_buffers[i].IsAlphaBand());
+									src_quarter_tile_buffers[i].IsAlphaBand(),
+                  src_quarter_tile_buffers[i].get_color_table_ref());
+
+  
   if (p_background && src_quarter_tile_buffers[i].get_data_type() == GDT_Byte)
     zoomed_out_tile_buffer.InitByRGBColor(p_background);
 

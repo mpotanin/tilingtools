@@ -363,38 +363,60 @@ BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
 	gdImagePtr im;
 	if (!  (im =	gdImageCreateFromPngPtr(size, p_data_src))) return FALSE;
 	
-	if (im->alphaBlendingFlag)
+  if (im->tpixels!=NULL)
   {
-    CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,TRUE);
-    alpha_band_defined_ = true;
+    if (im->alphaBlendingFlag)
+    {
+      CreateBuffer(4,im->sx,im->sy,NULL,GDT_Byte,TRUE);
+      alpha_band_defined_ = true;
+    }
+    else CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
+    
+    BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+    int n = (num_bands_==1) ? 0 : im->sx * im->sy;
+  	int color, k;
+    for (int j=0;j<im->sy;j++)
+	  {
+		  for (int i=0;i<im->sx;i++)
+		  {
+        color = im->tpixels[j][i];
+        k = j*x_size_+i;
+			  if (im->alphaBlendingFlag)
+			  {
+				  p_pixel_data_byte[n + n + n + k] = ((color>>24) > 0) ? 0 : 255;
+				  color = color & 0xffffff;
+			  }
+			  p_pixel_data_byte[k]		= (color>>16) & 0xff;
+			  p_pixel_data_byte[n+ k]	= (color>>8) & 0xff;
+			  p_pixel_data_byte[n+ n+ k] = color & 0xff;
+      }
+    }
   }
-	else if (im->tpixels!=NULL) CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
-  else CreateBuffer(1,im->sx,im->sy,NULL,GDT_Byte);
-
-
-
-	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
-
-	int n = (num_bands_==1) ? 0 : im->sx * im->sy;
-	int color, k;
-	for (int j=0;j<im->sy;j++)
-	{
-		for (int i=0;i<im->sx;i++)
-		{
-			color = (im->tpixels!=NULL) ? im->tpixels[j][i] :
-					gdTrueColor(im->red[im->pixels[j][i]],im->green[im->pixels[j][i]],im->blue[im->pixels[j][i]]);
-			k = j*x_size_+i;
-			if (im->alphaBlendingFlag)
-			{
-				p_pixel_data_byte[n+ n + n + k] = ((color>>24) > 0) ? 0 : 255;
-				color = color & 0xffffff;
-			}
-			p_pixel_data_byte[k]		= (color>>16) & 0xff;
-			p_pixel_data_byte[n+ k]	= (color>>8) & 0xff;
-			p_pixel_data_byte[n+ n+ k] = color & 0xff;
-		}
-	}
-
+  else
+  {
+    GDALColorTable *p_table = new GDALColorTable();
+    for (int i=0;i<im->colorsTotal;i++)
+    {
+      GDALColorEntry *p_color_entry = new GDALColorEntry();
+      p_color_entry->c1 = im->red[i];
+      p_color_entry->c2 = im->green[i];
+      p_color_entry->c3 = im->blue[i];
+      p_table->SetColorEntry(i,p_color_entry);
+      delete(p_color_entry);
+    }
+    CreateBuffer(1,im->sx,im->sy,NULL,GDT_Byte,false,p_table);
+    delete(p_table);
+    
+    BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+    for (int j=0;j<im->sy;j++)
+	  {
+		  for (int i=0;i<im->sx;i++)
+		  {
+        p_pixel_data_byte[j*x_size_+i] = im->pixels[j][i];
+      }
+    }
+  }
+ 
 	gdImageDestroy(im);
 	return TRUE;
 
@@ -1644,36 +1666,7 @@ void*		RasterBuffer::GetDataZoomedOut	(string resampling_method)
 template<typename T>
 void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
 {
-  /*
-  unsigned int a	= x_size_*y_size_/4;
-	unsigned w = x_size_/2;
-	unsigned h = y_size_/2;
-	T	*p_pixel_data_zoomedout	= NULL;
-	if(! (p_pixel_data_zoomedout = new T[num_bands_*a]) )
-	{
-		return NULL;
-	}
-	unsigned int m =0;
-	T	*p_pixel_data_t		= (T*)p_pixel_data_;
-
-	for (int k=0;k<num_bands_;k++)
-	{
-		for (int i=0;i<h;i++)
-		{
-			for (int j=0;j<w;j++)
-			{
-				p_pixel_data_zoomedout[m + i*w + j] = (	p_pixel_data_t[(m<<2) + (i<<1)*(x_size_) + (j<<1)]+
-												p_pixel_data_t[(m<<2) + ((i<<1)+1)*(x_size_) + (j<<1)]+
-												p_pixel_data_t[(m<<2) + (i<<1)*(x_size_) + (j<<1) +1]+
-												p_pixel_data_t[(m<<2) + ((i<<1)+1)*(x_size_) + (j<<1) + 1])/4;
-			}
-		}
-		m+=a;
-	}
-  */
-	//return p_pixel_data_zoomedout;
-
-  ///*
+ 
   int n	= x_size_*y_size_;
 	int n_4	= x_size_*y_size_/4;
 	int w = x_size_/2;
@@ -1690,19 +1683,11 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
   
   int _num_bands = (IsAlphaBand()) ? num_bands_-1 : num_bands_;
 
-  T min, dist;
-  T *mean = new T[_num_bands];
-  int mean_int[100];
-  float mean_float[100];
-  int r[4], l_min;
+  int r[4], pixel_sum[100];
+  int min, dist, l_min, _dist;
 
   resampling_method = (resampling_method=="nearest" || resampling_method=="near") ?
                       "nearest" : resampling_method;
-
-  //проверить, еть ли значимые пикселы
-  //если нет, то в альфаканале 0, в остальных по общему правилу
-  //если есть, то в альфаканале 255, в остальных по общему правилу
-  //если альфаканала нет, то по общему правилу
 
   for (i=0;i<h;i++)
 	{
@@ -1743,37 +1728,26 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
                 
       for (b=0;b<_num_bands;b++)
       {
-        if (sizeof(T)<4)
-        {
-          mean_int[b]=0;
-          for (l=0;l<num_def_pix;l++)
-            mean_int[b]+=p_pixel_data_t[r[l]+b*n];
-          mean[b]=(mean_int[b]/num_def_pix) + (((mean_int[b]%num_def_pix)<<1)>num_def_pix);
-        }
-        else
-        {
-          mean_float[b]=0;
-          for (l=0;l<num_def_pix;l++)
-            mean_float[b]+=p_pixel_data_t[r[l]+b*n];
-          mean[b]=mean_float[b]/num_def_pix;
-        }
+        pixel_sum[b] = 0;
+        for (l=0;l<num_def_pix;l++)
+          pixel_sum[b]+=p_pixel_data_t[r[l]+b*n];
       }
-        
+                  
       if (resampling_method!="nearest")
       {
         for (b=0;b<_num_bands;b++)
-           p_pixel_data_zoomedout[m+j+b*n_4]=mean[b];
+           p_pixel_data_zoomedout[m+j+b*n_4]=  (pixel_sum[b]/num_def_pix) + (((pixel_sum[b]%num_def_pix)<<1)>num_def_pix); //mean_float[b];
       }
       else
       {
-        min = sizeof(T)==1 ? 255 : 32000;
+        min = 1000000;
         l_min=0;
         for (l=0;l<num_def_pix;l++)
         {
           dist=0;
           for (b=0;b<_num_bands;b++)
-             dist+= (mean[b]-p_pixel_data_t[r[l]+b*n] >0) ? mean[b]-p_pixel_data_t[r[l]+b*n] :
-                                                          p_pixel_data_t[r[l]+b*n]-mean[b];
+             dist+= ((_dist = pixel_sum[b]-p_pixel_data_t[r[l]+b*n]*num_def_pix) > 0) ? 
+                      _dist : -_dist;
           if (dist<min)
           {
             l_min=l;
@@ -1785,8 +1759,6 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
       }
     }
   }
-  delete[]mean;
-  //*/
 
   return p_pixel_data_zoomedout;
 }
