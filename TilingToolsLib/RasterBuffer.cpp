@@ -1704,6 +1704,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
       {
         num_def_pix=0;
         k = n_4*(num_bands_-1);
+
         for (l=0;l<4;l++)
         {
           q = (m<<2) + (j<<1) + l%2 + (l>>1)*x_size_;
@@ -1736,12 +1737,13 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
       if (resampling_method!="nearest")
       {
         for (b=0;b<_num_bands;b++)
-           p_pixel_data_zoomedout[m+j+b*n_4]=  (pixel_sum[b]/num_def_pix) + (((pixel_sum[b]%num_def_pix)<<1)>num_def_pix); //mean_float[b];
+           p_pixel_data_zoomedout[m+j+b*n_4]=  (pixel_sum[b]/num_def_pix) + (((pixel_sum[b]%num_def_pix)<<1)>num_def_pix); 
       }
       else
       {
         min = 1000000;
         l_min=0;
+    
         for (l=0;l<num_def_pix;l++)
         {
           dist=0;

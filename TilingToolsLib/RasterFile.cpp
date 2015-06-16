@@ -690,8 +690,12 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 	output_ogr_sr.exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
 
-	
-  if ((p_nodata || nodata_val_from_file_defined) && (bands_num_dst<=3) ) 
+
+  if (p_background_color)
+  {
+    RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
+  }
+  else if ((p_nodata || nodata_val_from_file_defined) && (bands_num_dst<=3) ) 
   {
     BYTE rgb[3];
     if (p_nodata) memcpy(rgb,p_nodata,3);
@@ -699,12 +703,9 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
     
     RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,rgb);
   }
-  else if (p_background_color)
-  {
-    RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
-  }
 
 
+  
   int file_num = -1;
 
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
