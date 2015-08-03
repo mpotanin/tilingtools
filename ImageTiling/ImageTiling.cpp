@@ -297,8 +297,10 @@ int _tmain(int argc, wchar_t* argvW[])
      console_params.at("-file") = argv[1];
 
   //console_params.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
-  //console_params.at("-file") = "E:\\LC81490222013202LGN00_classification.tif";
-  //console_params.at("-tile_type") = "png";
+  //console_params.at("-file") = "C:\\Users\\mpotanin\\Downloads\\dem_cs_zl09.tif";
+  //console_params.at("-tile_type") = "tif";
+  //console_params.at("-work_threads") = "1";
+
   //console_params.at("-zoom") = "8";
   //console_params.at("-background") = "255 255 255";
 

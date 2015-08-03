@@ -251,7 +251,7 @@ BOOL RasterBuffer::CreateBuffer	(int			num_bands,
 				break;
 		case GDT_Int16:
 				this->p_pixel_data_ = new __int16[num_bands_*x_size_*y_size_];
-				data_size_ = 3;
+				data_size_ = 2;
 				break;
 		case GDT_Float32:
 				this->p_pixel_data_ = new float[num_bands_*x_size_*y_size_];
