@@ -1097,7 +1097,7 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
           im->tpixels[j][i] = gdTrueColorAlpha(p_color_entry->c1,
                                                p_color_entry->c2,
                                                p_color_entry->c3,
-									                             (p_pixel_data_byte[j*x_size_+ i + n] >= 100) ? 0 : 127);
+									                             (p_pixel_data_byte[j*x_size_+ i + n] >0) ? 0 : 127);
 
         }
 		  }
@@ -1111,7 +1111,7 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
           im->tpixels[j][i] = gdTrueColorAlpha(p_pixel_data_byte[j*x_size_+i],
 									                             p_pixel_data_byte[j*x_size_ + i + m],
 									                             p_pixel_data_byte[j*x_size_+ i + m + m],
-									                             (p_pixel_data_byte[j*x_size_+ i + m + m + n] >= 100) ? 0 : 127);
+									                             (p_pixel_data_byte[j*x_size_+ i + m + m + n] >0) ? 0 : 127);
         }
 		  }
     }
