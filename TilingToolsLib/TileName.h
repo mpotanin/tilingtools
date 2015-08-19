@@ -247,13 +247,31 @@ typedef enum {
 	JPEG_TILE=0,
 	PNG_TILE=1,
 	TIFF_TILE=4,
-  JP2_TILE=16
+  JP2_TILE=16,
+  PSEUDO_PNG_TILE=32
 } TileType;
 
 
 class TileName
 {
 public:
+  static string TileInfoByTileType(TileType tile_type)
+	{
+		switch (tile_type)
+		{
+			case JPEG_TILE:
+				return "JPEG";
+			case PNG_TILE:
+				return "PNG";
+      case PSEUDO_PNG_TILE:
+				return "PSEUDO_PNG";
+			case TIFF_TILE:
+				return "TIFF";
+      case JP2_TILE:
+        return "JPEG2000";
+		}
+		return "";
+	}
 
 	static string ExtensionByTileType(TileType tile_type)
 	{

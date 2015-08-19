@@ -130,7 +130,8 @@ bool Metadata::SaveToTextFile(string filename)
 bool MetaHistogram::Init(int num_bands, GDALDataType gdt)
 {
   if (gdt == GDT_Byte) return Init(num_bands,0,1,256);
-  else return Init(num_bands,0,1, 0xFFFF + 1);
+  else if (gdt == GDT_UInt16) return Init(num_bands,0,1, 0xFFFF + 1);
+  else return Init(num_bands,-0x8000,1, 0xFFFF + 1);
 }
   
 

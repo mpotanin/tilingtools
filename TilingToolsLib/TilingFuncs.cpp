@@ -159,12 +159,14 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
     
 
     if (nodata_defined) metadata.AddTagRef(&nodata_value);
-    histogram.Init( p_tiling_params->CalcOutputBandsNum(&raster_bundle),
-                    p_tiling_params->GetOutputDataType(&raster_bundle));
-    metadata.AddTagRef(&histogram);
-    hist_stat.Init(p_tiling_params->CalcOutputBandsNum(&raster_bundle));
-    metadata.AddTagRef(&hist_stat);
-      
+    if (p_tiling_params->calculate_histogram_)
+    {
+      histogram.Init( p_tiling_params->CalcOutputBandsNum(&raster_bundle),
+                      p_tiling_params->GetOutputDataType(&raster_bundle));
+      metadata.AddTagRef(&histogram);
+      hist_stat.Init(p_tiling_params->CalcOutputBandsNum(&raster_bundle));
+      metadata.AddTagRef(&hist_stat);
+    }
     if ( !((GMXTileContainer*)p_itile_pyramid)->OpenForWriting(p_tiling_params->container_file_,
 														                                  p_tiling_params->tile_type_,
 														                                  p_tiling_params->merc_type_,
@@ -189,7 +191,10 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
     p_itile_pyramid = new TileFolder(p_tiling_params->p_tile_name_,TRUE);
   
   cout<<"Base zoom "<<base_zoom<<": ";
-	if (!GMXMakeBaseZoomTiling(p_tiling_params,&raster_bundle,p_itile_pyramid,&histogram)) 
+	if (!GMXMakeBaseZoomTiling( p_tiling_params,
+                              &raster_bundle,
+                              p_itile_pyramid,
+                              p_tiling_params->calculate_histogram_ ? &histogram : NULL)) 
   {
     p_itile_pyramid->Close();
 	  delete(p_itile_pyramid);
@@ -305,6 +310,11 @@ BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 							tile_buffer.SaveToPngData(p_data,size);
 							break;
 						}
+          case PSEUDO_PNG_TILE:
+					{
+						tile_buffer.SaveToPseudoPngData(p_data,size);
+						break;
+					}
           case JP2_TILE:
             {
               tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);

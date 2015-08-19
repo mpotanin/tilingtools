@@ -358,6 +358,47 @@ BOOL	RasterBuffer::CreateBufferFromJpegData (void *p_data_src, int size)
 }
 
 
+BOOL	RasterBuffer::CreateBufferFromPseudoPngData	(void *p_data_src, int size)
+{
+  gdImagePtr im;
+	if (!  (im =	gdImageCreateFromPngPtr(size, p_data_src))) return FALSE;
+  if (im->tpixels==NULL)
+  {
+   	gdImageDestroy(im);
+    return FALSE;
+  }
+  else
+  {
+    if (im->tpixels[0][0]<<24)
+    {
+      CreateBuffer(1,im->sx,im->sy,NULL,GDT_Int16);
+      __int16* p_pixel_data_int16 = (__int16*)p_pixel_data_;
+      for (int j=0;j<im->sy;j++)
+	    {
+		    for (int i=0;i<im->sx;i++)
+		    {
+          p_pixel_data_int16[j*x_size_+i]= (im->tpixels[j][i]<<8)>>16;
+			  }
+      }
+    }
+    else
+    {
+      CreateBuffer(1,im->sx,im->sy,NULL,GDT_UInt16);
+      unsigned __int16* p_pixel_data_uint16 = (unsigned __int16*)p_pixel_data_;
+      for (int j=0;j<im->sy;j++)
+	    {
+		    for (int i=0;i<im->sx;i++)
+		    {
+          p_pixel_data_uint16[j*x_size_+i]= (im->tpixels[j][i]<<8)>>16;
+			  }
+      }
+    }
+  }
+
+  gdImageDestroy(im);
+  return TRUE;
+}
+
 BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
 {
 	gdImagePtr im;
@@ -1069,6 +1110,51 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
    !таблица цветов - запись цвета по значению
 
 */
+
+BOOL RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
+{
+  if (x_size_==0 || y_size_ == 0) return FALSE;
+
+  gdImagePtr im		= gdImageCreateTrueColor(x_size_,y_size_);
+  int n = y_size_*x_size_;
+  
+  if (this->data_type_== GDT_Byte)
+  {
+    BYTE *p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+    for (int j=0;j<y_size_;j++)
+		{
+			for (int i=0;i<x_size_;i++)
+				im->tpixels[j][i] = int(p_pixel_data_byte[j*x_size_+i])<<8;
+		}
+  }
+  else if (this->data_type_==GDT_UInt16)
+  {
+    unsigned __int16 *p_pixel_data_uint16	= (unsigned __int16*)p_pixel_data_;
+    for (int j=0;j<y_size_;j++)
+		{
+			for (int i=0;i<x_size_;i++)
+				im->tpixels[j][i] = int(p_pixel_data_uint16[j*x_size_+i])<<8;
+		}
+  }
+  else if (this->data_type_==GDT_Int16)
+  {
+    __int16	*p_pixel_data_int16	= (__int16*)p_pixel_data_;
+    for (int j=0;j<y_size_;j++)
+		{
+			for (int i=0;i<x_size_;i++)
+				im->tpixels[j][i] = (int(p_pixel_data_int16[j*x_size_+i])<<8) + 1; // непон€тно будет ли работать дл€ отрицательных чисел??? //todo
+		}
+  }
+
+  if (!(p_data_dst = (BYTE*)gdImagePngPtr(im,&size)))
+	{
+		gdImageDestroy(im);
+		return FALSE;
+	}
+
+	gdImageDestroy(im);
+	return TRUE;
+}
 
 
 BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)

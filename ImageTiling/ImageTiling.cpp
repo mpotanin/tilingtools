@@ -64,6 +64,7 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   string max_work_threads_str = console_params.at("-work_threads");
   string max_warp_threads_str = console_params.at("-warp_threads");
   string bands_str = console_params.at("-bands");
+  string str_pseudo_png = console_params.at("-pseudo_png");
 
  
   gmx::BandMapping band_mapping_param;
@@ -81,22 +82,26 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
                     ) ? gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
 
   gmx::TileType tile_type;
-  if ((tile_type_str == ""))
+  if (str_pseudo_png!="") 
+    tile_type = gmx::TileType::PSEUDO_PNG_TILE;
+  else 
   {
-    if ((tile_name_template!="") && (tile_name_template!="kosmosnimki") && (tile_name_template!="standard"))
-      tile_type_str = tile_name_template.substr(tile_name_template.rfind(".")+1,
-                                                tile_name_template.length()-tile_name_template.rfind(".")-1
-                                                );
-    else
-      tile_type_str =  (gmx::MakeLower(gmx::GetExtension((*file_list.begin())))== "png") ? "png" : "jpg";
-  }
+    if ((tile_type_str == ""))
+    {
+      if ((tile_name_template!="") && (tile_name_template!="kosmosnimki") && (tile_name_template!="standard"))
+        tile_type_str = tile_name_template.substr(tile_name_template.rfind(".")+1,
+                                                  tile_name_template.length()-tile_name_template.rfind(".")-1
+                                                  );
+      else
+        tile_type_str =  (gmx::MakeLower(gmx::GetExtension((*file_list.begin())))== "png") ? "png" : "jpg";
+    }
+    if (!gmx::TileName::TileTypeByExtension(tile_type_str,tile_type))
+    {
+      cout<<"Error: not valid tile type: "<<tile_type_str;
+      return FALSE;
+    }
+  }  
 
-  if (!gmx::TileName::TileTypeByExtension(tile_type_str,tile_type))
-  {
-    cout<<"Error: not valid tile type: "<<tile_type_str;
-    return FALSE;
-  }
-  
   GMXTilingParameters tiling_params(file_list,merc_type,tile_type);
 
   if (band_mapping_param.GetBandsNum() != 0) 
@@ -211,8 +216,8 @@ BOOL CheckArgsAndCallTiling (map<string,string> console_params)
   tiling_params.gdal_resampling_ = gdal_resampling;
   tiling_params.auto_stretching_ = true;
   tiling_params.temp_file_path_for_warping_ = temp_file_warp_path;
-  tiling_params.calculate_histogram_ = true;
-
+  tiling_params.calculate_histogram_ = true; 
+ 
   if (max_work_threads_str != "")
     tiling_params.max_work_threads_ = ((int)atof(max_work_threads_str.c_str())>0) ? (int)atof(max_work_threads_str.c_str()) : 0;
 
@@ -290,14 +295,18 @@ int _tmain(int argc, wchar_t* argvW[])
   console_params.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE)));
   console_params.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",argc,argv)));
   console_params.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",argc,argv)));
+  console_params.insert(pair<string,string>("-pseudo_png",gmx::ReadConsoleParameter("-pseudo_png",argc,argv,TRUE)));
 
+ 
 
   
   if (argc == 2)
      console_params.at("-file") = argv[1];
 
   //console_params.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
-  //console_params.at("-file") = "C:\\Users\\mpotanin\\Downloads\\dem_cs_zl09.tif";
+  //console_params.at("-file") = "E:\\test_images\\dem_cs_zl11_094_165.tif"; 
+    //dem_cs_zl11_094_165.tif";
+  //console_params.at("-pseudo_png") = "pseudo_png";
   //console_params.at("-tile_type") = "tif";
   //console_params.at("-work_threads") = "1";
 

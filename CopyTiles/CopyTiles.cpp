@@ -171,7 +171,7 @@ int _tmain(int argc, wchar_t* argvW[])
 					gmx::JPEG_TILE : ((strTileType == "png") || (strTileType == ".png")) ? gmx::PNG_TILE : gmx::TIFF_TILE;
 		}
 
-		cout<<"Input container info: tile_type="<<gmx::TileName::ExtensionByTileType(poSrcContainer->GetTileType());
+		cout<<"Input container info: tile_type="<<gmx::TileName::TileInfoByTileType(poSrcContainer->GetTileType());
 		cout<<", proj="<<(poSrcContainer->GetProjType()==gmx::WEB_MERCATOR);
 		if (p_metadata)
     {

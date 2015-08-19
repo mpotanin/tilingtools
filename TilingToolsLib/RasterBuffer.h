@@ -30,12 +30,14 @@ public:
 	BOOL			CreateBuffer				(RasterBuffer *p_src_buffer);
 	BOOL			CreateBufferFromJpegData	(void *p_data_src, int size);
 	BOOL			CreateBufferFromPngData		(void *p_data_src, int size);
-	BOOL			createFromJP2Data			(void *p_data_src, int size);
+ 	BOOL			CreateBufferFromPseudoPngData	(void *p_data_src, int size);
+  BOOL			createFromJP2Data			(void *p_data_src, int size);
 	BOOL			CreateBufferFromTiffData	(void *p_data_src, int size);
 
 	BOOL			SaveToPngData	(void* &p_data_dst, int &size);
-	BOOL			SaveToPng24Data	(void* &p_data_dst, int &size);
-	BOOL			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
+  BOOL			SaveToPng24Data	(void* &p_data_dst, int &size);
+	BOOL			SaveToPseudoPngData	(void* &p_data_dst, int &size);
+  BOOL			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
 	BOOL			SaveToTiffData	(void* &p_data_dst, int &size);
 	BOOL			SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate = 0);
 
