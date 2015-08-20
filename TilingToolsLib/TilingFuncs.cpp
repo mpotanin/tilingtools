@@ -643,6 +643,11 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 					}
 					break;
 				}
+      case PSEUDO_PNG_TILE:
+				{
+          tile_buffer.CreateBufferFromPseudoPngData(p_data,size);
+					break;
+				}
 			case PNG_TILE:
 				{
 					tile_buffer.CreateBufferFromPngData(p_data,size);
@@ -724,6 +729,11 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 			case PNG_TILE:
 				{
 				  tile_buffer.SaveToPngData(p_data,size);
+					break;
+				}
+      case PSEUDO_PNG_TILE:
+				{
+				  tile_buffer.SaveToPseudoPngData(p_data,size);
 					break;
 				}
       case JP2_TILE:
