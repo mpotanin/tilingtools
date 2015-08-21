@@ -5,7 +5,7 @@ namespace gmx
 {
 
 
-BOOL	WriteToTextFile (string filename, string str_text)
+bool	WriteToTextFile (string filename, string str_text)
 {
 	ReplaceAll(filename,"\\","/");
 	FILE *fp = OpenFile(filename,"w");
@@ -24,16 +24,18 @@ string	GetPath (string filename)
 }
 
 
-BOOL FileExists (string filename)
+bool FileExists (string filename)
 {
+
+  
 	ReplaceAll(filename,"\\","/");
 	wstring filename_w;
 	utf8toWStr(filename_w,filename);
-	return !(GetFileAttributes(filename_w.c_str()) == INVALID_FILE_ATTRIBUTES);
+	return !(GetFileAttributes(filename_w.c_str()) == INVALID_FILE_ATTRIBUTES); //GetFileAttributes ->stat
 }
 
 
-BOOL IsDirectory (string path)
+bool IsDirectory (string path)
 {
 	ReplaceAll(path,"\\","/");
 	if (!FileExists(path)) return FALSE;
@@ -89,7 +91,7 @@ string RemoveExtension (string &filename)
 }
 
 
-BOOL FindFilesByPattern (list<string> &file_list, string search_pattern)
+bool FindFilesByPattern (list<string> &file_list, string search_pattern)
 {
 	WIN32_FIND_DATAW find_file_data;
 	HANDLE hFind ;
@@ -121,7 +123,7 @@ BOOL FindFilesByPattern (list<string> &file_list, string search_pattern)
 }
 
 
-BOOL FindFilesByExtensionRecursive (list<string> &file_list, string folder, string	extension)
+bool FindFilesByExtensionRecursive (list<string> &file_list, string folder, string	extension)
 {
 	WIN32_FIND_DATAW find_file_data;
 	HANDLE hFind;
@@ -161,7 +163,7 @@ BOOL FindFilesByExtensionRecursive (list<string> &file_list, string folder, stri
 }
 
 
-BOOL WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
+bool WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
 {
 	if (raster_file.length()>1)
 	{
@@ -191,37 +193,40 @@ FILE*		OpenFile(string	filename, string mode)
 	utf8toWStr(filename_w,filename);
 	utf8toWStr(mode_w,mode);
 
-	return _wfopen(filename_w.c_str(),mode_w.c_str());
+	return _wfopen(filename_w.c_str(),mode_w.c_str()); //_wfopen
 }
 
 
-BOOL		RenameFile(string old_path, string new_path)
+bool		RenameFile(string old_path, string new_path)
 {
 	wstring old_path_w, new_path_w;
 	utf8toWStr(old_path_w,old_path);
 	utf8toWStr(new_path_w,new_path);
-	return _wrename(old_path_w.c_str(),new_path_w.c_str());
+	return _wrename(old_path_w.c_str(),new_path_w.c_str()); //check _wrename
 }
 
 
-BOOL		DeleteFile(string path)
+bool		DeleteFile(string path)
 {
 	wstring	path_w;
 	utf8toWStr(path_w,path);
-	return ::DeleteFile(path_w.c_str());
+	return ::DeleteFile(path_w.c_str()); //DeleteFile ->...
 }
 
 
-BOOL		CreateDirectory(string path)
+bool		CreateDirectory(string path)
 {
-	
-	wstring	path_w;
-	utf8toWStr(path_w,path);
-	return ::CreateDirectory(path_w.c_str(),NULL);
+  #ifdef WIN32
+ 	  wstring	path_w;
+	  utf8toWStr(path_w,path);
+    return (_wmkdir(path_w.c_str())==0);
+  #else
+    return (mkdir(path.c_str())==0);
+  #endif
 }
 
 
-BOOL	SaveDataToFile(string filename, void *p_data, int size)
+bool	SaveDataToFile(string filename, void *p_data, int size)
 {
 	FILE *fp;
 	if (!(fp = OpenFile(filename,"wb"))) return FALSE;
@@ -244,7 +249,7 @@ string		GetExtension (string path)
 }
 
 
-BOOL ReadDataFromFile(string filename, void *&p_data, int &size)
+bool ReadDataFromFile(string filename, void *&p_data, int &size)
 {
 	FILE *fp = OpenFile(filename,"rb");
 	if (!fp) return FALSE;

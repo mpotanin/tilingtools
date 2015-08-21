@@ -202,7 +202,7 @@ public:
   __int64 GetFrequency(int band,double value);
   bool CalcStatistics(MetaHistogramStatistics *p_hist_stat, double *p_nodata);
   int CalcNumOfExistingValues(int band);
-  BOOL GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
+  bool GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
 
 protected:
   void CalcStatisticsByBand(int band, double &min, double &max, double &mean, double &stdev, double *p_nodata);
@@ -250,7 +250,7 @@ public:
   __int64 GetFrequency(int band,double value);
   void CalcStatistics(int band, double &min, double &max, double &mean, double &stdev, double *p_nodata = NULL);
   int CalcNumOfExistingValues(int band);
-  BOOL GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
+  bool GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
 
 private:
   double min_val_;

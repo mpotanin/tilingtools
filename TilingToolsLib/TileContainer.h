@@ -17,16 +17,16 @@ public:
 
 	virtual ~ITileContainer() {};
 
-	virtual BOOL		          AddTile(int z, int x, int y, BYTE *p_data, unsigned int size) = 0;
-	virtual	BOOL		          GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size) = 0;
-	virtual	BOOL		          TileExists(int z, int x, int y) = 0; 
-	virtual BOOL		          Close() = 0;
+	virtual bool		          AddTile(int z, int x, int y, BYTE *p_data, unsigned int size) = 0;
+	virtual	bool		          GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size) = 0;
+	virtual	bool		          TileExists(int z, int x, int y) = 0; 
+	virtual bool		          Close() = 0;
 	virtual int 		          GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "", 
 									          MercatorProjType merc_type = WORLD_MERCATOR) = 0;
 	virtual OGREnvelope       GetMercatorEnvelope() = 0;
 	virtual int			          GetMaxZoom() = 0;
-	virtual BOOL		          GetTileBounds (int tile_bounds[128]) = 0;
-  virtual BOOL		          OpenForReading (string path) = 0;
+	virtual bool		          GetTileBounds (int tile_bounds[128]) = 0;
+  virtual bool		          OpenForReading (string path) = 0;
 	virtual TileType				  GetTileType() = 0;
 	virtual MercatorProjType	GetProjType() = 0;
   virtual Metadata* GetMetadata () {return NULL;}; 
@@ -40,7 +40,7 @@ public:
 		return n;
 	};
 
-	virtual BOOL		TileXYZ(__int64 id, int &z, int &x, int &y)
+	virtual bool		TileXYZ(__int64 id, int &z, int &x, int &y)
 	{
 		int i = 0;
 		for (i=0;i<32;i++)
@@ -65,21 +65,21 @@ public:
 class GMXTileContainer : public ITileContainer
 {
 public:
-  BOOL 		OpenForWriting			(	string				container_file_name, 
+  bool 		OpenForWriting			(	string				container_file_name, 
 									              TileType			tile_type,
 									              MercatorProjType	merc_type,
 									              OGREnvelope			envelope, 
 									              int					max_zoom, 
-									              BOOL				use_cache,
+									              bool				use_cache,
                                 Metadata    *p_metadata = NULL,
                                 unsigned int max_volume_size = DEFAULT_MAX_VOLUME_SIZE
 								              );
 
-  BOOL 		OpenForWriting			( string				container_file_name, 
+  bool 		OpenForWriting			( string				container_file_name, 
 									              TileType			tile_type,
 									              MercatorProjType	merc_type,
                                	int					tile_bounds[128], 
-                                BOOL				use_cache,
+                                bool				use_cache,
                                 Metadata    *p_metadata = NULL,
                                 unsigned int max_volume_size = DEFAULT_MAX_VOLUME_SIZE
 								              );
@@ -87,22 +87,22 @@ public:
 	GMXTileContainer				();
 	~GMXTileContainer				();
 
-	BOOL				OpenForReading			(string container_file_name);
-	BOOL				AddTile			(int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL				GetTile			(int z, int x, int y, BYTE *&p_data, unsigned int &size);
-	BOOL				TileExists		(int z, int x, int y);
-	BOOL				Close			();
+	bool				OpenForReading			(string container_file_name);
+	bool				AddTile			(int z, int x, int y, BYTE *p_data, unsigned int size);
+	bool				GetTile			(int z, int x, int y, BYTE *&p_data, unsigned int &size);
+	bool				TileExists		(int z, int x, int y);
+	bool				Close			();
 	int 				GetTileList		(list<pair<int, pair<int,int>>> &tile_list, 
 											int min_zoom, int max_zoom, 
 											string vector_file = "", 
 											MercatorProjType merc_type = WORLD_MERCATOR
 										);
-	BOOL		GetTileBounds (int tile_bounds[128]);
+	bool		GetTileBounds (int tile_bounds[128]);
 
   virtual Metadata* GetMetadata (); 
 
 	__int64				TileID			( int z, int x, int y);
-	BOOL				TileXYZ			(__int64 n, int &z, int &x, int &y);
+	bool				TileXYZ			(__int64 n, int &z, int &x, int &y);
 	TileType			GetTileType	();
 	MercatorProjType	GetProjType();
 	OGREnvelope			GetMercatorEnvelope();
@@ -111,11 +111,11 @@ public:
 	
 
 protected:
-  BOOL	AddTileToContainerFile(int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL	GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size);
-	BOOL	WriteTilesToContainerFileFromCache();
+  bool	AddTileToContainerFile(int z, int x, int y, BYTE *p_data, unsigned int size);
+	bool	GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size);
+	bool	WriteTilesToContainerFileFromCache();
 	
-	BOOL	WriteHeaderToByteArray(BYTE*	&p_data);
+	bool	WriteHeaderToByteArray(BYTE*	&p_data);
 	unsigned int HeaderSize();
 	void MakeEmpty ();
 
@@ -124,12 +124,12 @@ protected:
   int                 GetVolumeNum (unsigned __int64 tile_offset);
   string              GetVolumeName (int num);
   unsigned __int64    GetTileOffsetInVolume (unsigned __int64 tile_container_offset);
-  BOOL                DeleteVolumes();
+  bool                DeleteVolumes();
 
 protected:
-	BOOL					read_only_;
-	BOOL					use_cache_;
-  BOOL          is_opened_;
+	bool					read_only_;
+	bool					use_cache_;
+  bool          is_opened_;
 	int						minx_[32];
 	int						miny_[32];
 	int						maxx_[32];
@@ -164,21 +164,21 @@ public:
 	~MBTileContainer ();
 		
 	int			GetMaxZoom();	
-	BOOL OpenForReading  (string file_name);
+	bool OpenForReading  (string file_name);
 	MBTileContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp);
 	
-	BOOL		AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL		TileExists(int z, int x, int y);
+	bool		AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
+	bool		TileExists(int z, int x, int y);
 
-	BOOL		GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
+	bool		GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
 	int 		GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "", 
 							MercatorProjType merc_type = WORLD_MERCATOR);
 	
 	OGREnvelope GetMercatorEnvelope();
-	BOOL		GetTileBounds (int tile_bounds[128]);
+	bool		GetTileBounds (int tile_bounds[128]);
 	TileType	GetTileType();
 	MercatorProjType	GetProjType();
-	BOOL Close ();
+	bool Close ();
 
 protected:
 	sqlite3	*p_sql3_db_;
@@ -190,30 +190,30 @@ protected:
 class TileFolder : public ITileContainer
 {
 public:
-	TileFolder (TileName *p_tile_name, BOOL use_cache);
+	TileFolder (TileName *p_tile_name, bool use_cache);
 	~TileFolder ();
-	BOOL  Close();
-	BOOL	AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL	GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
-	BOOL	TileExists(int z, int x, int y);
+	bool  Close();
+	bool	AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
+	bool	GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
+	bool	TileExists(int z, int x, int y);
 	int		GetMaxZoom();
 	int 	GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "",  
 							MercatorProjType merc_type = WORLD_MERCATOR);
 	OGREnvelope GetMercatorEnvelope();
-	BOOL		GetTileBounds (int tile_bounds[128]);
-	BOOL				OpenForReading			(string folder_name);
+	bool		GetTileBounds (int tile_bounds[128]);
+	bool				OpenForReading			(string folder_name);
   TileType				GetTileType();
 	MercatorProjType		GetProjType();
   void GetMetadata (Metadata* &p_metadata); 
 	
 protected:
-	BOOL	writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL	ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned int &size);
+	bool	writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned int size);
+	bool	ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned int &size);
 
 
 protected:
 	TileName	*p_tile_name_;
-	BOOL		use_cache_;
+	bool		use_cache_;
 	TileCache	*p_tile_cache_;
   HANDLE addtile_semaphore_;
 

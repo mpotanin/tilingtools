@@ -70,7 +70,7 @@ OGREnvelope	VectorBorder::InetersectOGREnvelopes (OGREnvelope	&envp1,OGREnvelope
 
 /*
 
-BOOL VectorBorder::ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom, int &num_segments, OGRLineString **pp_ls)
+bool VectorBorder::ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom, int &num_segments, OGRLineString **pp_ls)
 {
   if (p_ogr_geom->getGeometryType()!=OGRWkb 
   OGRPolygon *p_polygons = NULL;
@@ -80,7 +80,7 @@ BOOL VectorBorder::ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom,
 */
 
 
-BOOL VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
+bool VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
 {
   double e = 1e-6;
 
@@ -126,7 +126,7 @@ BOOL VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, 
 }
 
 
-BOOL	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr)
+bool	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr)
 {
 	int num_rings;
 	OGRLinearRing **p_rings = VectorBorder::GetLinearRingsRef(p_ogr_geom,num_rings);
@@ -178,12 +178,12 @@ VectorBorder*	VectorBorder::CreateFromVectorFile(string vector_file, MercatorPro
 
     OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
     OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
-    BOOL is_ogr_sr_valid = TRUE;
+    bool is_ogr_sr_valid = TRUE;
     if (p_input_ogr_sr)
     {
       p_input_ogr_sr = p_input_ogr_sr->Clone();
       char	*proj_ref = NULL;
-	    BOOL is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))  
+	    bool is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))  
                              ? TRUE
                              : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI()) 
                              ? FALSE 
@@ -207,7 +207,7 @@ VectorBorder*	VectorBorder::CreateFromVectorFile(string vector_file, MercatorPro
     
     OGRSpatialReference		ogr_sr_merc;
     MercatorTileGrid::SetMercatorSpatialReference(merc_type,&ogr_sr_merc);
-	  BOOL	intersects180 = VectorBorder::Intersects180Degree(p_ogr_multipoly,p_input_ogr_sr);
+	  bool	intersects180 = VectorBorder::Intersects180Degree(p_ogr_multipoly,p_input_ogr_sr);
     p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
       
     if (OGRERR_NONE != p_ogr_multipoly->transformTo(&ogr_sr_merc))
@@ -234,7 +234,7 @@ OGRMultiPolygon*		VectorBorder::ReadMultiPolygonFromOGRDataSource(OGRDataSource 
 	p_ogr_layer->ResetReading();
 
 	OGRMultiPolygon *p_ogr_multipoly = NULL;
-	BOOL	is_valid = FALSE;
+	bool	is_valid = FALSE;
 	while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
 	{
     if (p_ogr_multipoly == NULL) p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
@@ -347,7 +347,7 @@ OGRLinearRing**		VectorBorder::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &
 		) return NULL;
 
 	int	numPolygons = 0;
-	BOOL	inputIsRing = FALSE;
+	bool	inputIsRing = FALSE;
 	if (type==wkbPolygon)
 	{
 		numPolygons		= 1;
@@ -394,7 +394,7 @@ OGRLinearRing**		VectorBorder::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &
 }
 
 
-BOOL			VectorBorder::AdjustFor180DegreeIntersection (OGRGeometry	*p_ogr_geom_merc)
+bool			VectorBorder::AdjustFor180DegreeIntersection (OGRGeometry	*p_ogr_geom_merc)
 {
 	OGRLinearRing	**pp_ogr_rings;
 	int num_rings = 0;
@@ -415,7 +415,7 @@ BOOL			VectorBorder::AdjustFor180DegreeIntersection (OGRGeometry	*p_ogr_geom_mer
 };
 
 
-BOOL	VectorBorder::Intersects(int tile_z, int tile_x, int tile_y)
+bool	VectorBorder::Intersects(int tile_z, int tile_x, int tile_y)
 {
 	if (tile_x < (1<<tile_z)) return Intersects(MercatorTileGrid::CalcEnvelopeByTile(tile_z, tile_x, tile_y));
 	else
@@ -427,7 +427,7 @@ BOOL	VectorBorder::Intersects(int tile_z, int tile_x, int tile_y)
 };
 
 
-BOOL	VectorBorder::Intersects(OGREnvelope &envelope)
+bool	VectorBorder::Intersects(OGREnvelope &envelope)
 {
   if (p_ogr_geometry_ == NULL) return FALSE;
 	OGRPolygon *p_poly_from_envp = CreateOGRPolygonByOGREnvelope (envelope);
@@ -435,7 +435,7 @@ BOOL	VectorBorder::Intersects(OGREnvelope &envelope)
   OGREnvelope envp;
   this->p_ogr_geometry_->getEnvelope(&envp);
 
-	BOOL result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
+	bool result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
   p_poly_from_envp->empty();
   OGRGeometryFactory::destroyGeometry(p_poly_from_envp);
  	

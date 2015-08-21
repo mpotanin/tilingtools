@@ -289,7 +289,7 @@ public:
 		return "";
 	}
 
-  static BOOL TileTypeByExtension (string tile_extension, TileType &tile_type)
+  static bool TileTypeByExtension (string tile_extension, TileType &tile_type)
 	{
     tile_extension = MakeLower(tile_extension);
 		if ((tile_extension == "jpg") || (tile_extension == "jpeg") || (tile_extension == ".jpg"))
@@ -321,8 +321,8 @@ public:
 ///Эти методы нужно реализовать в производном классе (см. KosmosnimkiTileName)
 ////////////////////////////////////////////////////////////////////////////////////////////
 	virtual	string		GetTileName				(int zoom, int x, int y) = 0;
-	virtual	BOOL		ExtractXYZFromTileName	(string tile_name, int &z, int &x, int &y) = 0;
-	virtual	BOOL		CreateFolder			(int zoom, int x, int y) = 0;
+	virtual	bool	ExtractXYZFromTileName	(string tile_name, int &z, int &x, int &y) = 0;
+	virtual	bool	CreateFolder			(int zoom, int x, int y) = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 	string GetFullTileName (int zoom, int nX, int nY)
@@ -352,11 +352,11 @@ class StandardTileName : public TileName
 {
 public:
 	StandardTileName (string base_folder, string str_template);
-	static BOOL	ValidateTemplate	(string str_template);
+	static bool	ValidateTemplate	(string str_template);
 	string	GetTileName (int zoom, int nX, int nY);
 
-	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
-	BOOL CreateFolder (int zoom, int nX, int nY);
+	bool ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	bool CreateFolder (int zoom, int nX, int nY);
 protected:
 	string	str_template_;
 	regex	rx_template_;
@@ -369,8 +369,8 @@ class KosmosnimkiTileName : public TileName
 public:
 	KosmosnimkiTileName (string tiles_folder, TileType tile_type = JPEG_TILE);
 	string	GetTileName (int zoom, int x, int y);
-	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
-	BOOL CreateFolder (int zoom, int x, int y);
+	bool ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	bool CreateFolder (int zoom, int x, int y);
 };
 
 
@@ -378,11 +378,11 @@ class ESRITileName : public TileName
 {
 public:
 	ESRITileName (string base_folder, string str_template);
-	static BOOL	ValidateTemplate	(string str_template);
+	static bool	ValidateTemplate	(string str_template);
 	string	GetTileName (int zoom, int nX, int nY);
 
-	BOOL ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
-	BOOL CreateFolder (int zoom, int nX, int nY);
+	bool ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	bool CreateFolder (int zoom, int nX, int nY);
 protected:
 	string	str_template_;
 	regex	rx_template_;

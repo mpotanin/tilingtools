@@ -37,7 +37,7 @@ void RasterFile::delete_all()
 */
 
 
-BOOL RasterFile::Close()
+bool RasterFile::Close()
 {
 	delete(p_gdal_ds_);
 	p_gdal_ds_ = NULL;
@@ -50,7 +50,7 @@ BOOL RasterFile::Close()
 }
 
 
-BOOL RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3])
+bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3])
 {
   ///
   //p_ds->GetRasterBand(1)->GetHistogram(
@@ -75,7 +75,7 @@ BOOL RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[
 }
 
 
-BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x, double shift_y)
+bool RasterFile::Init(string raster_file, bool is_geo_referenced, double shift_x, double shift_y)
 {
 	Close();
 	GDALDriver *poDriver = NULL;
@@ -99,7 +99,9 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 	num_bands_	= p_gdal_ds_->GetRasterCount();
 	height_ = p_gdal_ds_->GetRasterYSize();
 	width_	= p_gdal_ds_->GetRasterXSize();
-	nodata_value_ = p_gdal_ds_->GetRasterBand(1)->GetNoDataValue(&this->nodata_value_defined_);
+  int nodata_value_defined;
+	nodata_value_ = p_gdal_ds_->GetRasterBand(1)->GetNoDataValue(&nodata_value_defined);
+  this->nodata_value_defined_ = nodata_value_defined;
 	gdal_data_type_	= p_gdal_ds_->GetRasterBand(1)->GetRasterDataType();
 
 
@@ -124,7 +126,7 @@ BOOL RasterFile::Init(string raster_file, BOOL is_geo_referenced, double shift_x
 }
 
 
-BOOL	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
+bool	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
 {
 	if (this->p_gdal_ds_ == NULL) return FALSE;
   if (this->p_gdal_ds_->GetRasterCount()<band_num) return FALSE;
@@ -133,7 +135,7 @@ BOOL	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, doub
 }
 
 
-double RasterFile::get_nodata_value (BOOL &nodata_defined)
+double RasterFile::get_nodata_value (bool &nodata_defined)
 {
   nodata_defined = nodata_value_defined_;
   return nodata_value_;
@@ -153,7 +155,7 @@ RasterFile::RasterFile()
   nodata_value_defined_ = FALSE;
 }
 
-RasterFile::RasterFile(string raster_file, BOOL is_geo_referenced)
+RasterFile::RasterFile(string raster_file, bool is_geo_referenced)
 {
 	//*/
 	p_gdal_ds_ = NULL;
@@ -231,7 +233,7 @@ GDALDataset*	RasterFile::get_gdal_ds_ref()
 }
 
 
-BOOL RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference *p_ogr_sr)
+bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference *p_ogr_sr)
 {
 	FILE *fp = OpenFile(tab_file,"r");
 	if (!fp) return FALSE;
@@ -255,7 +257,7 @@ BOOL RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialRe
 }
 
 
-BOOL	RasterFile::GetSpatialRef(OGRSpatialReference	&ogr_sr)
+bool	RasterFile::GetSpatialRef(OGRSpatialReference	&ogr_sr)
 {
 	const char* strProjRef = GDALGetProjectionRef(this->p_gdal_ds_);
 	if (OGRERR_NONE == ogr_sr.SetFromUserInput(strProjRef)) return TRUE;
@@ -274,7 +276,7 @@ BOOL	RasterFile::GetSpatialRef(OGRSpatialReference	&ogr_sr)
 	return FALSE;
 }
 
-BOOL	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&ogr_sr, MercatorProjType merc_type)
+bool	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&ogr_sr, MercatorProjType merc_type)
 {
 	if (fabs(this->ul_x_)<180 && fabs(this->ul_y_)<90)
 	{
@@ -329,7 +331,7 @@ OGREnvelope*	RasterFile::CalcMercEnvelope (MercatorProjType	merc_type)
 	OGRSpatialReference ogr_merc_sr;
 	MercatorTileGrid::SetMercatorSpatialReference(merc_type,&ogr_merc_sr);
 	
-	BOOL	intersects180 = VectorBorder::Intersects180Degree(&lr,&ogr_sr);
+	bool	intersects180 = VectorBorder::Intersects180Degree(&lr,&ogr_sr);
 	if (OGRERR_NONE != lr.transformTo(&ogr_merc_sr)) return NULL;
 	
 	if (intersects180) VectorBorder::AdjustFor180DegreeIntersection(&lr);
@@ -404,7 +406,7 @@ GDALDataType RasterFileBundle::GetRasterFileType()
 
 }
 
-BOOL	RasterFileBundle::AddItemToBundle (string raster_file, string vector_file, double shift_x, double shift_y)
+bool	RasterFileBundle::AddItemToBundle (string raster_file, string vector_file, double shift_x, double shift_y)
 {	
 	RasterFile image;
 
@@ -476,7 +478,7 @@ int	RasterFileBundle::CalcNumberOfTiles (int zoom)
 	return n;
 }
 
-double RasterFileBundle::GetNodataValue(BOOL &nodata_defined)
+double RasterFileBundle::GetNodataValue(bool &nodata_defined)
 {
   if (data_list_.size()==0) return NULL;
   RasterFile rf((*data_list_.begin()).first,1);
@@ -525,7 +527,7 @@ list<string>	 RasterFileBundle::GetFileListByEnvelope(OGREnvelope envp_merc)
 }
 
 
-BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
+bool	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 {
 	for (list<pair<string,pair<OGREnvelope*,VectorBorder*>>>::iterator iter = data_list_.begin(); iter!=data_list_.end();iter++)
 	{
@@ -544,7 +546,7 @@ BOOL	RasterFileBundle::Intersects(OGREnvelope envp_merc)
 }
 
 ///*
-BOOL RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
+bool RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
                                                        double *&p_max_values,
                                                        double *p_nodata_val,
                                                        BandMapping    *p_band_mapping)
@@ -621,7 +623,7 @@ BOOL RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
 }
 //*/
 
-BOOL RasterFileBundle::WarpToMercBuffer (int zoom,	
+bool RasterFileBundle::WarpToMercBuffer (int zoom,	
                                             OGREnvelope	  envp_merc, 
                                             RasterBuffer *p_dst_buffer, 
                                             int           output_bands_num,
@@ -643,8 +645,9 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
   int				bands_num_dst	= (output_bands_num==0) ? bands_num_src : output_bands_num;
  
     
-  BOOL			nodata_val_from_file_defined = false;
-  double			nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined);
+  int		nodata_val_from_file_defined_int = false;
+  double			nodata_val_from_file = (int) p_src_ds->GetRasterBand(1)->GetNoDataValue(&nodata_val_from_file_defined_int);
+  bool nodata_val_from_file_defined = nodata_val_from_file_defined_int;
 	
 	double		res			=  MercatorTileGrid::CalcResolutionByZoom(zoom);
 	int				buf_width	= int(((envp_merc.MaxX - envp_merc.MinX)/res)+0.5);
@@ -850,7 +853,7 @@ BOOL RasterFileBundle::WarpToMercBuffer (int zoom,
 		gdal_warp_operation.Initialize( p_warp_options );
 		
    
-    BOOL  warp_error = FALSE;
+    bool  warp_error = FALSE;
     if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
 		{
 			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
@@ -908,7 +911,7 @@ BandMapping::~BandMapping()
 }
 
 
-BOOL BandMapping::GetBandMappingData (int &output_bands_num, int **&pp_band_mapping)
+bool BandMapping::GetBandMappingData (int &output_bands_num, int **&pp_band_mapping)
 {
   output_bands_num = 0;
   pp_band_mapping = 0;
@@ -937,7 +940,7 @@ BOOL BandMapping::GetBandMappingData (int &output_bands_num, int **&pp_band_mapp
 }
 
 
-BOOL BandMapping::GetBands(string file_name, int &bands_num, int *&p_bands)
+bool BandMapping::GetBands(string file_name, int &bands_num, int *&p_bands)
 {
   bands_num=0;
   p_bands = NULL;
@@ -966,7 +969,7 @@ list<string> BandMapping::GetFileList ()
 }
 
 
-BOOL  BandMapping::AddFile(string file_name, int *p_bands)
+bool  BandMapping::AddFile(string file_name, int *p_bands)
 {
   if ((!p_bands) || (bands_num_==0)) return FALSE;
 
@@ -985,7 +988,7 @@ BOOL  BandMapping::AddFile(string file_name, int *p_bands)
 }
 
 
-BOOL  BandMapping::InitLandsat8  (string file_param, string bands_param)
+bool  BandMapping::InitLandsat8  (string file_param, string bands_param)
 {
   regex	rx_landsat8(".*\\?landsat8");
   if (!regex_match(file_param,rx_landsat8)) return FALSE;
@@ -999,7 +1002,7 @@ BOOL  BandMapping::InitLandsat8  (string file_param, string bands_param)
 
 
 
-BOOL  BandMapping::InitByConsoleParams (string file_param, string bands_param)
+bool  BandMapping::InitByConsoleParams (string file_param, string bands_param)
 {
   regex	rx_landsat8(".*\\?landsat8");
   if (regex_match(file_param,rx_landsat8)) return InitLandsat8(file_param,bands_param);
@@ -1043,7 +1046,7 @@ BOOL  BandMapping::InitByConsoleParams (string file_param, string bands_param)
 }
 
 
-BOOL  BandMapping::ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
+bool  BandMapping::ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
 {
   string _str_file_param = str_file_param + '|';
   output_bands_num = 0;

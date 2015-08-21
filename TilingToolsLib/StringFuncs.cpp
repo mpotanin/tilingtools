@@ -32,7 +32,7 @@ void ReplaceAll(string	&str, const string	&from, const string	&to) {
 }
 
 
-string ConvertIntToString(int number, BOOL hexadecimal, int adjust_len)
+string ConvertIntToString(int number, bool hexadecimal, int adjust_len)
 {
   char buf[100];
   if (hexadecimal) sprintf(buf,"%x",number);
@@ -97,7 +97,7 @@ int			ParseCommaSeparatedArray (string input_str, int *&p_arr, bool is_missing_v
 }
 
 
-BOOL	ConvertStringToRGB (string str_color, BYTE rgb[3])
+bool	ConvertStringToRGB (string str_color, BYTE rgb[3])
 {
 	str_color = MakeLower(str_color);
 	regex rgb_dec_pattern("([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");

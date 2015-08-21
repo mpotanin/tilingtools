@@ -88,7 +88,7 @@ GMXTilingParameters::~GMXTilingParameters ()
 
 
 
-BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
+bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
 {
 	//cout<<tiles_generated<<" "<<endl;
 	if (tiles_generated - (int)ceil((tiles_expected/10.0)*(tiles_generated*10/tiles_expected))  ==0)
@@ -100,7 +100,7 @@ BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
 }
 
 
-BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
+bool GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 {
 	LONG t_ = time(0);
 	srand(t_%10000);
@@ -136,7 +136,7 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
   MetaNodataValue nodata_value;
   MetaHistogramStatistics hist_stat;
 
-  BOOL nodata_defined = false;
+  bool nodata_defined = false;
   double  nodata_val;
   if (p_tiling_params->p_transparent_color_)
   {
@@ -256,7 +256,7 @@ BOOL GMXMakeTiling		(GMXTilingParameters		*p_tiling_params)
 }
 
 
-BOOL GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params, 
+bool GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params, 
 						   RasterBuffer					*p_buffer, 
 						   RasterFileBundle			*p_bundle, 
 						   int							ul_x, 
@@ -367,7 +367,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
   if (p_tiling_params->p_band_mapping_)
     p_tiling_params->p_band_mapping_->GetBandMappingData(bands_num,pp_band_mapping);
     
-  BOOL warp_result = p_bundle->WarpToMercBuffer(zoom,
+  bool warp_result = p_bundle->WarpToMercBuffer(zoom,
                                                 chunk_envp,
                                                 p_merc_buffer,
                                                 bands_num,
@@ -432,7 +432,7 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 }
 
 
-BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params, 
+bool GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params, 
 								RasterFileBundle		*p_bundle, 
 								ITileContainer			*p_tile_container,
                 MetaHistogram           *p_histogram)
@@ -488,7 +488,7 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 
   //int num_warp = 0;
   
-  BOOL tiling_error = FALSE;
+  bool tiling_error = FALSE;
   
   unsigned long thread_id;
   list<pair<HANDLE,GMXAsyncChunkTilingParams*>> thread_params_list; 
@@ -570,20 +570,20 @@ BOOL GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params,
 }
 
 
-BOOL GMXMakePyramidFromBaseZoom (	VectorBorder		&vb, 
+bool GMXMakePyramidFromBaseZoom (	VectorBorder		&vb, 
 								int					base_zoom, 
 								int					min_zoom, 
 								GMXTilingParameters		*p_tiling_params, 
 								int					&tiles_expected, 
 								int					&tiles_generated, 
-								BOOL					only_calculate, 
+								bool					only_calculate, 
 								ITileContainer			*p_itile_pyramid
 								)
 {
 
 	RasterBuffer oBuffer;
-  BOOL was_error = FALSE;
-	BOOL b;
+  bool was_error = FALSE;
+	bool b;
 
 	GMXMakePyramidTileRecursively(	vb,0,0,0,base_zoom,min_zoom,p_tiling_params,oBuffer,tiles_expected,
 							tiles_generated,only_calculate,p_itile_pyramid,&was_error);
@@ -605,7 +605,7 @@ BOOL GMXMakePyramidFromBaseZoom (	VectorBorder		&vb,
 }
 
 
-BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb, 
+bool GMXMakePyramidTileRecursively (VectorBorder	&vb, 
 					  int				zoom, 
 					  int				nX, 
 					  int				nY, 
@@ -615,9 +615,9 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 					  RasterBuffer		&tile_buffer,  
 					  int				&tiles_expected, 
 					  int				&tiles_generated, 
-					  BOOL				only_calculate, 
+					  bool				only_calculate, 
 					  ITileContainer		*p_itile_pyramid, 
-            BOOL      *p_was_error
+            bool      *p_was_error
             )
 {
 
@@ -668,7 +668,7 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 	else
 	{
 		RasterBuffer	quarter_tile_buffer[4];
-		BOOL			src_quarter_tile_buffers_def[4];
+		bool			src_quarter_tile_buffers_def[4];
 
     for (int i=0;i<2;i++)
 		{
@@ -760,8 +760,8 @@ BOOL GMXMakePyramidTileRecursively (VectorBorder	&vb,
 
 
 
-BOOL GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4], 
-                            BOOL src_quarter_tile_buffers_def[4], 
+bool GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4], 
+                            bool src_quarter_tile_buffers_def[4], 
                             RasterBuffer &zoomed_out_tile_buffer, 
                             string      resampling_method,
                             BYTE *p_background) 
@@ -803,7 +803,7 @@ BOOL GMXZoomOutTileBuffer ( RasterBuffer src_quarter_tile_buffers[4],
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-BOOL GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer)
+bool GMXCleanAfterTilingFromBufer (gmx::RasterBuffer				*p_buffer)
 {
 	delete(p_buffer);
 	return TRUE;
@@ -815,7 +815,7 @@ DWORD WINAPI GMXCallTilingFromBuffer( LPVOID lpParam )
 	GMXTilingFromBufferParams	*p_from_buffer_params = (GMXTilingFromBufferParams*)lpParam;
 	//ToDo
 	//Обработка ошибки
-	BOOL succeed = GMXMakeTilingFromBuffer(p_from_buffer_params->p_tiling_params_,
+	bool succeed = GMXMakeTilingFromBuffer(p_from_buffer_params->p_tiling_params_,
 						p_from_buffer_params->p_buffer_,
 						p_from_buffer_params->p_bundle_,
 						p_from_buffer_params->ul_x_,
@@ -840,7 +840,7 @@ HANDLE GMXAsyncMakeTilingFromBuffer (	GMXTilingParameters		*p_tiling_params,
 								int							*p_tiles_generated,
 								ITileContainer				*p_tile_container,
 								unsigned long				&thread_id,
-                BOOL                *p_was_error)
+                bool                *p_was_error)
 {
 	//запустить GMXMakeTilingFromBuffer в отдельном потоке
 	GMXTilingFromBufferParams	*p_from_buffer_params = new GMXTilingFromBufferParams;

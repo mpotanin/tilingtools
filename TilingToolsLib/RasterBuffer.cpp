@@ -52,7 +52,7 @@ static OPJ_OFF_T opj_skip_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
         return p_nb_bytes;
 }
 
-static OPJ_BOOL opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
+static OPJ_bool opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
 {
         if (fseek(p_user_data,p_nb_bytes,SEEK_SET)) {
                 return OPJ_FALSE;
@@ -62,7 +62,7 @@ static OPJ_BOOL opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
 }
 
 
-static opj_stream_t* gmx_opj_stream_create_default_file_stream(FILE *p_file, BOOL p_is_read_stream)
+static opj_stream_t* gmx_opj_stream_create_default_file_stream(FILE *p_file, bool p_is_read_stream)
 {
 	opj_stream_t*	l_stream = opj_stream_create(1000000,false);
 	opj_stream_set_user_data(l_stream, p_file);
@@ -132,7 +132,7 @@ static OPJ_BOOL OPJStreamSeekFunc (OPJ_OFF_T n_seek, void *p_stream_data)
 /*
 opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream (	FILE * p_file, 
 															OPJ_SIZE_T p_size, 
-															OPJ_BOOL p_is_read_stream)
+															OPJ_bool p_is_read_stream)
 {
 	opj_stream_t* l_stream = 00;
 
@@ -156,7 +156,7 @@ opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream (	FILE * p_file,
 }
 */
 
-static opj_stream_t* OPJStreamCreate (OPJStreamData *p_stream_data, unsigned int buffer_size, BOOL is_read_only)
+static opj_stream_t* OPJStreamCreate (OPJStreamData *p_stream_data, unsigned int buffer_size, bool is_read_only)
 {
   opj_stream_t* p_opj_stream = 00;
   if (! p_stream_data) return NULL;
@@ -221,12 +221,12 @@ void RasterBuffer::ClearBuffer()
 
 
 
-BOOL RasterBuffer::CreateBuffer	(int			num_bands,
+bool RasterBuffer::CreateBuffer	(int			num_bands,
 								 int			x_size,
 								 int			y_size,
 								 void			*p_pixel_data_src,
 								 GDALDataType	data_type,
-								 BOOL			alpha_band_defined,
+								 bool			alpha_band_defined,
 								 GDALColorTable *p_color_table					
 								 )
 {
@@ -268,7 +268,7 @@ BOOL RasterBuffer::CreateBuffer	(int			num_bands,
 }
 
 
-BOOL RasterBuffer::CreateBuffer		(RasterBuffer *pSrcBuffer)
+bool RasterBuffer::CreateBuffer		(RasterBuffer *pSrcBuffer)
 {
 	if (!CreateBuffer(	pSrcBuffer->get_num_bands(),
 						pSrcBuffer->get_x_size(),
@@ -283,7 +283,7 @@ BOOL RasterBuffer::CreateBuffer		(RasterBuffer *pSrcBuffer)
 
 
 
-BOOL RasterBuffer::InitByRGBColor	 (BYTE rgb[3])
+bool RasterBuffer::InitByRGBColor	 (BYTE rgb[3])
 {
 	if (data_type_ != GDT_Byte) return FALSE;
 	if (p_pixel_data_ == NULL) return FALSE;
@@ -310,7 +310,7 @@ BOOL RasterBuffer::InitByRGBColor	 (BYTE rgb[3])
 
 			
 
-BOOL	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
+bool	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
 {
 
 	//ToDo - if nodata defined must create alphaband
@@ -325,7 +325,7 @@ BOOL	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
 }
 
 
-BOOL	RasterBuffer::CreateBufferFromJpegData (void *p_data_src, int size)
+bool	RasterBuffer::CreateBufferFromJpegData (void *p_data_src, int size)
 {
 
 	ClearBuffer();
@@ -358,7 +358,7 @@ BOOL	RasterBuffer::CreateBufferFromJpegData (void *p_data_src, int size)
 }
 
 
-BOOL	RasterBuffer::CreateBufferFromPseudoPngData	(void *p_data_src, int size)
+bool	RasterBuffer::CreateBufferFromPseudoPngData	(void *p_data_src, int size)
 {
   gdImagePtr im;
 	if (!  (im =	gdImageCreateFromPngPtr(size, p_data_src))) return FALSE;
@@ -399,7 +399,7 @@ BOOL	RasterBuffer::CreateBufferFromPseudoPngData	(void *p_data_src, int size)
   return TRUE;
 }
 
-BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
+bool	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
 {
 	gdImagePtr im;
 	if (!  (im =	gdImageCreateFromPngPtr(size, p_data_src))) return FALSE;
@@ -464,17 +464,17 @@ BOOL	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
 }
 
 
-BOOL RasterBuffer::SaveBufferToFile (string file_name, int quality)
+bool RasterBuffer::SaveBufferToFile (string file_name, int quality)
 {
 	void *p_data_dst = NULL;
 	int size = 0;
-	BOOL result = SaveBufferToFileAndData(file_name,p_data_dst,size,quality);
+	bool result = SaveBufferToFileAndData(file_name,p_data_dst,size,quality);
 	delete[]((BYTE*)p_data_dst);
 	return result;
 }
 
 
-BOOL	RasterBuffer::SaveBufferToFileAndData	(string file_name, void* &p_data_dst, int &size, int quality)
+bool	RasterBuffer::SaveBufferToFileAndData	(string file_name, void* &p_data_dst, int &size, int quality)
 {
 	int n_jpg = file_name.find(".jpg");
 	int n_png = file_name.find(".png");
@@ -501,13 +501,13 @@ BOOL	RasterBuffer::SaveBufferToFileAndData	(string file_name, void* &p_data_dst,
 
 	else return FALSE;
 
-	BOOL result = TRUE;
+	bool result = TRUE;
 	if (!SaveDataToFile(file_name,p_data_dst,size)) result = FALSE;
 	return TRUE;
 }
 
 
-BOOL RasterBuffer::ConvertFromPanToRGB ()
+bool RasterBuffer::ConvertFromPanToRGB ()
 {
 	if (x_size_==0 || y_size_ == 0 || data_type_ != GDT_Byte) return FALSE;
 	if (num_bands_!=1)		return FALSE;
@@ -537,7 +537,7 @@ BOOL RasterBuffer::ConvertFromPanToRGB ()
 
 
 
-BOOL	RasterBuffer::ConvertFromIndexToRGB ()
+bool	RasterBuffer::ConvertFromIndexToRGB ()
 {
 	if (p_color_table_!=NULL)
 	{
@@ -570,7 +570,7 @@ BOOL	RasterBuffer::ConvertFromIndexToRGB ()
 }
 
 
-BOOL RasterBuffer::SaveToJpegData (void* &p_data_dst, int &size, int quality)
+bool RasterBuffer::SaveToJpegData (void* &p_data_dst, int &size, int quality)
 {
 	
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
@@ -629,7 +629,7 @@ static void info_callback(const char *msg, void *client_data) {
 }
 
 #ifndef NO_KAKADU
-BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
+bool RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 {
  
   kdu_simple_buffer_source input(p_data_src, size);
@@ -712,7 +712,7 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 #endif
 
 #ifdef NO_KAKADU
-BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
+bool RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 {
   ClearBuffer();
   if (size>10000000) return FALSE;
@@ -850,7 +850,7 @@ BOOL RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 #endif
 
 #ifndef NO_KAKADU
-BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
+bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
   int num_components=0, height, width;
   num_components = num_bands_;
@@ -954,7 +954,7 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
 
 #ifdef NO_KAKADU
 
-BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
+bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
 	//int subsampling_dx;
 	//int subsampling_dy;
@@ -1051,8 +1051,8 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   char indexfilename[OPJ_PATH_LEN];
   unsigned int i, num_images, imageno;
 
-  OPJ_BOOL bSuccess;
-	OPJ_BOOL bUseTiles = OPJ_FALSE;
+  OPJ_bool bSuccess;
+	OPJ_bool bUseTiles = OPJ_FALSE;
   OPJ_UINT32 l_nb_tiles = 4;
 
 	opj_set_default_encoder_parameters(&parameters);
@@ -1111,7 +1111,7 @@ BOOL RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
 
 */
 
-BOOL RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
+bool RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
 {
   if (x_size_==0 || y_size_ == 0) return FALSE;
 
@@ -1157,7 +1157,7 @@ BOOL RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
 }
 
 
-BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
+bool RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 {
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
 	
@@ -1225,7 +1225,7 @@ BOOL RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 	return TRUE;
 }
 	
-BOOL RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
+bool RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 {
 
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
@@ -1279,7 +1279,7 @@ BOOL RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 }
 
 
-BOOL	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
+bool	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 {
   
   srand(999);
@@ -1316,7 +1316,7 @@ BOOL	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 
 
 /*
-BOOL  RasterBuffer::MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged)
+bool  RasterBuffer::MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged)
 {
 	if ((this->get_x_size()!=oBackGround.get_x_size())||
 		(this->get_y_size()!=oBackGround.get_y_size())||
@@ -1360,7 +1360,7 @@ BOOL  RasterBuffer::MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMe
 */
 
 /*
-BOOL	RasterBuffer::ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight)
+bool	RasterBuffer::ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight)
 {
 	if ((x_size_==0)||(y_size_==0)) return FALSE;
 	if (this->pTable!=NULL) ConvertFromIndexToRGB();
@@ -1411,7 +1411,7 @@ BOOL	RasterBuffer::ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight)
 
 
 /*
-BOOL RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue)
+bool RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue)
 {
 	if (p_data==NULL) return FALSE;
 	if ((nLeft<0)||(nLeft+nWidth>x_size_)) return FALSE;
@@ -1439,7 +1439,7 @@ BOOL RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LO
 */
 
 
-BOOL RasterBuffer::InitByValue(int value)
+bool RasterBuffer::InitByValue(int value)
 {
 	if (p_pixel_data_==NULL) return FALSE;
 
@@ -1528,7 +1528,7 @@ void* RasterBuffer::GetPixelDataOrder2(T type)
 }
 
 template <typename T>
-BOOL RasterBuffer::InitByValue(T type, int value)
+bool RasterBuffer::InitByValue(T type, int value)
 {
 	if (p_pixel_data_==NULL) return FALSE;
 
@@ -1554,7 +1554,7 @@ BOOL RasterBuffer::InitByValue(T type, int value)
 
 
 
-BOOL	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
+bool	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
 {
   if (p_pixel_data_ == NULL || x_size_ == 0 || y_size_==0) return NULL;
 
@@ -1587,7 +1587,7 @@ BOOL	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
 }
 
 template <typename T>
-BOOL	RasterBuffer::StretchDataTo8Bit(T type, double *p_min_values, double *p_max_values)
+bool	RasterBuffer::StretchDataTo8Bit(T type, double *p_min_values, double *p_max_values)
 {
   BYTE  *p_pixel_stretched_data = new BYTE[x_size_*y_size_*this->num_bands_];
   T     *p_pixel_data_t = (T*)p_pixel_data_;
@@ -1690,7 +1690,7 @@ void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h)
 //*/
 
 
-BOOL		RasterBuffer::AddPixelDataToMetaHistogram(MetaHistogram *p_hist)
+bool		RasterBuffer::AddPixelDataToMetaHistogram(MetaHistogram *p_hist)
 {
 	switch (data_type_)
 	{
@@ -1853,7 +1853,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
 
 
 template <typename T>	
-BOOL    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
+bool    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
 {
   T *p_pixel_data_t = (T*)p_pixel_data_;
   unsigned int n = x_size_*y_size_;
@@ -1875,10 +1875,10 @@ BOOL    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
 }
 
 /*
-BOOL	RasterBuffer::dataIO	(BOOL operationFlag, 
+bool	RasterBuffer::dataIO	(bool operationFlag, 
 								int left, int top, int w, int h, 
 								void *p_data, 
-								int bands = 0, BOOL stretchTo8Bit = FALSE, double min = 0, double max = 0)
+								int bands = 0, bool stretchTo8Bit = FALSE, double min = 0, double max = 0)
 {
 	if (operationFlag==FALSE)
 	{
@@ -1892,13 +1892,13 @@ BOOL	RasterBuffer::dataIO	(BOOL operationFlag,
 	return TRUE;
 }
 */
-BOOL	RasterBuffer::IsAlphaBand()
+bool	RasterBuffer::IsAlphaBand()
 {
 	return alpha_band_defined_;
 }
 
 
-BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
+bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
 {
 
   if (x_size_==0 || y_size_==0 || num_bands_==0) return FALSE;
@@ -1988,7 +1988,7 @@ BOOL  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
 
 
 
-BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
+bool	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
 {
 	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3)) return FALSE;
 
@@ -2019,10 +2019,10 @@ BOOL	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
 	return TRUE;
 }
 
-//BOOL	RasterBuffer::createAlphaBandByValue(int	value);
+//bool	RasterBuffer::createAlphaBandByValue(int	value);
 
 
-BOOL	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_block_data, int bands)
+bool	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_block_data, int bands)
 {
 	if (p_pixel_data_ == NULL || x_size_ == 0 || y_size_==0) return NULL;
 	bands = (bands==0) ? num_bands_ : bands;
@@ -2057,7 +2057,7 @@ BOOL	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_b
 
 ///*
 template <typename T>
-BOOL	RasterBuffer::SetPixelDataBlock (T type, int left, int top, int w, int h, void *p_block_data, int bands)
+bool	RasterBuffer::SetPixelDataBlock (T type, int left, int top, int w, int h, void *p_block_data, int bands)
 {
 	bands = (bands==0) ? num_bands_ : bands;
 
@@ -2111,7 +2111,7 @@ GDALDataType RasterBuffer::get_data_type()
 }
 
 
-BOOL	RasterBuffer::set_color_table (GDALColorTable *p_color_table)
+bool	RasterBuffer::set_color_table (GDALColorTable *p_color_table)
 {
 	p_color_table_ = p_color_table->Clone();
 	

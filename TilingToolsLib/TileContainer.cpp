@@ -25,12 +25,12 @@ ITileContainer* ITileContainer::OpenTileContainerForReading (string file_name)
 //*/
 
 
-BOOL GMXTileContainer::OpenForWriting	(	string				container_file_name, 
+bool GMXTileContainer::OpenForWriting	(	string				container_file_name, 
 										TileType			tile_type,
 										MercatorProjType	merc_type,
 										OGREnvelope			envelope, 
 										int					max_zoom, 
-										BOOL				use_cache,
+										bool				use_cache,
                     Metadata    *p_metadata,
                     unsigned int max_volume_size)
 {
@@ -63,7 +63,7 @@ GMXTileContainer::GMXTileContainer	()
 };	
 
 
-BOOL GMXTileContainer::OpenForReading (string container_file_name)
+bool GMXTileContainer::OpenForReading (string container_file_name)
 {
 	if (is_opened_ && !read_only_) Close(); 
   MakeEmpty();
@@ -170,7 +170,7 @@ Metadata* GMXTileContainer::GetMetadata ()
 
 
 
-BOOL		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
+bool		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
   if (read_only_ || !is_opened_) return FALSE;
   __int64 n	= TileID(z,x,y);
@@ -188,13 +188,13 @@ BOOL		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int 
     }
 	}
 	
-  BOOL result = AddTileToContainerFile(z,x,y,p_data,size);
+  bool result = AddTileToContainerFile(z,x,y,p_data,size);
   ReleaseSemaphore(addtile_semaphore_,1,NULL);
 
   return result;
 };
 
-BOOL		GMXTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
+bool		GMXTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
   if (!is_opened_) return FALSE;
 
@@ -206,7 +206,7 @@ BOOL		GMXTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int
   return GetTileFromContainerFile(z,x,y,p_data,size);
 };
 
-BOOL		GMXTileContainer::TileExists(int z, int x, int y)
+bool		GMXTileContainer::TileExists(int z, int x, int y)
 {
   if (!is_opened_) return FALSE;
 
@@ -216,7 +216,7 @@ BOOL		GMXTileContainer::TileExists(int z, int x, int y)
 }; 
 
 
-BOOL		GMXTileContainer::Close()
+bool		GMXTileContainer::Close()
 {
   if (!is_opened_) return TRUE;
   else if (read_only_) MakeEmpty();
@@ -235,7 +235,7 @@ BOOL		GMXTileContainer::Close()
 };
 
 
-BOOL		GMXTileContainer::GetTileBounds (int tile_bounds[128])
+bool		GMXTileContainer::GetTileBounds (int tile_bounds[128])
 {
 	if (max_tiles_<=0) return FALSE;
 	if (maxx_==0 || maxy_==0 || minx_==0 || miny_==0) return FALSE;
@@ -307,7 +307,7 @@ __int64		GMXTileContainer::TileID( int z, int x, int y)
 	return (num + (maxx_[z]-minx_[z])*(y-miny_[z]) + x-minx_[z]);
 };
 
-BOOL		GMXTileContainer::TileXYZ(__int64 n, int &z, int &x, int &y)
+bool		GMXTileContainer::TileXYZ(__int64 n, int &z, int &x, int &y)
 {
   if (!is_opened_) return FALSE;
 
@@ -356,11 +356,11 @@ int			GMXTileContainer::GetMaxZoom()
 	return max_z;
 };
 
-BOOL 	GMXTileContainer::OpenForWriting	(	string				container_file_name, 
+bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name, 
 									                        TileType			tile_type,
 									                        MercatorProjType	merc_type,
                                           int					tile_bounds[128], 
-									                        BOOL				use_cache,
+									                        bool				use_cache,
                                           Metadata    *p_metadata,
                                           unsigned int max_volume_size)
 {
@@ -446,7 +446,7 @@ int GMXTileContainer::FillUpCurrentVolume ()
   return block_size;
 };
 
-BOOL   GMXTileContainer::DeleteVolumes()
+bool   GMXTileContainer::DeleteVolumes()
 {
   list<string> file_list;
 
@@ -488,7 +488,7 @@ string GMXTileContainer::GetVolumeName (int num)
 }
 
 
-BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data, unsigned int size)
+bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
 	//ToDo - fix if n<0
   if (this->read_only_) return FALSE;
@@ -530,7 +530,7 @@ BOOL	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, BYTE *p_data,
   return TRUE;
 };
 	
-BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size)
+bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
 	unsigned int n	= TileID(z,x,y);
 	if (n>= max_tiles_ || n<0) return FALSE;
@@ -551,7 +551,7 @@ BOOL	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_d
 	return (size==fread(p_data,1,size,pp_container_volumes_[volume_num]));
 };
 
-BOOL	GMXTileContainer::WriteTilesToContainerFileFromCache()
+bool	GMXTileContainer::WriteTilesToContainerFileFromCache()
 {
   if (container_byte_size_ == 0 && (p_tile_cache_->cache_size() + HeaderSize() < max_volume_size_) )
 	{
@@ -637,7 +637,7 @@ BOOL	GMXTileContainer::WriteTilesToContainerFileFromCache()
 
 
 
-BOOL	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
+bool	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 {
 	p_data = new BYTE[HeaderSize()];
 	string file_type = "GMTC";
@@ -764,7 +764,7 @@ int		MBTileContainer::GetMaxZoom()
 	return max_zoom;
 };
 	
-BOOL MBTileContainer::OpenForReading  (string file_name)
+bool MBTileContainer::OpenForReading  (string file_name)
 {
 	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_))
 	{
@@ -858,7 +858,7 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 
 
 
-BOOL	MBTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
+bool	MBTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
 	if (p_sql3_db_ == NULL) return FALSE;
 
@@ -897,7 +897,7 @@ BOOL	MBTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int si
 	return TRUE;
 }
 
-BOOL		MBTileContainer::TileExists(int z, int x, int y)
+bool		MBTileContainer::TileExists(int z, int x, int y)
 {
 	if (p_sql3_db_ == NULL) return FALSE;
 		
@@ -910,7 +910,7 @@ BOOL		MBTileContainer::TileExists(int z, int x, int y)
 	const char *tail	=	NULL;
 	sqlite3_prepare_v2 (p_sql3_db_, str_sql.c_str(), str_sql.size()+1,&stmt, &tail);
 	
-	BOOL result = (SQLITE_ROW == sqlite3_step (stmt));
+	bool result = (SQLITE_ROW == sqlite3_step (stmt));
 
 		
 
@@ -918,7 +918,7 @@ BOOL		MBTileContainer::TileExists(int z, int x, int y)
 	return result;	
 }
 
-BOOL		MBTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
+bool		MBTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
 	if (p_sql3_db_ == NULL) return FALSE;
 	char buf[256];
@@ -1000,7 +1000,7 @@ OGREnvelope MBTileContainer::GetMercatorEnvelope()
 };
 
 
-BOOL		MBTileContainer::GetTileBounds (int tile_bounds[128])
+bool		MBTileContainer::GetTileBounds (int tile_bounds[128])
 {
 	for (int z=0; z<32; z++)
 		tile_bounds[4*z]		= 	(tile_bounds[4*z+1] = (tile_bounds[4*z + 2]	= 	(tile_bounds[4*z+3] =	-1)));
@@ -1042,7 +1042,7 @@ MercatorProjType	MBTileContainer::GetProjType()
 	return merc_type_;
 };
 
-BOOL MBTileContainer::Close ()
+bool MBTileContainer::Close ()
 {
 	if (p_sql3_db_!=NULL)
 	{
@@ -1056,7 +1056,7 @@ BOOL MBTileContainer::Close ()
 
 
 
-TileFolder::TileFolder (TileName *p_tile_name, BOOL use_cache)
+TileFolder::TileFolder (TileName *p_tile_name, bool use_cache)
 {
 	p_tile_name_	= p_tile_name;
 	use_cache_	= use_cache;
@@ -1071,7 +1071,7 @@ TileFolder::~TileFolder ()
 	Close();
 };
 
-BOOL TileFolder::Close()
+bool TileFolder::Close()
 {
 	delete(p_tile_cache_);
 	p_tile_cache_ = NULL;
@@ -1083,7 +1083,7 @@ BOOL TileFolder::Close()
   return TRUE;
 };
 
-BOOL	TileFolder::OpenForReading (string folder_name)
+bool	TileFolder::OpenForReading (string folder_name)
 {
   return FileExists(folder_name);
 };
@@ -1102,18 +1102,18 @@ MercatorProjType		TileFolder::GetProjType()
 
 
 
-BOOL	TileFolder::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
+bool	TileFolder::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
   WaitForSingleObject(addtile_semaphore_,INFINITE); 
 	if (use_cache_)	p_tile_cache_->AddTile(z,x,y,p_data,size);
-	BOOL result = writeTileToFile(z,x,y,p_data,size);
+	bool result = writeTileToFile(z,x,y,p_data,size);
   ReleaseSemaphore(addtile_semaphore_,1,NULL);
   return result;
 };
 
 
 
-BOOL		TileFolder::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
+bool		TileFolder::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
 	if (use_cache_)	
   {
@@ -1124,7 +1124,7 @@ BOOL		TileFolder::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size
   return ReadTileFromFile(z,x,y,p_data,size);
 };
 
-BOOL		TileFolder::TileExists(int z, int x, int y)
+bool		TileFolder::TileExists(int z, int x, int y)
 {
 	return FileExists(p_tile_name_->GetFullTileName(z,x,y));
 };
@@ -1192,7 +1192,7 @@ OGREnvelope TileFolder::GetMercatorEnvelope()
 };
 
 
-BOOL		TileFolder::GetTileBounds (int tile_bounds[128])
+bool		TileFolder::GetTileBounds (int tile_bounds[128])
 {
 	list<pair<int,pair<int,int>>> tile_list;
 	if (!GetTileList(tile_list,-1,-1,"")) return FALSE;
@@ -1214,7 +1214,7 @@ BOOL		TileFolder::GetTileBounds (int tile_bounds[128])
 };
 
 	
-BOOL	TileFolder::writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned int size)
+bool	TileFolder::writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned int size)
 {
 	if (p_tile_name_==NULL) return FALSE;
 	p_tile_name_->CreateFolder(z,x,y);
@@ -1222,11 +1222,11 @@ BOOL	TileFolder::writeTileToFile (int z, int x, int y, BYTE *p_data, unsigned in
 };
 
 	
-BOOL	TileFolder::ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned int &size)
+bool	TileFolder::ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned int &size)
 {
   void *_p_data;
   int _size;
-  BOOL result = ReadDataFromFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
+  bool result = ReadDataFromFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
   size = _size;
   p_data = (BYTE*)_p_data;
 	return result;

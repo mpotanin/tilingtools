@@ -48,7 +48,7 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
   //rx_template_ = str_template;
 }
 
-BOOL	StandardTileName::ValidateTemplate	(string str_template)
+bool	StandardTileName::ValidateTemplate	(string str_template)
 {
 
 	if (str_template.find("{z}",0)==string::npos)
@@ -91,7 +91,7 @@ string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 	return tile_name;
 }
 
-BOOL StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+bool StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
 {
 	if (!regex_match(tile_name,rx_template_)) return FALSE;
 	match_results<string::const_iterator> mr;
@@ -111,7 +111,7 @@ BOOL StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x,
 }
 
 
-BOOL StandardTileName::CreateFolder (int zoom, int x, int y)
+bool StandardTileName::CreateFolder (int zoom, int x, int y)
 {
 	string tile_name = GetTileName(zoom,x,y);
 	int n = 0;
@@ -125,7 +125,7 @@ BOOL StandardTileName::CreateFolder (int zoom, int x, int y)
 }
 
 
-BOOL ESRITileName::CreateFolder (int zoom, int x, int y)
+bool ESRITileName::CreateFolder (int zoom, int x, int y)
 {
 	string tile_name = GetTileName(zoom,x,y);
 	int n = 0;
@@ -139,7 +139,7 @@ BOOL ESRITileName::CreateFolder (int zoom, int x, int y)
 }
 
 
-BOOL	ESRITileName::ValidateTemplate	(string str_template)
+bool	ESRITileName::ValidateTemplate	(string str_template)
 {
   str_template = MakeLower(str_template);
 	if (str_template.find("{l}",0)==string::npos)
@@ -213,7 +213,7 @@ string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 }
 
 
-BOOL ESRITileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+bool ESRITileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
 {
 	if (!regex_match(tile_name,rx_template_)) return FALSE;
 	match_results<string::const_iterator> mr;
@@ -249,7 +249,7 @@ string	KosmosnimkiTileName::GetTileName (int zoom, int x, int y)
 	return buf;
 }
 
-BOOL KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+bool KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
 {
 	tile_name = RemovePath(tile_name);
 	tile_name = RemoveExtension(tile_name);
@@ -276,7 +276,7 @@ BOOL KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int 
 }
 
 
-BOOL KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
+bool KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
 {
 	if (zoom>0)
 	{

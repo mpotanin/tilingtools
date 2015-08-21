@@ -210,7 +210,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
 	gmx::TileName		*poDestTileName		= NULL;
 	gmx::ITileContainer	*poDestITileContainer	= NULL;
-	BOOL			is_dest_tile_folder			= (	(gmx::MakeLower(destPath).find(".mbtiles") == string::npos) && 
+	bool			is_dest_tile_folder			= (	(gmx::MakeLower(destPath).find(".mbtiles") == string::npos) && 
 											(gmx::MakeLower(destPath).find(".tiles") == string::npos)) ? TRUE : FALSE;
 	if (is_dest_tile_folder)
 	{
@@ -268,7 +268,7 @@ int _tmain(int argc, wchar_t* argvW[])
 		else
 		{
       poDestITileContainer = new gmx::GMXTileContainer();
-      BOOL opened = (borderFilePath!="") ? ((gmx::GMXTileContainer*)poDestITileContainer)->OpenForWriting(destPath,
+      bool opened = (borderFilePath!="") ? ((gmx::GMXTileContainer*)poDestITileContainer)->OpenForWriting(destPath,
 																				                                    tile_type,
 																				                                    merc_type,
 																				                                    merc_envp,

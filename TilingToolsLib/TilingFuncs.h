@@ -50,20 +50,20 @@ public:
 };
 
 
-BOOL GMXMakeTiling (	GMXTilingParameters		*p_tiling_params);
+bool GMXMakeTiling (	GMXTilingParameters		*p_tiling_params);
 
-BOOL GMXMakeBaseZoomTiling (GMXTilingParameters				*p_tiling_params, 
+bool GMXMakeBaseZoomTiling (GMXTilingParameters				*p_tiling_params, 
 							gmx::RasterFileBundle		*p_bundle, 
 							gmx::ITileContainer				*p_tile_container,
               gmx::MetaHistogram            *p_histogram = NULL);
 
-BOOL GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb, 
+bool GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb, 
 								int					base_zoom, 
 								int					min_zoom, 
 								GMXTilingParameters	*p_tiling_params, 
 								int					&tiles_expected, 
 								int					&tiles_generated, 
-								BOOL				only_calculate, 
+								bool				only_calculate, 
 								gmx::ITileContainer	*p_itile_pyramid
 								);
 
@@ -75,23 +75,23 @@ struct GMXAsyncChunkTilingParams
   int								        z_;
 	int								        tiles_expected_; 
 	int								        *p_tiles_generated_;
-  BOOL                      *p_was_error_;
+  bool                      *p_was_error_;
 	gmx::ITileContainer				*p_tile_container_;
-  BOOL                      need_stretching_;
+  bool                      need_stretching_;
   double		                *p_stretch_min_values_;
   double                    *p_stretch_max_values_;
   int                       srand_seed_;
   string                    temp_file_path_;
   gmx::MetaHistogram            *p_histogram_;
 
-  //BOOL (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
+  //bool (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
 };
 
 DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam);
 
-BOOL GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
+bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
-BOOL GMXMakeTilingFromBuffer	(	GMXTilingParameters				*p_tiling_params,
+bool GMXMakeTilingFromBuffer	(	GMXTilingParameters				*p_tiling_params,
 								gmx::RasterBuffer				*p_buffer, 
 								gmx::RasterFileBundle		*p_bundle, 
 								int								ul_x, 
@@ -102,7 +102,7 @@ BOOL GMXMakeTilingFromBuffer	(	GMXTilingParameters				*p_tiling_params,
 								gmx::ITileContainer				*p_tile_container
 								);
 
-BOOL GMXMakePyramidTileRecursively (	gmx::VectorBorder				&vb,
+bool GMXMakePyramidTileRecursively (	gmx::VectorBorder				&vb,
 								int								zoom,
 								int								x,
 								int								y,
@@ -112,13 +112,13 @@ BOOL GMXMakePyramidTileRecursively (	gmx::VectorBorder				&vb,
 								gmx::RasterBuffer				&buffer, 
 								int								&tiles_expected,
 								int								&tiles_generated,
-								BOOL							only_calculate,
+								bool							only_calculate,
 								gmx::ITileContainer				*p_itile_pyramid,
-                BOOL              *p_was_error);
+                bool              *p_was_error);
 
 
-BOOL GMXZoomOutTileBuffer		(	gmx::RasterBuffer			src_quarter_tile_buffers[4], 
-								BOOL							src_quarter_tile_buffers_def[4], 
+bool GMXZoomOutTileBuffer		(	gmx::RasterBuffer			src_quarter_tile_buffers[4], 
+								bool							src_quarter_tile_buffers_def[4], 
 								gmx::RasterBuffer				&zoomed_out_tile_buffer,
                 string      resampling_method="",
                 BYTE   *p_background = NULL); 

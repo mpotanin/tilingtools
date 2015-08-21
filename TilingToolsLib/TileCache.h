@@ -11,9 +11,9 @@ class TileCache
 {
 public:
 	TileCache(void);
-	BOOL		AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
-	BOOL		GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
-  BOOL    FindTile(int z, int x, int y);
+	bool		AddTile(int z, int x, int y, BYTE *p_data, unsigned int size);
+	bool		GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size);
+  bool    FindTile(int z, int x, int y);
   unsigned __int64 cache_size();
 	~TileCache(void);
 

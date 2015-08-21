@@ -18,54 +18,54 @@ public:
 
 	void	ClearBuffer();
 
-	BOOL			CreateBuffer	(int			num_bands,
+	bool			CreateBuffer	(int			num_bands,
 									 int			x_size,
 									 int			y_size,
 									 void			*p_data_src				= NULL,
 									 GDALDataType	data_type				= GDT_Byte,
-									 BOOL			is_alpha_band			= FALSE,
+									 bool			is_alpha_band			= FALSE,
 									 GDALColorTable *p_color_table			= NULL
 									 );
 
-	BOOL			CreateBuffer				(RasterBuffer *p_src_buffer);
-	BOOL			CreateBufferFromJpegData	(void *p_data_src, int size);
-	BOOL			CreateBufferFromPngData		(void *p_data_src, int size);
- 	BOOL			CreateBufferFromPseudoPngData	(void *p_data_src, int size);
-  BOOL			createFromJP2Data			(void *p_data_src, int size);
-	BOOL			CreateBufferFromTiffData	(void *p_data_src, int size);
+	bool			CreateBuffer				(RasterBuffer *p_src_buffer);
+	bool			CreateBufferFromJpegData	(void *p_data_src, int size);
+	bool			CreateBufferFromPngData		(void *p_data_src, int size);
+ 	bool			CreateBufferFromPseudoPngData	(void *p_data_src, int size);
+  bool			createFromJP2Data			(void *p_data_src, int size);
+	bool			CreateBufferFromTiffData	(void *p_data_src, int size);
 
-	BOOL			SaveToPngData	(void* &p_data_dst, int &size);
-  BOOL			SaveToPng24Data	(void* &p_data_dst, int &size);
-	BOOL			SaveToPseudoPngData	(void* &p_data_dst, int &size);
-  BOOL			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
-	BOOL			SaveToTiffData	(void* &p_data_dst, int &size);
-	BOOL			SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate = 0);
+	bool			SaveToPngData	(void* &p_data_dst, int &size);
+  bool			SaveToPng24Data	(void* &p_data_dst, int &size);
+	bool			SaveToPseudoPngData	(void* &p_data_dst, int &size);
+  bool			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
+	bool			SaveToTiffData	(void* &p_data_dst, int &size);
+	bool			SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate = 0);
 
-	//BOOL			IsAnyNoDataPixel			();
+	//bool			IsAnyNoDataPixel			();
 
-	BOOL			SaveBufferToFile		(string filename, int quality = 0);
-	BOOL			SaveBufferToFileAndData	(string filename, void* &p_data_dst, int &size, int quality = 0);
+	bool			SaveBufferToFile		(string filename, int quality = 0);
+	bool			SaveBufferToFileAndData	(string filename, void* &p_data_dst, int &size, int quality = 0);
 
-	//BOOL			ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight);
-	//BOOL			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
+	//bool			ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight);
+	//bool			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
 
-	//BOOL			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
-	BOOL			InitByRGBColor	 (BYTE rgb[3]);
-	BOOL			InitByValue(int value = 0);	
+	//bool			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
+	bool			InitByRGBColor	 (BYTE rgb[3]);
+	bool			InitByValue(int value = 0);	
 
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
-	BOOL			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int bands = 0);
+	bool			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int bands = 0);
 	void*			GetDataZoomedOut	(string resampling_method="");	
-	BOOL			ConvertFromIndexToRGB ();
-	BOOL			ConvertFromPanToRGB();
-	BOOL			CreateAlphaBandByRGBColor(BYTE	*p_rgb, int tolerance = 0);
+	bool			ConvertFromIndexToRGB ();
+	bool			ConvertFromPanToRGB();
+	bool			CreateAlphaBandByRGBColor(BYTE	*p_rgb, int tolerance = 0);
 
-	BOOL      CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb);
+	bool      CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb);
 
-  BOOL			IsAlphaBand();
+  bool			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
-	BOOL			StretchDataTo8Bit(double *min_values, double *max_values);
-  BOOL      AddPixelDataToMetaHistogram(MetaHistogram *p_hist);
+	bool			StretchDataTo8Bit(double *min_values, double *max_values);
+  bool      AddPixelDataToMetaHistogram(MetaHistogram *p_hist);
     
 
 public:
@@ -75,24 +75,24 @@ public:
 	int				get_y_size();
 	GDALDataType	get_data_type();
 	GDALColorTable*	get_color_table_ref ();
-	BOOL			set_color_table (GDALColorTable *p_color_table);
+	bool			set_color_table (GDALColorTable *p_color_table);
 
 protected:
 	//void									initAlphaBand();
   void*                         GetPixelDataOrder2();
   template <typename T>void*    GetPixelDataOrder2(T type);
- //template <typename T>	BOOL		IsAnyNoDataPixel(T type);
-	template <typename T>	BOOL		InitByValue		(T type, int value);
+ //template <typename T>	bool		IsAnyNoDataPixel(T type);
+	template <typename T>	bool		InitByValue		(T type, int value);
 	template <typename T>	void*		GetPixelDataBlock	(	T type, int left, int top, int w, int h);
-	template <typename T>	BOOL		SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
+	template <typename T>	bool		SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
 																                     void *p_block_data, int bands = 0);
 	template <typename T>	void*		GetDataZoomedOut(T type,string resampling_method="");
-  template <typename T>	BOOL    AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist);
-  template <typename T> BOOL    StretchDataTo8Bit(T type, double *min_values, double *max_values);
+  template <typename T>	bool    AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist);
+  template <typename T> bool    StretchDataTo8Bit(T type, double *min_values, double *max_values);
 
 
 protected:
-	BOOL			alpha_band_defined_;
+	bool			alpha_band_defined_;
 	void			*p_pixel_data_;
 	GDALDataType	data_type_;
 	int				data_size_;

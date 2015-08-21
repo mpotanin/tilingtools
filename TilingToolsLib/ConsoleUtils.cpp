@@ -7,7 +7,7 @@
 namespace gmx
 {
 
-BOOL    ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
+bool    ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
 {
   string _str_file_param = str_file_param + '|';
   output_bands_num = 0;
@@ -104,7 +104,7 @@ void	SetEnvironmentVariables (string gdal_path)
 
 
 
-BOOL LoadGDAL (int argc, string argv[])
+bool LoadGDAL (int argc, string argv[])
 {
 	string gdal_path	=  ReadConsoleParameter("-gdal",argc,argv);
 	if (gdal_path == "")
@@ -133,7 +133,7 @@ BOOL LoadGDAL (int argc, string argv[])
 	return TRUE;
 }
 
-BOOL LoadGDALDLLs (string gdal_path)
+bool LoadGDALDLLs (string gdal_path)
 {
 	wstring gdal_dll_w;
 	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal111.dll"));
@@ -213,7 +213,7 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 }
 */
 
-string  ReadConsoleParameter (string str_pattern, int argc, string argv[], BOOL is_flag_param)
+string  ReadConsoleParameter (string str_pattern, int argc, string argv[], bool is_flag_param)
 {
 	for (int i=0;i<argc;i++)
 	{

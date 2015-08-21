@@ -38,7 +38,7 @@ void Exit()
 }
 
 
-BOOL CheckArgsAndCallTiling (map<string,string> console_params)
+bool CheckArgsAndCallTiling (map<string,string> console_params)
 {
   string input_path = console_params.at("-file");
   string use_container = console_params.at("-gmxtiles") != "" ? console_params.at("-gmxtiles") : console_params.at("-mbtiles");		
@@ -247,16 +247,6 @@ int _tmain(int argc, wchar_t* argvW[])
   GDALAllRegister();
   OGRRegisterAll();
 
-  //begin-test
-  //WritePRCPByYear("e:\\meteo","e:\\meteo\\stations_rus.shp",2013,"e:\\meteo\\prcp_by_stations_2013.shp");
-  //std::list<string> file_list;
-  
-  //gmx::FindFilesByPattern(file_list,"e:\\meteo\\2014\\*.op");
-  
-  //end-test
-
-  
-
   if (argc == 1)
   {
     PrintHelp();
@@ -350,7 +340,7 @@ int _tmain(int argc, wchar_t* argvW[])
 
     std::list<string> file_list = band_mapping.GetFileList();
 
-    BOOL use_container = (console_params.at("-gmxtiles")!="" || console_params.at("-mbtiles")!="");
+    bool use_container = (console_params.at("-gmxtiles")!="" || console_params.at("-mbtiles")!="");
 
     for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
     {

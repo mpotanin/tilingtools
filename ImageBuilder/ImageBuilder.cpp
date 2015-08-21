@@ -43,12 +43,12 @@ int _tmain(int argc, wchar_t* argv[])
 	wstring strZoom				=  ReadConsoleParameter(L"-zoom",argc,argv);
 	wstring strVectorFile		=  ReadConsoleParameter(L"-border",argc,argv);
 
-	BOOL	bWldFile = ( ReadConsoleParameter(L"-wld",argc,argv,TRUE) != L"");
-	BOOL	bTabFile = ( ReadConsoleParameter(L"-tab",argc,argv,TRUE) != L"");
-	BOOL	bPrjFile = ( ReadConsoleParameter(L"-prj",argc,argv,TRUE) != L"");
-	BOOL	bMapFile = ( ReadConsoleParameter(L"-map",argc,argv,TRUE) != L"");
-	BOOL	bKmlFile = ( ReadConsoleParameter(L"-kml",argc,argv,TRUE) != L"");
-	BOOL	bAuxFile = ( ReadConsoleParameter(L"-xml",argc,argv,TRUE) != L"");
+	bool	bWldFile = ( ReadConsoleParameter(L"-wld",argc,argv,TRUE) != L"");
+	bool	bTabFile = ( ReadConsoleParameter(L"-tab",argc,argv,TRUE) != L"");
+	bool	bPrjFile = ( ReadConsoleParameter(L"-prj",argc,argv,TRUE) != L"");
+	bool	bMapFile = ( ReadConsoleParameter(L"-map",argc,argv,TRUE) != L"");
+	bool	bKmlFile = ( ReadConsoleParameter(L"-kml",argc,argv,TRUE) != L"");
+	bool	bAuxFile = ( ReadConsoleParameter(L"-xml",argc,argv,TRUE) != L"");
 	
 	wstring	strWMS		=  ReadConsoleParameter(L"-wms",argc,argv,1);
 	wstring	strWidth	=  ReadConsoleParameter(L"-width",argc,argv);
