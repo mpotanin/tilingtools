@@ -52,7 +52,7 @@ static OPJ_OFF_T opj_skip_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
         return p_nb_bytes;
 }
 
-static OPJ_bool opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
+static OPJ_BOOL opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
 {
         if (fseek(p_user_data,p_nb_bytes,SEEK_SET)) {
                 return OPJ_FALSE;
@@ -132,7 +132,7 @@ static OPJ_BOOL OPJStreamSeekFunc (OPJ_OFF_T n_seek, void *p_stream_data)
 /*
 opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream (	FILE * p_file, 
 															OPJ_SIZE_T p_size, 
-															OPJ_bool p_is_read_stream)
+															OPJ_BOOL p_is_read_stream)
 {
 	opj_stream_t* l_stream = 00;
 
@@ -1051,8 +1051,8 @@ bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   char indexfilename[OPJ_PATH_LEN];
   unsigned int i, num_images, imageno;
 
-  OPJ_bool bSuccess;
-	OPJ_bool bUseTiles = OPJ_FALSE;
+  OPJ_BOOL bSuccess;
+	OPJ_BOOL bUseTiles = OPJ_FALSE;
   OPJ_UINT32 l_nb_tiles = 4;
 
 	opj_set_default_encoder_parameters(&parameters);
