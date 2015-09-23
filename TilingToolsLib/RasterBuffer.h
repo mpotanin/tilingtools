@@ -31,7 +31,7 @@ public:
 	bool			CreateBufferFromJpegData	(void *p_data_src, int size);
 	bool			CreateBufferFromPngData		(void *p_data_src, int size);
  	bool			CreateBufferFromPseudoPngData	(void *p_data_src, int size);
-  bool			createFromJP2Data			(void *p_data_src, int size);
+  bool			CreateFromJP2Data			(void *p_data_src, int size);
 	bool			CreateBufferFromTiffData	(void *p_data_src, int size);
 
 	bool			SaveToPngData	(void* &p_data_dst, int &size);

@@ -70,7 +70,7 @@ bool GMXMakePyramidFromBaseZoom (	gmx::VectorBorder	&vb,
 struct GMXAsyncChunkTilingParams
 {
 	GMXTilingParameters				*p_tiling_params_;
-	gmx::RasterFileBundle	*p_bundle_; 
+	gmx::RasterFileBundle	    *p_bundle_; 
 	OGREnvelope               chunk_envp_;
   int								        z_;
 	int								        tiles_expected_; 
@@ -82,7 +82,7 @@ struct GMXAsyncChunkTilingParams
   double                    *p_stretch_max_values_;
   int                       srand_seed_;
   string                    temp_file_path_;
-  gmx::MetaHistogram            *p_histogram_;
+  gmx::MetaHistogram        *p_histogram_;
 
   //bool (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
 };

@@ -630,7 +630,8 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
                                             int           **pp_band_mapping,
                                             string        resampling_alg, 
                                             BYTE          *p_nodata,
-                                            BYTE          *p_background_color)
+                                            BYTE          *p_background_color,
+                                            bool           warp_multithread)
 {
 
 	if (data_list_.size()==0) return FALSE;
@@ -753,7 +754,8 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
 
     GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
     p_warp_options->papszWarpOptions = NULL;
-    p_warp_options->papszWarpOptions = CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS");
+    if (warp_multithread) 
+      p_warp_options->papszWarpOptions = CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS");
 
 		p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
@@ -854,7 +856,8 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
 		
    
     bool  warp_error = FALSE;
-    if (CE_None != gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height))
+    if (CE_None != (warp_multithread ? gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height) :
+                                      gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height)))
 		{
 			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
       warp_error = TRUE;

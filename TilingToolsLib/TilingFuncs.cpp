@@ -374,7 +374,8 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
                                                 pp_band_mapping,
                                                 p_tiling_params->gdal_resampling_,
                                                 p_tiling_params->p_transparent_color_,
-                                                p_tiling_params->p_background_color_);
+                                                p_tiling_params->p_background_color_,
+                                                p_tiling_params->max_work_threads_!=1);
   ReleaseSemaphore(GMX_WARP_SEMAPHORE,1,NULL);
 
   
@@ -655,7 +656,7 @@ bool GMXMakePyramidTileRecursively (VectorBorder	&vb,
 				}
       case JP2_TILE:
         {
-          tile_buffer.createFromJP2Data(p_data,size);
+          tile_buffer.CreateFromJP2Data(p_data,size);
           break;
         }
 			default:

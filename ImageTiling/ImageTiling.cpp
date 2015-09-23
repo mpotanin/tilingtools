@@ -38,95 +38,95 @@ void Exit()
 }
 
 
-bool CheckArgsAndCallTiling (map<string,string> console_params)
+bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
 {
-  string input_path = console_params.at("-file");
-  string use_container = console_params.at("-gmxtiles") != "" ? console_params.at("-gmxtiles") : console_params.at("-mbtiles");		
-  string max_zoom_str = console_params.at("-zoom");
-  string min_zoom_str = console_params.at("-min_zoom");
-  string vector_file = console_params.at("-border");
-  string output_path = console_params.at("-tiles");
-  string tile_type_str = console_params.at("-tile_type");
-  string proj_type_str = console_params.at("-proj");
-  string quality_str = console_params.at("-quality");
-  string tile_name_template = console_params.at("-template");
-  string nodata_str = console_params.at("-nodata");
-  string nodata_tolerance_str = console_params.at("-nodata_tolerance");
-  string shift_x_str = console_params.at("-shiftX");
-  string shift_y_str = console_params.at("-shiftY");
-  string use_pixel_tiling = console_params.at("-pixel_tiling");
-  string background_str = console_params.at("-background");
-  string log_file = console_params.at("-log_file");
-  string cache_size_str = console_params.at("-cache_size");
-  string gmx_volume_size_str = console_params.at("-gmx_volume_size");
-  string gdal_resampling = console_params.at("-resampling");
-  string temp_file_warp_path = console_params.at("-temp_file_warp");
-  string max_work_threads_str = console_params.at("-work_threads");
-  string max_warp_threads_str = console_params.at("-warp_threads");
-  string bands_str = console_params.at("-bands");
-  string str_pseudo_png = console_params.at("-pseudo_png");
+  string strInputPath = mapConsoleParams.at("-file");
+  string strUseContainer = mapConsoleParams.at("-gmxtiles") != "" ? mapConsoleParams.at("-gmxtiles") : mapConsoleParams.at("-mbtiles");		
+  string strMaxZoom = mapConsoleParams.at("-zoom");
+  string strMinZoom = mapConsoleParams.at("-min_zoom");
+  string strVectorFile = mapConsoleParams.at("-border");
+  string strOutputPath = mapConsoleParams.at("-tiles");
+  string strTileType = mapConsoleParams.at("-tile_type");
+  string strProjType = mapConsoleParams.at("-proj");
+  string strQuality = mapConsoleParams.at("-quality");
+  string strTileNameTemplate = mapConsoleParams.at("-template");
+  string strNodata = mapConsoleParams.at("-nodata");
+  string strNodataTolerance = mapConsoleParams.at("-nodata_tolerance");
+  string strShiftX = mapConsoleParams.at("-shift_x");
+  string strShiftY = mapConsoleParams.at("-shift_y");
+  string strUsePixelTiling = mapConsoleParams.at("-pixel_tiling");
+  string strBackground = mapConsoleParams.at("-background");
+  string strLogFile = mapConsoleParams.at("-log_file");
+  string strCacheSize = mapConsoleParams.at("-cache_size");
+  string strGMXVolumeSize = mapConsoleParams.at("-gmx_volume_size");
+  string strGdalResampling = mapConsoleParams.at("-resampling");
+  string strTempFileWarpPath = mapConsoleParams.at("-temp_file_warp");
+  string strMaxWorkThreads = mapConsoleParams.at("-work_threads");
+  string strMaxWarpThreads = mapConsoleParams.at("-warp_threads");
+  string strBands = mapConsoleParams.at("-bands");
+  string strPseudoPNG = mapConsoleParams.at("-pseudo_png");
 
  
-  gmx::BandMapping band_mapping_param;
+  gmx::BandMapping oBandMapping;
 
-  if (!band_mapping_param.InitByConsoleParams(input_path,bands_str))
+  if (!oBandMapping.InitByConsoleParams(strInputPath,strBands))
   {
     //ToDo - 
     return FALSE;
   }
-  list<string> file_list = band_mapping_param.GetFileList();
+  list<string> lstInputFiles = oBandMapping.GetFileList();
 
   //синициализируем обязательные параметры для тайлинга
-  gmx::MercatorProjType merc_type =	(	(proj_type_str == "") || (proj_type_str == "0") || (proj_type_str == "world_mercator")
-                      || (proj_type_str == "epsg:3395")
+  gmx::MercatorProjType eMercType =	(	(strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")
+                      || (strProjType == "epsg:3395")
                     ) ? gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
 
-  gmx::TileType tile_type;
-  if (str_pseudo_png!="") 
-    tile_type = gmx::TileType::PSEUDO_PNG_TILE;
+  gmx::TileType eTileType;
+  if (strPseudoPNG!="") 
+    eTileType = gmx::TileType::PSEUDO_PNG_TILE;
   else 
   {
-    if ((tile_type_str == ""))
+    if ((strTileType == ""))
     {
-      if ((tile_name_template!="") && (tile_name_template!="kosmosnimki") && (tile_name_template!="standard"))
-        tile_type_str = tile_name_template.substr(tile_name_template.rfind(".")+1,
-                                                  tile_name_template.length()-tile_name_template.rfind(".")-1
+      if ((strTileNameTemplate!="") && (strTileNameTemplate!="kosmosnimki") && (strTileNameTemplate!="standard"))
+        strTileType = strTileNameTemplate.substr(strTileNameTemplate.rfind(".")+1,
+                                                  strTileNameTemplate.length()-strTileNameTemplate.rfind(".")-1
                                                   );
       else
-        tile_type_str =  (gmx::MakeLower(gmx::GetExtension((*file_list.begin())))== "png") ? "png" : "jpg";
+        strTileType =  (gmx::MakeLower(gmx::GetExtension((*lstInputFiles.begin())))== "png") ? "png" : "jpg";
     }
-    if (!gmx::TileName::TileTypeByExtension(tile_type_str,tile_type))
+    if (!gmx::TileName::TileTypeByExtension(strTileType,eTileType))
     {
-      cout<<"Error: not valid tile type: "<<tile_type_str;
+      cout<<"Error: not valid tile type: "<<strTileType;
       return FALSE;
     }
   }  
 
-  GMXTilingParameters tiling_params(file_list,merc_type,tile_type);
+  GMXTilingParameters tiling_params(lstInputFiles,eMercType,eTileType);
 
-  if (band_mapping_param.GetBandsNum() != 0) 
-    tiling_params.p_band_mapping_ = &band_mapping_param;
+  if (oBandMapping.GetBandsNum() != 0) 
+    tiling_params.p_band_mapping_ = &oBandMapping;
   
 
  
 
-  if (max_zoom_str != "")		tiling_params.base_zoom_ = (int)atof(max_zoom_str.c_str());
-  if (min_zoom_str != "")	tiling_params.min_zoom_ = (int)atof(min_zoom_str.c_str());
-  if (vector_file!="") tiling_params.vector_file_ = vector_file;
+  if (strMaxZoom != "")		tiling_params.base_zoom_ = (int)atof(strMaxZoom.c_str());
+  if (strMinZoom != "")	tiling_params.min_zoom_ = (int)atof(strMinZoom.c_str());
+  if (strVectorFile!="") tiling_params.vector_file_ = strVectorFile;
   
-  tiling_params.use_container_	= !(use_container=="");
+  tiling_params.use_container_	= !(strUseContainer=="");
   
   if (!tiling_params.use_container_)
   {
-    if (output_path == "")
-      output_path = (file_list.size()>1) ? gmx::RemoveEndingSlash(gmx::GetPath((*file_list.begin())))+"_tiles" :
-                                           gmx::RemoveExtension((*file_list.begin()))+"_tiles";
+    if (strOutputPath == "")
+      strOutputPath = (lstInputFiles.size()>1) ?  gmx::RemoveEndingSlash(gmx::GetPath((*lstInputFiles.begin())))+"_tiles" :
+                                                  gmx::RemoveExtension((*lstInputFiles.begin()))+"_tiles";
     
-    if (!gmx::IsDirectory(output_path))
+    if (!gmx::IsDirectory(strOutputPath))
     {
-      if (!gmx::CreateDirectory(output_path.c_str()))
+      if (!gmx::CreateDirectory(strOutputPath.c_str()))
       {
-        cout<<"Error: can't create folder: "<<output_path<<endl;
+        cout<<"Error: can't create folder: "<<strOutputPath<<endl;
         return FALSE;
       }
     }
@@ -134,95 +134,95 @@ bool CheckArgsAndCallTiling (map<string,string> console_params)
   }
   else
   {
-    string containerExt	= (use_container == "-container") ? "tiles" : "mbtiles"; 
-    if (gmx::IsDirectory(output_path))
+    string strContainerExt	= (strUseContainer == "-container") ? "tiles" : "mbtiles"; 
+    if (gmx::IsDirectory(strOutputPath))
     {
-      tiling_params.container_file_ =  gmx::GetAbsolutePath(output_path,gmx::RemoveExtension(gmx::RemovePath((*file_list.begin())))+"."+containerExt);
+      tiling_params.container_file_ =  gmx::GetAbsolutePath(strOutputPath,gmx::RemoveExtension(gmx::RemovePath((*lstInputFiles.begin())))+"."+strContainerExt);
     }
     else
     {
-      if (output_path == "")
-       tiling_params.container_file_ = gmx::RemoveExtension((*file_list.begin())) + "." + containerExt;
+      if (strOutputPath == "")
+       tiling_params.container_file_ = gmx::RemoveExtension((*lstInputFiles.begin())) + "." + strContainerExt;
       else
-       tiling_params.container_file_ =  (gmx::GetExtension(output_path) == containerExt) ? output_path : output_path+"."+containerExt;
+       tiling_params.container_file_ =  (gmx::GetExtension(strOutputPath) == strContainerExt) ? strOutputPath : strOutputPath+"."+strContainerExt;
     }
   }
 
 
   if (!tiling_params.use_container_ )
   {
-    if ((tile_name_template=="") || (tile_name_template=="kosmosnimki"))
-        tiling_params.p_tile_name_ = new gmx::KosmosnimkiTileName(output_path,tile_type);
-    else if (tile_name_template=="standard") 
-        tiling_params.p_tile_name_ = new gmx::StandardTileName(	output_path,("{z}/{x}/{y}." + 
-                                gmx::TileName::ExtensionByTileType(tile_type)));
-    else if (gmx::ESRITileName::ValidateTemplate(tile_name_template))
-        tiling_params.p_tile_name_ = new gmx::ESRITileName(output_path,tile_name_template);
-    else if (gmx::StandardTileName::ValidateTemplate(tile_name_template))
-        tiling_params.p_tile_name_ = new gmx::StandardTileName(output_path,tile_name_template);
+    if ((strTileNameTemplate=="") || (strTileNameTemplate=="kosmosnimki"))
+        tiling_params.p_tile_name_ = new gmx::KosmosnimkiTileName(strOutputPath,eTileType);
+    else if (strTileNameTemplate=="standard") 
+        tiling_params.p_tile_name_ = new gmx::StandardTileName(	strOutputPath,("{z}/{x}/{y}." + 
+                                gmx::TileName::ExtensionByTileType(eTileType)));
+    else if (gmx::ESRITileName::ValidateTemplate(strTileNameTemplate))
+        tiling_params.p_tile_name_ = new gmx::ESRITileName(strOutputPath,strTileNameTemplate);
+    else if (gmx::StandardTileName::ValidateTemplate(strTileNameTemplate))
+        tiling_params.p_tile_name_ = new gmx::StandardTileName(strOutputPath,strTileNameTemplate);
     else
     {
-      cout<<"Error: can't validate \"-template\" parameter: "<<tile_name_template<<endl;
+      cout<<"Error: can't validate \"-template\" parameter: "<<strTileNameTemplate<<endl;
       return FALSE;
     }
   }
 
 
-  if ((shift_x_str!="")) tiling_params.shift_x_=atof(shift_x_str.c_str());
-  if ((shift_y_str!="")) tiling_params.shift_y_=atof(shift_y_str.c_str());
+  if ((strShiftX!="")) tiling_params.shift_x_=atof(strShiftX.c_str());
+  if ((strShiftY!="")) tiling_params.shift_y_=atof(strShiftY.c_str());
 
-  if (cache_size_str!="") 
-    tiling_params.max_cache_size_ = atof(cache_size_str.c_str());
+  if (strCacheSize!="") 
+    tiling_params.max_cache_size_ = atof(strCacheSize.c_str());
   
-  if (gmx_volume_size_str!="") 
-    tiling_params.max_gmx_volume_size_ = atof(gmx_volume_size_str.c_str());
+  if (strGMXVolumeSize!="") 
+    tiling_params.max_gmx_volume_size_ = atof(strGMXVolumeSize.c_str());
 
 
-  if (quality_str!="")
-    tiling_params.jpeg_quality_ = (int)atof(quality_str.c_str());
+  if (strQuality!="")
+    tiling_params.jpeg_quality_ = (int)atof(strQuality.c_str());
   
   
-  if (nodata_str!="")
+  if (strNodata!="")
   {
-    BYTE	rgb[3];
-    if (!gmx::ConvertStringToRGB(nodata_str,rgb))
+    BYTE	pabyRGB[3];
+    if (!gmx::ConvertStringToRGB(strNodata,pabyRGB))
     {
       cout<<"Error: bad value of parameter: \"-nodata\""<<endl;
       return FALSE;
     }
     tiling_params.p_transparent_color_ = new BYTE[3];
-    memcpy(tiling_params.p_transparent_color_,rgb,3);
+    memcpy(tiling_params.p_transparent_color_,pabyRGB,3);
   }
 
-  if (nodata_tolerance_str != "")
+  if (strNodataTolerance != "")
   {
-    if (((int)atof(nodata_tolerance_str.c_str()))>=0 && ((int)atof(nodata_tolerance_str.c_str()))<=100)
-      tiling_params.nodata_tolerance_ = (int)atof(nodata_tolerance_str.c_str());
+    if (((int)atof(strNodataTolerance.c_str()))>=0 && ((int)atof(strNodataTolerance.c_str()))<=100)
+      tiling_params.nodata_tolerance_ = (int)atof(strNodataTolerance.c_str());
   }
 
-  if (background_str!="")
+  if (strBackground!="")
   {
-    BYTE	rgb[3];
-    if (!gmx::ConvertStringToRGB(background_str,rgb))
+    BYTE	pabyRGB[3];
+    if (!gmx::ConvertStringToRGB(strBackground,pabyRGB))
     {
       cout<<"Error: bad value of parameter: \"-background\""<<endl;
       return FALSE;
     }
     tiling_params.p_background_color_ = new BYTE[3];
-    memcpy(tiling_params.p_background_color_,rgb,3);
+    memcpy(tiling_params.p_background_color_,pabyRGB,3);
   }
 
 
-  tiling_params.gdal_resampling_ = gdal_resampling;
+  tiling_params.gdal_resampling_ = strGdalResampling;
   tiling_params.auto_stretching_ = true;
-  tiling_params.temp_file_path_for_warping_ = temp_file_warp_path;
+  tiling_params.temp_file_path_for_warping_ = strTempFileWarpPath;
   tiling_params.calculate_histogram_ = true; 
  
-  if (max_work_threads_str != "")
-    tiling_params.max_work_threads_ = ((int)atof(max_work_threads_str.c_str())>0) ? (int)atof(max_work_threads_str.c_str()) : 0;
+  if (strMaxWorkThreads != "")
+    tiling_params.max_work_threads_ = ((int)atof(strMaxWorkThreads.c_str())>0) ? (int)atof(strMaxWorkThreads.c_str()) : 0;
 
-  if (max_warp_threads_str != "")
-    tiling_params.max_warp_threads_ = ((int)atof(max_warp_threads_str.c_str())>0) ? (int)atof(max_warp_threads_str.c_str()) : 0;
+  if (strMaxWarpThreads != "")
+    tiling_params.max_warp_threads_ = ((int)atof(strMaxWarpThreads.c_str())>0) ? (int)atof(strMaxWarpThreads.c_str()) : 0;
 
   return GMXMakeTiling(&tiling_params);
   //if (logFile) fclose(logFile);
@@ -230,17 +230,17 @@ bool CheckArgsAndCallTiling (map<string,string> console_params)
 
 
 
-int _tmain(int argc, wchar_t* argvW[])
+int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
-  
-  string *argv = new string[argc];
-  for (int i=0;i<argc;i++)
+
+  string* pastrArgs = new string[nArgs];
+  for (int i=0;i<nArgs;i++)
   {
-    gmx::wstrToUtf8(argv[i],argvW[i]);
-    gmx::ReplaceAll(argv[i],"\\","/");
+    gmx::wstrToUtf8(pastrArgs[i],pastrArgsW[i]);
+    gmx::ReplaceAll(pastrArgs[i],"\\","/");
   }
   
-  if (!gmx::LoadGDAL(argc,argv))
+  if (!gmx::LoadGDAL(nArgs,pastrArgs))
   {
     cout<<"Error: can't load GDAL"<<endl;
     return 1;
@@ -248,79 +248,75 @@ int _tmain(int argc, wchar_t* argvW[])
   GDALAllRegister();
   OGRRegisterAll();
 
-  if (argc == 1)
+  if (nArgs == 1)
   {
     PrintHelp();
     return 0;
   }
 
-  map<string,string> console_params;
+  map<string,string> mapConsoleParams;
   
-  console_params.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",argc,argv)));
-  console_params.insert(pair<string,string>("-mosaic",gmx::ReadConsoleParameter("-mosaic",argc,argv,TRUE)));
-  console_params.insert(pair<string,string>("-gmxtiles",gmx::ReadConsoleParameter("-container",argc,argv,TRUE)));
-  console_params.insert(pair<string,string>("-mbtiles",gmx::ReadConsoleParameter("-mbtiles",argc,argv,TRUE)));
-  console_params.insert(pair<string,string>("-zoom",gmx::ReadConsoleParameter("-zoom",argc,argv)));
-  console_params.insert(pair<string,string>("-min_zoom",gmx::ReadConsoleParameter("-min_zoom",argc,argv)));
+  mapConsoleParams.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-mosaic",gmx::ReadConsoleParameter("-mosaic",nArgs,pastrArgs,TRUE)));
+  mapConsoleParams.insert(pair<string,string>("-gmxtiles",gmx::ReadConsoleParameter("-container",nArgs,pastrArgs,TRUE)));
+  mapConsoleParams.insert(pair<string,string>("-mbtiles",gmx::ReadConsoleParameter("-mbtiles",nArgs,pastrArgs,TRUE)));
+  mapConsoleParams.insert(pair<string,string>("-zoom",gmx::ReadConsoleParameter("-zoom",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-min_zoom",gmx::ReadConsoleParameter("-min_zoom",nArgs,pastrArgs)));
 
-  console_params.insert(pair<string,string>("-border",gmx::ReadConsoleParameter("-border",argc,argv)));
-  console_params.insert(pair<string,string>("-tiles",gmx::ReadConsoleParameter("-tiles",argc,argv)));
-  console_params.insert(pair<string,string>("-tile_type",gmx::ReadConsoleParameter("-tile_type",argc,argv)));
-  console_params.insert(pair<string,string>("-proj",gmx::ReadConsoleParameter("-proj",argc,argv)));
-  console_params.insert(pair<string,string>("-bands",gmx::ReadConsoleParameter("-bands",argc,argv)));
-  console_params.insert(pair<string,string>("-template",gmx::ReadConsoleParameter("-template",argc,argv)));
-  console_params.insert(pair<string,string>("-nodata",gmx::ReadConsoleParameter("-nodata",argc,argv) != "" ?
-                                                          gmx::ReadConsoleParameter("-nodata",argc,argv) :
-                                                          gmx::ReadConsoleParameter("-nodata_rgb",argc,argv)));
-   console_params.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",argc,argv)));
-  console_params.insert(pair<string,string>("-quality",gmx::ReadConsoleParameter("-quality",argc,argv)));
-  console_params.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",argc,argv)));
-  console_params.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",argc,argv)));
+  mapConsoleParams.insert(pair<string,string>("-border",gmx::ReadConsoleParameter("-border",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-tiles",gmx::ReadConsoleParameter("-tiles",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-tile_type",gmx::ReadConsoleParameter("-tile_type",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-proj",gmx::ReadConsoleParameter("-proj",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-bands",gmx::ReadConsoleParameter("-bands",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-template",gmx::ReadConsoleParameter("-template",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-nodata",gmx::ReadConsoleParameter("-nodata",nArgs,pastrArgs) != "" ?
+                                                          gmx::ReadConsoleParameter("-nodata",nArgs,pastrArgs) :
+                                                          gmx::ReadConsoleParameter("-nodata_rgb",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-quality",gmx::ReadConsoleParameter("-quality",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",nArgs,pastrArgs)));
   
-  console_params.insert(pair<string,string>("-shiftX",gmx::ReadConsoleParameter("-shiftX",argc,argv)));
-  console_params.insert(pair<string,string>("-shiftY",gmx::ReadConsoleParameter("-shiftY",argc,argv)));
-  console_params.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",argc,argv)));
-  console_params.insert(pair<string,string>("-gmx_volume_size",gmx::ReadConsoleParameter("-gmx_volume_size",argc,argv)));
-  console_params.insert(pair<string,string>("-temp_file_warp",gmx::ReadConsoleParameter("-temp_file_warp",argc,argv)));
-  console_params.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",argc,argv)));
-  console_params.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",argc,argv,TRUE)));
-  console_params.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",argc,argv)));
-  console_params.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",argc,argv)));
-  console_params.insert(pair<string,string>("-pseudo_png",gmx::ReadConsoleParameter("-pseudo_png",argc,argv,TRUE)));
+  mapConsoleParams.insert(pair<string,string>("-shift_x",gmx::ReadConsoleParameter("-shift_x",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-shift_y",gmx::ReadConsoleParameter("-shift_y",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-gmx_volume_size",gmx::ReadConsoleParameter("-gmx_volume_size",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-temp_file_warp",gmx::ReadConsoleParameter("-temp_file_warp",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",nArgs,pastrArgs,TRUE)));
+  mapConsoleParams.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",nArgs,pastrArgs)));
+  mapConsoleParams.insert(pair<string,string>("-pseudo_png",gmx::ReadConsoleParameter("-pseudo_png",nArgs,pastrArgs,TRUE)));
 
- 
+  if (nArgs == 2) mapConsoleParams.at("-file") = pastrArgs[1];
 
-  
-  if (argc == 2)
-     console_params.at("-file") = argv[1];
-
-  //console_params.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
-  //console_params.at("-file") = "E:\\test_images\\dem_cs_zl11_094_165.tif"; 
+  //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
+  //mapConsoleParams.at("-file") = "E:\\test_images\\dem_cs_zl11_094_165.tif"; 
     //dem_cs_zl11_094_165.tif";
-  //console_params.at("-pseudo_png") = "pseudo_png";
-  //console_params.at("-tile_type") = "tif";
-  //console_params.at("-work_threads") = "1";
+  //mapConsoleParams.at("-pseudo_png") = "pseudo_png";
+  //mapConsoleParams.at("-tile_type") = "tif";
+  //mapConsoleParams.at("-work_threads") = "1";
 
-  //console_params.at("-zoom") = "8";
-  //console_params.at("-background") = "255 255 255";
+  //mapConsoleParams.at("-zoom") = "8";
+  //mapConsoleParams.at("-background") = "255 255 255";
 
-  //console_params.at("-gmxtiles")="-container";
-  //console_params.at("-tiles")="E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_debug.tiles";
-  //console_params.at("-resampling")="nearest";
-  //console_params.at("-tiles")="e:\\test_tiles";
+  //mapConsoleParams.at("-gmxtiles")="-container";
+  //mapConsoleParams.at("-tiles")="E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_debug.tiles";
+  //mapConsoleParams.at("-resampling")="nearest";
+  //mapConsoleParams.at("-tiles")="e:\\test_tiles";
 
 
-  //console_params.at("-gmxtiles")="-container";
-  //console_params.at("-border") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.mif";
-  //console_params.at("-tile_type") = "png";
-  //console_params.at("-nodata") = "0";
-  //console_params.at("-template")="standard";
-  //console_params.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\L8";
+  //mapConsoleParams.at("-gmxtiles")="-container";
+  //mapConsoleParams.at("-border") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.mif";
+  //mapConsoleParams.at("-tile_type") = "png";
+  //mapConsoleParams.at("-nodata") = "0";
+  //mapConsoleParams.at("-template")="standard";
+  //mapConsoleParams.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\L8";
   
   //-mosaic -border L8\border.shp -nodata 0 -tile_type png -template standard -min_zoom 11 -tiles result\L8
   
 
-  if (console_params.at("-file") == "")
+  if (mapConsoleParams.at("-file") == "")
   {
     cout<<"Error: missing \"-file\" parameter"<<endl;
     return 1;
@@ -328,73 +324,73 @@ int _tmain(int argc, wchar_t* argvW[])
 
 
   wcout<<endl;
-  if (console_params.at("-mosaic")== "") //ToDo - file_list.size>1;
+  if (mapConsoleParams.at("-mosaic")== "") //ToDo - file_list.size>1;
   {
-    gmx::BandMapping band_mapping;
-    if (!band_mapping.InitByConsoleParams(console_params.at("-file"),
-                                          console_params.at("-bands")))
+    gmx::BandMapping oBandMapping;
+    if (!oBandMapping.InitByConsoleParams(mapConsoleParams.at("-file"),
+                                          mapConsoleParams.at("-bands")))
     {
       //ToDo - 
       cout<<"Error: can't parse \"-file\" parameter"<<endl;
       return 1;
     }
 
-    std::list<string> file_list = band_mapping.GetFileList();
+    std::list<string> lstInputFiles = oBandMapping.GetFileList();
 
-    bool use_container = (console_params.at("-gmxtiles")!="" || console_params.at("-mbtiles")!="");
+    bool bUseContainer = (mapConsoleParams.at("-gmxtiles")!="" || mapConsoleParams.at("-mbtiles")!="");
 
-    for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
+    for (std::list<string>::iterator iter = lstInputFiles.begin(); iter!=lstInputFiles.end();iter++)
     {
       cout<<"Tiling file: "<<(*iter)<<endl;
-      map<string,string> console_params_fix = console_params;
-      console_params_fix.at("-file") = (*iter);
+      map<string,string> mapConsoleParamsFix = mapConsoleParams;
+      mapConsoleParamsFix.at("-file") = (*iter);
       
-      int bands_num = 0;
-      int *p_bands = 0;
-      if (!band_mapping.GetBands(*iter,bands_num,p_bands))
+      int nBands = 0;
+      int *panBands = 0;
+      if (!oBandMapping.GetBands(*iter,nBands,panBands))
       {
         //ToDo - Error
       }
-      else if (p_bands!=0)
+      else if (panBands!=0)
       {
-        string str_bands = gmx::ConvertIntToString(p_bands[0]);
-        for (int i=1;i<bands_num;i++)
+        string strBands = gmx::ConvertIntToString(panBands[0]);
+        for (int i=1;i<nBands;i++)
         {
-          str_bands+=",";
-          str_bands+=gmx::ConvertIntToString(p_bands[i]);
+          strBands+=",";
+          strBands+=gmx::ConvertIntToString(panBands[i]);
         }
-        console_params_fix.at("-bands") = str_bands;
-        delete[]p_bands;
+        mapConsoleParamsFix.at("-bands") = strBands;
+        delete[]panBands;
       }
 
-      if ((file_list.size()>1) && (console_params.at("-border")=="")) 
-        console_params_fix.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
+      if ((lstInputFiles.size()>1) && (mapConsoleParams.at("-border")=="")) 
+        mapConsoleParamsFix.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
       
-      if ((file_list.size()>1)&&(console_params.at("-tiles")!=""))
+      if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
       {
-        if (!gmx::FileExists(console_params.at("-tiles"))) 
+        if (!gmx::FileExists(mapConsoleParams.at("-tiles"))) 
         {
-          if (!gmx::CreateDirectory(console_params.at("-tiles").c_str()))
+          if (!gmx::CreateDirectory(mapConsoleParams.at("-tiles").c_str()))
           {
-            cout<<"Error: can't create directory: "<<console_params.at("-tiles")<<endl;
+            cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
             return 1;
           }
         }        
 
-        if (use_container)
+        if (bUseContainer)
         {
-          console_params_fix.at("-tiles") = (console_params.at("-mbtiles") != "") ? 
-                                        gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" :
-                                        gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
+          mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ? 
+                                        gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" :
+                                        gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
         }
         else
         {
-          console_params_fix.at("-tiles") = gmx::RemoveEndingSlash(console_params.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
+          mapConsoleParamsFix.at("-tiles") = gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
         }
       }
    
       
-      if ((!CheckArgsAndCallTiling(console_params_fix)) && file_list.size()==1)
+      if ((!CheckArgsAndCallTiling(mapConsoleParamsFix)) && lstInputFiles.size()==1)
         return 2;
   
       wcout<<endl;
@@ -402,7 +398,7 @@ int _tmain(int argc, wchar_t* argvW[])
   }
   else
   {
-    if (! CheckArgsAndCallTiling (console_params))
+    if (! CheckArgsAndCallTiling (mapConsoleParams))
      return 2;
   }
 

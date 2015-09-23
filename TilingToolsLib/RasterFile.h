@@ -110,6 +110,13 @@ public:
 public:
 	
   double   GetNodataValue(bool &nodata_defined);
+  /*
+  Init	( list<string>      oFileList,
+          MercatorProjType  eMercType,
+          string            strVectorFile="",
+          double            dfShiftX = 0.0, 
+          double            dfShiftY = 0.0);
+  */
 	int				Init	(list<string> file_list, MercatorProjType merc_type, string vector_file="", 
 							double shift_x = 0.0, double shift_y = 0.0);
 	//string			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
@@ -117,6 +124,19 @@ public:
 	OGREnvelope		CalcMercEnvelope();
 	int				CalcNumberOfTiles (int zoom);
 	int				CalcBestMercZoom();
+
+  /*
+  WarpToMercBuffer (int nZoom,
+                    OGREnvelope	  oMercEnvp,
+                    RasterBuffer* poOuputBuffer,
+                    int           nOutputBandsNum = 0,
+                    int**         papanBandMapping = NULL,
+                    string        ResamplingAlg = "",
+                    BYTE*         pabyNodata = NULL,
+                    BYTE*         pabyBackgroundColor = NULL,
+                    bool          bWarpMultithread = true);
+                    )
+  */
 	bool			WarpToMercBuffer (	int zoom,	
                                 OGREnvelope	merc_envp, 
                                 RasterBuffer *p_dst_buffer,
@@ -124,7 +144,8 @@ public:
                                 int         **pp_band_mapping = NULL,
                                 string resampling_alg = "",
                                 BYTE *p_nodata = NULL,
-                                BYTE *p_background_color = NULL);
+                                BYTE *p_background_color = NULL,
+                                bool  warp_multithread = true);
                                 //string  temp_file_path = "",
                                 //int srand_seed = 0);
 

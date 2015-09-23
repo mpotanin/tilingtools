@@ -4,6 +4,21 @@
 using namespace gmx;
 
 /*
+переименовать геттеры и сеттеры
+
+nNumBands
+eDataType
+nDataSize
+nXSize
+nYSize
+poColorTable
+paPixelData
+
+
+*/
+
+
+/*
  * Callback function prototype for read function
  */
 //typedef OPJ_SIZE_T (* opj_stream_read_fn) (void * p_buffer, OPJ_SIZE_T p_nb_bytes, void * p_user_data) ;
@@ -629,7 +644,7 @@ static void info_callback(const char *msg, void *client_data) {
 }
 
 #ifndef NO_KAKADU
-bool RasterBuffer::createFromJP2Data (void *p_data_src, int size)
+bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 {
  
   kdu_simple_buffer_source input(p_data_src, size);
@@ -712,7 +727,7 @@ bool RasterBuffer::createFromJP2Data (void *p_data_src, int size)
 #endif
 
 #ifdef NO_KAKADU
-bool RasterBuffer::createFromJP2Data (void *p_data_src, int size)
+bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 {
   ClearBuffer();
   if (size>10000000) return FALSE;
