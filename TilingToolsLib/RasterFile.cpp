@@ -623,6 +623,18 @@ bool RasterFileBundle::CalclValuesForStretchingTo8Bit (double *&p_min_values,
 }
 //*/
 
+DWORD WINAPI GMXAsyncWarpMulti (LPVOID lpParam)
+{
+  GMXAsyncWarpMultiParams   *p_warp_multi_params = (GMXAsyncWarpMultiParams*)lpParam;
+  if (CE_None != p_warp_multi_params->p_warp_operation_->ChunkAndWarpMulti(0,
+                                                            0,
+                                                            p_warp_multi_params->buf_width_,
+                                                            p_warp_multi_params->buf_height_))
+    (*p_warp_multi_params->p_warp_error)=true;
+  p_warp_multi_params->is_done_ = 1;
+  return true;
+}
+
 bool RasterFileBundle::WarpToMercBuffer (int zoom,	
                                             OGREnvelope	  envp_merc, 
                                             RasterBuffer *p_dst_buffer, 
@@ -856,14 +868,42 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
 		
    
     bool  warp_error = FALSE;
-    if (CE_None != (warp_multithread ? gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height) :
-                                      gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height)))
-		{
-			cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
-      warp_error = TRUE;
-		}
-
-		GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
+    
+    if (! warp_multithread)
+      warp_error = (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));
+    else
+    {
+      int warp_attempt=0;
+      for (warp_attempt=0; warp_attempt<2;  warp_attempt++)
+      {
+        unsigned long thread_id;
+        GMXAsyncWarpMultiParams warp_multi_params;
+        warp_multi_params.buf_height_=buf_height;
+        warp_multi_params.buf_width_=buf_width;
+        warp_multi_params.p_warp_operation_= &gdal_warp_operation;
+        warp_multi_params.is_done_=0;
+        warp_multi_params.p_warp_error=&warp_error;
+        HANDLE hThread = CreateThread(NULL,0,GMXAsyncWarpMulti,&warp_multi_params,0,&thread_id); 
+        for (int i=0;i<120;i++)
+        {
+          if (warp_multi_params.is_done_==1) break;
+          else Sleep(250);
+        }
+        if (warp_multi_params.is_done_==0)
+        {
+          TerminateThread(hThread,1);
+          CloseHandle(hThread);
+        }
+        else
+        {
+          CloseHandle(hThread);
+          break;
+        }
+      }
+      if (warp_attempt==2) warp_error = true;
+    }
+    
+    GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
     if (p_warp_options->hCutline)
     {
       ((OGRGeometry*)p_warp_options->hCutline)->empty();
@@ -887,7 +927,11 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
 		OGRFree(p_src_wkt);
 		input_rf.Close();
 		GDALClose( p_src_ds );
-    if (warp_error) return FALSE;
+    if (warp_error) 
+    {
+      cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
+      return FALSE;
+    }
 	}
 
 	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());

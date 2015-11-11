@@ -102,21 +102,21 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
     }
   }  
 
-  GMXTilingParameters tiling_params(lstInputFiles,eMercType,eTileType);
+  GMXTilingParameters oTilingParams(lstInputFiles,eMercType,eTileType);
 
   if (oBandMapping.GetBandsNum() != 0) 
-    tiling_params.p_band_mapping_ = &oBandMapping;
+    oTilingParams.p_band_mapping_ = &oBandMapping;
   
 
  
 
-  if (strMaxZoom != "")		tiling_params.base_zoom_ = (int)atof(strMaxZoom.c_str());
-  if (strMinZoom != "")	tiling_params.min_zoom_ = (int)atof(strMinZoom.c_str());
-  if (strVectorFile!="") tiling_params.vector_file_ = strVectorFile;
+  if (strMaxZoom != "")		oTilingParams.base_zoom_ = (int)atof(strMaxZoom.c_str());
+  if (strMinZoom != "")	oTilingParams.min_zoom_ = (int)atof(strMinZoom.c_str());
+  if (strVectorFile!="") oTilingParams.vector_file_ = strVectorFile;
   
-  tiling_params.use_container_	= !(strUseContainer=="");
+  oTilingParams.use_container_	= !(strUseContainer=="");
   
-  if (!tiling_params.use_container_)
+  if (!oTilingParams.use_container_)
   {
     if (strOutputPath == "")
       strOutputPath = (lstInputFiles.size()>1) ?  gmx::RemoveEndingSlash(gmx::GetPath((*lstInputFiles.begin())))+"_tiles" :
@@ -137,29 +137,29 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
     string strContainerExt	= (strUseContainer == "-container") ? "tiles" : "mbtiles"; 
     if (gmx::IsDirectory(strOutputPath))
     {
-      tiling_params.container_file_ =  gmx::GetAbsolutePath(strOutputPath,gmx::RemoveExtension(gmx::RemovePath((*lstInputFiles.begin())))+"."+strContainerExt);
+      oTilingParams.container_file_ =  gmx::GetAbsolutePath(strOutputPath,gmx::RemoveExtension(gmx::RemovePath((*lstInputFiles.begin())))+"."+strContainerExt);
     }
     else
     {
       if (strOutputPath == "")
-       tiling_params.container_file_ = gmx::RemoveExtension((*lstInputFiles.begin())) + "." + strContainerExt;
+       oTilingParams.container_file_ = gmx::RemoveExtension((*lstInputFiles.begin())) + "." + strContainerExt;
       else
-       tiling_params.container_file_ =  (gmx::GetExtension(strOutputPath) == strContainerExt) ? strOutputPath : strOutputPath+"."+strContainerExt;
+       oTilingParams.container_file_ =  (gmx::GetExtension(strOutputPath) == strContainerExt) ? strOutputPath : strOutputPath+"."+strContainerExt;
     }
   }
 
 
-  if (!tiling_params.use_container_ )
+  if (!oTilingParams.use_container_ )
   {
     if ((strTileNameTemplate=="") || (strTileNameTemplate=="kosmosnimki"))
-        tiling_params.p_tile_name_ = new gmx::KosmosnimkiTileName(strOutputPath,eTileType);
+        oTilingParams.p_tile_name_ = new gmx::KosmosnimkiTileName(strOutputPath,eTileType);
     else if (strTileNameTemplate=="standard") 
-        tiling_params.p_tile_name_ = new gmx::StandardTileName(	strOutputPath,("{z}/{x}/{y}." + 
+        oTilingParams.p_tile_name_ = new gmx::StandardTileName(	strOutputPath,("{z}/{x}/{y}." + 
                                 gmx::TileName::ExtensionByTileType(eTileType)));
     else if (gmx::ESRITileName::ValidateTemplate(strTileNameTemplate))
-        tiling_params.p_tile_name_ = new gmx::ESRITileName(strOutputPath,strTileNameTemplate);
+        oTilingParams.p_tile_name_ = new gmx::ESRITileName(strOutputPath,strTileNameTemplate);
     else if (gmx::StandardTileName::ValidateTemplate(strTileNameTemplate))
-        tiling_params.p_tile_name_ = new gmx::StandardTileName(strOutputPath,strTileNameTemplate);
+        oTilingParams.p_tile_name_ = new gmx::StandardTileName(strOutputPath,strTileNameTemplate);
     else
     {
       cout<<"Error: can't validate \"-template\" parameter: "<<strTileNameTemplate<<endl;
@@ -168,18 +168,18 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
   }
 
 
-  if ((strShiftX!="")) tiling_params.shift_x_=atof(strShiftX.c_str());
-  if ((strShiftY!="")) tiling_params.shift_y_=atof(strShiftY.c_str());
+  if ((strShiftX!="")) oTilingParams.shift_x_=atof(strShiftX.c_str());
+  if ((strShiftY!="")) oTilingParams.shift_y_=atof(strShiftY.c_str());
 
   if (strCacheSize!="") 
-    tiling_params.max_cache_size_ = atof(strCacheSize.c_str());
+    oTilingParams.max_cache_size_ = atof(strCacheSize.c_str());
   
   if (strGMXVolumeSize!="") 
-    tiling_params.max_gmx_volume_size_ = atof(strGMXVolumeSize.c_str());
+    oTilingParams.max_gmx_volume_size_ = atof(strGMXVolumeSize.c_str());
 
 
   if (strQuality!="")
-    tiling_params.jpeg_quality_ = (int)atof(strQuality.c_str());
+    oTilingParams.jpeg_quality_ = (int)atof(strQuality.c_str());
   
   
   if (strNodata!="")
@@ -190,14 +190,14 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
       cout<<"Error: bad value of parameter: \"-nodata\""<<endl;
       return FALSE;
     }
-    tiling_params.p_transparent_color_ = new BYTE[3];
-    memcpy(tiling_params.p_transparent_color_,pabyRGB,3);
+    oTilingParams.p_transparent_color_ = new BYTE[3];
+    memcpy(oTilingParams.p_transparent_color_,pabyRGB,3);
   }
 
   if (strNodataTolerance != "")
   {
     if (((int)atof(strNodataTolerance.c_str()))>=0 && ((int)atof(strNodataTolerance.c_str()))<=100)
-      tiling_params.nodata_tolerance_ = (int)atof(strNodataTolerance.c_str());
+      oTilingParams.nodata_tolerance_ = (int)atof(strNodataTolerance.c_str());
   }
 
   if (strBackground!="")
@@ -208,23 +208,23 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
       cout<<"Error: bad value of parameter: \"-background\""<<endl;
       return FALSE;
     }
-    tiling_params.p_background_color_ = new BYTE[3];
-    memcpy(tiling_params.p_background_color_,pabyRGB,3);
+    oTilingParams.p_background_color_ = new BYTE[3];
+    memcpy(oTilingParams.p_background_color_,pabyRGB,3);
   }
 
 
-  tiling_params.gdal_resampling_ = strGdalResampling;
-  tiling_params.auto_stretching_ = true;
-  tiling_params.temp_file_path_for_warping_ = strTempFileWarpPath;
-  tiling_params.calculate_histogram_ = true; 
+  oTilingParams.gdal_resampling_ = strGdalResampling;
+  oTilingParams.auto_stretching_ = true;
+  oTilingParams.temp_file_path_for_warping_ = strTempFileWarpPath;
+  oTilingParams.calculate_histogram_ = true; 
  
   if (strMaxWorkThreads != "")
-    tiling_params.max_work_threads_ = ((int)atof(strMaxWorkThreads.c_str())>0) ? (int)atof(strMaxWorkThreads.c_str()) : 0;
+    oTilingParams.max_work_threads_ = ((int)atof(strMaxWorkThreads.c_str())>0) ? (int)atof(strMaxWorkThreads.c_str()) : 0;
 
   if (strMaxWarpThreads != "")
-    tiling_params.max_warp_threads_ = ((int)atof(strMaxWarpThreads.c_str())>0) ? (int)atof(strMaxWarpThreads.c_str()) : 0;
+    oTilingParams.max_warp_threads_ = ((int)atof(strMaxWarpThreads.c_str())>0) ? (int)atof(strMaxWarpThreads.c_str()) : 0;
 
-  return GMXMakeTiling(&tiling_params);
+  return GMXMakeTiling(&oTilingParams);
   //if (logFile) fclose(logFile);
 }
 
@@ -291,7 +291,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   if (nArgs == 2) mapConsoleParams.at("-file") = pastrArgs[1];
 
   //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
-  //mapConsoleParams.at("-file") = "E:\\test_images\\dem_cs_zl11_094_165.tif"; 
+  //mapConsoleParams.at("-file") = "E:\\test_images\\atomflot\\01102015_2350.jpg"; 
     //dem_cs_zl11_094_165.tif";
   //mapConsoleParams.at("-pseudo_png") = "pseudo_png";
   //mapConsoleParams.at("-tile_type") = "tif";

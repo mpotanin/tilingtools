@@ -13,6 +13,18 @@ namespace gmx
 {
 
 
+DWORD WINAPI GMXAsyncWarpMulti (LPVOID lpParam);
+struct GMXAsyncWarpMultiParams
+{
+  //gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height) :
+  GDALWarpOperation *p_warp_operation_;
+  int               buf_width_;
+  int               buf_height_;
+  int               is_done_;
+  bool              *p_warp_error;
+};
+
+
 class RasterFile
 {
 

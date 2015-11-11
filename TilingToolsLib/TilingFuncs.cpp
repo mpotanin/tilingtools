@@ -344,7 +344,6 @@ bool GMXMakeTilingFromBuffer (GMXTilingParameters			*p_tiling_params,
 
 
 
-
 DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
 {
   GMX_CURR_WORK_THREADS++;
@@ -431,6 +430,8 @@ DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
   GMX_CURR_WORK_THREADS--;
   return TRUE;
 }
+
+
 
 
 bool GMXMakeBaseZoomTiling	(	GMXTilingParameters		*p_tiling_params, 
