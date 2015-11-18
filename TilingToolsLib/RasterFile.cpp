@@ -260,19 +260,19 @@ bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialRe
 bool	RasterFile::GetSpatialRef(OGRSpatialReference	&ogr_sr)
 {
 	const char* strProjRef = GDALGetProjectionRef(this->p_gdal_ds_);
-	if (OGRERR_NONE == ogr_sr.SetFromUserInput(strProjRef)) return TRUE;
 
-	/*
-  if (FileExists(RemoveExtension(this->raster_file_)+".prj"))
+	if (OGRERR_NONE == ogr_sr.SetFromUserInput(strProjRef)) return TRUE;
+  else if (FileExists(RemoveExtension(this->raster_file_)+".prj"))
 	{
 		string prjFile		= RemoveExtension(this->raster_file_)+".prj";
-		return 	(OGRERR_NONE==ogr_sr.SetFromUserInput(prjFile.c_str()));	
+		if (OGRERR_NONE==ogr_sr.SetFromUserInput(prjFile.c_str())) return TRUE;	
 	}
-	else 
-  */
-  if (FileExists(RemoveExtension(this->raster_file_)+".tab"))
-		return ReadSpatialRefFromMapinfoTabFile(RemoveExtension(this->raster_file_)+".tab",&ogr_sr);
-
+	else if (FileExists(RemoveExtension(this->raster_file_)+".tab"))
+  {
+    string tabFile = RemoveExtension(this->raster_file_)+".tab";
+    if (ReadSpatialRefFromMapinfoTabFile(tabFile,&ogr_sr)) return TRUE;
+  }
+ 
 	return FALSE;
 }
 
@@ -877,6 +877,10 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
       for (warp_attempt=0; warp_attempt<2;  warp_attempt++)
       {
         unsigned long thread_id;
+        //debug
+        if (warp_attempt==1)
+          cout<<"warp attempt N2"<<endl;
+        //end-debug
         GMXAsyncWarpMultiParams warp_multi_params;
         warp_multi_params.buf_height_=buf_height;
         warp_multi_params.buf_width_=buf_width;
