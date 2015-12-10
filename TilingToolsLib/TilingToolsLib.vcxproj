@@ -271,8 +271,6 @@
     <ClInclude Include="VectorBorder.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\kakadu\src\kdu_stripe_compressor.cpp" />
-    <ClCompile Include="..\kakadu\src\kdu_stripe_decompressor.cpp" />
     <ClCompile Include="ConsoleUtils.cpp" />
     <ClCompile Include="FileSystemFuncs.cpp" />
     <ClCompile Include="histogram.cpp" />
