@@ -31,12 +31,10 @@
 #include "../gdal111/include/vrtdataset.h"
 #include "../gdal111/include/gdalwarper.h"
 #include "../gdal111/include/sqlite3.h"
-//#include "../openjpeg-2.0/include/openjpeg.h"
 #include "../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
-//#include "../gdal111/x86110/x86/include/openjpeg.h"
 //*/
 
-#ifndef NO_KAKADU
+#ifdef KAKADU
 #include "../kakadu/include/kdu_elementary.h"
 #include "../kakadu/include/kdu_messaging.h"
 #include "../kakadu/include/kdu_params.h"
@@ -47,8 +45,6 @@
 #include "../kakadu/include/kdu_file_io.h"
 #include "../kakadu/include/kdu_stripe_compressor.h"
 #include "../kakadu/include/kdu_stripe_decompressor.h"
-#endif
-
 /*
 #include "../kakadu/v7_3_3-01328N/coresys/common/kdu_elementary.h"
 #include "../kakadu/v7_3_3-01328N/coresys/common/kdu_messaging.h"
@@ -61,6 +57,9 @@
 #include "../kakadu/v7_3_3-01328N/apps/support/kdu_stripe_compressor.h"
 #include "../kakadu/v7_3_3-01328N/apps/support/kdu_stripe_decompressor.h"
 */
+#endif
+
+
 
 #include <time.h>
 

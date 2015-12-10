@@ -459,7 +459,7 @@ bool   GMXTileContainer::DeleteVolumes()
     {
       if (regex_match((*iter).substr(container_file_name_.length(),(*iter).length()-container_file_name_.length()),pattern))
       {      
-        if (! DeleteFile(*iter))
+        if (! gmx::GMXDeleteFile(*iter))
         {
           cout<<"Error: can't delete file: "<<*iter<<endl;
           return FALSE;
@@ -810,7 +810,7 @@ bool MBTileContainer::OpenForReading  (string file_name)
 MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp)
 {
 	p_sql3_db_ = NULL;
-	if (FileExists(file_name)) DeleteFile(file_name.c_str());
+	if (FileExists(file_name)) GMXDeleteFile(file_name.c_str());
 	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_)) return;
 
 	string	str_sql = "CREATE TABLE metadata (name text, value text)";

@@ -643,7 +643,7 @@ static void info_callback(const char *msg, void *client_data) {
 	fprintf(stdout, "[INFO] %s", msg);
 }
 
-#ifndef NO_KAKADU
+#ifdef KAKADU
 bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 {
  
@@ -726,7 +726,7 @@ bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 }
 #endif
 
-#ifdef NO_KAKADU
+#ifndef KAKADU
 bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 {
   ClearBuffer();
@@ -864,7 +864,7 @@ bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 }
 #endif
 
-#ifndef NO_KAKADU
+#ifdef KAKADU
 bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
   int num_components=0, height, width;
@@ -965,9 +965,9 @@ bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
 
   return TRUE;
 }
-#endif NO_KAKADU
+#endif
 
-#ifdef NO_KAKADU
+#ifndef KAKADU
 
 bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {

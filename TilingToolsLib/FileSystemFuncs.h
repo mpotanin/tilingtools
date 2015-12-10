@@ -21,10 +21,10 @@ bool		WriteToTextFile(string filename, string str_text);
 bool		WriteWLDFile	(string filename, double ul_x, double ul_y, double res);
 bool		SaveDataToFile	(string filename, void *p_data, int size);
 bool		ReadDataFromFile(string filename, void *&p_data, int &size);
-string		GetAbsolutePath (string base_path, string relative_path);
-string		GetExtension (string path);
-bool		CreateDirectory(string path);
-bool		DeleteFile(string	path);
+string	GetAbsolutePath (string base_path, string relative_path);
+string	GetExtension (string path);
+bool		GMXCreateDirectory(string path);
+bool		GMXDeleteFile(string	path);
 bool		RenameFile(string old_path, string new_path);
 FILE*		OpenFile(string	file_name, string mode);
 

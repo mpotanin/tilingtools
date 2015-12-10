@@ -118,7 +118,7 @@ bool StandardTileName::CreateFolder (int zoom, int x, int y)
 	while (tile_name.find("/",n)!=std::string::npos)
 	{
 		if (!FileExists(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
-			if (!CreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+			if (!GMXCreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
 		n = (tile_name.find("/",n)) + 1;
 	}
 	return TRUE;
@@ -132,7 +132,7 @@ bool ESRITileName::CreateFolder (int zoom, int x, int y)
 	while (tile_name.find("/",n)!=std::string::npos)
 	{
 		if (!FileExists(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
-			if (!CreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+			if (!GMXCreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
 		n = (tile_name.find("/",n)) + 1;
 	}
 	return TRUE;
@@ -288,14 +288,14 @@ bool KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
 	string str = GetAbsolutePath(base_folder_, buf);
 	if (!FileExists(str))
 	{
-		if (!CreateDirectory(str.c_str())) return FALSE;	
+		if (!GMXCreateDirectory(str.c_str())) return FALSE;	
 	}
 
 	sprintf(buf,"%d",x);
 	str = GetAbsolutePath(str,buf);
 	if (!FileExists(str))
 	{
-		if (!CreateDirectory(str.c_str())) return FALSE;	
+		if (!GMXCreateDirectory(str.c_str())) return FALSE;	
 	}
 		
 	return TRUE;

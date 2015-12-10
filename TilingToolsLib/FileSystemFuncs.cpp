@@ -31,7 +31,7 @@ bool FileExists (string filename)
 	ReplaceAll(filename,"\\","/");
 	wstring filename_w;
 	utf8toWStr(filename_w,filename);
-	return !(GetFileAttributes(filename_w.c_str()) == INVALID_FILE_ATTRIBUTES); //GetFileAttributes ->stat
+	return !(GetFileAttributesW(filename_w.c_str()) == INVALID_FILE_ATTRIBUTES); //GetFileAttributes ->stat
 }
 
 
@@ -41,7 +41,7 @@ bool IsDirectory (string path)
 	if (!FileExists(path)) return FALSE;
 	wstring path_w;
 	utf8toWStr(path_w,path);
-	return (GetFileAttributes(path_w.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
+	return (GetFileAttributesW(path_w.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 
@@ -206,15 +206,15 @@ bool		RenameFile(string old_path, string new_path)
 }
 
 
-bool		DeleteFile(string path)
+bool		GMXDeleteFile(string path)
 {
 	wstring	path_w;
 	utf8toWStr(path_w,path);
-	return ::DeleteFile(path_w.c_str()); //DeleteFile ->...
+	return ::DeleteFileW(path_w.c_str()); //DeleteFile ->...
 }
 
 
-bool		CreateDirectory(string path)
+bool		GMXCreateDirectory(string path)
 {
   #ifdef WIN32
  	  wstring	path_w;

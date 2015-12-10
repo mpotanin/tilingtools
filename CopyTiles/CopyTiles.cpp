@@ -96,7 +96,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	{
 		if (!gmx::IsDirectory(destPath))
 		{
-			if (!gmx::DeleteFile(destPath))
+			if (!gmx::GMXDeleteFile(destPath))
 			{
 				cout<<"Error: can't delete existing file: "<<destPath<<endl;
 				return 1;
@@ -216,7 +216,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	{
 		if (!gmx::FileExists(destPath))
 		{
-			if (!gmx::CreateDirectory(destPath.c_str()))
+			if (!gmx::GMXCreateDirectory(destPath.c_str()))
 			{
 				cout<<"Error: can't create folder: "<<destPath<<endl;
 				return 1;

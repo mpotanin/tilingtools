@@ -124,7 +124,7 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
     
     if (!gmx::IsDirectory(strOutputPath))
     {
-      if (!gmx::CreateDirectory(strOutputPath.c_str()))
+      if (!gmx::GMXCreateDirectory(strOutputPath.c_str()))
       {
         cout<<"Error: can't create folder: "<<strOutputPath<<endl;
         return FALSE;
@@ -370,7 +370,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
       {
         if (!gmx::FileExists(mapConsoleParams.at("-tiles"))) 
         {
-          if (!gmx::CreateDirectory(mapConsoleParams.at("-tiles").c_str()))
+          if (!gmx::GMXCreateDirectory(mapConsoleParams.at("-tiles").c_str()))
           {
             cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
             return 1;

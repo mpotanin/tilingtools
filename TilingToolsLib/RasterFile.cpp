@@ -877,10 +877,7 @@ bool RasterFileBundle::WarpToMercBuffer (int zoom,
       for (warp_attempt=0; warp_attempt<2;  warp_attempt++)
       {
         unsigned long thread_id;
-        //debug
-        if (warp_attempt==1)
-          cout<<"warp attempt N2"<<endl;
-        //end-debug
+      
         GMXAsyncWarpMultiParams warp_multi_params;
         warp_multi_params.buf_height_=buf_height;
         warp_multi_params.buf_width_=buf_width;

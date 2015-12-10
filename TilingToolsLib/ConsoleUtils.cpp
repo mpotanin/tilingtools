@@ -110,7 +110,7 @@ bool LoadGDAL (int argc, string argv[])
 	if (gdal_path == "")
 	{
 		wchar_t exe_filename_w[_MAX_PATH + 1];
-		GetModuleFileName(NULL,exe_filename_w,_MAX_PATH); 
+		GetModuleFileNameW(NULL,exe_filename_w,_MAX_PATH); 
 		string exe_filename;
 		wstrToUtf8(exe_filename,exe_filename_w);
 		gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_filename));
@@ -138,7 +138,7 @@ bool LoadGDALDLLs (string gdal_path)
 	wstring gdal_dll_w;
 	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal111.dll"));
 
-	HMODULE b = LoadLibrary(gdal_dll_w.c_str());
+	HMODULE b = LoadLibraryW(gdal_dll_w.c_str());
   if (b==NULL)
     cout<<"gdal dll path: "<<gdal_dll_w<<endl;
   
