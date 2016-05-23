@@ -20,7 +20,8 @@ bool		FindFilesByExtensionRecursive (list<string> &file_list, string folder, str
 bool		WriteToTextFile(string filename, string str_text);
 bool		WriteWLDFile	(string filename, double ul_x, double ul_y, double res);
 bool		SaveDataToFile	(string filename, void *p_data, int size);
-bool		ReadDataFromFile(string filename, void *&p_data, int &size);
+bool		ReadBinaryFile(string filename, void *&p_data, int &size);
+string  ReadTextFile(string filename);
 string	GetAbsolutePath (string base_path, string relative_path);
 string	GetExtension (string path);
 bool		GMXCreateDirectory(string path);

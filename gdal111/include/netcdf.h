@@ -155,15 +155,43 @@ Use this in mode flags for both nc_create() and nc_open(). */
 #define NC_MPIPOSIX      0x4000
 #define NC_PNETCDF       0x8000	/**< Use parallel-netcdf library. Mode flag for nc_open(). */
 
-/** Format specifier for nc_set_default_format().  Starting with
- * version 3.6, there are different format netCDF files. 4.0
- * introduces the third one. \see netcdf_format
+/** Format specifier for nc_set_default_format() and returned
+ *  by nc_inq_format. This returns the format as provided by
+ *  the API. See nc_inq_format_extended to see the true file format.
+ *  Starting with version 3.6, there are different format netCDF files.
+ *  4.0 introduces the third one. \see netcdf_format
  */
 /**@{*/
 #define NC_FORMAT_CLASSIC (1)
 #define NC_FORMAT_64BIT   (2)
 #define NC_FORMAT_NETCDF4 (3)
 #define NC_FORMAT_NETCDF4_CLASSIC  (4)
+
+/**@}*/
+
+/** Extended format specifier returned by  nc_inq_format_extended() 
+ *  Added in version 4.3.1. This returns the true format of the
+ *  underlying data.
+ * The function returns two values
+ * 1. a small integer indicating the underlying source type
+ *    of the data. Note that this may differ from what the user
+ *    sees from nc_inq_format() because this latter function
+ *    returns what the user can expect to see thru the API.
+ * 2. A mode value indicating what mode flags are effectively
+ *    set for this dataset. This usually will be a superset
+ *    of the mode flags used as the argument to nc_open
+ *    or nc_create.
+ * More or less, the #1 values track the set of dispatch tables.
+ * The #1 values are as follows.
+ */
+/**@{*/
+#define NC_FORMAT_NC3     (1)
+#define NC_FORMAT_NC_HDF5 (2) /*cdf 4 subset of HDF5 */
+#define NC_FORMAT_NC_HDF4 (3) /* netcdf 4 subset of HDF4 */
+#define NC_FORMAT_PNETCDF (4)
+#define NC_FORMAT_DAP2    (5)
+#define NC_FORMAT_DAP4    (6)
+#define NC_FORMAT_UNDEFINED (0)
 /**@}*/
 
 /** Let nc__create() or nc__open() figure out a suitable buffer size. */
@@ -340,6 +368,12 @@ by the desired type. */
 #define NC_EDAPURL	(-74)      /**< Malformed DAP URL */
 #define NC_EDAPCONSTRAINT (-75)    /**< Malformed DAP Constraint*/
 #define NC_ETRANSLATION (-76)      /**< Untranslatable construct */
+#define NC_EACCESS      (-77)      /**< Access Failure */
+#define NC_EAUTH        (-78)      /**< Authorization Failure */
+
+/* Misc. additional errors */
+#define NC_ENOTFOUND     (-90)      /**< No such file */
+#define NC_ECANTREMOVE   (-91)      /**< Can't remove file */
 
 /* The following was added in support of netcdf-4. Make all netcdf-4
    error codes < -100 so that errors can be added to netcdf-3 if
@@ -860,6 +894,10 @@ nc_inq_unlimdims(int ncid, int *nunlimdimsp, int *unlimdimidsp);
 /* Added in 3.6.1 to return format of netCDF file. */
 EXTERNL int
 nc_inq_format(int ncid, int *formatp);
+
+/* Added in 4.3.1 to return additional format info */
+EXTERNL int
+nc_inq_format_extended(int ncid, int *formatp, int* modep);
 
 /* Begin _dim */
 
@@ -1887,6 +1925,17 @@ ncrecput(int ncid, long recnum, void *const *datap);
 #ifndef NC_HAVE_RENAME_GRP
 #define NC_HAVE_RENAME_GRP
 #endif
+
+/* Allow dependent software to tell if
+   inq_format_extended() is available.
+   
+   This is not a scalable approach to querying
+   the functionality of the netcdf library, but
+   it will do for the time being. */
+#ifndef NC_HAVE_INQ_FORMAT_EXTENDED
+#define NC_HAVE_INQ_FORMAT_EXTENDED
+#endif
+
 
 #endif /* _NETCDF_ */
 

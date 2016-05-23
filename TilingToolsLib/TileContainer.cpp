@@ -40,7 +40,8 @@ bool GMXTileContainer::OpenForWriting	(	string				container_file_name,
 		tile_bounds[4*i] = (tile_bounds[4*i+1] = (tile_bounds[4*i+2] = (tile_bounds[4*i+3] = -1)));
 		if (i<=max_zoom)
 		{
-			MercatorTileGrid::CalcTileRange(envelope,i,tile_bounds[4*i],tile_bounds[4*i+1],tile_bounds[4*i+2],tile_bounds[4*i+3]);
+      MercatorTileGrid merc_grid(merc_type);
+			merc_grid.CalcTileRange(envelope,i,tile_bounds[4*i],tile_bounds[4*i+1],tile_bounds[4*i+2],tile_bounds[4*i+3]);
 		}
 	}
 	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache,p_metadata,max_volume_size);
@@ -162,12 +163,74 @@ Metadata* GMXTileContainer::GetMetadata ()
     fread(tag_data,1,tag_size,pp_container_volumes_[0]);
 
     Metatag *p_metatag = Metadata::DeserializeTag(tag_name,tag_size,tag_data);
-    if (p_metatag) p_metadata->AddTagRef(p_metatag);
+    if (p_metatag) p_metadata->AddTagDirectly(p_metatag);
   }
 
   return (p_metadata->TagCount()) ? p_metadata : NULL;
 }
 
+bool GMXTileContainer::ExtractAndStoreMetadata (TilingParameters* p_params) 
+{
+  //ToDo
+  /*
+  //from GMXMakeTiling
+   Metadata metadata;
+  MetaHistogram histogram;
+  MetaNodataValue nodata_value;
+  MetaHistogramStatistics hist_stat;
+  bool nodata_defined = false;
+  double  nodata_val;
+  if (p_tiling_params->p_transparent_color_)
+  {
+    nodata_defined = true;
+    nodata_val = p_tiling_params->p_transparent_color_[0];
+  }
+  else nodata_val = raster_bundle.GetNodataValue(nodata_defined);
+  if (nodata_defined) nodata_value.nodv_ = nodata_val;
+  
+  if (histogram.IsInitiated())
+    histogram.CalcStatistics(&hist_stat,(nodata_defined) ? &nodata_val : 0); 
+  
+  */
+
+  //from GMXAsyncWarpChunkAndMakeTiling
+  /*
+  gmx::MetaHistogram        *p_histogram = p_chunk_tiling_params->p_histogram_;
+  if (p_histogram) 
+  {
+    if (!p_histogram->IsInitiated())
+      p_histogram->Init(p_merc_buffer->get_num_bands(),p_merc_buffer->get_data_type());
+    p_merc_buffer->AddPixelDataToMetaHistogram(p_histogram);
+  }
+  */
+
+  //from RasterBuffer
+  /*
+  template <typename T>	
+bool    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
+{
+  T *p_pixel_data_t = (T*)p_pixel_data_;
+  unsigned int n = x_size_*y_size_;
+  unsigned int m = 0;
+
+  int _num_bands = IsAlphaBand() ? num_bands_-1 : num_bands_;
+  for (int i=0;i<y_size_;i++)
+  {
+    for (int j=0;j<x_size_;j++)
+    {
+      for (int k=0;k<_num_bands;k++)
+      {
+        p_hist->AddValue(k,p_pixel_data_t[k*n+m]);
+      }
+      m++;
+    }
+  }
+  return TRUE;
+}
+  */
+
+  return true;
+}
 
 
 bool		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
@@ -262,19 +325,25 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 											MercatorProjType merc_type
 											)
 {
-	VectorBorder *p_vb = NULL;
+	OGRGeometry *p_border = NULL;
   if (!is_opened_) return 0;
-
-	if (vector_file!="") 
+  MercatorTileGrid merc_grid(merc_type);
+  if (vector_file!="") 
 	{
-		if(!(p_vb = VectorBorder::CreateFromVectorFile(vector_file,merc_type_))) 
+    if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRS()))) 
 		{
 			cout<<"Error: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
-	}
+	  if (!merc_grid.AdjustFor180DegIntersection(p_border))
+    {
+      cout<<"Error: AdjustFor180DegIntersection fail"<<endl;
+      delete(p_border);
+      return 0;
+    }
+  }
 
-	for (unsigned int i=0; i<max_tiles_;i++)
+ 	for (unsigned int i=0; i<max_tiles_;i++)
 	{
 		int x,y,z;
     pair<int,pair<int,int>> p;
@@ -283,8 +352,17 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 			if(!TileXYZ(i,z,x,y)) continue;
 			if ((max_zoom>=0)&&(z>max_zoom)) continue;
 			if ((min_zoom>=0)&&(z<min_zoom)) continue;
-			if (vector_file!="") 
-				if (!p_vb->Intersects(z,x,y)) continue;
+			if (vector_file!="")
+      {
+        OGRPolygon *p_envp = VectorOperations::CreateOGRPolygonByOGREnvelope(merc_grid.CalcEnvelopeByTile(z,x,y));
+        if (!p_border->Intersects(p_envp))
+        {
+          delete(p_envp);
+          continue;
+        }
+        delete(p_envp);
+      }
+
       p.first =z;
       p.second.first=x;
       p.second.second=y;
@@ -292,7 +370,7 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 		}
 	}
 
-	delete(p_vb);
+	delete(p_border);
 	return tile_list.size();	
 };
 	
@@ -338,11 +416,12 @@ OGREnvelope GMXTileContainer::GetMercatorEnvelope()
 {
 	OGREnvelope envelope;
 	envelope.MinX = (envelope.MaxX = (envelope.MinY = (envelope.MaxY = 0)));
+  MercatorTileGrid merc_grid(merc_type_);
 
 	for (int z =0;z<32;z++)
 	{
 		if (maxx_[z]>0 && maxy_[z]>0)
-			envelope = MercatorTileGrid::CalcEnvelopeByTileRange(z,minx_[z],miny_[z],maxx_[z],maxy_[z]);
+			envelope = merc_grid.CalcEnvelopeByTileRange(z,minx_[z],miny_[z],maxx_[z],maxy_[z]);
 		else break;
 	}
 	return envelope;
@@ -534,7 +613,7 @@ bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_d
 {
 	unsigned int n	= TileID(z,x,y);
 	if (n>= max_tiles_ || n<0) return FALSE;
-	if (!(size = p_sizes_[n])) return TRUE;
+	if (!(size = p_sizes_[n])) return FALSE;
 
   int volume_num = GetVolumeNum(p_offsets_[n]);
   if (!pp_container_volumes_[volume_num])
@@ -724,9 +803,6 @@ void GMXTileContainer::MakeEmpty ()
 
   p_metadata_ref_ = NULL;
 };
-	
-
-
 
 
 
@@ -833,11 +909,13 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 	sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
 		
 	OGREnvelope latlong_envp;
+
 	latlong_envp.MinX = MercatorTileGrid::MecrToLong(merc_envp.MinX, merc_type);
 	latlong_envp.MaxX = MercatorTileGrid::MecrToLong(merc_envp.MaxX, merc_type);
 	latlong_envp.MinY = MercatorTileGrid::MercToLat(merc_envp.MinY, merc_type);
 	latlong_envp.MaxY = MercatorTileGrid::MercToLat(merc_envp.MaxY, merc_type);
-	char	buf[256];
+
+  char	buf[256];
 	sprintf(buf,"INSERT INTO metadata VALUES ('bounds', '%lf,%lf,%lf,%lf')",
 									latlong_envp.MinX,
 									latlong_envp.MinY,
@@ -949,7 +1027,24 @@ bool		MBTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int 
 int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file, MercatorProjType merc_type)
 {
 	if (p_sql3_db_ == NULL) return 0;
-	char buf[256];
+	OGRGeometry *p_border = NULL;
+  MercatorTileGrid merc_grid(merc_type);
+  if (vector_file!="") 
+	{
+    if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRS()))) 
+		{
+			cout<<"Error: can't open vector file: "<<vector_file<<endl;
+			return 0;
+		}
+	  if (!merc_grid.AdjustFor180DegIntersection(p_border))
+    {
+      cout<<"Error: AdjustFor180DegIntersection fail"<<endl;
+      delete(p_border);
+      return 0;
+    }
+  }
+  
+  char buf[256];
 	string str_sql;
 
 	max_zoom = (max_zoom < 0) ? 32 : max_zoom;
@@ -958,24 +1053,31 @@ int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int
 	sqlite3_stmt *stmt	=	NULL;
 	const char *tail	=	NULL;
 	sqlite3_prepare_v2 (p_sql3_db_, str_sql.c_str(), str_sql.size()+1,&stmt, &tail);
-	
-	VectorBorder *p_vb = VectorBorder::CreateFromVectorFile(vector_file,merc_type_);
-  pair<int,pair<int,int>> p;
+	pair<int,pair<int,int>> p;
 	while (SQLITE_ROW == sqlite3_step (stmt))
 	{
 		int z		= sqlite3_column_int(stmt, 0);
 		int x		= sqlite3_column_int(stmt, 1);
 		int y		= (z>0) ? ((1<<z) - sqlite3_column_int(stmt, 2) -1) : 0;
 		if (x<0 || y<0 || z <0) continue;
+    if (vector_file!="")
+    {
+      OGRPolygon *p_envp = VectorOperations::CreateOGRPolygonByOGREnvelope(merc_grid.CalcEnvelopeByTile(z,x,y));
+      if (!p_border->Intersects(p_envp))
+      {
+        delete(p_envp);
+        continue;
+      }
+      delete(p_envp);
+    }
 
-		if (p_vb)
-			if (! p_vb->Intersects(z,x,y)) continue;
-    p.first = z;
+		p.first = z;
     p.second.first=x;
     p.second.second =y;
 		tile_list.push_back(p);
 	}
 	sqlite3_finalize(stmt);
+  delete(p_border);
 
 		
 	return tile_list.size();
@@ -990,11 +1092,11 @@ OGREnvelope MBTileContainer::GetMercatorEnvelope()
 	int bounds[128];
 	if (!GetTileBounds(bounds)) return envelope;
 
-
+  MercatorTileGrid merc_grid(WORLD_MERCATOR);
 	for (int z =0;z<32;z++)
 	{
 		if (bounds[4*z+2]>0 && bounds[4*z+3]>0)
-			envelope = MercatorTileGrid::CalcEnvelopeByTileRange(z,bounds[4*z],bounds[4*z+1],bounds[4*z+2],bounds[4*z+3]);
+			envelope = merc_grid.CalcEnvelopeByTileRange(z,bounds[4*z],bounds[4*z+1],bounds[4*z+2],bounds[4*z+3]);
 	}
 	return envelope;
 };
@@ -1143,19 +1245,26 @@ int			TileFolder::GetMaxZoom()
 
 int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file,  MercatorProjType merc_type)
 {
-	VectorBorder *p_vb = NULL;
+  MercatorTileGrid merc_grid(merc_type);
+  OGRGeometry *p_border = NULL;
 	if (vector_file!="") 
 	{
-		if( !(p_vb = VectorBorder::CreateFromVectorFile(vector_file, merc_type))) 
+    if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRS()))) 
 		{
 			cout<<"Error: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
-	}
-
+	  if (!merc_grid.AdjustFor180DegIntersection(p_border))
+    {
+      cout<<"Error: AdjustFor180DegIntersection fail"<<endl;
+      delete(p_border);
+      return 0;
+    }
+  }
+  
 	list<string> file_list;
 	FindFilesByExtensionRecursive(file_list,p_tile_name_->GetBaseFolder(),TileName::ExtensionByTileType(p_tile_name_->tile_type_));
-
+  
   pair<int,pair<int,int>> p;
 	for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
 	{
@@ -1163,14 +1272,22 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 		if(!p_tile_name_->ExtractXYZFromTileName((*iter),z,x,y)) continue;
 		if ((max_zoom>=0)&&(z>max_zoom)) continue;
 		if ((min_zoom>=0)&&(z<min_zoom)) continue;
-		if (vector_file!="") 
-			if (!p_vb->Intersects(z,x,y)) continue;
+    if (vector_file!="")
+    {
+      OGRPolygon *p_envp = VectorOperations::CreateOGRPolygonByOGREnvelope(merc_grid.CalcEnvelopeByTile(z,x,y));
+      if (!p_border->Intersects(p_envp))
+      {
+        delete(p_envp);
+        continue;
+      }
+      delete(p_envp);
+    }
     p.first = z;
     p.second.first=x;
     p.second.second=y;
 		tile_list.push_back(p);
 	}
-	delete(p_vb);
+	delete(p_border);
 	return tile_list.size();	
 };
 
@@ -1185,8 +1302,11 @@ OGREnvelope TileFolder::GetMercatorEnvelope()
 	for (int z =0;z<32;z++)
 	{
 		if (bounds[4*z+2]>0 && bounds[4*z+3]>0)
-			envelope = MercatorTileGrid::CalcEnvelopeByTileRange(z,bounds[4*z],bounds[4*z+1],bounds[4*z+2],bounds[4*z+3]);
-		else break;
+    {
+      MercatorTileGrid merc_grid(WORLD_MERCATOR);
+      envelope = merc_grid.CalcEnvelopeByTileRange(z,bounds[4*z],bounds[4*z+1],bounds[4*z+2],bounds[4*z+3]);
+    }
+    else break;
 	}
 	return envelope;
 };
@@ -1226,7 +1346,7 @@ bool	TileFolder::ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned i
 {
   void *_p_data;
   int _size;
-  bool result = ReadDataFromFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
+  bool result = ReadBinaryFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
   size = _size;
   p_data = (BYTE*)_p_data;
 	return result;

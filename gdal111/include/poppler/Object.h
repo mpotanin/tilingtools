@@ -20,6 +20,7 @@
 // Copyright (C) 2012 Fabio D'Urso <fabiodurso@hotmail.it>
 // Copyright (C) 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
 // Copyright (C) 2013 Adrian Johnson <ajohnson@redneon.com>
+// Copyright (C) 2013 Adrian Perez de Castro <aperez@igalia.com>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -44,14 +45,14 @@
 
 #define OBJECT_TYPE_CHECK(wanted_type) \
     if (unlikely(type != wanted_type)) { \
-        error(errInternal, 0, (char *) "Call to Object where the object was type {0:d}, " \
+        error(errInternal, 0, "Call to Object where the object was type {0:d}, " \
                  "not the expected type {1:d}", type, wanted_type); \
         abort(); \
     }
 
 #define OBJECT_3TYPES_CHECK(wanted_type1, wanted_type2, wanted_type3) \
     if (unlikely(type != wanted_type1) && unlikely(type != wanted_type2) && unlikely(type != wanted_type3)) { \
-        error(errInternal, 0, (char *) "Call to Object where the object was type {0:d}, " \
+        error(errInternal, 0, "Call to Object where the object was type {0:d}, " \
 	      "not the expected type {1:d}, {2:d} or {3:d}", type, wanted_type1, wanted_type2, wanted_type3); \
         abort(); \
     }
@@ -199,6 +200,10 @@ public:
   double getNum() { OBJECT_3TYPES_CHECK(objInt, objInt64, objReal);
     return type == objInt ? (double)intg : type == objInt64 ? (double)int64g : real; }
   GooString *getString() { OBJECT_TYPE_CHECK(objString); return string; }
+  // After takeString() the only method that should be called for the object is free()
+  // because the object it's not expected to have a NULL string.
+  GooString *takeString() {
+    OBJECT_TYPE_CHECK(objString); GooString *s = string; string = NULL; return s; }
   char *getName() { OBJECT_TYPE_CHECK(objName); return name; }
   Array *getArray() { OBJECT_TYPE_CHECK(objArray); return array; }
   Dict *getDict() { OBJECT_TYPE_CHECK(objDict); return dict; }

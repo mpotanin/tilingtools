@@ -38,7 +38,7 @@ void Exit()
 }
 
 
-bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
+bool InitParamsAndCallTiling (map<string,string> mapConsoleParams)
 {
   string strInputPath = mapConsoleParams.at("-file");
   string strUseContainer = mapConsoleParams.at("-gmxtiles") != "" ? mapConsoleParams.at("-gmxtiles") : mapConsoleParams.at("-mbtiles");		
@@ -52,15 +52,12 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
   string strTileNameTemplate = mapConsoleParams.at("-template");
   string strNodata = mapConsoleParams.at("-nodata");
   string strNodataTolerance = mapConsoleParams.at("-nodata_tolerance");
-  string strShiftX = mapConsoleParams.at("-shift_x");
-  string strShiftY = mapConsoleParams.at("-shift_y");
   string strUsePixelTiling = mapConsoleParams.at("-pixel_tiling");
   string strBackground = mapConsoleParams.at("-background");
   string strLogFile = mapConsoleParams.at("-log_file");
   string strCacheSize = mapConsoleParams.at("-cache_size");
   string strGMXVolumeSize = mapConsoleParams.at("-gmx_volume_size");
   string strGdalResampling = mapConsoleParams.at("-resampling");
-  string strTempFileWarpPath = mapConsoleParams.at("-temp_file_warp");
   string strMaxWorkThreads = mapConsoleParams.at("-work_threads");
   string strMaxWarpThreads = mapConsoleParams.at("-warp_threads");
   string strBands = mapConsoleParams.at("-bands");
@@ -102,14 +99,11 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
     }
   }  
 
-  GMXTilingParameters oTilingParams(lstInputFiles,eMercType,eTileType);
+  gmx::TilingParameters oTilingParams(lstInputFiles,eMercType,eTileType);
 
   if (oBandMapping.GetBandsNum() != 0) 
     oTilingParams.p_band_mapping_ = &oBandMapping;
   
-
- 
-
   if (strMaxZoom != "")		oTilingParams.base_zoom_ = (int)atof(strMaxZoom.c_str());
   if (strMinZoom != "")	oTilingParams.min_zoom_ = (int)atof(strMinZoom.c_str());
   if (strVectorFile!="") oTilingParams.vector_file_ = strVectorFile;
@@ -168,9 +162,6 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
   }
 
 
-  if ((strShiftX!="")) oTilingParams.shift_x_=atof(strShiftX.c_str());
-  if ((strShiftY!="")) oTilingParams.shift_y_=atof(strShiftY.c_str());
-
   if (strCacheSize!="") 
     oTilingParams.max_cache_size_ = atof(strCacheSize.c_str());
   
@@ -211,11 +202,20 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
     oTilingParams.p_background_color_ = new BYTE[3];
     memcpy(oTilingParams.p_background_color_,pabyRGB,3);
   }
+  
+  gmx::RasterFile oRF;
+  if (!oRF.Init(*oTilingParams.file_list_.begin()))
+  { 
+    cout<<"Error: can't open file: "<<(*oTilingParams.file_list_.begin())<<endl;
+    return FALSE;
+  }
+  oTilingParams.gdal_resampling_ = (strGdalResampling=="near" ||
+                                    strGdalResampling=="nearest" ||
+                                    oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable()
+                                   ) ? GRA_NearestNeighbour: GRA_Cubic;
+  oRF.Close();
 
-
-  oTilingParams.gdal_resampling_ = strGdalResampling;
   oTilingParams.auto_stretching_ = true;
-  oTilingParams.temp_file_path_for_warping_ = strTempFileWarpPath;
   oTilingParams.calculate_histogram_ = true; 
  
   if (strMaxWorkThreads != "")
@@ -227,7 +227,6 @@ bool CheckArgsAndCallTiling (map<string,string> mapConsoleParams)
   return GMXMakeTiling(&oTilingParams);
   //if (logFile) fclose(logFile);
 }
-
 
 
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
@@ -254,154 +253,187 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     return 0;
   }
 
-  map<string,string> mapConsoleParams;
-  
-  mapConsoleParams.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-mosaic",gmx::ReadConsoleParameter("-mosaic",nArgs,pastrArgs,TRUE)));
-  mapConsoleParams.insert(pair<string,string>("-gmxtiles",gmx::ReadConsoleParameter("-container",nArgs,pastrArgs,TRUE)));
-  mapConsoleParams.insert(pair<string,string>("-mbtiles",gmx::ReadConsoleParameter("-mbtiles",nArgs,pastrArgs,TRUE)));
-  mapConsoleParams.insert(pair<string,string>("-zoom",gmx::ReadConsoleParameter("-zoom",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-min_zoom",gmx::ReadConsoleParameter("-min_zoom",nArgs,pastrArgs)));
-
-  mapConsoleParams.insert(pair<string,string>("-border",gmx::ReadConsoleParameter("-border",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-tiles",gmx::ReadConsoleParameter("-tiles",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-tile_type",gmx::ReadConsoleParameter("-tile_type",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-proj",gmx::ReadConsoleParameter("-proj",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-bands",gmx::ReadConsoleParameter("-bands",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-template",gmx::ReadConsoleParameter("-template",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-nodata",gmx::ReadConsoleParameter("-nodata",nArgs,pastrArgs) != "" ?
-                                                          gmx::ReadConsoleParameter("-nodata",nArgs,pastrArgs) :
-                                                          gmx::ReadConsoleParameter("-nodata_rgb",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-quality",gmx::ReadConsoleParameter("-quality",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",nArgs,pastrArgs)));
-  
-  mapConsoleParams.insert(pair<string,string>("-shift_x",gmx::ReadConsoleParameter("-shift_x",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-shift_y",gmx::ReadConsoleParameter("-shift_y",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-gmx_volume_size",gmx::ReadConsoleParameter("-gmx_volume_size",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-temp_file_warp",gmx::ReadConsoleParameter("-temp_file_warp",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",nArgs,pastrArgs,TRUE)));
-  mapConsoleParams.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",nArgs,pastrArgs)));
-  mapConsoleParams.insert(pair<string,string>("-pseudo_png",gmx::ReadConsoleParameter("-pseudo_png",nArgs,pastrArgs,TRUE)));
-
-  if (nArgs == 2) mapConsoleParams.at("-file") = pastrArgs[1];
-
-  //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
-  //mapConsoleParams.at("-file") = "E:\\test_images\\atomflot\\01102015_2350.jpg"; 
-    //dem_cs_zl11_094_165.tif";
-  //mapConsoleParams.at("-pseudo_png") = "pseudo_png";
-  //mapConsoleParams.at("-tile_type") = "tif";
-  //mapConsoleParams.at("-work_threads") = "1";
-
-  //mapConsoleParams.at("-zoom") = "8";
-  //mapConsoleParams.at("-background") = "255 255 255";
-
-  //mapConsoleParams.at("-gmxtiles")="-container";
-  //mapConsoleParams.at("-tiles")="E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_debug.tiles";
-  //mapConsoleParams.at("-resampling")="nearest";
-  //mapConsoleParams.at("-tiles")="e:\\test_tiles";
-
-
-  //mapConsoleParams.at("-gmxtiles")="-container";
-  //mapConsoleParams.at("-border") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.mif";
-  //mapConsoleParams.at("-tile_type") = "png";
-  //mapConsoleParams.at("-nodata") = "0";
-  //mapConsoleParams.at("-template")="standard";
-  //mapConsoleParams.at("-tiles") = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\L8";
-  
-  //-mosaic -border L8\border.shp -nodata 0 -tile_type png -template standard -min_zoom 11 -tiles result\L8
-  
-
-  if (mapConsoleParams.at("-file") == "")
+  try 
   {
-    cout<<"Error: missing \"-file\" parameter"<<endl;
-    return 1;
-  }
+
+    map<string,string> mapConsoleParams;
+  
+    mapConsoleParams.insert(pair<string,string>("-file",gmx::ReadConsoleParameter("-file",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-mosaic",gmx::ReadConsoleParameter("-mosaic",nArgs,pastrArgs,TRUE)));
+    mapConsoleParams.insert(pair<string,string>("-gmxtiles",gmx::ReadConsoleParameter("-container",nArgs,pastrArgs,TRUE)));
+    mapConsoleParams.insert(pair<string,string>("-mbtiles",gmx::ReadConsoleParameter("-mbtiles",nArgs,pastrArgs,TRUE)));
+    mapConsoleParams.insert(pair<string,string>("-zoom",gmx::ReadConsoleParameter("-zoom",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-min_zoom",gmx::ReadConsoleParameter("-min_zoom",nArgs,pastrArgs)));
+
+    mapConsoleParams.insert(pair<string,string>("-border",gmx::ReadConsoleParameter("-border",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-tiles",gmx::ReadConsoleParameter("-tiles",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-tile_type",gmx::ReadConsoleParameter("-tile_type",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-proj",gmx::ReadConsoleParameter("-proj",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-bands",gmx::ReadConsoleParameter("-bands",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-template",gmx::ReadConsoleParameter("-template",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-nodata",gmx::ReadConsoleParameter("-nodata",nArgs,pastrArgs) != "" ?
+                                                            gmx::ReadConsoleParameter("-nodata",nArgs,pastrArgs) :
+                                                            gmx::ReadConsoleParameter("-nodata_rgb",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-nodata_tolerance",gmx::ReadConsoleParameter("-nodata_tolerance",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-quality",gmx::ReadConsoleParameter("-quality",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",nArgs,pastrArgs)));
+  
+    //mapConsoleParams.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-gmx_volume_size",gmx::ReadConsoleParameter("-gmx_volume_size",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",nArgs,pastrArgs,TRUE)));
+    mapConsoleParams.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",nArgs,pastrArgs)));
+    mapConsoleParams.insert(pair<string,string>("-pseudo_png",gmx::ReadConsoleParameter("-pseudo_png",nArgs,pastrArgs,TRUE)));
 
 
-  wcout<<endl;
-  if (mapConsoleParams.at("-mosaic")== "") //ToDo - file_list.size>1;
-  {
-    gmx::BandMapping oBandMapping;
-    if (!oBandMapping.InitByConsoleParams(mapConsoleParams.at("-file"),
-                                          mapConsoleParams.at("-bands")))
+    if (nArgs == 2) mapConsoleParams.at("-file") = pastrArgs[1];
+  
+
+
+    //-file scn_120719_Vrangel_island_SWA.tif -container -tiles result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
+
+    //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
+    //mapConsoleParams.at("-file") = "E:\\IVI\\demo\\novosib\\cloud_mask\\*.tif";
+    //mapConsoleParams.at("-file")="C:\\Work\\Projects\\TilingTools\\autotest\\o42073g8.tif";
+    //mapConsoleParams.at("-zoom") = "8";
+    //mapConsoleParams.at("-tiles")="C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA_proj1_tiles";
+    //mapConsoleParams.at("-nodata")="0 0 0";
+    //mapConsoleParams.at("-tile_type")="png";
+    //mapConsoleParams.at("-template")="standard";
+    //mapConsoleParams.at("-proj")="1";
+
+    //mapConsoleParams.at("-border")="C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+    //mapConsoleParams.at("-background")="255";
+    //mapConsoleParams.at("-resampling")="nearest";
+    //mapConsoleParams.at("-gmxtiles")="-container";
+
+
+    //..\x64\release\imagetiling -file scn_120719_Vrangel_island_SWA.tif -tiles result\scn_120719_Vrangel_island_SWA_tiles -zoom 8 -proj 1 -template standard -nodata_rgb "0 0 0" -tile_type png -border border\markers.tab -background "127 0 0"
+
+  
+
+    //-gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
+        //dem_cs_zl11_094_165.tif";
+    //mapConsoleParams.at("-pseudo_png") = "pseudo_png";
+    //mapConsoleParams.at("-tile_type") = "tif";
+    //mapConsoleParams.at("-work_threads") = "1";
+
+    //mapConsoleParams.at("-zoom") = "8";
+    //mapConsoleParams.at("-background") = "255 255 255";
+
+    //mapConsoleParams.at("-gmxtiles")="-container";
+    //mapConsoleParams.at("-tiles")="E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_debug.tiles";
+    //mapConsoleParams.at("-resampling")="nearest";
+    //mapConsoleParams.at("-tiles")="e:\\test_tiles";
+
+
+    //mapConsoleParams.at("-gmxtiles")="-container";
+    //mapConsoleParams.at("-border") = "\\\\192.168.4.43\\share\\spot6\\1\\Krasnodar_SP6.X08.Y13.mif";
+    //mapConsoleParams.at("-tile_type") = "png";
+    //mapConsoleParams.at("-nodata") = "0";
+    //mapConsoleParams.at("-template")="standard";
+    //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\for_test\\pan8\\LC81120742014154LGN00.TIF";
+
+  
+    //-mosaic -border L8\border.shp -nodata 0 -tile_type png -template standard -min_zoom 11 -tiles result\L8
+  
+    // -file scn_120719_Vrangel_island_SWA.tif -container -tiles result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
+
+
+
+    if (mapConsoleParams.at("-file") == "")
     {
-      //ToDo - 
-      cout<<"Error: can't parse \"-file\" parameter"<<endl;
+      cout<<"Error: missing \"-file\" parameter"<<endl;
       return 1;
     }
 
-    std::list<string> lstInputFiles = oBandMapping.GetFileList();
 
-    bool bUseContainer = (mapConsoleParams.at("-gmxtiles")!="" || mapConsoleParams.at("-mbtiles")!="");
-
-    for (std::list<string>::iterator iter = lstInputFiles.begin(); iter!=lstInputFiles.end();iter++)
+    wcout<<endl;
+    if (mapConsoleParams.at("-mosaic")== "") //ToDo - file_list.size>1;
     {
-      cout<<"Tiling file: "<<(*iter)<<endl;
-      map<string,string> mapConsoleParamsFix = mapConsoleParams;
-      mapConsoleParamsFix.at("-file") = (*iter);
-      
-      int nBands = 0;
-      int *panBands = 0;
-      if (!oBandMapping.GetBands(*iter,nBands,panBands))
+      gmx::BandMapping oBandMapping;
+      if (!oBandMapping.InitByConsoleParams(mapConsoleParams.at("-file"),
+                                            mapConsoleParams.at("-bands")))
       {
-        //ToDo - Error
-      }
-      else if (panBands!=0)
-      {
-        string strBands = gmx::ConvertIntToString(panBands[0]);
-        for (int i=1;i<nBands;i++)
-        {
-          strBands+=",";
-          strBands+=gmx::ConvertIntToString(panBands[i]);
-        }
-        mapConsoleParamsFix.at("-bands") = strBands;
-        delete[]panBands;
+        //ToDo - 
+        cout<<"Error: can't parse \"-file\" parameter"<<endl;
+        return 1;
       }
 
-      if ((lstInputFiles.size()>1) && (mapConsoleParams.at("-border")=="")) 
-        mapConsoleParamsFix.at("-border") = gmx::VectorBorder::GetVectorFileNameByRasterFileName(*iter);
-      
-      if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
+      std::list<string> lstInputFiles = oBandMapping.GetFileList();
+
+      bool bUseContainer = (mapConsoleParams.at("-gmxtiles")!="" || mapConsoleParams.at("-mbtiles")!="");
+
+      for (std::list<string>::iterator iter = lstInputFiles.begin(); iter!=lstInputFiles.end();iter++)
       {
-        if (!gmx::FileExists(mapConsoleParams.at("-tiles"))) 
+        cout<<"Tiling file: "<<(*iter)<<endl;
+        map<string,string> mapConsoleParamsFix = mapConsoleParams;
+        mapConsoleParamsFix.at("-file") = (*iter);
+      
+        int nBands = 0;
+        int *panBands = 0;
+        if (!oBandMapping.GetBands(*iter,nBands,panBands))
         {
-          if (!gmx::GMXCreateDirectory(mapConsoleParams.at("-tiles").c_str()))
+          //ToDo - Error
+        }
+        else if (panBands!=0)
+        {
+          string strBands = gmx::ConvertIntToString(panBands[0]);
+          for (int i=1;i<nBands;i++)
           {
-            cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
-            return 1;
+            strBands+=",";
+            strBands+=gmx::ConvertIntToString(panBands[i]);
           }
-        }        
+          mapConsoleParamsFix.at("-bands") = strBands;
+          delete[]panBands;
+        }
 
-        if (bUseContainer)
-        {
-          mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ? 
-                                        gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" :
-                                        gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
-        }
-        else
-        {
-          mapConsoleParamsFix.at("-tiles") = gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
-        }
-      }
-   
+        if ((lstInputFiles.size()>1) && (mapConsoleParams.at("-border")=="")) 
+          mapConsoleParamsFix.at("-border") = gmx::VectorOperations::GetVectorFileNameByRasterFileName(*iter);
       
-      if ((!CheckArgsAndCallTiling(mapConsoleParamsFix)) && lstInputFiles.size()==1)
-        return 2;
-  
-      wcout<<endl;
-    }
-  }
-  else
-  {
-    if (! CheckArgsAndCallTiling (mapConsoleParams))
-     return 2;
-  }
+        if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
+        {
+          if (!gmx::FileExists(mapConsoleParams.at("-tiles"))) 
+          {
+            if (!gmx::GMXCreateDirectory(mapConsoleParams.at("-tiles").c_str()))
+            {
+              cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
+              return 1;
+            }
+          }        
 
-  return 0;
+          if (bUseContainer)
+          {
+            mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ? 
+                                          gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" :
+                                          gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
+          }
+          else
+          {
+            mapConsoleParamsFix.at("-tiles") = gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
+          }
+        }
+        
+        if ((!InitParamsAndCallTiling(mapConsoleParamsFix)) && lstInputFiles.size()==1)
+          return 2;
+        wcout<<endl;
+      }
+    }
+    else
+    {
+      if (! InitParamsAndCallTiling (mapConsoleParams))
+       return 2;
+    }
+
+    return 0;
+  }
+  catch (...)
+  {
+    cout<<"Error: unknown error occured"<<endl;
+    return 101;
+  }
   
 }

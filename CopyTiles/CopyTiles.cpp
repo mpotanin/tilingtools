@@ -8,9 +8,6 @@
 
 int _tmain(int argc, wchar_t* argvW[])
 {
-    //std::regex rx;
-  //rx = "(L[A-Fa-f0-9]{1,2})";//_(R\\x{8,8})_(C\\x{8,8}).jpg";
-
   if (argc == 1)
 	{
 		cout<<"Usage: CopyTiles [-from input folder or container]"<<endl;
@@ -53,14 +50,16 @@ int _tmain(int argc, wchar_t* argvW[])
 	string strDestTemplate	= gmx::MakeLower( gmx::ReadConsoleParameter("-dest_template",argc,argv));
   string metadata_file = gmx::MakeLower( gmx::ReadConsoleParameter("-metadata",argc,argv)); 
 
-  //srcPath = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\L8";
-  //destPath = "C:\\Work\\Projects\\TilingTools\\autotest\\result";
-  //strSrcTemplate = "standard";
-  //strZooms = "11-11";
-  //strDestTemplate="{z}_{x}_{y}.png2";
-  //strTileType="png";
-  //borderFilePath="C:\\Work\\Projects\\TilingTools\\autotest\\L8\\border2.shp";
-
+  /*
+  srcPath = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\scn_120719_Vrangel_island_SWA_tiles";
+  destPath = "C:\\Work\\Projects\\TilingTools\\autotest\\result\\copy2";
+  strSrcTemplate = "standard";
+  strZooms = "1-5";
+  strProjType = "1";
+  strDestTemplate="{z}_{x}_{y}.png";
+  strTileType= "png";
+  borderFilePath="C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
+  */
 
  	FILE *logFile = NULL;
 	
@@ -245,14 +244,17 @@ int _tmain(int argc, wchar_t* argvW[])
 
 		if (borderFilePath!="")
 		{
-			gmx::VectorBorder *pVB = gmx::VectorBorder::CreateFromVectorFile(borderFilePath,merc_type);
-			if (!pVB)
+      gmx::MercatorTileGrid merc_grid(merc_type);
+
+      OGRGeometry* poBorder = gmx::VectorOperations::ReadAndTransformGeometry(borderFilePath,merc_grid.GetTilingSRS());
+
+			if (!poBorder)
 			{
 				cout<<"Error: reading vector file: "<<borderFilePath<<endl;
 				return 1;
 			}
-			merc_envp = pVB->GetEnvelope();
-			delete(pVB);
+      poBorder->getEnvelope(&merc_envp);
+			delete(poBorder);
 		}
 		else
 		{
@@ -290,7 +292,7 @@ int _tmain(int argc, wchar_t* argvW[])
 	
 	list<pair<int, pair<int,int>>> tile_list;
 	cout<<"calculating number of tiles: ";
-	cout<<poSrcITileContainer->GetTileList(tile_list,min_zoom,nMaxZoom,borderFilePath)<<endl;
+	cout<<poSrcITileContainer->GetTileList(tile_list,min_zoom,nMaxZoom,borderFilePath,merc_type)<<endl;
 	
   if (tile_list.size()>0)
 	{

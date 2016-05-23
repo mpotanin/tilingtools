@@ -1677,7 +1677,7 @@ void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 	return NULL;
 }
 
-///*
+
 template <typename T>
 void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h)
 {
@@ -1702,39 +1702,10 @@ void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h)
 
 	return p_pixel_block_t;
 }
-//*/
 
 
-bool		RasterBuffer::AddPixelDataToMetaHistogram(MetaHistogram *p_hist)
-{
-	switch (data_type_)
-	{
-		case GDT_Byte:
-		{
-			BYTE t = 1;
-			return AddPixelDataToMetaHistogram(t,p_hist);
-		}
-		case GDT_UInt16:
-		{
-			unsigned __int16 t = 257;
-			return AddPixelDataToMetaHistogram(t,p_hist);
-		}
-		case GDT_Int16:
-		{
-			__int16 t = -257;
-			return AddPixelDataToMetaHistogram(t,p_hist);
-		}
-		case GDT_Float32:
-		{
-			float t = 1.1;
-			return AddPixelDataToMetaHistogram(t,p_hist);
-		}
-		default:
-			return NULL;
-	}
-}
 
-void*		RasterBuffer::GetDataZoomedOut	(string resampling_method)
+void*		RasterBuffer::ZoomOut	(GDALResampleAlg resampling_method)
 {
 	void *p_pixel_data_zoomedout;
 	switch (data_type_)
@@ -1742,22 +1713,22 @@ void*		RasterBuffer::GetDataZoomedOut	(string resampling_method)
 		case GDT_Byte:
 		{
 			BYTE t = 1;
-			return GetDataZoomedOut(t,resampling_method);
+			return ZoomOut(t,resampling_method);
 		}
 		case GDT_UInt16:
 		{
 			unsigned __int16 t = 257;
-			return GetDataZoomedOut(t,resampling_method);
+			return ZoomOut(t,resampling_method);
 		}
 		case GDT_Int16:
 		{
 			__int16 t = -257;
-			return GetDataZoomedOut(t,resampling_method);
+			return ZoomOut(t,resampling_method);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return GetDataZoomedOut(t,resampling_method);
+			return ZoomOut(t,resampling_method);
 		}
 		default:
 			return NULL;
@@ -1765,9 +1736,8 @@ void*		RasterBuffer::GetDataZoomedOut	(string resampling_method)
 }
 
 template<typename T>
-void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
-{
- 
+void* RasterBuffer::ZoomOut	(T type, GDALResampleAlg resampling_method)
+{ 
   int n	= x_size_*y_size_;
 	int n_4	= x_size_*y_size_/4;
 	int w = x_size_/2;
@@ -1786,9 +1756,6 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
 
   int r[4], pixel_sum[100];
   int min, dist, l_min, _dist;
-
-  resampling_method = (resampling_method=="nearest" || resampling_method=="near") ?
-                      "nearest" : resampling_method;
 
   for (i=0;i<h;i++)
 	{
@@ -1817,7 +1784,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
         }
 
         if (num_def_pix==0 ||
-            (num_def_pix==1 && resampling_method!="nearest")
+            (num_def_pix==1 && resampling_method!=GRA_NearestNeighbour)
             )
         {
           p_pixel_data_zoomedout[m+j+k] = 0;
@@ -1835,7 +1802,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
           pixel_sum[b]+=p_pixel_data_t[r[l]+b*n];
       }
                   
-      if (resampling_method!="nearest")
+      if (resampling_method!=GRA_NearestNeighbour)
       {
         for (b=0;b<_num_bands;b++)
            p_pixel_data_zoomedout[m+j+b*n_4]=  (pixel_sum[b]/num_def_pix) + (((pixel_sum[b]%num_def_pix)<<1)>num_def_pix); 
@@ -1867,27 +1834,7 @@ void* RasterBuffer::GetDataZoomedOut	(T type, string resampling_method)
 }
 
 
-template <typename T>	
-bool    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
-{
-  T *p_pixel_data_t = (T*)p_pixel_data_;
-  unsigned int n = x_size_*y_size_;
-  unsigned int m = 0;
 
-  int _num_bands = IsAlphaBand() ? num_bands_-1 : num_bands_;
-  for (int i=0;i<y_size_;i++)
-  {
-    for (int j=0;j<x_size_;j++)
-    {
-      for (int k=0;k<_num_bands;k++)
-      {
-        p_hist->AddValue(k,p_pixel_data_t[k*n+m]);
-      }
-      m++;
-    }
-  }
-  return TRUE;
-}
 
 /*
 bool	RasterBuffer::dataIO	(bool operationFlag, 
@@ -1913,7 +1860,7 @@ bool	RasterBuffer::IsAlphaBand()
 }
 
 
-bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
+bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 {
 
   if (x_size_==0 || y_size_==0 || num_bands_==0) return FALSE;
@@ -1928,8 +1875,9 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorBorder *p_vb)
     int n = j*x_size_;
     for (int i = 0; i<x_size_; i++)
         vector_mask[n+i]=0;
-
-    if ((!VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry(j,p_vb->get_ogr_geometry_ref(),num_points,p_x)) || 
+    
+    //ToDo
+    if ((!VectorOperations::CalcIntersectionBetweenLineAndPixelLineGeometry(j,p_vb->get_ogr_geometry_ref(),num_points,p_x)) || 
         (num_points == 0) || ((num_points%2)==1))
       continue;
             

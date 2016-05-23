@@ -34,6 +34,7 @@
 #include "H5private.h"		/* Generic Functions			*/
 #include "H5Cprivate.h"		/* Cache				*/
 #include "H5Fprivate.h"		/* File access				*/
+#include "H5Pprivate.h"		/* Property lists			*/
 
 #ifdef H5_METADATA_TRACE_FILE
 #define H5AC__TRACE_FILE_ENABLED	1
@@ -193,6 +194,7 @@ extern hid_t H5AC_dxpl_id;
 /* Dataset transfer property list for independent metadata I/O calls */
 /* (just "library internal" set - i.e. independent transfer mode) */
 /* (Global variable declaration, definition is in H5AC.c) */
+extern H5P_genplist_t *H5AC_ind_dxpl_g;
 extern hid_t H5AC_ind_dxpl_id;
 
 
@@ -319,8 +321,7 @@ H5_DLL herr_t H5AC_insert_entry(H5F_t *f, hid_t dxpl_id, const H5AC_class_t *typ
                        haddr_t addr, void *thing, unsigned int flags);
 H5_DLL herr_t H5AC_pin_protected_entry(void *thing);
 H5_DLL void * H5AC_protect(H5F_t *f, hid_t dxpl_id, const H5AC_class_t *type,
-                           haddr_t addr, void *udata,
-                           H5AC_protect_t rw);
+    haddr_t addr, void *udata, H5AC_protect_t rw);
 H5_DLL herr_t H5AC_resize_entry(void *thing, size_t new_size);
 H5_DLL herr_t H5AC_unpin_entry(void *thing);
 H5_DLL herr_t H5AC_unprotect(H5F_t *f, hid_t dxpl_id,

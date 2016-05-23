@@ -35,22 +35,18 @@ void ReplaceAll(string	&str, const string	&from, const string	&to) {
 string ConvertIntToString(int number, bool hexadecimal, int adjust_len)
 {
   char buf[100];
+  string str;
   if (hexadecimal) sprintf(buf,"%x",number);
   else sprintf(buf,"%d",number);
   if (adjust_len==0) return buf;
 
-  string str_res(adjust_len,'0');
-
-  int buf_len = 0;
-  while (buf[buf_len]!=0)
+  string str_buf(buf);
+  if (str_buf.size()>adjust_len) return "";
+  else
   {
-    buf_len++;
-    if ((buf_len>=100)||(buf_len>adjust_len)) return "";
+    string str_res(adjust_len,'0');
+    return str_res.replace(adjust_len-str_buf.size(),str_buf.size(),str_buf);
   }
-  
-  str_res.replace(adjust_len-buf_len,buf_len,buf);
-
-  return str_res;
 }
 
 

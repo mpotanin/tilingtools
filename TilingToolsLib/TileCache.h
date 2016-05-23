@@ -6,6 +6,7 @@
 
 namespace gmx
 {
+extern __int64 TILE_CACHE_MAX_SIZE;
 
 class TileCache
 {

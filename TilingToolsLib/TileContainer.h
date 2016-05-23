@@ -4,6 +4,7 @@
 #include "TileCache.h"
 #include "VectorBorder.h"
 #include "histogram.h"
+#include "TilingParameters.h"
 
 namespace gmx
 {
@@ -30,6 +31,7 @@ public:
 	virtual TileType				  GetTileType() = 0;
 	virtual MercatorProjType	GetProjType() = 0;
   virtual Metadata* GetMetadata () {return NULL;}; 
+  virtual bool ExtractAndStoreMetadata (TilingParameters* p_params) {return true;}; 
   
 
 	virtual __int64		TileID( int z, int x, int y)
@@ -100,6 +102,7 @@ public:
 	bool		GetTileBounds (int tile_bounds[128]);
 
   virtual Metadata* GetMetadata (); 
+  virtual bool ExtractAndStoreMetadata (TilingParameters* p_params);
 
 	__int64				TileID			( int z, int x, int y);
 	bool				TileXYZ			(__int64 n, int &z, int &x, int &y);

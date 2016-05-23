@@ -1,17 +1,193 @@
 #pragma once
-//#ifndef IMAGETILLING_RasterFile_H
-//#define IMAGETILLING_RasterFile_H
+#ifndef GMX_RASTERFILE_H
+#define GMX_RASTERFILE_H
 
 #include "stdafx.h"
 #include "VectorBorder.h"
 #include "RasterBuffer.h"
 #include "TileName.h"
-using namespace std;
+#include "TileContainer.h"
+#include "TilingParameters.h"
 
+using namespace std;
 
 namespace gmx
 {
 
+extern int	MAX_BUFFER_WIDTH;
+extern int	MAX_WORK_THREADS;
+extern int	MAX_WARP_THREADS;
+extern int	CURR_WORK_THREADS;
+extern HANDLE WARP_SEMAPHORE;
+
+
+class RasterFileCutline
+{
+public:
+  RasterFileCutline()
+  {
+    tiling_srs_cutline_=0;
+    p_pixel_line_cutline_=0;
+  };
+  ~RasterFileCutline()
+  {
+    if (tiling_srs_cutline_)
+    {
+      delete(tiling_srs_cutline_);
+      tiling_srs_cutline_=0;
+    }
+    if (p_pixel_line_cutline_)
+    {
+      delete(p_pixel_line_cutline_);
+      p_pixel_line_cutline_=0;
+    }
+  };
+  bool  Intersects(OGREnvelope envelope)
+  {
+    if (!tiling_srs_envp_.Intersects(envelope)) return false;
+    if (tiling_srs_cutline_) 
+      return tiling_srs_cutline_->Intersects(VectorOperations::CreateOGRPolygonByOGREnvelope(envelope));
+    else return true;
+  };
+public:
+  OGRMultiPolygon*  tiling_srs_cutline_;
+  OGRMultiPolygon*  p_pixel_line_cutline_;
+  OGREnvelope tiling_srs_envp_;
+
+};
+
+class RasterFile
+{
+
+public:
+	
+  RasterFile();
+	~RasterFile(void);
+
+  bool			      Init(string raster_file); 
+  bool			      Close();
+  RasterFileCutline*  GetRasterFileCutline(ITileGrid *p_tile_grid, string vector_file=""); 
+  bool			GetPixelSize (int &width, int &height);
+  bool      GetSRS (OGRSpatialReference  &srs); 
+  bool			GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
+
+	GDALDataset*	get_gdal_ds_ref();
+
+	
+
+public: 
+	bool			CalcBandStatistics	(int band_num, double &min, double &max, double &mean, double &std, double *p_nodata_val =0);
+	double		get_nodata_value		(bool &nodata_defined);
+
+
+public:
+	//void			readMetaData ();
+	static			bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs);
+  static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
+
+protected:
+	//void			delete_all();
+	bool		GetEnvelope (OGREnvelope &envelope); //ToDo - delete
+
+protected:
+ 	_TCHAR	buf[256];
+	string	raster_file_;
+	GDALDataset	*p_gdal_ds_;
+	double		nodata_value_;
+	bool	nodata_value_defined_;
+	int		num_bands_;
+	GDALDataType gdal_data_type_;
+};
+
+
+int _stdcall gmxPrintNoProgress ( double, const char*,void*);
+
+class BundleTiler
+{
+public:
+	BundleTiler(void);
+	~BundleTiler(void);
+	void Close();
+
+public:
+	
+  //ToDo
+  //bool      GetRasterProfile(bool &nodata_defined); GDALDataType, nodata_val, colortable
+
+  double  GetNodataValue(bool &nodata_defined);
+	int			Init	(list<string> file_list, ITileGrid* p_tile_grid, string vector_file="");
+
+	OGREnvelope		CalcEnvelope();
+	int CalcNumberOfTiles (int zoom);
+	int	CalcBestMercZoom();
+
+  bool RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
+								            ITileContainer			*p_tile_container);
+  
+  bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 
+						  RasterBuffer	*p_buffer,
+              OGREnvelope buffer_envelope,
+						  int zoom,
+						  int tiles_expected, 
+						  int *p_tiles_generated,
+						  ITileContainer *p_tile_container);
+
+	bool			WarpChunkToBuffer (	int zoom,	
+                                OGREnvelope	chunk_envp, 
+                                RasterBuffer *p_dst_buffer,
+                                int         output_bands_num = 0,
+                                int         **pp_band_mapping = NULL,
+                                GDALResampleAlg resample_alg = GRA_Cubic,
+                                BYTE *p_nodata = NULL,
+                                BYTE *p_background_color = NULL,
+                                bool  warp_multithread = true);
+  
+	list<string>	GetFileList();
+	bool			    Intersects(OGREnvelope envp);
+  bool          CalclValuesForStretchingTo8Bit (  double *&p_min_values,
+                                                 double *&p_max_values,
+                                                 double *p_nodata_val = 0,
+                                                 BandMapping    *p_band_mapping=0);
+  GDALDataType  GetRasterFileType();
+
+  ITileGrid* tile_grid(){return p_tile_grid_;};
+
+protected:
+	bool			AddItemToBundle (string raster_file, string	vector_file);
+  bool      CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height);
+  bool      CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list);
+  bool      TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list);
+
+protected:
+	list<pair<string,RasterFileCutline*>>	item_list_;
+  ITileGrid*  p_tile_grid_;
+};
+
+}
+
+
+struct GMXAsyncChunkTilingParams
+{
+	gmx::TilingParameters				*p_tiling_params_;
+	gmx::BundleTiler	        *p_bundle_; 
+	OGREnvelope               chunk_envp_;
+  int								        z_;
+	int								        tiles_expected_; 
+	int								        *p_tiles_generated_;
+  bool                      *p_was_error_;
+	gmx::ITileContainer				*p_tile_container_;
+  bool                      need_stretching_;
+  double		                *p_stretch_min_values_;
+  double                    *p_stretch_max_values_;
+  int                       srand_seed_;
+  string                    temp_file_path_;
+
+  //bool (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
+};
+
+DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam);
+
+bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
 DWORD WINAPI GMXAsyncWarpMulti (LPVOID lpParam);
 struct GMXAsyncWarpMultiParams
@@ -20,169 +196,7 @@ struct GMXAsyncWarpMultiParams
   GDALWarpOperation *p_warp_operation_;
   int               buf_width_;
   int               buf_height_;
-  int               is_done_;
-  bool              *p_warp_error;
+  bool              warp_error_;
 };
 
-
-class RasterFile
-{
-
-public:
-	RasterFile();
-	RasterFile(string raster_file, bool is_geo_referenced = TRUE);
-	~RasterFile(void);
-
-	bool			Init(string raster_file, bool is_geo_referenced, double shift_x=0.0, double shift_y=0.0 );
-	bool			Close();
-
-	void			GetPixelSize (int &width, int &height);
-	//void			getGeoReference (double &dULx, double &dULy, double &res);
-	//double		get_resolution();
-
-	bool			GetSpatialRef(OGRSpatialReference	&ogr_sr); 
-	bool			GetDefaultSpatialRef (OGRSpatialReference	&ogr_sr, MercatorProjType merc_type);
-
-	GDALDataset*	get_gdal_ds_ref();
-
-	
-
-public: 
-	//void			setGeoReference		(double dResolution, double dULx, double dULy);
-	bool			CalcBandStatistics	(int band_num, double &min, double &max, double &mean, double &std, double *p_nodata_val =0);
-	double		get_nodata_value		(bool &nodata_defined);
-
-
-public:
-	//void			readMetaData ();
-	OGREnvelope*	CalcMercEnvelope (MercatorProjType	merc_type);
-  
-	static			bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference *p_ogr_sr);
-  static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
-
-
-protected:
-	//void			delete_all();
-	OGREnvelope		GetEnvelope ();
-
-protected:
-	_TCHAR	buf[256];
-	string	raster_file_;
-	GDALDataset	*p_gdal_ds_;
-	bool	is_georeferenced_;
-	int		width_;
-	int		height_;
-	double	resolution_;
-	double	ul_x_;
-	double	ul_y_;
-	double		nodata_value_;
-	bool	nodata_value_defined_;
-	int		num_bands_;
-	GDALDataType gdal_data_type_;
-
-};
-
-
-int _stdcall gmxPrintNoProgress ( double, const char*,void*);
-
-class BandMapping
-{
-public:
-  BandMapping()
-  {
-    bands_num_=0;
-  };
-  bool  InitByConsoleParams (string file_param, string bands_param);
-  bool  InitLandsat8  (string file_param, string bands_param);
-  bool  GetBands      (string file_name, int &bands_num, int *&p_bands); 
-  int   GetBandsNum   () {return bands_num_;};
-  //ToDo
-  list<string>  GetFileList();
-  bool  GetBandMappingData (int &output_bands_num, int **&pp_band_mapping);
-  ~BandMapping();
-  static bool    ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping);
-
-protected:
-  bool  AddFile       (string file_name, int *p_bands); 
-
-
-protected:
-  int bands_num_;
-  map<string,int*> data_map_;
-
-};
-
-class RasterFileBundle
-{
-public:
-	RasterFileBundle(void);
-	~RasterFileBundle(void);
-	void Close();
-
-public:
-	
-  double   GetNodataValue(bool &nodata_defined);
-  /*
-  Init	( list<string>      oFileList,
-          MercatorProjType  eMercType,
-          string            strVectorFile="",
-          double            dfShiftX = 0.0, 
-          double            dfShiftY = 0.0);
-  */
-	int				Init	(list<string> file_list, MercatorProjType merc_type, string vector_file="", 
-							double shift_x = 0.0, double shift_y = 0.0);
-	//string			BestImage(double min_x, double min_y, double max_x, double max_y, double &max_intersection);
-
-	OGREnvelope		CalcMercEnvelope();
-	int				CalcNumberOfTiles (int zoom);
-	int				CalcBestMercZoom();
-
-  /*
-  WarpToMercBuffer (int nZoom,
-                    OGREnvelope	  oMercEnvp,
-                    RasterBuffer* poOuputBuffer,
-                    int           nOutputBandsNum = 0,
-                    int**         papanBandMapping = NULL,
-                    string        ResamplingAlg = "",
-                    BYTE*         pabyNodata = NULL,
-                    BYTE*         pabyBackgroundColor = NULL,
-                    bool          bWarpMultithread = true);
-                    )
-  */
-	bool			WarpToMercBuffer (	int zoom,	
-                                OGREnvelope	merc_envp, 
-                                RasterBuffer *p_dst_buffer,
-                                int         output_bands_num = 0,
-                                int         **pp_band_mapping = NULL,
-                                string resampling_alg = "",
-                                BYTE *p_nodata = NULL,
-                                BYTE *p_background_color = NULL,
-                                bool  warp_multithread = true);
-                                //string  temp_file_path = "",
-                                //int srand_seed = 0);
-
-	list<string>	GetFileList();
-	list<string>	GetFileListByEnvelope(OGREnvelope merc_envp);
-	bool			    Intersects(OGREnvelope merc_envp);
-  bool          CalclValuesForStretchingTo8Bit (  double *&p_min_values,
-                                                 double *&p_max_values,
-                                                 double *p_nodata_val = 0,
-                                                 BandMapping    *p_band_mapping=0);
-  GDALDataType  GetRasterFileType();
-
-
-
-	//BOOL			createBundleBorder (VectorBorder &border);	
-protected:
-
-	bool			AddItemToBundle (string raster_file, string	vector_file, double shift_x = 0.0, double shift_y = 0.0);
-
-
-protected:
-	list<pair<string,pair<OGREnvelope*,VectorBorder*>>>	data_list_;
-	MercatorProjType		merc_type_;
-};
-
-
-
-}
+#endif

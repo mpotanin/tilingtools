@@ -136,8 +136,7 @@ bool LoadGDAL (int argc, string argv[])
 bool LoadGDALDLLs (string gdal_path)
 {
 	wstring gdal_dll_w;
-	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal111.dll"));
-
+	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal111.dll")); 
 	HMODULE b = LoadLibraryW(gdal_dll_w.c_str());
   if (b==NULL)
     cout<<"gdal dll path: "<<gdal_dll_w<<endl;
@@ -145,39 +144,24 @@ bool LoadGDALDLLs (string gdal_path)
   return (b != NULL);
 }
 
-///*
+
 string ReadGDALPathFromConfigFile (string config_file_path)
 {
 	string	configFile = (config_file_path=="") ? "TilingTools.config" : GetAbsolutePath (config_file_path,"TilingTools.config");
-	
-	FILE *fp = fopen(configFile.c_str(),"r");
-	if (!fp)
-  {
-    cout<<"Error: can't open config. file: "<<configFile<<endl;
-    return "";
-  }
-
-	string s;
-	char c;
-	while (1==fscanf(fp,"%c",&c))
-		s+=c;
-	fclose(fp);
-	s+=' ';
+	string  config_str = ReadTextFile(configFile) + ' ';
 
 	std::tr1::regex rx_template;
 	rx_template = "^GdalPath=(.*[^\\s$])";
-	
 	match_results<string::const_iterator> mr;
-	regex_search(s, mr, rx_template);
+	regex_search(config_str, mr, rx_template);
 	if (mr.size()<2)
 	{
 		cout<<"Error: can't read GdalPath from file: "<<configFile<<endl;
 		return "";
 	}
-
-	return GetAbsolutePath (config_file_path,mr[1]);
+  else return GetAbsolutePath (config_file_path,mr[1]);
 }
-//*/
+
 
 /*
 string ReadGDALPathFromConfigFile (string config_file_path)

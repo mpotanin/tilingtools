@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ###############################################################################
-# $Id: gdal_merge.py 27044 2014-03-16 23:41:27Z rouault $
+# $Id: gdal_merge.py 30390 2015-09-15 13:14:09Z rouault $
 #
 # Project:  InSAR Peppers
 # Purpose:  Module to extract data from many rasters into one output.
@@ -304,9 +304,6 @@ def main( argv=None ):
             createonly = 1
 
         elif arg == '-separate':
-            separate = 1
-
-        elif arg == '-seperate':
             separate = 1
 
         elif arg == '-pct':

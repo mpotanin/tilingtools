@@ -1,13 +1,12 @@
 #include "StdAfx.h"
 #include "TileCache.h"
 #include "StringFuncs.h"
-//const int	GMX_TILE_CACHE_MAX_SIZE = 0;
 
-__int64 GMX_TILE_CACHE_MAX_SIZE = 800000000;
 
 namespace gmx
 {
 
+extern __int64 TILE_CACHE_MAX_SIZE = 800000000;
 
 TileCache::TileCache(void)
 {
@@ -27,7 +26,7 @@ TileCache::~TileCache(void)
 bool	TileCache::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
 
-  if (cache_size_ + size> GMX_TILE_CACHE_MAX_SIZE) return FALSE;
+  if (cache_size_ + size> TILE_CACHE_MAX_SIZE) return FALSE;
 
 	string tile_key = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
 	if (tile_data_map_.find(tile_key)!=tile_data_map_.end())

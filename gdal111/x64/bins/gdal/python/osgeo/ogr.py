@@ -151,7 +151,7 @@ def UseExceptions(*args):
 def DontUseExceptions(*args):
   """DontUseExceptions()"""
   return _ogr.DontUseExceptions(*args)
-import osr
+from . import osr
 class StyleTable(object):
     """Proxy of C++ OGRStyleTableShadow class"""
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
@@ -815,12 +815,12 @@ class DataSource(object):
 
     def __getitem__(self, value):
         """Support dictionary, list, and slice -like access to the datasource.
-    ] would return the first layer on the datasource.
-    aname'] would return the layer named "aname".
-    :4] would return a list of the first four layers."""
+        ds[0] would return the first layer on the datasource.
+        ds['aname'] would return the layer named "aname".
+        ds[0:4] would return a list of the first four layers."""
         if isinstance(value, slice):
             output = []
-            for i in xrange(value.start,value.stop,value.step):
+            for i in range(value.start,value.stop,value.step):
                 try:
                     output.append(self.GetLayer(i))
                 except OGRError: #we're done because we're off the end
@@ -2022,29 +2022,29 @@ class Layer(object):
         """Returns the number of features in the layer"""
         return self.GetFeatureCount()
 
-
-
+    # To avoid __len__ being called when testing boolean value
+    # which can have side effects (#4758)
     def __nonzero__(self):
         return True
 
-
+    # For Python 3 compat
     __bool__ = __nonzero__
 
     def __getitem__(self, value):
         """Support list and slice -like access to the layer.
-    r[0] would return the first feature on the layer.
-    r[0:4] would return a list of the first four features."""
+        layer[0] would return the first feature on the layer.
+        layer[0:4] would return a list of the first four features."""
         if isinstance(value, slice):
             import sys
             output = []
-            if value.stop == sys.maxint:
-                
-                
-                
+            if value.stop == sys.maxsize:
+                #for an unending slice, sys.maxint is used
+                #We need to stop before that or GDAL will write an
+                ##error to stdout
                 stop = len(self) - 1
             else:
                 stop = value.stop
-            for i in xrange(value.start,stop,value.step):
+            for i in range(value.start,stop,value.step):
                 feature = self.GetFeature(i)
                 if feature:
                     output.append(feature)
@@ -2066,7 +2066,7 @@ class Layer(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         feature = self.GetNextFeature()
         if not feature:
             raise StopIteration
@@ -2938,8 +2938,8 @@ class Feature(object):
     def __copy__(self):
         return self.Clone()
 
-
-
+    # This makes it possible to fetch fields in the form "feature.area". 
+    # This has some risk of name collisions.
     def __getattr__(self, key):
         """Returns the values of fields by the given name"""
         if key == 'this':
@@ -2955,8 +2955,8 @@ class Feature(object):
         else:
             return self.GetField(idx)
 
-
-
+    # This makes it possible to set fields in the form "feature.area". 
+    # This has some risk of name collisions.
     def __setattr__(self, key, value):
         """Set the values of fields by the given name"""
         if key == 'this' or key == 'thisown':
@@ -2972,7 +2972,7 @@ class Feature(object):
                 else:
                     self.__dict__[key] = value
 
-
+    # This makes it possible to fetch fields in the form "feature['area']". 
     def __getitem__(self, key):
         """Returns the values of fields by the given name / field_index"""
         if isinstance(key, str):
@@ -2987,7 +2987,7 @@ class Feature(object):
         else:
             return self.GetField(fld_index)
 
-
+    # This makes it possible to set fields in the form "feature['area'] = 123". 
     def __setitem__(self, key, value):
         """Returns the value of a field by field name / index"""
         if isinstance(key, str):
@@ -3020,9 +3020,9 @@ class Feature(object):
             return self.GetFieldAsIntegerList(fld_index)
         if fld_type == OFTRealList:
             return self.GetFieldAsDoubleList(fld_index)
-        
-        
-        
+        ## if fld_type == OFTDateTime or fld_type == OFTDate or fld_type == OFTTime:
+        #     return self.GetFieldAsDate(fld_index)
+        # default to returning as a string.  Should we add more types?
         return self.GetFieldAsString(fld_index)
 
     def SetField2(self, fld_index, value):
@@ -5184,7 +5184,7 @@ class Geometry(object):
         self.iter_subgeom = 0
         return self
         
-    def next(self):
+    def __next__(self):
         if self.iter_subgeom < self.GetGeometryCount():
             subgeom = self.GetGeometryRef(self.iter_subgeom)
             self.iter_subgeom += 1

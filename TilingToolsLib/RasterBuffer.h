@@ -55,17 +55,16 @@ public:
 
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
 	bool			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int bands = 0);
-	void*			GetDataZoomedOut	(string resampling_method="");	
+	void*			ZoomOut	(GDALResampleAlg resampling_method);	
 	bool			ConvertFromIndexToRGB ();
 	bool			ConvertFromPanToRGB();
 	bool			CreateAlphaBandByRGBColor(BYTE	*p_rgb, int tolerance = 0);
 
-	bool      CreateAlphaBandByPixelLinePolygon(VectorBorder *p_vb);
+	bool      CreateAlphaBandByPixelLinePolygon(VectorOperations *p_vb);
 
   bool			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
 	bool			StretchDataTo8Bit(double *min_values, double *max_values);
-  bool      AddPixelDataToMetaHistogram(MetaHistogram *p_hist);
     
 
 public:
@@ -86,8 +85,7 @@ protected:
 	template <typename T>	void*		GetPixelDataBlock	(	T type, int left, int top, int w, int h);
 	template <typename T>	bool		SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
 																                     void *p_block_data, int bands = 0);
-	template <typename T>	void*		GetDataZoomedOut(T type,string resampling_method="");
-  template <typename T>	bool    AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist);
+	template <typename T>	void*		ZoomOut(T type, GDALResampleAlg resampling_method);
   template <typename T> bool    StretchDataTo8Bit(T type, double *min_values, double *max_values);
 
 

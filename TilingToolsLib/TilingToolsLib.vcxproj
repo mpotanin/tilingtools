@@ -149,7 +149,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../gdal111/include;../openjpeg-2.0.0/src/lib/openjp2/;../kakadu/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../gdal111/include;../openjpeg-2.0.0/src/lib/openjp2/;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -254,6 +254,8 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram2.cd" />
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -268,6 +270,7 @@
     <ClInclude Include="TileName.h" />
     <ClInclude Include="TileContainer.h" />
     <ClInclude Include="TilingFuncs.h" />
+    <ClInclude Include="TilingParameters.h" />
     <ClInclude Include="VectorBorder.h" />
   </ItemGroup>
   <ItemGroup>

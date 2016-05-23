@@ -4,32 +4,24 @@ namespace gmx
 {
 
 
-VectorBorder::VectorBorder ()
+VectorOperations::VectorOperations ()
 {
 	p_ogr_geometry_	= NULL;
 }
 
-VectorBorder::~VectorBorder()
+VectorOperations::~VectorOperations()
 {
 	if (p_ogr_geometry_!=NULL) 
   {
-    //p_ogr_geometry_->empty();
-    //OGRGeometryFactory::destroyGeometry(p_ogr_geometry_);
-	  delete(p_ogr_geometry_);
+ 	  delete(p_ogr_geometry_);
     p_ogr_geometry_	= NULL;
   }
 }  
 
 
-VectorBorder::VectorBorder (OGREnvelope merc_envp, MercatorProjType	merc_type)
-{
-	merc_type_ = merc_type;
-	p_ogr_geometry_ = VectorBorder::CreateOGRPolygonByOGREnvelope(merc_envp);
-}
 
 
-
-string VectorBorder::GetVectorFileNameByRasterFileName (string raster_file)
+string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 {
 	string	vector_file_base = RemoveExtension(raster_file);
 	string	vector_file;
@@ -48,17 +40,17 @@ string VectorBorder::GetVectorFileNameByRasterFileName (string raster_file)
 }
 
 
-OGREnvelope	VectorBorder::CombineOGREnvelopes (OGREnvelope	&envp1, OGREnvelope	&envp2)
+OGREnvelope	VectorOperations::CombineOGREnvelopes (OGREnvelope	&envp1, OGREnvelope	&envp2)
 {
 	OGREnvelope envp;
-	envp.MaxX = max(envp1.MaxX,envp2.MaxX);
+  envp.MaxX = max(envp1.MaxX,envp2.MaxX);
 	envp.MaxY = max(envp1.MaxY,envp2.MaxY);
 	envp.MinX = min(envp1.MinX,envp2.MinX);
 	envp.MinY = min(envp1.MinY,envp2.MinY);
 	return envp;
 }
 
-OGREnvelope	VectorBorder::InetersectOGREnvelopes (OGREnvelope	&envp1,OGREnvelope	&envp2)
+OGREnvelope	VectorOperations::InetersectOGREnvelopes (OGREnvelope	&envp1,OGREnvelope	&envp2)
 {
 	OGREnvelope envp;
 	envp.MaxX = min(envp1.MaxX,envp2.MaxX);
@@ -79,8 +71,66 @@ bool VectorBorder::ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom,
 }
 */
 
+bool VectorOperations::IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeometry *po_ogr_geom)
+{
+  double e = 1e-6;
+  int num_points = 0;
+  int num_rings = 0;
 
-bool VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
+  if (!po_ogr_geom) return false;
+  po_ogr_geom->closeRings();
+  
+  OGRLinearRing **pp_lr = GetLinearRingsRef(po_ogr_geom,num_rings);
+  if (pp_lr == NULL) return false;
+    
+
+  double x1,x2,y1,y2;
+  double y_line = point.getY();
+  double x0 = point.getX();
+
+  for (int i=0;i<num_rings;i++)
+  {
+    if (pp_lr[i]->getNumPoints()>=4)
+    {
+      for (int j=0;j<pp_lr[i]->getNumPoints()-1;j++)
+      {
+        x1 = pp_lr[i]->getX(j);
+        x2 = pp_lr[i]->getX(j+1);
+        y1 = pp_lr[i]->getY(j);
+        y2 = pp_lr[i]->getY(j+1);
+        if ((fabs(y_line-y1)>e)&&(fabs(y_line-y2)>e))
+        {
+          if ((y_line-y1)*(y_line-y2)<e)
+          {
+            if ((x2*(y1-y_line)-x1*(y2-y_line))/(y1-y2)>x0+e)
+              num_points++;
+          }
+        }
+        else if (fabs(y_line-y1)<e) continue;
+        else if (x2>x0+e) 
+        {
+          for (int k=2;k<pp_lr[i]->getNumPoints();k++)
+          {
+            int k__ = (j+k) % pp_lr[i]->getNumPoints();
+            if (fabs(pp_lr[i]->getY(k__)-y_line)<e) continue;
+            else if ((y_line-y1)*(y_line-pp_lr[i]->getY(k__))<e)
+            {
+              num_points++;
+              break;
+            }
+            else break;
+          }
+        }
+      }
+    }
+  }
+  delete[]pp_lr;
+  return num_points%2;
+
+}
+
+
+bool VectorOperations::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
 {
   double e = 1e-6;
 
@@ -104,8 +154,15 @@ bool VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, 
         x2 = pp_lr[i]->getX(j+1);
         y1 = pp_lr[i]->getY(j);
         y2 = pp_lr[i]->getY(j+1);
-        if (((y_line-y1)*(y_line-y2)<=0)&&(fabs(y2-y1)>e))
+        if ((fabs(y_line-y1)<e)&&(fabs(y_line-y2)<e))
+        {
+          for (double x=min(x1,x2);x<=max(x1,x2)+e;x++)
+            x_val_list.push_back(x);
+        }
+        else if ((y_line-y1)*(y_line-y2)<=e)
+        {
           x_val_list.push_back((x2*(y1-y_line)-x1*(y2-y_line))/(y1-y2));
+        }
       }
     }
   }
@@ -126,108 +183,90 @@ bool VectorBorder::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, 
 }
 
 
-bool	VectorBorder::Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr)
+bool VectorOperations::AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segment)
 {
-	int num_rings;
-	OGRLinearRing **p_rings = VectorBorder::GetLinearRingsRef(p_ogr_geom,num_rings);
+  if(!p_polygon) return false;
+  
+  p_polygon->closeRings();
 
-	OGRSpatialReference	ogr_wgs84;
-	ogr_wgs84.SetWellKnownGeogCS("WGS84");
+  OGRLinearRing*  p_ring = p_polygon->getExteriorRing();
+  int num_points = p_ring->getNumPoints();
 
-  for (int i=0;i<num_rings;i++)
-	{
-    OGRLinearRing *p_temp_ring = (OGRLinearRing*) p_rings[i]->clone();
-
-    p_temp_ring->assignSpatialReference(p_ogr_sr);
-    OGRErr error_transform =	p_temp_ring->transformTo(&ogr_wgs84);
-    //insert hack
-    for (int l=0; l<p_temp_ring->getNumPoints()-1; l++)
-		{
-      if(	((min(p_temp_ring->getX(l),p_temp_ring->getX(l+1))<-120) && (max(p_temp_ring->getX(l),p_temp_ring->getX(l+1))>120)) ||
-          ((min(p_temp_ring->getX(l),p_temp_ring->getX(l+1))<179.99999) && (max(p_temp_ring->getX(l),p_temp_ring->getX(l+1))>180.00001)) ||
-          ((min(p_temp_ring->getX(l),p_temp_ring->getX(l+1))<-180.00001) && (max(p_temp_ring->getX(l),p_temp_ring->getX(l+1))>-179.99999)))
-			{
-        delete(p_temp_ring);
-				delete[]p_rings;
-				return TRUE;
-			}
-		}
-    delete(p_temp_ring);
-	}
- 
-	delete[]p_rings;
-	return FALSE;
+  for (int i=0;i<num_points-1;i++)
+  {
+    double x = p_ring->getX(i*points_on_segment);
+    double y = p_ring->getY(i*points_on_segment);
+    double dx=(p_ring->getX(i*points_on_segment+1)-x)/points_on_segment;
+    double dy=(p_ring->getY(i*points_on_segment+1)-y)/points_on_segment;
+    for (int j=0;j<points_on_segment-1;j++)
+      p_ring->addPoint(x+dx*(j+1),y+dy*(j+1));
+  }
+  return true;
 }
 
-
-VectorBorder*	VectorBorder::CreateFromVectorFile(string vector_file, MercatorProjType	merc_type)
+OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRSpatialReference *p_tiling_srs)
 {
+  if (vector_file=="") return 0;
+
 	OGRDataSource *p_ogr_ds= OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
   
-  if( p_ogr_ds == NULL ) return NULL;
+  if( p_ogr_ds == NULL ) return 0;
 	
-	OGRMultiPolygon *p_ogr_multipoly = ReadMultiPolygonFromOGRDataSource(p_ogr_ds);
-  if (!p_ogr_multipoly)
+	OGRMultiPolygon *p_ogr_multipoly;
+
+  if (!(p_ogr_multipoly=ReadMultiPolygonFromOGRDataSource(p_ogr_ds)))
   {
     OGRDataSource::DestroyDataSource(p_ogr_ds); 
     return NULL;
   }
+  
+  p_ogr_multipoly->closeRings();
+  OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
+  OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
+  bool is_ogr_sr_valid = TRUE;
+  if (p_input_ogr_sr)
+  {
+    p_input_ogr_sr = p_input_ogr_sr->Clone();
+    char	*proj_ref = NULL;
+	  bool is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))  
+                            ? TRUE
+                            : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI()) 
+                            ? FALSE 
+                            : (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref)) 
+                            ? TRUE : FALSE;
+    if (proj_ref !=NULL) CPLFree(proj_ref);
+  }
   else
   {
-    p_ogr_multipoly->closeRings();
-
-    OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
-    OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
-    bool is_ogr_sr_valid = TRUE;
-    if (p_input_ogr_sr)
-    {
-      p_input_ogr_sr = p_input_ogr_sr->Clone();
-      char	*proj_ref = NULL;
-	    bool is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))  
-                             ? TRUE
-                             : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI()) 
-                             ? FALSE 
-                             : (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref)) 
-                             ? TRUE : FALSE;
-      if (proj_ref !=NULL) CPLFree(proj_ref);
-    }
-    else
-    {
-	    p_input_ogr_sr = new OGRSpatialReference();
-	    p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
-    }
-    
-    OGRDataSource::DestroyDataSource(p_ogr_ds);
-    if (!is_ogr_sr_valid)
-    {
-      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-      delete(p_ogr_multipoly);
-      return NULL;
-    }
-    
-    OGRSpatialReference		ogr_sr_merc;
-    MercatorTileGrid::SetMercatorSpatialReference(merc_type,&ogr_sr_merc);
-	  bool	intersects180 = VectorBorder::Intersects180Degree(p_ogr_multipoly,p_input_ogr_sr);
-    p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
-      
-    if (OGRERR_NONE != p_ogr_multipoly->transformTo(&ogr_sr_merc))
-    {
-      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-      delete(p_ogr_multipoly);
-	    return NULL;
-    }
-    if (intersects180) AdjustFor180DegreeIntersection(p_ogr_multipoly);
-		VectorBorder	*p_vb_res	= new VectorBorder();
-    p_ogr_multipoly->assignSpatialReference(NULL);
-    p_vb_res->merc_type_				= merc_type;
-    p_vb_res->p_ogr_geometry_			= p_ogr_multipoly;
-    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-    return p_vb_res;
+	  p_input_ogr_sr = new OGRSpatialReference();
+	  p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
   }
+    
+  OGRDataSource::DestroyDataSource(p_ogr_ds);
+  if (!is_ogr_sr_valid)
+  {
+    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+    delete(p_ogr_multipoly);
+    return NULL;
+  }
+        
+  p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
+      
+  if (OGRERR_NONE != p_ogr_multipoly->transformTo(p_tiling_srs))
+  {
+    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+    delete(p_ogr_multipoly);
+	  return NULL;
+  }
+
+  p_ogr_multipoly->assignSpatialReference(NULL);
+  OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+  return p_ogr_multipoly;
+ 
 };
 
 
-OGRMultiPolygon*		VectorBorder::ReadMultiPolygonFromOGRDataSource(OGRDataSource *p_ogr_ds)
+OGRMultiPolygon*		VectorOperations::ReadMultiPolygonFromOGRDataSource(OGRDataSource *p_ogr_ds)
 {
 	OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
 	if( p_ogr_layer == NULL ) return NULL;
@@ -253,98 +292,16 @@ OGRMultiPolygon*		VectorBorder::ReadMultiPolygonFromOGRDataSource(OGRDataSource 
 };
 
 
-OGRGeometry*	VectorBorder::GetOGRGeometryTransformed (OGRSpatialReference *poOutputSRS)
-{
-	if (this->p_ogr_geometry_ == NULL) return NULL;
 
-	OGRSpatialReference		ogr_sr_merc;
-	MercatorTileGrid::SetMercatorSpatialReference(merc_type_,&ogr_sr_merc);
-
-	OGRMultiPolygon *poTransformedGeometry = (OGRMultiPolygon*)this->p_ogr_geometry_->clone();	
-	poTransformedGeometry->assignSpatialReference(&ogr_sr_merc);
-	
-	if (OGRERR_NONE != poTransformedGeometry->transformTo(poOutputSRS))
-	{
-		poTransformedGeometry->empty();
-		return NULL;
-	}
-
-	return poTransformedGeometry;
-};
-
-
-OGRGeometry*	VectorBorder::GetOGRGeometryTransformedToPixelLine(OGRSpatialReference *poRasterSRS, double *rasterGeoTransform)
-{
-	OGRGeometry *p_ogr_geom = GetOGRGeometryTransformed(poRasterSRS);
-
-  if (!p_ogr_geom) return NULL;
-  
-	OGRMultiPolygon *p_ogr_poly_tr = (OGRMultiPolygon*)p_ogr_geom->clone();
-	p_ogr_geom->empty();
-
-  for (int j=0;j<p_ogr_poly_tr->getNumGeometries();j++)
-  {
-    OGRLinearRing	*p_ogr_ring = ((OGRPolygon*)p_ogr_poly_tr->getGeometryRef(j))->getExteriorRing();
-	  p_ogr_ring->closeRings();
-	
-	  for (int i=0;i<p_ogr_ring->getNumPoints();i++)
-	  {
-		  double d = rasterGeoTransform[1]*rasterGeoTransform[5]-rasterGeoTransform[2]*rasterGeoTransform[4];
-		  if ( fabs(d) < 1e-7)
-		  {
-			  p_ogr_poly_tr->empty();
-			  return NULL;
-		  }
-
-		  double x = p_ogr_ring->getX(i)	-	rasterGeoTransform[0];
-		  double y = p_ogr_ring->getY(i)	-	rasterGeoTransform[3];
-		
-		  double l = (rasterGeoTransform[1]*y-rasterGeoTransform[4]*x)/d;
-		  double p = (x - l*rasterGeoTransform[2])/rasterGeoTransform[1];
-
-		  p_ogr_ring->setPoint(i,(int)(p+0.5),(int)(l+0.5));
-	  }
-  }
-  
-
-  /*
-	OGRPolygon *p_ogr_poly_result = (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(0)->clone();
-	p_ogr_geom->empty();
-
-	OGRLinearRing	*p_ogr_ring = p_ogr_poly_result->getExteriorRing();
-	p_ogr_ring->closeRings();
-	
-	for (int i=0;i<p_ogr_ring->getNumPoints();i++)
-	{
-		double d = rasterGeoTransform[1]*rasterGeoTransform[5]-rasterGeoTransform[2]*rasterGeoTransform[4];
-		if ( fabs(d) < 1e-7)
-		{
-			p_ogr_poly_result->empty();
-			return NULL;
-		}
-
-		double x = p_ogr_ring->getX(i)	-	rasterGeoTransform[0];
-		double y = p_ogr_ring->getY(i)	-	rasterGeoTransform[3];
-		
-		double l = (rasterGeoTransform[1]*y-rasterGeoTransform[4]*x)/d;
-		double p = (x - l*rasterGeoTransform[2])/rasterGeoTransform[1];
-
-		p_ogr_ring->setPoint(i,(int)(p+0.5),(int)(l+0.5));
-	}
-  */
-	return p_ogr_poly_tr;
-}
-
-OGRLinearRing**		VectorBorder::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &num_rings)
+OGRLinearRing**		VectorOperations::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &num_rings)
 {
 	num_rings = 0;
 	OGRLinearRing	**pp_ogr_rings = NULL;
 	OGRPolygon		**pp_ogr_poly = NULL;
 	OGRwkbGeometryType type = p_ogr_geom->getGeometryType();
 
-	if ((type!=wkbMultiPolygon) && (type!=wkbMultiPolygon) && 
-		(type!=wkbLinearRing) && (type!=wkbLineString)
-		) return NULL;
+	if (!(type==wkbMultiPolygon || type==wkbPolygon || 
+		    type==wkbLinearRing || type==wkbLineString)) return NULL;
 
 	int	numPolygons = 0;
 	bool	inputIsRing = FALSE;
@@ -393,57 +350,19 @@ OGRLinearRing**		VectorBorder::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &
 	return pp_ogr_rings;
 }
 
-
-bool			VectorBorder::AdjustFor180DegreeIntersection (OGRGeometry	*p_ogr_geom_merc)
-{
-	OGRLinearRing	**pp_ogr_rings;
-	int num_rings = 0;
-	
-	if (!(pp_ogr_rings = VectorBorder::GetLinearRingsRef(p_ogr_geom_merc,num_rings))) return FALSE;
-	
-	for (int i=0;i<num_rings;i++)
-	{
-		for (int k=0;k<pp_ogr_rings[i]->getNumPoints();k++)
-		{
-				if (pp_ogr_rings[i]->getX(k)<0)
-					pp_ogr_rings[i]->setPoint(k,-2*MercatorTileGrid::ULX() + pp_ogr_rings[i]->getX(k),pp_ogr_rings[i]->getY(k));
-		}
-	}
-	
-	delete[]pp_ogr_rings;
-	return TRUE;
-};
-
-
-bool	VectorBorder::Intersects(int tile_z, int tile_x, int tile_y)
-{
-	if (tile_x < (1<<tile_z)) return Intersects(MercatorTileGrid::CalcEnvelopeByTile(tile_z, tile_x, tile_y));
-	else
-	{
-		if (!Intersects(MercatorTileGrid::CalcEnvelopeByTile(tile_z, tile_x, tile_y)))
-			return Intersects(MercatorTileGrid::CalcEnvelopeByTile(tile_z, tile_x - (1<<tile_z), tile_y));
-		else return TRUE;
-	}
-};
-
-
-bool	VectorBorder::Intersects(OGREnvelope &envelope)
+bool	VectorOperations::Intersects(OGREnvelope &envelope)
 {
   if (p_ogr_geometry_ == NULL) return FALSE;
 	OGRPolygon *p_poly_from_envp = CreateOGRPolygonByOGREnvelope (envelope);
 
-  OGREnvelope envp;
-  this->p_ogr_geometry_->getEnvelope(&envp);
+  bool result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
+  delete(p_poly_from_envp);
 
-	bool result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
-  p_poly_from_envp->empty();
-  OGRGeometryFactory::destroyGeometry(p_poly_from_envp);
- 	
   return result;
 }
 
 
-OGREnvelope VectorBorder::GetEnvelope ()
+OGREnvelope VectorOperations::GetEnvelope ()
 {
 	OGREnvelope envp;
 	if (p_ogr_geometry_!=NULL) p_ogr_geometry_->getEnvelope(&envp);
@@ -452,7 +371,7 @@ OGREnvelope VectorBorder::GetEnvelope ()
 
 
 
-OGRPolygon*		VectorBorder::CreateOGRPolygonByOGREnvelope (OGREnvelope &envelope)
+OGRPolygon*		VectorOperations::CreateOGRPolygonByOGREnvelope (OGREnvelope &envelope)
 {
 	OGRPolygon *p_ogr_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
 
@@ -468,7 +387,7 @@ OGRPolygon*		VectorBorder::CreateOGRPolygonByOGREnvelope (OGREnvelope &envelope)
 };
 
 
-OGRGeometry*	VectorBorder::get_ogr_geometry_ref()
+OGRGeometry*	VectorOperations::get_ogr_geometry_ref()
 {
   return p_ogr_geometry_;
 }

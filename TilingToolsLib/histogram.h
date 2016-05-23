@@ -8,18 +8,18 @@ namespace gmx
 
 class Metatag {
 public:
-  virtual  bool GetSerializedBinary(int &size, void *&data) = 0;
+  virtual  bool GetSerialized(int &size, void *&data) = 0;
   virtual  bool GetSerializedText(int &size, char *&text) = 0;
   virtual  bool Deserialize(int size, void *data) = 0;
   virtual  string GetName() =0;
-  virtual  int GetSerializedBinarySize() =0;
+  virtual  int GetSerializedSize() =0;
 };
 
 class Metadata {
 public:
   Metadata();
   ~Metadata();
-  void AddTagRef(Metatag *p_metatag);
+  void AddTagDirectly(Metatag *p_metatag);
   static Metatag* DeserializeTag(string tag_name, int size, void *data);
   
   void DeleteAll();
@@ -41,7 +41,7 @@ protected:
 class MetaNodataValue : public Metatag {
 public:
 
-  bool GetSerializedBinary(int &size, void *&data) 
+  bool GetSerialized(int &size, void *&data) 
   {
     data = new char[8];
     size=8;
@@ -71,7 +71,7 @@ public:
   {
     return "NODV";
   };
-  int GetSerializedBinarySize() {return 8;};
+  int GetSerializedSize() {return 8;};
 
 public:
   double nodv_;
@@ -114,10 +114,10 @@ public:
     return true;
   };
 
-  bool GetSerializedBinary(int &size, void *&data)
+  bool GetSerialized(int &size, void *&data)
   {
     if (num_bands_==0) return false;
-    size = GetSerializedBinarySize ();
+    size = GetSerializedSize ();
     char *ch_data = (char*)(data = new char[size]);
     memcpy(ch_data,&num_bands_,4);
     for (int b=0;b<num_bands_;b++)
@@ -167,7 +167,7 @@ public:
 
   string GetName() {return "STAT";};
   
-  int GetSerializedBinarySize() {return 4 + 32*num_bands_;};
+  int GetSerializedSize() {return 4 + 32*num_bands_;};
  
 public:
   int num_bands_;
@@ -191,8 +191,8 @@ public:
   bool Init(int num_bands, double min_val, double step, int num_vals);
   bool IsInitiated() {return num_bands_!=0;};
     
-  bool GetSerializedBinary (int &size, void *&data);
-  int GetSerializedBinarySize ();
+  bool GetSerialized (int &size, void *&data);
+  int GetSerializedSize ();
   bool GetSerializedText(int &size, char *&text);
   string GetName() {return "HIST";};
   bool Deserialize (int size, void *data);

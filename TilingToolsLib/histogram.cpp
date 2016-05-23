@@ -42,7 +42,7 @@ Metadata::~Metadata()
   delete[]p_metatags_;
 }
 
-void Metadata::AddTagRef(Metatag *p_metatag)
+void Metadata::AddTagDirectly(Metatag *p_metatag)
 {
   for (int i=0;i<num_tags_;i++)
   {
@@ -89,7 +89,7 @@ bool Metadata::GetAllSerialized(int &size, void* &data)
   {
     void *tag_data;
     int tag_size;
-    p_metatags_[i]->GetSerializedBinary(tag_size,tag_data);
+    p_metatags_[i]->GetSerialized(tag_size,tag_data);
     if (tag_size==0) continue;
     memcpy(&ch_data[pos],p_metatags_[i]->GetName().c_str(),4);
     memcpy(&ch_data[pos+4],&tag_size,4);
@@ -103,7 +103,7 @@ int Metadata::GetAllSerializedSize()
 {
   int size = 0;
   for (int i=0;i<num_tags_;i++)
-    size+=p_metatags_[i]->GetSerializedBinarySize() + 8;
+    size+=p_metatags_[i]->GetSerializedSize() + 8;
   return size;
 }
 
@@ -186,7 +186,7 @@ __int64 MetaHistogram::GetFrequency(int band, double value)
   return freqs_[band][n];
 } 
 
-int MetaHistogram::GetSerializedBinarySize ()
+int MetaHistogram::GetSerializedSize ()
 {
   return 4 + 8 + 8 + 4 + 4*num_vals_*num_bands_;
 }
@@ -215,11 +215,11 @@ bool MetaHistogram::Deserialize (int size, void *data)
   return true;
 }
 
-bool MetaHistogram::GetSerializedBinary (int &size, void *&data)
+bool MetaHistogram::GetSerialized (int &size, void *&data)
 {
   if (!IsInitiated()) return false;
 
-  size = GetSerializedBinarySize();
+  size = GetSerializedSize();
   char *ch_data = (char*)(data = new char[size]);
 
   memcpy(ch_data,&num_bands_,4);

@@ -132,8 +132,8 @@ def RATValuesIONumPyRead(*args, **kwargs):
 import numpy
 import _gdal_array
 
-import gdalconst
-import gdal
+from . import gdalconst
+from . import gdal
 gdal.AllRegister()
 
 codes = {   gdalconst.GDT_Byte      :   numpy.uint8,

@@ -10,6 +10,7 @@
 // Copyright 2010 Mark Riedesel <mark@klowner.com>
 // Copyright 2011 Pino Toscano <pino@kde.org>
 // Copyright 2012 Fabio D'Urso <fabiodurso@hotmail.it>
+// Copyright 2013 Adrian Johnson <ajohnson@redneon.com>
 //
 //========================================================================
 
@@ -21,6 +22,7 @@
 #endif
 
 #include "Object.h"
+#include "Annot.h"
 
 #include <set>
 
@@ -101,6 +103,7 @@ public:
   bool isReadOnly() const;
 
   LinkAction *getActivationAction();
+  LinkAction *getAdditionalAction(Annot::FormAdditionalActionsType type);
 
   // return the unique ID corresponding to pageNum/fieldNum
   static int encodeID (unsigned pageNum, unsigned fieldNum);

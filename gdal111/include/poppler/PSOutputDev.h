@@ -15,14 +15,14 @@
 //
 // Copyright (C) 2005 Martin Kretzschmar <martink@gnome.org>
 // Copyright (C) 2005 Kristian Høgsberg <krh@redhat.com>
-// Copyright (C) 2006-2008, 2012, 2013 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006-2008, 2012, 2013, 2015 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2007 Brad Hards <bradh@kde.org>
 // Copyright (C) 2009-2013 Thomas Freitag <Thomas.Freitag@alfa.de>
 // Copyright (C) 2009 Till Kamppeter <till.kamppeter@gmail.com>
 // Copyright (C) 2009 Carlos Garcia Campos <carlosgc@gnome.org>
 // Copyright (C) 2009, 2011 William Bader <williambader@hotmail.com>
 // Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
-// Copyright (C) 2011 Adrian Johnson <ajohnson@redneon.com>
+// Copyright (C) 2011, 2014 Adrian Johnson <ajohnson@redneon.com>
 // Copyright (C) 2012 Fabio D'Urso <fabiodurso@hotmail.it>
 //
 // To see a description of the changes please see the Changelog file that
@@ -44,6 +44,7 @@
 #include "GlobalParams.h"
 #include "OutputDev.h"
 #include <set>
+#include <map>
 
 class GHooash;
 class PDFDoc;
@@ -67,8 +68,7 @@ class PSOutputDev;
 enum PSOutMode {
   psModePS,
   psModeEPS,
-  psModeForm,
-  psModePSOrigPageSizes
+  psModeForm
 };
 
 enum PSFileType {
@@ -93,10 +93,12 @@ class PSOutputDev: public OutputDev {
 public:
 
   // Open a PostScript output file, and write the prolog.
+  // pages has to be sorted in increasing order
   PSOutputDev(const char *fileName, PDFDoc *docA,
 	      char *psTitle,
-	      int firstPage, int lastPage, PSOutMode modeA,
+	      const std::vector<int> &pages, PSOutMode modeA,
 	      int paperWidthA = -1, int paperHeightA = -1,
+              GBool noCrop = gFalse,
 	      GBool duplexA = gTrue,
 	      int imgLLXA = 0, int imgLLYA = 0,
 	      int imgURXA = 0, int imgURYA = 0,
@@ -106,11 +108,13 @@ public:
 	      void *customCodeCbkDataA = NULL);
 
   // Open a PSOutputDev that will write to a generic stream.
+  // pages has to be sorted in increasing order
   PSOutputDev(PSOutputFunc outputFuncA, void *outputStreamA,
 	      char *psTitle,
 	      PDFDoc *docA,
-	      int firstPage, int lastPage, PSOutMode modeA,
+	      const std::vector<int> &pages, PSOutMode modeA,
 	      int paperWidthA = -1, int paperHeightA = -1,
+              GBool noCrop = gFalse,
 	      GBool duplexA = gTrue,
 	      int imgLLXA = 0, int imgLLYA = 0,
 	      int imgURXA = 0, int imgURYA = 0,
@@ -158,7 +162,7 @@ public:
   //----- header/trailer (used only if manualCtrl is true)
 
   // Write the document-level header.
-  void writeHeader(int firstPage, int lastPage,
+  void writeHeader(const std::vector<int> &pages,
 		   PDFRectangle *mediaBox, PDFRectangle *cropBox,
 		   int pageRotate, char *pstitle);
 
@@ -308,10 +312,10 @@ private:
 
   void init(PSOutputFunc outputFuncA, void *outputStreamA,
 	    PSFileType fileTypeA, char *pstitle, PDFDoc *doc,
-	    int firstPage, int lastPage, PSOutMode modeA,
+	    const std::vector<int> &pages, PSOutMode modeA,
 	    int imgLLXA, int imgLLYA, int imgURXA, int imgURYA,
 	    GBool manualCtrlA, int paperWidthA, int paperHeightA,
-            GBool duplexA);
+            GBool noCropA, GBool duplexA);
   void setupResources(Dict *resDict);
   void setupFonts(Dict *resDict);
   void setupFont(GfxFont *font, Dict *parentResDict);
@@ -384,7 +388,7 @@ private:
   GooString *filterPSName(GooString *name);
 
   // Write the document-level setup.
-  void writeDocSetup(PDFDoc *doc, Catalog *catalog, int firstPage, int lastPage, GBool duplexA);
+  void writeDocSetup(PDFDoc *doc, Catalog *catalog, const std::vector<int> &pages, GBool duplexA);
 
   void writePSChar(char c);
   void writePS(const char *s);
@@ -408,6 +412,7 @@ private:
       imgURX, imgURY;
   GBool preload;		// load all images into memory, and
 				//   predefine forms
+  GBool noCrop;
 
   PSOutputFunc outputFunc;
   void *outputStream;
@@ -452,6 +457,7 @@ private:
 
   GooList *paperSizes;		// list of used paper sizes, if paperMatch
 				//   is true [PSOutPaperSize]
+  std::map<int,int> pagePaperSize; // page num to paperSize entry mapping
   double tx0, ty0;		// global translation
   double xScale0, yScale0;	// global scaling
   int rotate0;			// rotation angle (0, 90, 180, 270)

@@ -248,8 +248,22 @@ string		GetExtension (string path)
 	else return "";
 }
 
+string  ReadTextFile(string filename)
+{
+  FILE *fp = OpenFile(filename,"r");
+  if (!fp) return "";
 
-bool ReadDataFromFile(string filename, void *&p_data, int &size)
+  string str_file;  
+	char c;
+	while (1==fscanf(fp,"%c",&c))
+		str_file+=c;
+	fclose(fp);
+
+	return str_file;
+}
+
+
+bool ReadBinaryFile(string filename, void *&p_data, int &size)
 {
 	FILE *fp = OpenFile(filename,"rb");
 	if (!fp) return FALSE;

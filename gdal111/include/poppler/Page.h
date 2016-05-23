@@ -22,6 +22,7 @@
 // Copyright (C) 2012 Fabio D'Urso <fabiodurso@hotmail.it>
 // Copyright (C) 2012 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
+// Copyright (C) 2013 Adrian Johnson <ajohnson@redneon.com>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -44,6 +45,7 @@ class PDFDoc;
 class XRef;
 class OutputDev;
 class Links;
+class LinkAction;
 class Annots;
 class Annot;
 class Gfx;
@@ -211,6 +213,13 @@ public:
   // Get actions
   Object *getActions(Object *obj) { return actions.fetch(xref, obj); }
 
+  enum PageAdditionalActionsType {
+    actionOpenPage,     ///< Performed when opening the page
+    actionClosePage,    ///< Performed when closing the page
+  };
+
+  LinkAction *getAdditionalAction(PageAdditionalActionsType type);
+
   Gfx *createGfx(OutputDev *out, double hDPI, double vDPI,
 		 int rotate, GBool useMediaBox, GBool crop,
 		 int sliceX, int sliceY, int sliceW, int sliceH,
@@ -267,7 +276,7 @@ private:
   Object contents;		// page contents
   Object thumb;			// page thumbnail
   Object trans;			// page transition
-  Object actions;		// page addiction actions
+  Object actions;		// page additional actions
   double duration;              // page duration
   GBool ok;			// true if page is valid
 #if MULTITHREADED

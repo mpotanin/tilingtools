@@ -2,44 +2,41 @@
 #ifndef		gmxVECTORBORDER_H
 #define		gmxVECTORBORDER_H 
 #include "stdafx.h"
-#include "TileName.h"
+#include "FileSystemFuncs.h"
+#include "StringFuncs.h"
 
 namespace gmx
 {
 
 
-class VectorBorder
+class VectorOperations
 {
 public:
-	static VectorBorder*		CreateFromVectorFile				(string vector_file, MercatorProjType	merc_type);
-	static string				GetVectorFileNameByRasterFileName	(string raster_file);
-	static OGRPolygon*			CreateOGRPolygonByOGREnvelope		(OGREnvelope &envelope);
-	static bool					AdjustFor180DegreeIntersection		(OGRGeometry		*p_ogr_geom_merc);
-	static OGREnvelope			CombineOGREnvelopes					(OGREnvelope	&envp1, OGREnvelope	&envp2);
-	static OGREnvelope			InetersectOGREnvelopes				(OGREnvelope	&envp1, OGREnvelope	&envp2);
+  static OGRGeometry*		    ReadAndTransformGeometry				(string vector_file, OGRSpatialReference  *p_tiling_srs);
+
+ 	static string				      GetVectorFileNameByRasterFileName	(string raster_file);
+	static OGRPolygon*			  CreateOGRPolygonByOGREnvelope		(OGREnvelope &envelope);
+	static OGREnvelope			  CombineOGREnvelopes					(OGREnvelope	&envp1, OGREnvelope	&envp2);
+	static OGREnvelope			  InetersectOGREnvelopes				(OGREnvelope	&envp1, OGREnvelope	&envp2);
 	static OGRLinearRing**		GetLinearRingsRef					(OGRGeometry	*p_ogr_geom, int &num_rings);
-	static bool					Intersects180Degree (OGRGeometry	*p_ogr_geom, OGRSpatialReference *p_ogr_sr);
-  static bool         CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x);
+  static bool               CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x);
+  static bool               IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeometry *po_ogr_geom);
+
+  static bool               AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segmet=10);
   //static bool         ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom, int &num_segments, OGRLineString **pp_ls);
 
-	VectorBorder	();
-	VectorBorder	(OGREnvelope merc_envp, MercatorProjType	merc_type);
-	~VectorBorder	();
+	VectorOperations	();
+	~VectorOperations	();
 	
 
 public:
-	//bool						initByMercEnvelope (OGREnvelope envelope);
 	bool						Intersects(OGREnvelope &envelope);
-	bool						Intersects(int tile_z, int tile_x, int tile_y);
 	OGRGeometry*				get_ogr_geometry_ref();
-	OGRGeometry*				GetOGRGeometryTransformed (OGRSpatialReference *poOutputSRS);
-	OGRGeometry*				GetOGRGeometryTransformedToPixelLine(OGRSpatialReference *poRasterSRS, double *rasterGeoTransform);
 	OGREnvelope					GetEnvelope ();
 
 
 protected:
 	OGRGeometry					*p_ogr_geometry_;
-	MercatorProjType			merc_type_;
 
 
 protected:
@@ -47,6 +44,9 @@ protected:
 	
 
 };
+
+
+
 
 
 }
