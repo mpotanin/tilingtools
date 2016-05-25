@@ -231,7 +231,7 @@ bool InitParamsAndCallTiling (map<string,string> mapConsoleParams)
 
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
-
+  
   string* pastrArgs = new string[nArgs];
   for (int i=0;i<nArgs;i++)
   {
@@ -279,7 +279,6 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     mapConsoleParams.insert(pair<string,string>("-resampling",gmx::ReadConsoleParameter("-resampling",nArgs,pastrArgs)));
     mapConsoleParams.insert(pair<string,string>("-background",gmx::ReadConsoleParameter("-background",nArgs,pastrArgs)));
   
-    //mapConsoleParams.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",nArgs,pastrArgs)));
     mapConsoleParams.insert(pair<string,string>("-cache_size",gmx::ReadConsoleParameter("-cache_size",nArgs,pastrArgs)));
     mapConsoleParams.insert(pair<string,string>("-gmx_volume_size",gmx::ReadConsoleParameter("-gmx_volume_size",nArgs,pastrArgs)));
     mapConsoleParams.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",nArgs,pastrArgs)));
