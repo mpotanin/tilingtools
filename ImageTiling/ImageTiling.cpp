@@ -337,8 +337,6 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\for_test\\pan8\\LC81120742014154LGN00.TIF";
 
   
-    //-mosaic -border L8\border.shp -nodata 0 -tile_type png -template standard -min_zoom 11 -tiles result\L8
-  
     // -file scn_120719_Vrangel_island_SWA.tif -container -tiles result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
 
 
