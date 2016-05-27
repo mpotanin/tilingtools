@@ -25,12 +25,12 @@
 ///*
 
 //#include "../pthread/pthread.h"
-#include "../gdal111/include/gdal_priv.h"
-#include "../gdal111/include/ogrsf_frmts.h"
-#include "../gdal111/include/gd.h"
-#include "../gdal111/include/vrtdataset.h"
-#include "../gdal111/include/gdalwarper.h"
-#include "../gdal111/include/sqlite3.h"
+#include "../gdal111-3/include/gdal_priv.h"
+#include "../gdal111-3/include/ogrsf_frmts.h"
+#include "../gdal111-3/include/gd.h"
+#include "../gdal111-3/include/vrtdataset.h"
+#include "../gdal111-3/include/gdalwarper.h"
+#include "../gdal111-3/include/sqlite3.h"
 #include "../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
 //*/
 
