@@ -1,6 +1,11 @@
-﻿Тайлинговые утилиты
+Набор утилит для работы с тайлами.
+Документация на сайте GeoMixer: http://geomixer.ru/index.php/ru/docs/manual/tilingtools.
 
-для тестирования:
-запуск testResultChack.bat
-тестовые данные положить нужно на 14.10 D:\TeamCityTestData\TilingTools
+Инструкция по компиляции:
+- скопировать репозиторий
+- разархивировать gdal111.zip в корень TilingTools в папку gdal111 
+- открыть в VS2010 файл-проекта TilingTools.sln
+- скомпилировать в конфигурации Release-x64 или Debug-x64
+
+
 
