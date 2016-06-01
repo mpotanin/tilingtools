@@ -406,6 +406,11 @@ BundleTiler::~BundleTiler(void)
 	Close();
 }
 
+bool BundleTiler::AdjustFor180DegIntersection()
+{
+  return true;
+}
+
 
 int	BundleTiler::Init (list<string> file_list, ITileGrid* p_tile_grid, string vector_file)
 {
@@ -430,6 +435,7 @@ int	BundleTiler::Init (list<string> file_list, ITileGrid* p_tile_grid, string ve
     else AddItemToBundle((*iter),vector_file);
 	}
 
+  AdjustFor180DegIntersection();
 	return item_list_.size();
 }
 
@@ -808,8 +814,9 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
       p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
       for (int i=0;i<bands_num_dst;i++)
       {
+          
           p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file;
-          p_warp_options->padfSrcNoDataImag[i] = 0;
+          p_warp_options->padfSrcNoDataImag[i] = nodata_val_from_file;
       }
     }
     
@@ -846,6 +853,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
     {
       delete[]p_warp_options->padfSrcNoDataReal;
       delete[]p_warp_options->padfSrcNoDataImag;
+      
       p_warp_options->padfSrcNoDataReal = NULL;
       p_warp_options->padfSrcNoDataImag = NULL;
     }
@@ -871,10 +879,12 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
 	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 
+
   p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),NULL,0,0,0);
   
+
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());

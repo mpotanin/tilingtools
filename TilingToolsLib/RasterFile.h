@@ -115,7 +115,8 @@ public:
   //bool      GetRasterProfile(bool &nodata_defined); GDALDataType, nodata_val, colortable
 
   double  GetNodataValue(bool &nodata_defined);
-	int			Init	(list<string> file_list, ITileGrid* p_tile_grid, string vector_file="");
+  //ToDo: should remake init func to use explicit RasterFileCutline objects with raster files
+  int			Init	(list<string> file_list, ITileGrid* p_tile_grid, string vector_file="");
 
 	OGREnvelope		CalcEnvelope();
 	int CalcNumberOfTiles (int zoom);
@@ -157,6 +158,7 @@ protected:
   bool      CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height);
   bool      CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list);
+  bool      AdjustFor180DegIntersection();
 
 protected:
 	list<pair<string,RasterFileCutline*>>	item_list_;
