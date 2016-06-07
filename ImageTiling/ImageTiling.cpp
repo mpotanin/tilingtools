@@ -250,7 +250,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   if (nArgs == 1)
   {
     PrintHelp();
-    return 0;
+    //return 0;
   }
 
   try 
@@ -295,14 +295,23 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     //-file scn_120719_Vrangel_island_SWA.tif -container -tiles result\scn_120719_Vrangel_island_SWA.tiles -zoom 8 -gmx_volume_size 1000000 -cache_size 1000000 -resampling nearest
 
     //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
-    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\12345\\SRRI12_WorldMercator_10019_3.tif";
+    
+    mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\753_2\\*.jpg";
+    mapConsoleParams.at("-mosaic") = "-mosaic";
+    mapConsoleParams.at("-gmxtiles")="-container";
+    mapConsoleParams.at("-tiles")="C:\\Users\\mpotanin\\Downloads\\753_2\\Catalog_Landsat-8_753.tiles";
+
+    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\1\\*.tif";
+    //mapConsoleParams.at("-mosaic") = "-mosaic";
+    //mapConsoleParams.at("-mosaic") = "-container";
+
+
     //mapConsoleParams.at("-file")="C:\\Work\\Projects\\TilingTools\\autotest\\o42073g8.tif";
     //mapConsoleParams.at("-zoom") = "8";
     //mapConsoleParams.at("-tiles")="C:\\Work\\Projects\\TilingTools\\autotest\\scn_120719_Vrangel_island_SWA_proj1_tiles";
     //mapConsoleParams.at("-nodata")="0 0 0";
     //mapConsoleParams.at("-tile_type")="png";
-    //mapConsoleParams.at("-template")="standard";
-    //mapConsoleParams.at("-proj")="1";
+        //mapConsoleParams.at("-proj")="1";
 
     //mapConsoleParams.at("-border")="C:\\Work\\Projects\\TilingTools\\autotest\\border\\markers.tab";
     //mapConsoleParams.at("-background")="255 255 255";

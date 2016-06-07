@@ -28,7 +28,6 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 		return FALSE;
 	}
 
-
 	int base_zoom = (p_tiling_params->base_zoom_ == 0) ? raster_bundle.CalcBestMercZoom() : p_tiling_params->base_zoom_;
 	if (base_zoom<=0)
 	{

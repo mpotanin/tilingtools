@@ -196,22 +196,34 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, str
     delete (p_poly_envp);
     return 0;
   }
-  
-  p_tile_grid->AdjustFor180DegIntersection(p_poly_envp);
-
-  p_poly_envp->getEnvelope(&p_rfc->tiling_srs_envp_);
-  delete (p_poly_envp);    
 
   if (cutline_file!="")
   {
     if (!(p_rfc->tiling_srs_cutline_ = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file,p_tiling_srs)))
     {
       delete(p_rfc);
+      delete (p_poly_envp);
       return 0;
     }
+  }
 
-    p_tile_grid->AdjustFor180DegIntersection(p_rfc->tiling_srs_cutline_);
+  bool rfc_overlaps = (p_rfc->tiling_srs_cutline_) ?
+                       p_tile_grid->DoesOverlap180Degree(p_poly_envp) :   
+                       ( p_tile_grid->DoesOverlap180Degree(p_poly_envp) || 
+                        p_tile_grid->DoesOverlap180Degree(p_rfc->tiling_srs_cutline_));
+  if (rfc_overlaps)
+  {
+    p_tile_grid->AdjustForOverlapping180Degree(p_poly_envp);
+    if (p_rfc->tiling_srs_cutline_)
+      p_tile_grid->AdjustForOverlapping180Degree(p_rfc->tiling_srs_cutline_);
+  }
+  
+  p_poly_envp->getEnvelope(&p_rfc->tiling_srs_envp_);
+  delete (p_poly_envp);    
 
+
+  if (p_rfc->tiling_srs_cutline_)
+  {
     OGRMultiPolygon *p_pixel_line_geom = 0;
     if(!(p_pixel_line_geom = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file,&raster_srs)))
     {
@@ -229,6 +241,7 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, str
     }
 
     p_rfc->p_pixel_line_cutline_ = new OGRMultiPolygon();
+
     for (int j=0;j<p_pixel_line_geom->getNumGeometries();j++)
     {
       OGRLinearRing	*p_ogr_ring = 
@@ -249,6 +262,7 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, str
     }
     delete(p_pixel_line_geom);
   }
+
   return p_rfc;
 }
 
@@ -406,8 +420,36 @@ BundleTiler::~BundleTiler(void)
 	Close();
 }
 
-bool BundleTiler::AdjustFor180DegIntersection()
+bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 {
+  OGREnvelope bundle_envp = CalcEnvelope();
+  int min_x,min_y,max_x,max_y;
+  p_tile_grid_->CalcTileRange(bundle_envp,4,min_x,min_y,max_x,max_y);
+  if ((bundle_envp.MaxX>0 && bundle_envp.MinX<0)&&(max_x-min_x>1<<3))
+  {
+    int min_x0,min_y0,max_x0,max_y0;
+    OGREnvelope zero_point_envp;
+    zero_point_envp.MinX = -0.001;zero_point_envp.MinY = -0.001;
+    zero_point_envp.MaxX = 0.001;zero_point_envp.MaxY = 0.001;
+    p_tile_grid_->CalcTileRange(zero_point_envp,5,min_x0,min_y0,max_x0,max_y0);
+    for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
+	  {
+      p_tile_grid_->CalcTileRange((*iter).second->tiling_srs_envp_,
+                                  5,min_x,min_y,max_x,max_y);
+      if (min_x<=max_x0 && max_x>=min_x0) return true;
+    }
+    
+    for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
+	  {
+      OGRPolygon* p_poly_envp = 
+        VectorOperations::CreateOGRPolygonByOGREnvelope((*iter).second->tiling_srs_envp_);
+      p_tile_grid_->AdjustForOverlapping180Degree(p_poly_envp);
+      p_poly_envp->getEnvelope(&(*iter).second->tiling_srs_envp_);
+      delete(p_poly_envp);
+      if ((*iter).second->tiling_srs_cutline_)
+        p_tile_grid_->AdjustForOverlapping180Degree((*iter).second->tiling_srs_cutline_);
+    }
+  }
   return true;
 }
 
@@ -427,7 +469,7 @@ int	BundleTiler::Init (list<string> file_list, ITileGrid* p_tile_grid, string ve
   }
 
 	if (file_list.size() == 0) return 0;
-  
+
  	for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
 	{
     if (file_list.size() > 1 && vector_file == "")
@@ -435,8 +477,9 @@ int	BundleTiler::Init (list<string> file_list, ITileGrid* p_tile_grid, string ve
     else AddItemToBundle((*iter),vector_file);
 	}
 
-  AdjustFor180DegIntersection();
-	return item_list_.size();
+  AdjustCutlinesForOverlapping180Degree();
+
+  return item_list_.size();
 }
 
 
@@ -902,7 +945,7 @@ bool BundleTiler::CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int w
     warp_multi_params.buf_height_=height;
     warp_multi_params.buf_width_=width;
     warp_multi_params.p_warp_operation_= p_warp_operation;
-    warp_multi_params.warp_error_=false; //ToDo
+    warp_multi_params.warp_error_=false; 
     HANDLE hThread = CreateThread(NULL,0,GMXAsyncWarpMulti,&warp_multi_params,0,&thread_id); 
     DWORD exit_code;
     int iter_num;

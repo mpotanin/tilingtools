@@ -158,7 +158,7 @@ protected:
   bool      CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height);
   bool      CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list);
-  bool      AdjustFor180DegIntersection();
+  bool      AdjustCutlinesForOverlapping180Degree();
 
 protected:
 	list<pair<string,RasterFileCutline*>>	item_list_;

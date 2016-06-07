@@ -335,9 +335,9 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 			cout<<"Error: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
-	  if (!merc_grid.AdjustFor180DegIntersection(p_border))
+	  if (!merc_grid.AdjustIfOverlap180Degree(p_border))
     {
-      cout<<"Error: AdjustFor180DegIntersection fail"<<endl;
+      cout<<"Error: AdjustIfOverlapAbscissa fail"<<endl;
       delete(p_border);
       return 0;
     }
@@ -1036,9 +1036,9 @@ int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int
 			cout<<"Error: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
-	  if (!merc_grid.AdjustFor180DegIntersection(p_border))
+	  if (!merc_grid.AdjustIfOverlap180Degree(p_border))
     {
-      cout<<"Error: AdjustFor180DegIntersection fail"<<endl;
+      cout<<"Error: AdjustIfOverlapAbscissa fail"<<endl;
       delete(p_border);
       return 0;
     }
@@ -1254,9 +1254,9 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 			cout<<"Error: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
-	  if (!merc_grid.AdjustFor180DegIntersection(p_border))
+	  if (!merc_grid.AdjustIfOverlap180Degree(p_border))
     {
-      cout<<"Error: AdjustFor180DegIntersection fail"<<endl;
+      cout<<"Error: AdjustIfOverlapAbscissa fail"<<endl;
       delete(p_border);
       return 0;
     }

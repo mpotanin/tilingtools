@@ -20,7 +20,15 @@ public:
   virtual OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y) =0;
   virtual OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy) =0;
 	virtual bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y) =0;
-  virtual bool AdjustFor180DegIntersection(OGRGeometry *poGeometry) {return true;};
+  
+  //virtual bool AdjustIfOverlapAbscissa(OGRGeometry *poGeometry) {return true;};
+
+  virtual bool AdjustForOverlapping180Degree(OGRGeometry *poGeometry) {return true;};
+  virtual bool DoesOverlap180Degree (OGRGeometry *poGeometry) {return false;};
+  virtual bool AdjustIfOverlap180Degree(OGRGeometry *poGeometry) 
+  {
+    return DoesOverlap180Degree(poGeometry) ? AdjustForOverlapping180Degree(poGeometry) : true; 
+  };
 
 };
 
@@ -114,8 +122,33 @@ public:
     return true;
 	}
 
+  bool DoesOverlap180Degree (OGRGeometry	*p_ogr_geom_merc) 
+  {
+    if (!p_ogr_geom_merc) return false;
+    OGRLinearRing	**pp_ogr_rings;
+	  int num_rings = 0;
+	
+	  if (!(pp_ogr_rings = VectorOperations::GetLinearRingsRef(p_ogr_geom_merc,num_rings))) return false;
+	
+    int n=0;
+    for (int i=0;i<num_rings;i++)
+	  {
+		  for (int k=0;k<pp_ogr_rings[i]->getNumPoints()-1;k++)
+		  {
+         if (fabs(pp_ogr_rings[i]->getX(k) - pp_ogr_rings[i]->getX(k+1))>-ULX()/2)
+         {
+           delete[]pp_ogr_rings;
+           return true; 
+         }
+		  }
+	  }
+
+    delete[]pp_ogr_rings;
+    return false;
+  }
+
 		
-  bool			AdjustFor180DegIntersection (OGRGeometry	*p_ogr_geom_merc)
+  bool			AdjustForOverlapping180Degree (OGRGeometry	*p_ogr_geom_merc)
   {
     if (!p_ogr_geom_merc) return false;
     OGRLinearRing	**pp_ogr_rings;
@@ -128,25 +161,12 @@ public:
 	  {
 		  for (int k=0;k<pp_ogr_rings[i]->getNumPoints();k++)
 		  {
-				  if (pp_ogr_rings[i]->getX(k)<0) n=1;
-          if (pp_ogr_rings[i]->getX(k)>0) n|=0x2;
-          if (n==3) break;
+        if (pp_ogr_rings[i]->getX(k)<0)
+				    pp_ogr_rings[i]->setPoint(k,-2*MercatorTileGrid::ULX() + 
+                                            pp_ogr_rings[i]->getX(k),pp_ogr_rings[i]->getY(k));
 		  }
 	  }
 
-    if ( n==3)
-    {
-      for (int i=0;i<num_rings;i++)
-	    {
-		    for (int k=0;k<pp_ogr_rings[i]->getNumPoints();k++)
-		    {
-				    if (pp_ogr_rings[i]->getX(k)<0)
-					    pp_ogr_rings[i]->setPoint(k,-2*MercatorTileGrid::ULX() + 
-                                          pp_ogr_rings[i]->getX(k),pp_ogr_rings[i]->getY(k));
-		    }
-	    }
-    }
-	  
     delete[]pp_ogr_rings;
 
     return true;
