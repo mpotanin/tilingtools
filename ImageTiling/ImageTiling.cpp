@@ -250,7 +250,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   if (nArgs == 1)
   {
     PrintHelp();
-    //return 0;
+    return 0;
   }
 
   try 
@@ -296,10 +296,10 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 
     //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
     
-    mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\753_2\\*.jpg";
-    mapConsoleParams.at("-mosaic") = "-mosaic";
-    mapConsoleParams.at("-gmxtiles")="-container";
-    mapConsoleParams.at("-tiles")="C:\\Users\\mpotanin\\Downloads\\753_2\\Catalog_Landsat-8_753.tiles";
+    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\753_2\\*.jpg";
+    //mapConsoleParams.at("-mosaic") = "-mosaic";
+    //mapConsoleParams.at("-gmxtiles")="-container";
+    //mapConsoleParams.at("-tiles")="C:\\Users\\mpotanin\\Downloads\\753_2\\Catalog_Landsat-8_753.tiles";
 
     //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\1\\*.tif";
     //mapConsoleParams.at("-mosaic") = "-mosaic";
