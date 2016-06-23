@@ -25,9 +25,7 @@ string	GetPath (string filename)
 
 
 bool FileExists (string filename)
-{
-
-  
+{  
 	ReplaceAll(filename,"\\","/");
 	wstring filename_w;
 	utf8toWStr(filename_w,filename);
@@ -75,16 +73,18 @@ string		GetAbsolutePath (string base_path, string relative_path)
 }
 
 
-string RemovePath(const string& filename)
+string RemovePath(string filename)
 {
+  ReplaceAll(filename,"\\","/");
 	return  (filename.find_last_of("/") != string::npos) ?
           filename.substr(filename.find_last_of("/")+1) :
           filename;
 }
 
 
-string RemoveExtension (string &filename)
+string RemoveExtension (string filename)
 {
+  ReplaceAll(filename,"\\","/");
 	int n_point = filename.rfind(L'.');
   int n_slash = filename.rfind(L'/');
   return (n_point>n_slash) ? filename.substr(0,n_point) : filename;	

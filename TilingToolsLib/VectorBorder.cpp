@@ -192,15 +192,25 @@ bool VectorOperations::AddIntermediatePoints(OGRPolygon *p_polygon, int points_o
   OGRLinearRing*  p_ring = p_polygon->getExteriorRing();
   int num_points = p_ring->getNumPoints();
 
+  OGRLinearRing o_new_ring;
+  
   for (int i=0;i<num_points-1;i++)
   {
-    double x = p_ring->getX(i*points_on_segment);
-    double y = p_ring->getY(i*points_on_segment);
-    double dx=(p_ring->getX(i*points_on_segment+1)-x)/points_on_segment;
-    double dy=(p_ring->getY(i*points_on_segment+1)-y)/points_on_segment;
+    double x = p_ring->getX(i);
+    double y = p_ring->getY(i);
+    double dx=(p_ring->getX(i+1)-x)/points_on_segment;
+    double dy=(p_ring->getY(i+1)-y)/points_on_segment;
+    o_new_ring.addPoint(x,y);
     for (int j=0;j<points_on_segment-1;j++)
-      p_ring->addPoint(x+dx*(j+1),y+dy*(j+1));
+      o_new_ring.addPoint(x+dx*(j+1),y+dy*(j+1));
   }
+  o_new_ring.closeRings();
+  p_ring->empty();
+  for (int i=0; i<o_new_ring.getNumPoints();i++)
+  {
+    p_ring->addPoint(o_new_ring.getX(i),o_new_ring.getY(i));
+  }
+
   return true;
 }
 

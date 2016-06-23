@@ -7,8 +7,8 @@
 namespace gmx
 {
 
-string		RemovePath	(const string& filename);
-string		RemoveExtension(string& filename);
+string		RemovePath	(string filename);
+string		RemoveExtension(string filename);
 string		GetPath(string filename);
 string		RemoveEndingSlash(string	foldername);
 bool		FileExists	(string filename);
