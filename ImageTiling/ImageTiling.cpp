@@ -296,7 +296,8 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 
     //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
     
-    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\753_2\\*.jpg";
+    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\CHL_chlor_a_A_Sahalin_eco_20160620.tif";
+
     //mapConsoleParams.at("-mosaic") = "-mosaic";
     //mapConsoleParams.at("-gmxtiles")="-container";
     //mapConsoleParams.at("-tiles")="C:\\Users\\mpotanin\\Downloads\\753_2\\Catalog_Landsat-8_753.tiles";

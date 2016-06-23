@@ -326,7 +326,7 @@ bool RasterFile::GetEnvelope(OGREnvelope &envp)
   envp.MinX = geotransform[0];
 	envp.MaxY = geotransform[3];
 	envp.MaxX = geotransform[0] + p_gdal_ds_->GetRasterXSize()*geotransform[1];
-	envp.MinY = geotransform[3] - p_gdal_ds_->GetRasterYSize()*geotransform[1];
+	envp.MinY = geotransform[3] + p_gdal_ds_->GetRasterYSize()*geotransform[5];
 
 	return true;
 };
