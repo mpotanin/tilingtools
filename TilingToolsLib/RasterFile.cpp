@@ -6,90 +6,11 @@
 
 
 
-DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam)
-{
-  gmx::CURR_WORK_THREADS++;
-
-  GMXAsyncChunkTilingParams   *p_chunk_tiling_params = (GMXAsyncChunkTilingParams*)lpParam;
-  
-  gmx::TilingParameters		*p_tiling_params = p_chunk_tiling_params->p_tiling_params_;
-  gmx::BundleTiler		*p_bundle = p_chunk_tiling_params->p_bundle_;
-  gmx::ITileContainer			  *p_tile_container = p_chunk_tiling_params->p_tile_container_;
-  int                   zoom = p_chunk_tiling_params->z_;
-  OGREnvelope           chunk_envp = p_chunk_tiling_params->chunk_envp_;
-   
-  gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
-  WaitForSingleObject(gmx::WARP_SEMAPHORE,INFINITE);
-
-  //ToDo...
-
-  int bands_num=0;
-  int **pp_band_mapping=0;
-  //ToDo 
-  if (p_tiling_params->p_band_mapping_)
-   p_tiling_params->p_band_mapping_->GetBandMappingData(bands_num,pp_band_mapping);
-    
-  bool warp_result = p_bundle->WarpChunkToBuffer(zoom,
-                                                chunk_envp,
-                                                p_merc_buffer,
-                                                bands_num,
-                                                pp_band_mapping,
-                                                p_tiling_params->gdal_resampling_,
-                                                p_tiling_params->p_transparent_color_,
-                                                p_tiling_params->p_background_color_,
-                                                p_tiling_params->max_work_threads_!=1);
-  ReleaseSemaphore(gmx::WARP_SEMAPHORE,1,NULL);
-
-  
-  if (!warp_result)	
-  {
-	  cout<<"Error: BaseZoomTiling: warping to merc fail"<<endl;
-    gmx::CURR_WORK_THREADS--;
-	  return FALSE;
-	}
-
-  if (p_chunk_tiling_params->need_stretching_)	
-  {
-    if (! p_merc_buffer->StretchDataTo8Bit (
-                          p_chunk_tiling_params->p_stretch_min_values_,
-                          p_chunk_tiling_params->p_stretch_max_values_))
-    {
-      cout<<"Error: can't stretch raster values to 8 bit"<<endl;
-      gmx::CURR_WORK_THREADS--;
-			return FALSE;
-		}
-	}
-
-  int                   tiles_expected = p_chunk_tiling_params->tiles_expected_;
-  int                   *p_tiles_generated = p_chunk_tiling_params->p_tiles_generated_;
-
-  if (!p_bundle->RunTilingFromBuffer(p_tiling_params,
-										p_merc_buffer,
-										chunk_envp,
-                    zoom,
-										tiles_expected,
-										p_tiles_generated,
-										p_tile_container))
-	{
-			cout<<"Error: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
-			gmx::CURR_WORK_THREADS--;
-      return FALSE;
-	}
- 
-	delete(p_merc_buffer);
-  gmx::CURR_WORK_THREADS--;
-  return TRUE;
-}
-
-
 namespace gmx
 {
 
-extern int MAX_BUFFER_WIDTH = 16;
-extern int MAX_WORK_THREADS = 2;
-extern int MAX_WARP_THREADS = 1;
 extern int CURR_WORK_THREADS = 0;
-extern HANDLE WARP_SEMAPHORE = NULL;
+extern HANDLE WARP_SEMAPHORE = 0;
 
 
 int _stdcall gmxPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
@@ -385,7 +306,7 @@ bool	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialRefer
 {
   OGREnvelope envp;
   if(!GetEnvelope(envp)) return false;
-  if (fabs(envp.MaxX)<=180 && fabs(envp.MaxY)<=90)
+  if (fabs(envp.MaxX)<=200 && fabs(envp.MaxY)<=90)
 	  srs.SetWellKnownGeogCS("WGS84"); 
   else if (!p_tiling_srs) return false;
   else
@@ -397,6 +318,97 @@ bool	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialRefer
 	}
 
 	return TRUE;
+}
+
+DWORD WINAPI BundleTiler::CallWarpMulti (void *p_params)
+{
+
+  GMXAsyncWarpMultiParams   *p_warp_multi_params = (GMXAsyncWarpMultiParams*)p_params;
+  p_warp_multi_params->warp_error_ = (CE_None != p_warp_multi_params->p_warp_operation_->ChunkAndWarpMulti(0,
+                                                            0,
+                                                            p_warp_multi_params->buf_width_,
+                                                            p_warp_multi_params->buf_height_));
+  return true;
+}
+
+
+DWORD WINAPI BundleTiler::CallProcessChunk (void* p_params)
+{
+  GMXAsyncChunkTilingParams* p_chunk_params = (GMXAsyncChunkTilingParams*)p_params;
+
+  return ((BundleTiler*)p_chunk_params->p_bundle_)->ProcessChunk(p_chunk_params);
+}
+
+bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
+{
+  
+  gmx::TilingParameters*  p_tiling_params = p_chunk_params->p_tiling_params_;
+  gmx::ITileContainer*    p_tile_container = p_chunk_params->p_tile_container_;
+  int                     zoom = p_chunk_params->z_;
+  OGREnvelope             chunk_envp = p_chunk_params->chunk_envp_;
+   
+  gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
+
+  if (gmx::WARP_SEMAPHORE) WaitForSingleObject(gmx::WARP_SEMAPHORE,INFINITE);
+
+  //ToDo...
+  int bands_num=0;
+  int **pp_band_mapping=0;
+  //ToDo 
+  if (p_tiling_params->p_band_mapping_)
+   p_tiling_params->p_band_mapping_->GetBandMappingData(bands_num,pp_band_mapping);
+    
+  bool warp_result = WarpChunkToBuffer(zoom,
+                                      chunk_envp,
+                                      p_merc_buffer,
+                                      bands_num,
+                                      pp_band_mapping,
+                                      p_tiling_params->gdal_resampling_,
+                                      p_tiling_params->p_transparent_color_,
+                                      p_tiling_params->p_background_color_,
+                                      p_tiling_params->max_work_threads_>0 ? 1 : 0,
+                                      p_chunk_params->tiffinmem_ind_);
+  
+  if (gmx::WARP_SEMAPHORE) ReleaseSemaphore(gmx::WARP_SEMAPHORE,1,NULL);
+  
+  if (!warp_result)	
+  {
+	  cout<<"Error: BaseZoomTiling: warping to merc fail"<<endl;
+    gmx::CURR_WORK_THREADS--;
+	  return FALSE;
+	}
+
+  if (p_chunk_params->need_stretching_)	
+  {
+    if (! p_merc_buffer->StretchDataTo8Bit (
+                          p_chunk_params->p_stretch_min_values_,
+                          p_chunk_params->p_stretch_max_values_))
+    {
+      cout<<"Error: can't stretch raster values to 8 bit"<<endl;
+      gmx::CURR_WORK_THREADS--;
+			return FALSE;
+		}
+	}
+
+  int                   tiles_expected = p_chunk_params->tiles_expected_;
+  int                   *p_tiles_generated = p_chunk_params->p_tiles_generated_;
+
+  if (!RunTilingFromBuffer(p_tiling_params,
+										p_merc_buffer,
+										chunk_envp,
+                    zoom,
+										tiles_expected,
+										p_tiles_generated,
+										p_tile_container))
+	{
+			cout<<"Error: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
+			gmx::CURR_WORK_THREADS--;
+      return FALSE;
+	}
+ 
+	delete(p_merc_buffer);
+  gmx::CURR_WORK_THREADS--;
+  return TRUE;
 }
 
 
@@ -574,7 +586,7 @@ double BundleTiler::GetNodataValue(bool &nodata_defined)
 
 
 
-int		BundleTiler::CalcBestMercZoom()
+int		BundleTiler::CalcAppropriateZoom()
 {
 	if (item_list_.size()==0) return -1;
 
@@ -686,16 +698,6 @@ bool BundleTiler::CalclValuesForStretchingTo8Bit (double *&p_min_values,
 }
 //*/
 
-DWORD WINAPI GMXAsyncWarpMulti (LPVOID lpParam)
-{
-  GMXAsyncWarpMultiParams   *p_warp_multi_params = (GMXAsyncWarpMultiParams*)lpParam;
-  p_warp_multi_params->warp_error_ = (CE_None != p_warp_multi_params->p_warp_operation_->ChunkAndWarpMulti(0,
-                                                            0,
-                                                            p_warp_multi_params->buf_width_,
-                                                            p_warp_multi_params->buf_height_));
-  return true;
-}
-
 bool BundleTiler::WarpChunkToBuffer (int zoom,	
                                             OGREnvelope	    chunk_envp, 
                                             RasterBuffer    *p_dst_buffer, 
@@ -704,7 +706,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
                                             GDALResampleAlg resample_alg, 
                                             BYTE            *p_nodata,
                                             BYTE            *p_background_color,
-                                            bool            warp_multithread)
+                                            int  warp_threads_num,
+                                            int  tiffinmem_ind)
 {
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
@@ -725,9 +728,9 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	int				buf_width	= int(((chunk_envp.MaxX - chunk_envp.MinX)/res)+0.5);
 	int				buf_height	= int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
 
-  srand(0);
-  string			tiff_in_mem = ("/vsimem/tiffinmem" + ConvertIntToString(rand()));
 	
+  string			tiff_in_mem = ("/vsimem/tiffinmem_" + ConvertIntToString(tiffinmem_ind));
+  
   GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
 								tiff_in_mem.c_str(),
@@ -797,13 +800,15 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
   
     GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
     p_warp_options->papszWarpOptions = NULL;
-    if (warp_multithread) 
-      p_warp_options->papszWarpOptions = CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS");
-
-		p_warp_options->hSrcDS = p_src_ds;
+    
+    p_warp_options->papszWarpOptions = ( warp_threads_num == 0) ? CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS") :
+                             CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", gmx::ConvertIntToString(warp_threads_num).c_str());
+   	p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
-		p_warp_options->dfWarpMemoryLimit = 150000000; 
-		double			error_threshold = 0.125;
+
+    p_warp_options->dfWarpMemoryLimit = 500000000; 
+    
+    double			error_threshold = 0.125;
     
     p_warp_options->panSrcBands = new int[bands_num_dst];
     p_warp_options->panDstBands = new int[bands_num_dst];
@@ -882,7 +887,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		   
-    bool  warp_error = warp_multithread ? this->CalcAsyncWarpMulti(&gdal_warp_operation,buf_width,buf_height) :
+    bool  warp_error = (warp_threads_num!=1) ? this->CallAndWaitWarpMulti(&gdal_warp_operation,buf_width,buf_height) :
                                         (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));  
 
     GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
@@ -934,7 +939,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	return TRUE;
 }
 
-bool BundleTiler::CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height)
+bool BundleTiler::CallAndWaitWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height)
 {
   bool warp_error = false;
   for (int warp_attempt=0; warp_attempt<2;  warp_attempt++)
@@ -946,7 +951,7 @@ bool BundleTiler::CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int w
     warp_multi_params.buf_width_=width;
     warp_multi_params.p_warp_operation_= p_warp_operation;
     warp_multi_params.warp_error_=false; 
-    HANDLE hThread = CreateThread(NULL,0,GMXAsyncWarpMulti,&warp_multi_params,0,&thread_id); 
+    HANDLE hThread = CreateThread(NULL,0,BundleTiler::CallWarpMulti,&warp_multi_params,0,&thread_id); 
     DWORD exit_code;
     int iter_num;
     for (iter_num=0;iter_num<120;iter_num++)
@@ -974,7 +979,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 {
   srand(0);
 	int	tiles_generated = 0;
-	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcBestMercZoom() : p_tiling_params->base_zoom_;
+	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcAppropriateZoom() : p_tiling_params->base_zoom_;
 	double res = p_tile_grid_->CalcResolutionByZoom(zoom);
 
   cout<<"calculating number of tiles: ";
@@ -985,14 +990,16 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
   bool		need_stretching = false;
 	double		*p_stretch_min_values = NULL, *p_stretch_max_values = NULL;
 
-  extern int MAX_WARP_THREADS;
-  MAX_WARP_THREADS	= p_tiling_params->max_warp_threads_ > 0 ? p_tiling_params->max_warp_threads_ : MAX_WARP_THREADS;
-  extern int MAX_WORK_THREADS;
-  MAX_WORK_THREADS	= p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : MAX_WORK_THREADS;
+  const int MAX_WORK_THREADS = p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : 2;
+  const int TILE_CHUNK_WIDTH = p_tiling_params->tile_chunk_size_ != 0 ? p_tiling_params->tile_chunk_size_ :
+                                                                       (p_tiling_params->max_work_threads_ > 1) ? 8 : 16;
+
   extern __int64 TILE_CACHE_MAX_SIZE;
   TILE_CACHE_MAX_SIZE = p_tiling_params->max_cache_size_ > 0 ? p_tiling_params->max_cache_size_  : TILE_CACHE_MAX_SIZE;
+  
   extern HANDLE WARP_SEMAPHORE;
-  WARP_SEMAPHORE = CreateSemaphore(NULL,MAX_WARP_THREADS,MAX_WARP_THREADS,NULL);
+  if (p_tiling_params->max_work_threads_ == 0)
+    WARP_SEMAPHORE = CreateSemaphore(NULL,1,1,NULL);
     
   if (p_tiling_params->auto_stretching_)
 	{
@@ -1023,26 +1030,23 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
   p_tile_grid_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
 
 	HANDLE			thread_handle = NULL;
-	//unsigned long	thread_id;
 
-  //int num_warp = 0;
-  
   bool tiling_error = FALSE;
   
   unsigned long thread_id;
   list<pair<HANDLE,void*>> thread_params_list; 
   
-
   //ToDo shoud refactor this cycle - thread creation and control 
-  for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=MAX_BUFFER_WIDTH)
+  int chunk_num=0;
+  for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=TILE_CHUNK_WIDTH)
 	{
-		int curr_max_x =	(curr_min_x + MAX_BUFFER_WIDTH - 1 > maxx) ? 
-							maxx : curr_min_x + MAX_BUFFER_WIDTH - 1;
+		int curr_max_x =	(curr_min_x + TILE_CHUNK_WIDTH - 1 > maxx) ? 
+							maxx : curr_min_x + TILE_CHUNK_WIDTH - 1;
 		
-		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=MAX_BUFFER_WIDTH)
+		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=TILE_CHUNK_WIDTH)
 		{
-			int curr_max_y =	(curr_min_y + MAX_BUFFER_WIDTH - 1 > maxy) ? 
-								maxy : curr_min_y + MAX_BUFFER_WIDTH - 1;
+			int curr_max_y =	(curr_min_y + TILE_CHUNK_WIDTH - 1 > maxy) ? 
+								maxy : curr_min_y + TILE_CHUNK_WIDTH - 1;
 			
 			OGREnvelope chunk_envp = p_tile_grid_->CalcEnvelopeByTileRange(	zoom,
 																					curr_min_x,
@@ -1054,16 +1058,11 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
       while (CURR_WORK_THREADS >= MAX_WORK_THREADS)        
         Sleep(100);
       
-      //
-      //CheckStatusAndCloseThreads
-      //TerminateThreads
-      
       if (!CheckStatusAndCloseThreads(&thread_params_list))
       {
         TerminateThreads(&thread_params_list);
         cout<<"Error: occured in BaseZoomTiling"<<endl;
         return false;
-
       }
 
       GMXAsyncChunkTilingParams	*p_chunk_tiling_params = new  GMXAsyncChunkTilingParams();
@@ -1078,7 +1077,11 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
       p_chunk_tiling_params->p_stretch_min_values_ = p_stretch_min_values;
       p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
       p_chunk_tiling_params->z_ = zoom;
-      HANDLE hThread = CreateThread(NULL,0,GMXAsyncWarpChunkAndMakeTiling,p_chunk_tiling_params,0,&thread_id);      
+
+      p_chunk_tiling_params->tiffinmem_ind_=(chunk_num++);
+      
+      gmx::CURR_WORK_THREADS++;
+      HANDLE hThread = CreateThread(NULL,0,BundleTiler::CallProcessChunk,p_chunk_tiling_params,0,&thread_id);      
       if (hThread)
          thread_params_list.push_back(
         pair<HANDLE,GMXAsyncChunkTilingParams*>(hThread,p_chunk_tiling_params));

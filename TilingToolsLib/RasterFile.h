@@ -14,9 +14,6 @@ using namespace std;
 namespace gmx
 {
 
-extern int	MAX_BUFFER_WIDTH;
-extern int	MAX_WORK_THREADS;
-extern int	MAX_WARP_THREADS;
 extern int	CURR_WORK_THREADS;
 extern HANDLE WARP_SEMAPHORE;
 
@@ -73,20 +70,13 @@ public:
 
 	GDALDataset*	get_gdal_ds_ref();
 
-	
-
-public: 
-	bool			CalcBandStatistics	(int band_num, double &min, double &max, double &mean, double &std, double *p_nodata_val =0);
+  bool			CalcBandStatistics	(int band_num, double &min, double &max, double &mean, double &std, double *p_nodata_val =0);
 	double		get_nodata_value		(bool &nodata_defined);
 
-
-public:
-	//void			readMetaData ();
 	static			bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs);
   static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
 
 protected:
-	//void			delete_all();
 	bool		GetEnvelope (OGREnvelope &envelope); //ToDo - delete
 
 protected:
@@ -102,6 +92,26 @@ protected:
 
 int _stdcall gmxPrintNoProgress ( double, const char*,void*);
 
+struct GMXAsyncChunkTilingParams
+{
+	gmx::TilingParameters			*p_tiling_params_;
+	void            	        *p_bundle_; 
+	OGREnvelope               chunk_envp_;
+  int								        z_;
+	int								        tiles_expected_; 
+	int								        *p_tiles_generated_;
+  bool                      *p_was_error_;
+	gmx::ITileContainer				*p_tile_container_;
+  bool                      need_stretching_;
+  double		                *p_stretch_min_values_;
+  double                    *p_stretch_max_values_;
+  int                       tiffinmem_ind_;
+  string                    temp_file_path_;
+
+  //bool (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
+};
+
+
 class BundleTiler
 {
 public:
@@ -110,21 +120,36 @@ public:
 	void Close();
 
 public:
-	
-  //ToDo
-  //bool      GetRasterProfile(bool &nodata_defined); GDALDataType, nodata_val, colortable
+	//ToDo: should remake init func to use explicit RasterFileCutline objects with raster files
+  int	Init	(list<string> file_list, ITileGrid* p_tile_grid, string vector_file="");
 
-  double  GetNodataValue(bool &nodata_defined);
-  //ToDo: should remake init func to use explicit RasterFileCutline objects with raster files
-  int			Init	(list<string> file_list, ITileGrid* p_tile_grid, string vector_file="");
-
-	OGREnvelope		CalcEnvelope();
-	int CalcNumberOfTiles (int zoom);
-	int	CalcBestMercZoom();
+  int CalcNumberOfTiles (int zoom);
+	int	CalcAppropriateZoom();
+  OGREnvelope	CalcEnvelope();
 
   bool RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
 								            ITileContainer			*p_tile_container);
   
+  bool ProcessChunk (GMXAsyncChunkTilingParams* p_chunk_params);
+  static DWORD WINAPI CallProcessChunk (void *p_params);
+  static DWORD WINAPI BundleTiler::CallWarpMulti (void *p_params);
+    
+protected:
+  //ToDo bool      GetRasterProfile(bool &nodata_defined); GDALDataType, nodata_val, colortable
+  double  GetNodataValue(bool &nodata_defined);
+  GDALDataType  GetRasterFileType();
+
+  bool			WarpChunkToBuffer (	int zoom,	
+                                OGREnvelope	chunk_envp, 
+                                RasterBuffer *p_dst_buffer,
+                                int         output_bands_num = 0,
+                                int         **pp_band_mapping = NULL,
+                                GDALResampleAlg resample_alg = GRA_Cubic,
+                                BYTE *p_nodata = NULL,
+                                BYTE *p_background_color = NULL,
+                                int  warp_threads_num = 0,
+                                int  tiffinmem_ind=0);
+
   bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 
 						  RasterBuffer	*p_buffer,
               OGREnvelope buffer_envelope,
@@ -133,29 +158,17 @@ public:
 						  int *p_tiles_generated,
 						  ITileContainer *p_tile_container);
 
-	bool			WarpChunkToBuffer (	int zoom,	
-                                OGREnvelope	chunk_envp, 
-                                RasterBuffer *p_dst_buffer,
-                                int         output_bands_num = 0,
-                                int         **pp_band_mapping = NULL,
-                                GDALResampleAlg resample_alg = GRA_Cubic,
-                                BYTE *p_nodata = NULL,
-                                BYTE *p_background_color = NULL,
-                                bool  warp_multithread = true);
-  
-	list<string>	GetFileList();
-	bool			    Intersects(OGREnvelope envp);
   bool          CalclValuesForStretchingTo8Bit (  double *&p_min_values,
                                                  double *&p_max_values,
                                                  double *p_nodata_val = 0,
                                                  BandMapping    *p_band_mapping=0);
-  GDALDataType  GetRasterFileType();
-
+  list<string>	GetFileList();
+	bool			    Intersects(OGREnvelope envp);
   ITileGrid* tile_grid(){return p_tile_grid_;};
 
 protected:
 	bool			AddItemToBundle (string raster_file, string	vector_file);
-  bool      CalcAsyncWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height);
+  bool      CallAndWaitWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height);
   bool      CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      AdjustCutlinesForOverlapping180Degree();
@@ -168,30 +181,10 @@ protected:
 }
 
 
-struct GMXAsyncChunkTilingParams
-{
-	gmx::TilingParameters				*p_tiling_params_;
-	gmx::BundleTiler	        *p_bundle_; 
-	OGREnvelope               chunk_envp_;
-  int								        z_;
-	int								        tiles_expected_; 
-	int								        *p_tiles_generated_;
-  bool                      *p_was_error_;
-	gmx::ITileContainer				*p_tile_container_;
-  bool                      need_stretching_;
-  double		                *p_stretch_min_values_;
-  double                    *p_stretch_max_values_;
-  int                       srand_seed_;
-  string                    temp_file_path_;
-
-  //bool (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
-};
-
-DWORD WINAPI GMXAsyncWarpChunkAndMakeTiling (LPVOID lpParam);
 
 bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
-DWORD WINAPI GMXAsyncWarpMulti (LPVOID lpParam);
+
 struct GMXAsyncWarpMultiParams
 {
   //gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height) :

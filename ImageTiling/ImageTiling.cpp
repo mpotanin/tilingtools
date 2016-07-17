@@ -59,7 +59,9 @@ bool InitParamsAndCallTiling (map<string,string> mapConsoleParams)
   string strGMXVolumeSize = mapConsoleParams.at("-gmx_volume_size");
   string strGdalResampling = mapConsoleParams.at("-resampling");
   string strMaxWorkThreads = mapConsoleParams.at("-work_threads");
-  string strMaxWarpThreads = mapConsoleParams.at("-warp_threads");
+
+  string strTileChunkSize = mapConsoleParams.at("-tile_chunk_size");
+
   string strBands = mapConsoleParams.at("-bands");
   string strPseudoPNG = mapConsoleParams.at("-pseudo_png");
 
@@ -221,8 +223,8 @@ bool InitParamsAndCallTiling (map<string,string> mapConsoleParams)
   if (strMaxWorkThreads != "")
     oTilingParams.max_work_threads_ = ((int)atof(strMaxWorkThreads.c_str())>0) ? (int)atof(strMaxWorkThreads.c_str()) : 0;
 
-  if (strMaxWarpThreads != "")
-    oTilingParams.max_warp_threads_ = ((int)atof(strMaxWarpThreads.c_str())>0) ? (int)atof(strMaxWarpThreads.c_str()) : 0;
+  if (strTileChunkSize != "")
+    oTilingParams.tile_chunk_size_ = (int)atof(strTileChunkSize.c_str());
 
   return GMXMakeTiling(&oTilingParams);
   //if (logFile) fclose(logFile);
@@ -284,10 +286,10 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     mapConsoleParams.insert(pair<string,string>("-log_file",gmx::ReadConsoleParameter("-log_file",nArgs,pastrArgs)));
     mapConsoleParams.insert(pair<string,string>("-pixel_tiling",gmx::ReadConsoleParameter("-pixel_tiling",nArgs,pastrArgs,TRUE)));
     mapConsoleParams.insert(pair<string,string>("-work_threads",gmx::ReadConsoleParameter("-work_threads",nArgs,pastrArgs)));
-    mapConsoleParams.insert(pair<string,string>("-warp_threads",gmx::ReadConsoleParameter("-warp_threads",nArgs,pastrArgs)));
     mapConsoleParams.insert(pair<string,string>("-pseudo_png",gmx::ReadConsoleParameter("-pseudo_png",nArgs,pastrArgs,TRUE)));
 
-
+    mapConsoleParams.insert(pair<string,string>("-tile_chunk_size",gmx::ReadConsoleParameter("-tile_chunk_size",nArgs,pastrArgs)));
+    
     if (nArgs == 2) mapConsoleParams.at("-file") = pastrArgs[1];
   
 
@@ -296,7 +298,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 
     //mapConsoleParams.at("-file") = "E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B6.TIF?1,,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B5.TIF?,1,|E:\\test_images\\L8\\LC81740202015127LGN00\\LC81740202015127LGN00_B4.TIF?,,1";
     
-    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\CHL_chlor_a_A_Sahalin_eco_20160620.tif";
+    //mapConsoleParams.at("-file") = "C:\\Users\\mpotanin\\Downloads\\frag.jpg";
 
     //mapConsoleParams.at("-mosaic") = "-mosaic";
     //mapConsoleParams.at("-gmxtiles")="-container";

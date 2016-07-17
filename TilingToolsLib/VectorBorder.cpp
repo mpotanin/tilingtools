@@ -32,8 +32,8 @@ string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 	
 	if (vector_file!="")
 	{
-		OGRDataSource * p_ogr_ds = OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
-		if (p_ogr_ds ==NULL) return "";
+    OGRDataSource * p_ogr_ds = OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
+    if (p_ogr_ds ==NULL) return "";
 		OGRDataSource::DestroyDataSource( p_ogr_ds );
 	}
 	return vector_file;
@@ -218,7 +218,7 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
 {
   if (vector_file=="") return 0;
 
-	OGRDataSource *p_ogr_ds= OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
+  OGRDataSource *p_ogr_ds= OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
   
   if( p_ogr_ds == NULL ) return 0;
 	
@@ -272,7 +272,7 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
   p_ogr_multipoly->assignSpatialReference(NULL);
   OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
   return p_ogr_multipoly;
- 
+
 };
 
 

@@ -60,7 +60,7 @@ public:
     p_band_mapping_ = 0;
 
     max_work_threads_= 0;
-    max_warp_threads_= 0;
+    tile_chunk_size_= 0;
     
     calculate_histogram_=false;
   };		
@@ -97,7 +97,7 @@ public:
 	gmx::TileName		*p_tile_name_;			//имена тайлов
 	unsigned int		max_cache_size_;		//максимальный размер тайлового кэша в оперативной памяти
   int             max_work_threads_;
-  int             max_warp_threads_;
+  int             tile_chunk_size_;
   unsigned int    max_gmx_volume_size_; //максимальный размер файла в gmx-котейнере 
   gmx::BandMapping     *p_band_mapping_;
 
