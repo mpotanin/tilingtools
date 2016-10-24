@@ -11,12 +11,11 @@ namespace gmx
 {
 
 
-class ITileGrid 
+class ITileMatrixSet 
 {
 public:
   virtual OGRSpatialReference* GetTilingSRS() =0;	
-  virtual int CalcZoomByResolution (double res) =0;
-  virtual double CalcResolutionByZoom (int zoom) = 0;
+  virtual double CalcPixelSizeByZoom (int zoom) = 0;
   virtual OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y) =0;
   virtual OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy) =0;
 	virtual bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y) =0;
@@ -38,10 +37,10 @@ typedef enum {
 	WEB_MERCATOR=1
 } MercatorProjType;
 
-class MercatorTileGrid : public ITileGrid
+class MercatorTileMatrixSet : public ITileMatrixSet
 {
 public:
-  MercatorTileGrid(MercatorProjType merc_type) 
+  MercatorTileMatrixSet(MercatorProjType merc_type) 
   {
     merc_type_=merc_type;
     if (merc_type_ == WORLD_MERCATOR)
@@ -55,35 +54,31 @@ public:
 		}
   };
 
+
+
 private:
   MercatorProjType merc_type_;
   OGRSpatialReference merc_srs_;
 
 public:
+  MercatorProjType merc_type ()
+  {
+    return merc_type_;
+  };
+  
   OGRSpatialReference* GetTilingSRS()
   {
     return &merc_srs_;
   }
 
-	int CalcZoomByResolution (double res)
-	{
-		double a = CalcResolutionByZoom(0);
-		for (int i=0;i<23;i++)
-		{
-			if (fabs(a-res)<0.0001) return i;
-			a/=2;
-		}
-		return -1;
-	}
-
-	double CalcResolutionByZoom (int zoom)
+	double CalcPixelSizeByZoom (int zoom)
 	{
 		return (zoom<0) ? 0 : ULY()/(1<<(zoom+7));
 	}
 
 	OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y)
 	{
-		double size = CalcResolutionByZoom(zoom)*256;
+		double size = CalcPixelSizeByZoom(zoom)*256;
 		OGREnvelope envp;
 			
 		envp.MinX = ULX() + x*size;
@@ -96,7 +91,7 @@ public:
 
 	OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy)
 	{
-		double size = CalcResolutionByZoom(zoom)*256;
+		double size = CalcPixelSizeByZoom(zoom)*256;
 		OGREnvelope envp;
 			
 		envp.MinX = ULX() + minx*size;
@@ -110,8 +105,8 @@ public:
   void CalcTileByPoint (double merc_x, double merc_y, int z, int &x, int &y)
 	{
 		//double E = 1e-4;
-		x = (int)floor((merc_x-ULX())/(256*CalcResolutionByZoom(z)));
-		y = (int)floor((ULY()-merc_y)/(256*CalcResolutionByZoom(z)));
+		x = (int)floor((merc_x-ULX())/(256*CalcPixelSizeByZoom(z)));
+		y = (int)floor((ULY()-merc_y)/(256*CalcPixelSizeByZoom(z)));
 	}
 
 	bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y)
@@ -162,7 +157,7 @@ public:
 		  for (int k=0;k<pp_ogr_rings[i]->getNumPoints();k++)
 		  {
         if (pp_ogr_rings[i]->getX(k)<0)
-				    pp_ogr_rings[i]->setPoint(k,-2*MercatorTileGrid::ULX() + 
+				    pp_ogr_rings[i]->setPoint(k,-2*MercatorTileMatrixSet::ULX() + 
                                             pp_ogr_rings[i]->getX(k),pp_ogr_rings[i]->getY(k));
 		  }
 	  }
@@ -330,26 +325,16 @@ public:
 	{
     tile_extension = MakeLower(tile_extension);
 		if ((tile_extension == "jpg") || (tile_extension == "jpeg") || (tile_extension == ".jpg"))
-    {
       tile_type = JPEG_TILE;
-      return TRUE;
-    }
     else if ((tile_extension == "png") || (tile_extension == ".png"))
-    {
       tile_type = gmx::PNG_TILE;
-      return TRUE;
-    }
     else if ((tile_extension == "jp2") || (tile_extension == ".jp2")||(tile_extension == "jpeg2000"))
-    {
       tile_type = gmx::JP2_TILE;
-      return TRUE;
-    }
     else if ((tile_extension == "tif") || (tile_extension == ".tif")||(tile_extension == "tiff"))
-    {
       tile_type = gmx::TIFF_TILE;
-      return TRUE;
- 	  }
-    else return FALSE;
+    else return false;
+
+    return true;
  }
   
   

@@ -13,7 +13,7 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 
   if (!TileName::TileTypeByExtension(GetExtension(str_template),tile_type_))
   {
-    cout<<"Error: can't parse tile type from input template: "<<str_template<<endl;
+    cout<<"ERROR: can't parse tile type from input template: "<<str_template<<endl;
     return;
   }
 
@@ -76,7 +76,7 @@ bool	StandardTileName::ValidateTemplate	(string str_template)
   TileType tt;
   if (!TileName::TileTypeByExtension(GetExtension(str_template),tt))
   {
-		cout<<"Error: not valid tile type in template: "<<str_template<<endl;
+		cout<<"ERROR: not valid tile type in template: "<<str_template<<endl;
 		return FALSE;
 	}
 	return TRUE;
@@ -167,7 +167,7 @@ bool	ESRITileName::ValidateTemplate	(string str_template)
 	TileType tt;
   if (!TileName::TileTypeByExtension(GetExtension(str_template),tt))
   {
-		cout<<"Error: not valid tile type in template: "<<str_template<<endl;
+		cout<<"ERROR: not valid tile type in template: "<<str_template<<endl;
 		return FALSE;
 	}
 	return TRUE;
@@ -186,7 +186,7 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 
 	if (!TileName::TileTypeByExtension(GetExtension(str_template),tile_type_))
   {
-    cout<<"Error: can't parse tile type from input template: "<<str_template<<endl;
+    cout<<"ERROR: can't parse tile type from input template: "<<str_template<<endl;
     return;
   }
 	

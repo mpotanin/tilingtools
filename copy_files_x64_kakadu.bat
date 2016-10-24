@@ -1,7 +1,0 @@
-copy "..\tilingtools_x64.config" "..\x64\release\tilingtools.config"
-copy "..\msvcp100.dll" "..\x64\release\msvcp100.dll"
-copy "..\msvcr71.dll" "..\x64\release\msvcr71.dll"
-copy "..\msvcr100.dll" "..\x64\release\msvcr100.dll"
-copy "..\openjp2_x64.dll" "..\x64\release\openjp2.dll"
-copy "..\kdu_v73R_x64.dll" "..\x64\release\kdu_v73R.dll"
-copy "..\version.txt" "..\x64\release\version.txt"

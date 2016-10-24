@@ -34,25 +34,25 @@ int _tmain(int argc, wchar_t* argv[])
 		return 0;
 	}
 
-	wstring strTileType		=  ReadConsoleParameter(L"-type",argc,argv);		
-	//strImageType =  ReadConsoleParameter(L"-imageType",argc,argv);
-	wstring strTilesFolder		=  ReadConsoleParameter(L"-tiles",argc,argv);
+	wstring strTileType		=  ParseValueFromCmdLine(L"-type",argc,argv);		
+	//strImageType =  ParseValueFromCmdLine(L"-imageType",argc,argv);
+	wstring strTilesFolder		=  ParseValueFromCmdLine(L"-tiles",argc,argv);
 	//cout<<"AAa"<<strTilesFolder<<endl;
-	//strPoints			=  ReadConsoleParameter(L"-points",argc,argv);
-	wstring strImageFile		=  ReadConsoleParameter(L"-file",argc,argv);
-	wstring strZoom				=  ReadConsoleParameter(L"-zoom",argc,argv);
-	wstring strVectorFile		=  ReadConsoleParameter(L"-border",argc,argv);
+	//strPoints			=  ParseValueFromCmdLine(L"-points",argc,argv);
+	wstring strImageFile		=  ParseValueFromCmdLine(L"-file",argc,argv);
+	wstring strZoom				=  ParseValueFromCmdLine(L"-zoom",argc,argv);
+	wstring strVectorFile		=  ParseValueFromCmdLine(L"-border",argc,argv);
 
-	bool	bWldFile = ( ReadConsoleParameter(L"-wld",argc,argv,TRUE) != L"");
-	bool	bTabFile = ( ReadConsoleParameter(L"-tab",argc,argv,TRUE) != L"");
-	bool	bPrjFile = ( ReadConsoleParameter(L"-prj",argc,argv,TRUE) != L"");
-	bool	bMapFile = ( ReadConsoleParameter(L"-map",argc,argv,TRUE) != L"");
-	bool	bKmlFile = ( ReadConsoleParameter(L"-kml",argc,argv,TRUE) != L"");
-	bool	bAuxFile = ( ReadConsoleParameter(L"-xml",argc,argv,TRUE) != L"");
+	bool	bWldFile = ( ParseValueFromCmdLine(L"-wld",argc,argv,TRUE) != L"");
+	bool	bTabFile = ( ParseValueFromCmdLine(L"-tab",argc,argv,TRUE) != L"");
+	bool	bPrjFile = ( ParseValueFromCmdLine(L"-prj",argc,argv,TRUE) != L"");
+	bool	bMapFile = ( ParseValueFromCmdLine(L"-map",argc,argv,TRUE) != L"");
+	bool	bKmlFile = ( ParseValueFromCmdLine(L"-kml",argc,argv,TRUE) != L"");
+	bool	bAuxFile = ( ParseValueFromCmdLine(L"-xml",argc,argv,TRUE) != L"");
 	
-	wstring	strWMS		=  ReadConsoleParameter(L"-wms",argc,argv,1);
-	wstring	strWidth	=  ReadConsoleParameter(L"-width",argc,argv);
-	wstring	strHeight	=  ReadConsoleParameter(L"-height",argc,argv);
+	wstring	strWMS		=  ParseValueFromCmdLine(L"-wms",argc,argv,1);
+	wstring	strWidth	=  ParseValueFromCmdLine(L"-width",argc,argv);
+	wstring	strHeight	=  ParseValueFromCmdLine(L"-height",argc,argv);
 	*/
 
 
@@ -131,7 +131,7 @@ int _tmain(int argc, wchar_t* argv[])
 	}
 		
 	zoom = (int)(_wtof(strZoom.data()));
-	//dResolution = TileName::CalcResolutionByZoom((int)(_wtof(strZoom.data())));
+	//dResolution = TileName::CalcPixelSizeByZoom((int)(_wtof(strZoom.data())));
 		
 		
 		
@@ -235,7 +235,7 @@ int _tmain(int argc, wchar_t* argv[])
 	
 	double ULX = - 20037508.3427812843076588408880691,ULY = 20037508.3427812843076588408880691;
 	//oTileName.CalcCoordSysULxy(ULX,ULY);
-	dResolution = oTileName.CalcResolutionByZoom(zoom);
+	dResolution = oTileName.CalcPixelSizeByZoom(zoom);
 	oEnvelope.MinX = ULX + pixelEnvelope.MinX*dResolution;
 	oEnvelope.MaxY = ULY - pixelEnvelope.MinY*dResolution;
 	oEnvelope.MaxX = ULX + pixelEnvelope.MaxX*dResolution;

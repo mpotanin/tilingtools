@@ -21,48 +21,17 @@
 #include <regex>
 #include <math.h>
 #include <cstdlib>
-
-///*
-
-//#include "../pthread/pthread.h"
-
-#include "../gdal111/include/gdal_priv.h"
-#include "../gdal111/include/ogrsf_frmts.h"
-#include "../gdal111/include/gd.h"
-#include "../gdal111/include/vrtdataset.h"
-#include "../gdal111/include/gdalwarper.h"
-#include "../gdal111/include/sqlite3.h"
-#include "../openjpeg-2.0.0/src/lib/openjp2/openjpeg.h"
-//*/
-
-#ifdef KAKADU
-#include "../kakadu/include/kdu_elementary.h"
-#include "../kakadu/include/kdu_messaging.h"
-#include "../kakadu/include/kdu_params.h"
-#include "../kakadu/include/kdu_compressed.h"
-#include "../kakadu/include/kdu_sample_processing.h"
-
-// Application level includes
-#include "../kakadu/include/kdu_file_io.h"
-#include "../kakadu/include/kdu_stripe_compressor.h"
-#include "../kakadu/include/kdu_stripe_decompressor.h"
-/*
-#include "../kakadu/v7_3_3-01328N/coresys/common/kdu_elementary.h"
-#include "../kakadu/v7_3_3-01328N/coresys/common/kdu_messaging.h"
-#include "../kakadu/v7_3_3-01328N/coresys/common/kdu_params.h"
-#include "../kakadu/v7_3_3-01328N/coresys/common/kdu_compressed.h"
-#include "../kakadu/v7_3_3-01328N/coresys/common/kdu_sample_processing.h"
-
-// Application level includes
-#include "../kakadu/v7_3_3-01328N/apps/compressed_io/kdu_file_io.h"
-#include "../kakadu/v7_3_3-01328N/apps/support/kdu_stripe_compressor.h"
-#include "../kakadu/v7_3_3-01328N/apps/support/kdu_stripe_decompressor.h"
-*/
-#endif
-
-
-
 #include <time.h>
+
+
+#include "../gdal210/include/gdal_priv.h"
+#include "../gdal210/include/ogrsf_frmts.h"
+#include "../gdal210/include/gd.h"
+#include "../gdal210/include/vrtdataset.h"
+#include "../gdal210/include/gdalwarper.h"
+#include "../gdal210/include/sqlite3.h"
+
+#include "../gdal210/include/openjpeg-2.1/openjpeg.h"
 
 
 using namespace std;

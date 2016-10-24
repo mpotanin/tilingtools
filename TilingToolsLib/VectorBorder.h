@@ -40,7 +40,7 @@ protected:
 
 
 protected:
-	static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource	(OGRDataSource		*p_ogr_ds); 
+	static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource	(GDALDataset* poDS); 
 	
 
 };

@@ -24,7 +24,7 @@ bool    ParseFileParameter (string str_file_param, list<string> &file_list, int 
       if (p_arr) delete[]p_arr;
       if (len==0) 
       {
-        cout<<"Error: can't parse output bands order from: "<<item.substr(item.find('?')+1)<<endl;
+        cout<<"ERROR: can't parse output bands order from: "<<item.substr(item.find('?')+1)<<endl;
         file_list.empty();
         output_bands_num = 0;
         return false;
@@ -35,7 +35,7 @@ bool    ParseFileParameter (string str_file_param, list<string> &file_list, int 
 
     if (!gmx::FindFilesByPattern(file_list,item))
     {
-      cout<<"Error: can't find input files by path: "<<item<<endl;
+      cout<<"ERROR: can't find input files by path: "<<item<<endl;
       file_list.empty();
       output_bands_num = 0;
       return false;
@@ -106,7 +106,7 @@ void	SetEnvironmentVariables (string gdal_path)
 
 bool LoadGDAL (int argc, string argv[])
 {
-	string gdal_path	=  ReadConsoleParameter("-gdal",argc,argv);
+	string gdal_path	=  ParseValueFromCmdLine("-gdal",argc,argv);
 	if (gdal_path == "")
 	{
 		wchar_t exe_filename_w[_MAX_PATH + 1];
@@ -118,7 +118,7 @@ bool LoadGDAL (int argc, string argv[])
 
 	if (gdal_path=="")
 	{
-		cout<<"Error: GDAL path isn't specified"<<endl;
+		cout<<"ERROR: GDAL path isn't specified"<<endl;
 		return FALSE;
 	}
 	
@@ -126,7 +126,7 @@ bool LoadGDAL (int argc, string argv[])
    
 	if (!LoadGDALDLLs(gdal_path))
 	{
-		cout<<"Error: can't load gdal dlls: bad path to gdal specified: "<<gdal_path<<endl;
+		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified: "<<gdal_path<<endl;
 		return FALSE;
 	}
 
@@ -136,9 +136,7 @@ bool LoadGDAL (int argc, string argv[])
 bool LoadGDALDLLs (string gdal_path)
 {
 	wstring gdal_dll_w;
-  //debug
-	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal111.dll")); 
-	//end-debug
+	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal201.dll")); 
   HMODULE b = LoadLibraryW(gdal_dll_w.c_str());
   if (b==NULL)
     cout<<"gdal dll path: "<<gdal_dll_w<<endl;
@@ -158,70 +156,199 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 	regex_search(config_str, mr, rx_template);
 	if (mr.size()<2)
 	{
-		cout<<"Error: can't read GdalPath from file: "<<configFile<<endl;
+		cout<<"ERROR: can't read GdalPath from file: "<<configFile<<endl;
 		return "";
 	}
   else return GetAbsolutePath (config_file_path,mr[1]);
 }
 
 
-/*
-string ReadGDALPathFromConfigFile (string config_file_path)
+map<string,string> ParseKeyValueCollectionFromCmdLine (string strCollectionName, int nArgs, string pastrArg[])
 {
-	string	strGdalTag = "<gdalpath>";
-	string	strGdalCloseTag = "</gdalpath>";
-
-	string	configFile = (config_file_path=="") ? "TilingTools.config" : GetAbsolutePath (config_file_path,"TilingTools.config");
-	wstring configFileW;
-	utf8toWStr(configFileW,configFile);
-	
-	FILE *fp = _wfopen(configFileW.c_str(),L"r");
-	if (!fp) return "";
-	string s;
-	char c;
-	while (1==fscanf(fp,"%c",&c))
-		s+=c;
-	fclose(fp);
-	
-	s = MakeLower(s);
-	if (s.find(strGdalTag) == string::npos) return "";
-	if (s.find(strGdalCloseTag) == string::npos) return "";
-
-	string	strGdalPath = s.substr(	s.find(strGdalTag)+strGdalTag.length(),
-									s.find(strGdalCloseTag) - s.find(strGdalTag) - strGdalTag.length());
-	
-	while (strGdalPath[0]==L' ' || strGdalPath[0]==L'\n')
-		strGdalPath = strGdalPath.substr(1,strGdalPath.length()-1);
-	while (strGdalPath[strGdalPath.length()-1]==L' ' || strGdalPath[strGdalPath.length()-1]==L'\n')
-		strGdalPath = strGdalPath.substr(0,strGdalPath.length()-1);
-	
-	return GetAbsolutePath (config_file_path,strGdalPath);
-}
-*/
-
-string  ReadConsoleParameter (string str_pattern, int argc, string argv[], bool is_flag_param)
-{
-	for (int i=0;i<argc;i++)
+  map<string,string> mapReturn;
+  regex rgxKeyValue(".+=.+"); //todo - check
+  for (int i=0;i<nArgs;i++)
 	{
-		string strArg(argv[i]);
-		strArg = MakeLower(strArg);
-		str_pattern = MakeLower(str_pattern);
-		//cout<<str_pattern<<" "<<strArg<<endl;
-		
-		if (str_pattern==strArg)
+		if (MakeLower(strCollectionName)==MakeLower(pastrArg[i]))
 		{
-			if (is_flag_param) return str_pattern;
-			if (i!=argc-1) 
-			{
-				string str(argv[i+1]);
-				//if (str[0]=='-') return "";
-				return str;
-			}
-			return "";
+      if (i!=nArgs-1)
+      {
+        if (regex_match(pastrArg[i+1],rgxKeyValue))
+        {
+          int nPos=pastrArg[i+1].find('=');
+          mapReturn.insert(pair<string,string>(pastrArg[i+1].substr(0,nPos),pastrArg[i+1].substr(nPos+1)));
+        }
+      }
+		}
+	}
+  return mapReturn;
+}
+
+string  ParseValueFromCmdLine (string strKey, int nArgs, string pastrArg[], bool bIsBoolean)
+{
+	for (int i=0;i<nArgs;i++)
+	{
+		if (MakeLower(strKey)==MakeLower(pastrArg[i]))
+		{
+			if (bIsBoolean) return strKey;
+			else if (i!=nArgs-1) 
+				return pastrArg[i+1];
 		}
 	}
 	return "";
 }
 
 
+/*
+Class ImageTilingParametersList
+{
+name, boolean, 
+}
+
+*/
+
+
+bool InitCmdLineArgsFromFile (string strFileName,int &nArgs,string *&pastrArgv, string strExeFilePath)
+{
+  string strFileContent = gmx::ReadTextFile(strFileName);
+  if (strFileContent=="") return false;
+  strFileContent = " " + ((strFileContent.find('\n')!=string::npos) ? strFileContent.substr(0,strFileContent.find('\n')) : strFileContent) + " ";
+    
+  std::regex rgxCmdPattern( "\\s+\"([^\"]+)\"\\s|\\s+([^\\s\"]+)\\s");
+  match_results<string::const_iterator> mr;
+
+  string astrBuffer[1000];
+  if (strExeFilePath=="") nArgs=0;
+  else
+  {
+    astrBuffer[0]=strExeFilePath;
+    nArgs=1;
+  }
+
+  while (regex_search(strFileContent,mr,rgxCmdPattern,std::regex_constants::match_not_null))
+  {
+    astrBuffer[nArgs] = mr.size()==2 ? mr[1].str() : 
+                       mr[1].str()=="" ? mr[2] : mr[1];
+    nArgs++;
+    strFileContent = strFileContent.substr(mr[0].str().size()-1);
+  }
+
+  if (nArgs==0) return false;
+  
+  if (pastrArgv) delete[]pastrArgv;
+  pastrArgv = new string[nArgs];
+  for (int i=0;i<nArgs;i++)
+    pastrArgv[i]=astrBuffer[i];
+
+  return true;
+}
+
+};
+
+void GMXOptionParser::PrintUsage (const GMXOptionDescriptor asDescriptors[], 
+                                  int nDescriptors, 
+                                  const string astrExamples[],
+                                  int nExamples)
+{
+  //TODO
+  int nMaxCol = 50;
+  int nLineWidth=0;
+  cout<<"Usage:"<<endl;
+  for (int i=0;i<nDescriptors;i++)
+  {
+    if (nLineWidth+asDescriptors[i].strUsage.size()<=nMaxCol)
+    {
+      cout<<"["+asDescriptors[i].strOptionName+" "+asDescriptors[i].strUsage+"]";
+      nLineWidth+=nLineWidth+asDescriptors[i].strUsage.size();
+    }
+    else
+    {
+      cout<<endl<<"["+asDescriptors[i].strOptionName+" "+asDescriptors[i].strUsage+"]";
+      nLineWidth=asDescriptors[i].strUsage.size();
+    }
+  }
+  cout<<endl<<endl<<"Usage examples:"<<endl;
+  for (int  i=0;i<nExamples;i++)
+    cout<<astrExamples[i]<<endl;
+}
+
+
+void GMXOptionParser::Clear()
+{
+  m_mapMultipleKVOptions.clear();
+  m_mapOptions.clear();
+  m_mapDescriptors.clear();
+}
+
+
+
+bool GMXOptionParser::Init(const GMXOptionDescriptor asDescriptors[], int nDescriptors, string astrArgs[], int nArgs)
+{
+  Clear();
+  for (int i=0;i<nDescriptors;i++)
+    m_mapDescriptors[asDescriptors[i].strOptionName]=asDescriptors[i];
+
+  for (int i=0;i<nArgs;i++)
+  {
+    if (astrArgs[i][0]=='-')
+    {
+      if (m_mapDescriptors.find(astrArgs[i])!=m_mapDescriptors.end())
+      {
+        if (m_mapDescriptors[astrArgs[i]].bIsBoolean)
+          this->m_mapOptions[astrArgs[i]]=astrArgs[i];
+        else if (i!=nArgs-1)
+        {
+          if (m_mapDescriptors[astrArgs[i]].nOptionValueType==0)
+            this->m_mapOptions[astrArgs[i]]=astrArgs[i+1];
+          else if (m_mapDescriptors[astrArgs[i]].nOptionValueType==1)
+            this->m_mapMultipleOptions[astrArgs[i]].push_back(astrArgs[i+1]);
+          else
+          {
+            if (astrArgs[i+1].find('=')==string::npos||
+              astrArgs[i+1].find('=')==astrArgs[i+1].size()-1)
+            {
+              cout<<"ERROR: can't parse key=value format from \""<<astrArgs[i+1]<<"\""<<endl;
+              return false;
+            }
+            else
+              m_mapMultipleKVOptions[astrArgs[i]][astrArgs[i+1].substr(0,astrArgs[i+1].find('='))]=
+                                astrArgs[i+1].substr(astrArgs[i+1].find('=')+1);
+          }
+          i++;
+        }
+      }
+      else
+      {
+        cout<<"ERROR: Unknown option name \""<<astrArgs[i]<<"\""<<endl;
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
+
+string GMXOptionParser::GetOptionValue(string strOptionName)
+{
+  return m_mapOptions.find(strOptionName)==m_mapOptions.end() ? "" : 
+                                            m_mapOptions[strOptionName];
+}
+
+
+list<string> GMXOptionParser::GetValueList(string strMultipleOptionName)
+{
+  list<string> empty;
+  return m_mapMultipleOptions.find(strMultipleOptionName)==m_mapMultipleOptions.end() ?
+                                                                empty :
+                                                                m_mapMultipleOptions[strMultipleOptionName]; 
+}
+
+
+map<string,string> GMXOptionParser::GetKeyValueCollection(string strMultipleKVOptionName)
+{
+  map<string,string> empty;
+  return m_mapMultipleKVOptions.find(strMultipleKVOptionName)==m_mapMultipleKVOptions.end() ?
+                                                                empty :
+                                                                m_mapMultipleKVOptions[strMultipleKVOptionName]; 
 }

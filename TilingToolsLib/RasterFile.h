@@ -63,7 +63,7 @@ public:
 
   bool			      Init(string raster_file); 
   bool			      Close();
-  RasterFileCutline*  GetRasterFileCutline(ITileGrid *p_tile_grid, string vector_file=""); 
+  RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string vector_file=""); 
   bool			GetPixelSize (int &width, int &height);
   bool      GetSRS (OGRSpatialReference  &srs); 
   bool			GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
@@ -120,8 +120,7 @@ public:
 	void Close();
 
 public:
-	//ToDo: should remake init func to use explicit RasterFileCutline objects with raster files
-  int	Init	(list<string> file_list, ITileGrid* p_tile_grid, string vector_file="");
+  int	Init	(map<string,string> raster_vector, ITileMatrixSet* p_tile_mset);
 
   int CalcNumberOfTiles (int zoom);
 	int	CalcAppropriateZoom();
@@ -143,11 +142,10 @@ protected:
                                 OGREnvelope	chunk_envp, 
                                 RasterBuffer *p_dst_buffer,
                                 int         output_bands_num = 0,
-                                int         **pp_band_mapping = NULL,
+                                map<string,int*>*   p_band_mapping = 0,
                                 GDALResampleAlg resample_alg = GRA_Cubic,
                                 BYTE *p_nodata = NULL,
                                 BYTE *p_background_color = NULL,
-                                int  warp_threads_num = 0,
                                 int  tiffinmem_ind=0);
 
   bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 
@@ -158,24 +156,24 @@ protected:
 						  int *p_tiles_generated,
 						  ITileContainer *p_tile_container);
 
-  bool          CalclValuesForStretchingTo8Bit (  double *&p_min_values,
-                                                 double *&p_max_values,
-                                                 double *p_nodata_val = 0,
-                                                 BandMapping    *p_band_mapping=0);
+  bool          CalclLinearStretchTo8BitParams (  double* &p_min_values,
+                                                 double*  &p_max_values,
+                                                 double*  p_nodata_val=0,
+                                                 int      output_bands_num = 0,
+                                                 map<string,int*>*  p_band_mapping=0);
   list<string>	GetFileList();
 	bool			    Intersects(OGREnvelope envp);
-  ITileGrid* tile_grid(){return p_tile_grid_;};
+  ITileMatrixSet* tile_matrix_set(){return p_tile_mset_;};
 
 protected:
 	bool			AddItemToBundle (string raster_file, string	vector_file);
-  bool      CallAndWaitWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height);
   bool      CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      AdjustCutlinesForOverlapping180Degree();
 
 protected:
 	list<pair<string,RasterFileCutline*>>	item_list_;
-  ITileGrid*  p_tile_grid_;
+  ITileMatrixSet*  p_tile_mset_;
 };
 
 }

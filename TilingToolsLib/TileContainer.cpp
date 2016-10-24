@@ -5,24 +5,38 @@ using namespace gmx;
 namespace gmx
 {
 
-///*
-ITileContainer* ITileContainer::OpenTileContainerForReading (string file_name)
+GMXTileContainer* GMXTileContainer::OpenForWriting (TileContainerOptions *p_params)
 {
-	ITileContainer *p_tc = NULL;
-  if (MakeLower(GetExtension(file_name)) == "mbtiles") p_tc = new MBTileContainer();
-  else p_tc = new GMXTileContainer();
+  if (!p_params) return 0;
+  if (p_params->max_zoom_<0) return 0;
+  if (p_params->path_=="") return 0;
+  if (!p_params->p_matrix_set_) return 0;
+  if (p_params->tiling_srs_envp_.MaxX<p_params->tiling_srs_envp_.MinX) return 0;
+  if (p_params->tile_type_==TileType::NDEF_TILE_TYPE) return 0;
+
+  GMXTileContainer* p_gmx_tc = new GMXTileContainer();
   
-	if (p_tc->OpenForReading(file_name)) return p_tc;
-	else
-	{
-		p_tc->Close();
-		delete(p_tc);
-		return NULL;
-	}
+  int cache_size = p_params->extra_options_["cache_size"]!="" ?
+                    (int)atof(p_params->extra_options_["cache_size"].c_str()) :
+                    -1;
+  int max_volume_size = p_params->extra_options_["volume_size"]!="" ?
+                     (int)atof(p_params->extra_options_["volume_size"].c_str()) :
+                      GMXTileContainer::DEFAULT_MAX_VOLUME_SIZE;
+  MercatorProjType merc_type = ((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type();
+  
+  if (!p_gmx_tc->OpenForWriting(p_params->path_,
+                                p_params->tile_type_,
+                                merc_type,
+                                p_params->tiling_srs_envp_,
+                                p_params->max_zoom_,
+                                cache_size,
+                                max_volume_size))
+  {
+    delete(p_gmx_tc);
+    return 0;
+  }
+  return p_gmx_tc;
 };
-
-
-//*/
 
 
 bool GMXTileContainer::OpenForWriting	(	string				container_file_name, 
@@ -30,8 +44,7 @@ bool GMXTileContainer::OpenForWriting	(	string				container_file_name,
 										MercatorProjType	merc_type,
 										OGREnvelope			envelope, 
 										int					max_zoom, 
-										bool				use_cache,
-                    Metadata    *p_metadata,
+										int				cache_size,
                     unsigned int max_volume_size)
 {
 	int tile_bounds[128];
@@ -40,11 +53,11 @@ bool GMXTileContainer::OpenForWriting	(	string				container_file_name,
 		tile_bounds[4*i] = (tile_bounds[4*i+1] = (tile_bounds[4*i+2] = (tile_bounds[4*i+3] = -1)));
 		if (i<=max_zoom)
 		{
-      MercatorTileGrid merc_grid(merc_type);
+      MercatorTileMatrixSet merc_grid(merc_type);
 			merc_grid.CalcTileRange(envelope,i,tile_bounds[4*i],tile_bounds[4*i+1],tile_bounds[4*i+2],tile_bounds[4*i+3]);
 		}
 	}
-	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,use_cache,p_metadata,max_volume_size);
+	return OpenForWriting(container_file_name,tile_type,merc_type,tile_bounds,cache_size,max_volume_size);
 };
 
 
@@ -57,8 +70,7 @@ GMXTileContainer::GMXTileContainer	()
 	use_cache_	  = FALSE;
   addtile_semaphore_    = NULL;
   is_opened_    = FALSE;
-  p_metadata_ref_=NULL;
-  
+  p_metadata_=0;
   max_volumes_ = 1000;
   pp_container_volumes_ = NULL;
 };	
@@ -80,7 +92,7 @@ bool GMXTileContainer::OpenForReading (string container_file_name)
 	fread(head,1,12,pp_container_volumes_[0]);
 	if (!((head[0]=='G')&&(head[1]=='M')&&(head[2]=='T')&&(head[3]=='C'))) 
 	{
-		cout<<"Error: incorrect input tile container file: "<<container_file_name<<endl;
+		cout<<"ERROR: incorrect input tile container file: "<<container_file_name<<endl;
     MakeEmpty();
 		return FALSE;
 	}
@@ -321,23 +333,23 @@ bool		GMXTileContainer::GetTileBounds (int tile_bounds[128])
 int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list, 
 											int min_zoom, 
 											int max_zoom, 
-											string vector_file, 
-											MercatorProjType merc_type
+											string vector_file
 											)
 {
+  
 	OGRGeometry *p_border = NULL;
   if (!is_opened_) return 0;
-  MercatorTileGrid merc_grid(merc_type);
+  MercatorTileMatrixSet merc_grid(this->merc_type_);
   if (vector_file!="") 
 	{
     if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRS()))) 
 		{
-			cout<<"Error: can't open vector file: "<<vector_file<<endl;
+			cout<<"ERROR: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
 	  if (!merc_grid.AdjustIfOverlap180Degree(p_border))
     {
-      cout<<"Error: AdjustIfOverlapAbscissa fail"<<endl;
+      cout<<"ERROR: AdjustIfOverlapAbscissa fail"<<endl;
       delete(p_border);
       return 0;
     }
@@ -412,20 +424,6 @@ MercatorProjType	GMXTileContainer::GetProjType()
 	return merc_type_;
 };
 
-OGREnvelope GMXTileContainer::GetMercatorEnvelope()
-{
-	OGREnvelope envelope;
-	envelope.MinX = (envelope.MaxX = (envelope.MinY = (envelope.MaxY = 0)));
-  MercatorTileGrid merc_grid(merc_type_);
-
-	for (int z =0;z<32;z++)
-	{
-		if (maxx_[z]>0 && maxy_[z]>0)
-			envelope = merc_grid.CalcEnvelopeByTileRange(z,minx_[z],miny_[z],maxx_[z],maxy_[z]);
-		else break;
-	}
-	return envelope;
-};
 
 int			GMXTileContainer::GetMaxZoom()
 {
@@ -439,8 +437,7 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 									                        TileType			tile_type,
 									                        MercatorProjType	merc_type,
                                           int					tile_bounds[128], 
-									                        bool				use_cache,
-                                          Metadata    *p_metadata,
+									                        int 				cache_size,
                                           unsigned int max_volume_size)
 {
   if (is_opened_ && !read_only_) Close(); 
@@ -453,7 +450,6 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 	container_file_name_	= container_file_name;
  	container_byte_size_	= 0;
   addtile_semaphore_    = NULL;
-  p_metadata_ref_       = p_metadata;
 
   pp_container_volumes_ = new FILE*[max_volumes_];
   for (int i=0;i<max_volumes_;i++)
@@ -471,10 +467,10 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
     return FALSE;
   }
 
-	if (use_cache) 
+	if (cache_size!=0) 
 	{
 		use_cache_	= TRUE;
-		p_tile_cache_	= new TileCache();
+		p_tile_cache_	= (cache_size<0) ? new TileCache() : new TileCache(cache_size);
 	}
 	else 
 	{
@@ -540,7 +536,7 @@ bool   GMXTileContainer::DeleteVolumes()
       {      
         if (! gmx::GMXDeleteFile(*iter))
         {
-          cout<<"Error: can't delete file: "<<*iter<<endl;
+          cout<<"ERROR: can't delete file: "<<*iter<<endl;
           return FALSE;
         }
       }
@@ -620,7 +616,7 @@ bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, BYTE *&p_d
   {
     if (!(pp_container_volumes_[volume_num] = OpenFile(GetVolumeName(volume_num).c_str(),"rb")))
     {
-      cout<<"Error: can't open file: "<<GetVolumeName(volume_num).c_str()<<endl;
+      cout<<"ERROR: can't open file: "<<GetVolumeName(volume_num).c_str()<<endl;
       return FALSE;
     }
   }
@@ -704,7 +700,7 @@ bool	GMXTileContainer::WriteTilesToContainerFileFromCache()
       {
         if (!this->AddTileToContainerFile(z,x,y,tile_data,tile_size))
         {
-          cout<<"Error: can't write tile to container volume"<<endl;
+          cout<<"ERROR: can't write tile to container volume"<<endl;
           return FALSE;
         }
       }
@@ -724,7 +720,7 @@ bool	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 	memcpy(&p_data[4],&max_volume_size_,4);
 	p_data[8]	= 0;
 	p_data[9]	= merc_type_;
-  p_data[10]	= (p_metadata_ref_) ? p_metadata_ref_->TagCount() : 0;
+  p_data[10]	= (p_metadata_) ? p_metadata_->TagCount() : 0;
 	p_data[11]	= tile_type_;
 
 	for (int z=0;z<32;z++)
@@ -754,11 +750,11 @@ bool	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 		memcpy(&p_data[12 + 512 + 13*i],tile_info,13);
 	}
 
-  if (p_metadata_ref_)
+  if (p_metadata_)
   {
     int m_size;
     void *pm_data = 0;
-    if (p_metadata_ref_->GetAllSerialized(m_size,pm_data))
+    if (p_metadata_->GetAllSerialized(m_size,pm_data))
     {
       memcpy(&p_data[12 + 512 + 13*max_tiles_],pm_data,m_size);
     }
@@ -771,7 +767,7 @@ bool	GMXTileContainer::WriteHeaderToByteArray(BYTE*	&p_data)
 	
 unsigned int GMXTileContainer::HeaderSize()
 {
-  return (4+4+4+512+max_tiles_*(4+8+1)) + ((p_metadata_ref_) ? p_metadata_ref_->GetAllSerializedSize() : 0);
+  return (4+4+4+512+max_tiles_*(4+8+1)) + ((p_metadata_) ? p_metadata_->GetAllSerializedSize() : 0);
 };
 
 void GMXTileContainer::MakeEmpty ()
@@ -801,7 +797,8 @@ void GMXTileContainer::MakeEmpty ()
     pp_container_volumes_ = NULL;
   }
 
-  p_metadata_ref_ = NULL;
+  if (p_metadata_) delete(p_metadata_);
+  p_metadata_=0;
 };
 
 
@@ -825,6 +822,20 @@ MBTileContainer (string file_name)
 	}
 }
 */
+
+int		MBTileContainer::GetMinZoom()
+{
+	if (p_sql3_db_ == NULL) return -1;
+	string str_sql = "SELECT MIN(zoom_level) FROM tiles";
+	sqlite3_stmt *stmt	= NULL;
+	if (SQLITE_OK != sqlite3_prepare_v2 (p_sql3_db_, str_sql.c_str(), str_sql.size()+1, &stmt, NULL)) return -1;
+	
+	int min_zoom = -1;
+	if (SQLITE_ROW == sqlite3_step (stmt))
+		min_zoom = sqlite3_column_int(stmt,0);
+	sqlite3_finalize(stmt);
+	return min_zoom;
+};
 	
 int		MBTileContainer::GetMaxZoom()
 {
@@ -844,7 +855,7 @@ bool MBTileContainer::OpenForReading  (string file_name)
 {
 	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_))
 	{
-		cout<<"Error: can't open mbtiles file: "<<file_name<<endl;
+		cout<<"ERROR: can't open mbtiles file: "<<file_name<<endl;
 		return FALSE;
 	}
 
@@ -882,6 +893,20 @@ bool MBTileContainer::OpenForReading  (string file_name)
 	return TRUE;
 }
 
+MBTileContainer* MBTileContainer::OpenForWriting (TileContainerOptions *p_params)
+{
+  if (!p_params) return 0;
+  if (p_params->path_=="") return 0;
+  if (!p_params->p_matrix_set_) return 0;
+  if (p_params->tiling_srs_envp_.MaxX<p_params->tiling_srs_envp_.MinX) return 0;
+  if (p_params->tile_type_==TileType::NDEF_TILE_TYPE) return 0;
+  
+  return new MBTileContainer(p_params->path_,
+    p_params->tile_type_,
+    ((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type(),
+    p_params->tiling_srs_envp_);
+}
+
 
 MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp)
 {
@@ -894,7 +919,7 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 	sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
 	if (p_err_msg!=NULL)
 	{
-		cout<<"Error: sqlite: "<<p_err_msg<<endl;
+		cout<<"ERROR: sqlite: "<<p_err_msg<<endl;
 		delete[]p_err_msg;
 		Close();
 		return;
@@ -910,10 +935,10 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 		
 	OGREnvelope latlong_envp;
 
-	latlong_envp.MinX = MercatorTileGrid::MecrToLong(merc_envp.MinX, merc_type);
-	latlong_envp.MaxX = MercatorTileGrid::MecrToLong(merc_envp.MaxX, merc_type);
-	latlong_envp.MinY = MercatorTileGrid::MercToLat(merc_envp.MinY, merc_type);
-	latlong_envp.MaxY = MercatorTileGrid::MercToLat(merc_envp.MaxY, merc_type);
+	latlong_envp.MinX = MercatorTileMatrixSet::MecrToLong(merc_envp.MinX, merc_type);
+	latlong_envp.MaxX = MercatorTileMatrixSet::MecrToLong(merc_envp.MaxX, merc_type);
+	latlong_envp.MinY = MercatorTileMatrixSet::MercToLat(merc_envp.MinY, merc_type);
+	latlong_envp.MaxY = MercatorTileMatrixSet::MercToLat(merc_envp.MaxY, merc_type);
 
   char	buf[256];
 	sprintf(buf,"INSERT INTO metadata VALUES ('bounds', '%lf,%lf,%lf,%lf')",
@@ -927,7 +952,7 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 	sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
 	if (p_err_msg!=NULL)
 	{
-		cout<<"Error: sqlite: "<<p_err_msg<<endl;
+		cout<<"ERROR: sqlite: "<<p_err_msg<<endl;
 		delete[]p_err_msg;
 		Close();
 		return;
@@ -952,7 +977,7 @@ bool	MBTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int si
 		char	*p_err_msg = NULL;
 		if (SQLITE_DONE != sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg))
 		{
-			cout<<"Error: can't delete existing tile: "<<str_sql<<endl;	
+			cout<<"ERROR: can't delete existing tile: "<<str_sql<<endl;	
 			return FALSE;
 		}
 	}
@@ -1024,21 +1049,21 @@ bool		MBTileContainer::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int 
 	return TRUE;
 }
 
-int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file, MercatorProjType merc_type)
+int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file)
 {
 	if (p_sql3_db_ == NULL) return 0;
 	OGRGeometry *p_border = NULL;
-  MercatorTileGrid merc_grid(merc_type);
+  MercatorTileMatrixSet merc_grid(merc_type_);
   if (vector_file!="") 
 	{
     if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRS()))) 
 		{
-			cout<<"Error: can't open vector file: "<<vector_file<<endl;
+			cout<<"ERROR: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
 	  if (!merc_grid.AdjustIfOverlap180Degree(p_border))
     {
-      cout<<"Error: AdjustIfOverlapAbscissa fail"<<endl;
+      cout<<"ERROR: AdjustIfOverlapAbscissa fail"<<endl;
       delete(p_border);
       return 0;
     }
@@ -1084,24 +1109,6 @@ int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int
 };
 	
 
-
-OGREnvelope MBTileContainer::GetMercatorEnvelope()
-{
-	OGREnvelope envelope;
-	envelope.MinX = (envelope.MaxX = (envelope.MinY = (envelope.MaxY = 0)));
-	int bounds[128];
-	if (!GetTileBounds(bounds)) return envelope;
-
-  MercatorTileGrid merc_grid(WORLD_MERCATOR);
-	for (int z =0;z<32;z++)
-	{
-		if (bounds[4*z+2]>0 && bounds[4*z+3]>0)
-			envelope = merc_grid.CalcEnvelopeByTileRange(z,bounds[4*z],bounds[4*z+1],bounds[4*z+2],bounds[4*z+3]);
-	}
-	return envelope;
-};
-
-
 bool		MBTileContainer::GetTileBounds (int tile_bounds[128])
 {
 	for (int z=0; z<32; z++)
@@ -1146,20 +1153,34 @@ MercatorProjType	MBTileContainer::GetProjType()
 
 bool MBTileContainer::Close ()
 {
-	if (p_sql3_db_!=NULL)
+  if (p_sql3_db_!=NULL)
 	{
-		sqlite3_close(p_sql3_db_);
+    char	*p_err_msg = NULL;
+    string str_sql = "INSERT INTO metadata VALUES ('maxzoom','" + ConvertIntToString(GetMaxZoom())+"')";
+    sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
+    str_sql = "INSERT INTO metadata VALUES ('minzoom','" + ConvertIntToString(GetMinZoom())+"')";
+    sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
+    sqlite3_close(p_sql3_db_);
 		p_sql3_db_ = NULL;
-	}
+  }
 	return TRUE;
 };
 
 
-
-
-
-TileFolder::TileFolder (TileName *p_tile_name, bool use_cache)
+TileFolder* TileFolder::OpenForWriting (TileContainerOptions *p_params)
 {
+  if (!p_params) return 0;
+  if (!p_params->p_tile_name_) return 0;
+  bool b_use_cache = p_params->extra_options_["cache_size"]=="" ? true :
+                    (int)atof(p_params->extra_options_["cache_size"].c_str()) == 0 ? false : true;
+  return new TileFolder(p_params->p_tile_name_,((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type(),b_use_cache);
+};
+
+
+
+TileFolder::TileFolder (TileName *p_tile_name, MercatorProjType merc_type, bool use_cache)
+{
+  merc_type_=merc_type;
 	p_tile_name_	= p_tile_name;
 	use_cache_	= use_cache;
 	p_tile_cache_		= (use_cache) ? new TileCache() :  NULL;
@@ -1243,20 +1264,20 @@ int			TileFolder::GetMaxZoom()
 };
 
 
-int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file,  MercatorProjType merc_type)
+int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file)
 {
-  MercatorTileGrid merc_grid(merc_type);
+  MercatorTileMatrixSet merc_grid(merc_type_);
   OGRGeometry *p_border = NULL;
 	if (vector_file!="") 
 	{
     if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRS()))) 
 		{
-			cout<<"Error: can't open vector file: "<<vector_file<<endl;
+			cout<<"ERROR: can't open vector file: "<<vector_file<<endl;
 			return 0;
 		}
 	  if (!merc_grid.AdjustIfOverlap180Degree(p_border))
     {
-      cout<<"Error: AdjustIfOverlapAbscissa fail"<<endl;
+      cout<<"ERROR: AdjustIfOverlapAbscissa fail"<<endl;
       delete(p_border);
       return 0;
     }
@@ -1289,26 +1310,6 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 	}
 	delete(p_border);
 	return tile_list.size();	
-};
-
-OGREnvelope TileFolder::GetMercatorEnvelope()
-{
-	OGREnvelope envelope;
-	envelope.MinX = (envelope.MaxX = (envelope.MinY = (envelope.MaxY = 0)));
-	int bounds[128];
-	if (!GetTileBounds(bounds)) return envelope;
-
-
-	for (int z =0;z<32;z++)
-	{
-		if (bounds[4*z+2]>0 && bounds[4*z+3]>0)
-    {
-      MercatorTileGrid merc_grid(WORLD_MERCATOR);
-      envelope = merc_grid.CalcEnvelopeByTileRange(z,bounds[4*z],bounds[4*z+1],bounds[4*z+2],bounds[4*z+3]);
-    }
-    else break;
-	}
-	return envelope;
 };
 
 
@@ -1351,6 +1352,78 @@ bool	TileFolder::ReadTileFromFile (int z,int x, int y, BYTE *&p_data, unsigned i
   p_data = (BYTE*)_p_data;
 	return result;
  };
+
+bool TileContainerFactory::GetTileContainerType (string strName, TileContainerType &eType)
+{
+  strName = MakeLower(strName);
+  if (strName=="")
+    eType = TileContainerType::TILEFOLDER;
+  else if (strName=="gmxtiles")
+    eType = TileContainerType::GMXTILES;
+  else if (strName=="mbtiles")
+    eType = gmx::TileContainerType::MBTILES;
+  else return false;
+
+  return true;
+};
+
+
+ITileContainer* TileContainerFactory::OpenForWriting(TileContainerType container_type, TileContainerOptions *p_params)
+{
+  switch (container_type)
+  {
+    case TileContainerType::GMXTILES:
+      return GMXTileContainer::OpenForWriting(p_params);
+    case TileContainerType::MBTILES:
+      return MBTileContainer::OpenForWriting(p_params);
+    case TileContainerType::TILEFOLDER:
+      return TileFolder::OpenForWriting(p_params);
+    return 0;
+  }
+};
+
+string TileContainerFactory::GetExtensionByTileContainerType (TileContainerType container_type)
+{
+  switch (container_type)
+  {
+    case TileContainerType::GMXTILES:
+      return "tiles";
+    case TileContainerType::MBTILES:
+      return "mbtiles";
+    case TileContainerType::TILEFOLDER:
+      return "";
+    return "";
+  }
+};
+
+ITileContainer* TileContainerFactory::OpenForReading (string file_name)
+{
+	ITileContainer *p_tc = NULL;
+  if (!FileExists(file_name)) return 0;
+  if (IsDirectory(file_name)) return 0;
+
+  if (MakeLower(GetExtension(file_name)) == "mbtiles")
+  {
+    MBTileContainer* p_mbtiles = new MBTileContainer();
+    if (!p_mbtiles->OpenForReading(file_name)) 
+    {
+      delete p_mbtiles;
+      return 0;
+    }
+    else return p_mbtiles;
+  }
+  else if ((MakeLower(GetExtension(file_name)) == "tiles")||
+           (MakeLower(GetExtension(file_name)) == "gmxtiles")) 
+	{
+    GMXTileContainer* p_gmx_tc = new GMXTileContainer();
+    if (!p_gmx_tc->OpenForReading(file_name))
+    {
+		  delete(p_tc);
+		  return 0;
+    }
+    else return p_gmx_tc;
+	}
+};
 
 
 }

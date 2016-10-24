@@ -10,7 +10,6 @@ namespace gmx
 {
 
 extern int CURR_WORK_THREADS = 0;
-extern HANDLE WARP_SEMAPHORE = 0;
 
 
 int _stdcall gmxPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
@@ -64,7 +63,7 @@ bool RasterFile::Init(string raster_file)
 	
 	if (p_gdal_ds_==NULL)
 	{
-		cout<<"Error: RasterFile::init: can't open raster image"<<endl;
+		cout<<"ERROR: RasterFile::init: can't open raster image"<<endl;
     Close();
 		return FALSE;
 	}
@@ -80,7 +79,7 @@ bool RasterFile::Init(string raster_file)
   OGREnvelope raster_srs_envp;
   if (!GetEnvelope(raster_srs_envp))
   {
- 		cout<<"Error: RasterFile::init: not valid geotransform in the raster"<<endl;
+ 		cout<<"ERROR: RasterFile::init: not valid geotransform in the raster"<<endl;
     Close();
 		return FALSE;
   }
@@ -89,16 +88,16 @@ bool RasterFile::Init(string raster_file)
 }
 
 
-RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, string cutline_file)
+RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string cutline_file)
 {
-  if (!p_tile_grid) return 0;
-  OGRSpatialReference *p_tiling_srs = p_tile_grid->GetTilingSRS();
+  if (!p_tile_mset) return 0;
+  OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRS();
   if (!p_tiling_srs) return 0;
   RasterFileCutline* p_rfc = new RasterFileCutline();
   OGREnvelope raster_srs_envp;
   if (!GetEnvelope(raster_srs_envp))
   {
- 		cout<<"Error: RasterFile::GetRasterFileCutline: not valid geotransform in the raster"<<endl;
+ 		cout<<"ERROR: RasterFile::GetRasterFileCutline: not valid geotransform in the raster"<<endl;
     delete(p_rfc);
 		return 0;
   }
@@ -117,34 +116,24 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, str
     delete (p_poly_envp);
     return 0;
   }
+  
 
-  if (cutline_file!="")
+  if (p_tile_mset->DoesOverlap180Degree(p_poly_envp)) 
+    p_tile_mset->AdjustForOverlapping180Degree(p_poly_envp);
+  p_poly_envp->getEnvelope(&p_rfc->tiling_srs_envp_);
+  delete (p_poly_envp);  
+
+
+  if (cutline_file!="") 
   {
     if (!(p_rfc->tiling_srs_cutline_ = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file,p_tiling_srs)))
     {
       delete(p_rfc);
-      delete (p_poly_envp);
       return 0;
     }
-  }
+    if (p_tile_mset->DoesOverlap180Degree(p_rfc->tiling_srs_cutline_))
+      p_tile_mset->AdjustForOverlapping180Degree(p_rfc->tiling_srs_cutline_);
 
-  bool rfc_overlaps = (p_rfc->tiling_srs_cutline_) ?
-                       p_tile_grid->DoesOverlap180Degree(p_poly_envp) :   
-                       ( p_tile_grid->DoesOverlap180Degree(p_poly_envp) || 
-                        p_tile_grid->DoesOverlap180Degree(p_rfc->tiling_srs_cutline_));
-  if (rfc_overlaps)
-  {
-    p_tile_grid->AdjustForOverlapping180Degree(p_poly_envp);
-    if (p_rfc->tiling_srs_cutline_)
-      p_tile_grid->AdjustForOverlapping180Degree(p_rfc->tiling_srs_cutline_);
-  }
-  
-  p_poly_envp->getEnvelope(&p_rfc->tiling_srs_envp_);
-  delete (p_poly_envp);    
-
-
-  if (p_rfc->tiling_srs_cutline_)
-  {
     OGRMultiPolygon *p_pixel_line_geom = 0;
     if(!(p_pixel_line_geom = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file,&raster_srs)))
     {
@@ -158,10 +147,11 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, str
     if (fabs(d)<1e-7)
     {
       delete(p_rfc);  
+      delete(p_pixel_line_geom);
       return 0;
     }
 
-    p_rfc->p_pixel_line_cutline_ = new OGRMultiPolygon();
+    p_rfc->p_pixel_line_cutline_ = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
 
     for (int j=0;j<p_pixel_line_geom->getNumGeometries();j++)
     {
@@ -178,7 +168,7 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileGrid *p_tile_grid, str
 
 		    p_ogr_ring->setPoint(i,(int)(p+0.5),(int)(l+0.5));
 	    }
-      p_rfc->p_pixel_line_cutline_->addGeometryDirectly(new OGRPolygon());
+      p_rfc->p_pixel_line_cutline_->addGeometryDirectly((OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon));
       ((OGRPolygon*)p_rfc->p_pixel_line_cutline_->getGeometryRef(j))->addRing(p_ogr_ring);
     }
     delete(p_pixel_line_geom);
@@ -349,31 +339,25 @@ bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
    
   gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
 
-  if (gmx::WARP_SEMAPHORE) WaitForSingleObject(gmx::WARP_SEMAPHORE,INFINITE);
-
   //ToDo...
-  int bands_num=0;
-  int **pp_band_mapping=0;
-  //ToDo 
-  if (p_tiling_params->p_band_mapping_)
-   p_tiling_params->p_band_mapping_->GetBandMappingData(bands_num,pp_band_mapping);
+  int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
+
+  map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
+ 
     
   bool warp_result = WarpChunkToBuffer(zoom,
                                       chunk_envp,
                                       p_merc_buffer,
                                       bands_num,
-                                      pp_band_mapping,
+                                      bands_num==0 ? 0 : &p_tiling_params->p_bundle_input_->GetBandMapping(),
                                       p_tiling_params->gdal_resampling_,
                                       p_tiling_params->p_transparent_color_,
                                       p_tiling_params->p_background_color_,
-                                      p_tiling_params->max_work_threads_>0 ? 1 : 0,
                                       p_chunk_params->tiffinmem_ind_);
-  
-  if (gmx::WARP_SEMAPHORE) ReleaseSemaphore(gmx::WARP_SEMAPHORE,1,NULL);
-  
+    
   if (!warp_result)	
   {
-	  cout<<"Error: BaseZoomTiling: warping to merc fail"<<endl;
+	  cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
     gmx::CURR_WORK_THREADS--;
 	  return FALSE;
 	}
@@ -384,15 +368,15 @@ bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
                           p_chunk_params->p_stretch_min_values_,
                           p_chunk_params->p_stretch_max_values_))
     {
-      cout<<"Error: can't stretch raster values to 8 bit"<<endl;
+      cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
       gmx::CURR_WORK_THREADS--;
 			return FALSE;
 		}
 	}
 
-  int                   tiles_expected = p_chunk_params->tiles_expected_;
-  int                   *p_tiles_generated = p_chunk_params->p_tiles_generated_;
-
+  int tiles_expected = p_chunk_params->tiles_expected_;
+  int *p_tiles_generated = p_chunk_params->p_tiles_generated_;
+  
   if (!RunTilingFromBuffer(p_tiling_params,
 										p_merc_buffer,
 										chunk_envp,
@@ -401,12 +385,12 @@ bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
 										p_tiles_generated,
 										p_tile_container))
 	{
-			cout<<"Error: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
+			cout<<"ERROR: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
 			gmx::CURR_WORK_THREADS--;
       return FALSE;
 	}
- 
-	delete(p_merc_buffer);
+
+  delete(p_merc_buffer);
   gmx::CURR_WORK_THREADS--;
   return TRUE;
 }
@@ -414,7 +398,7 @@ bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
 
 BundleTiler::BundleTiler(void)
 {
-  p_tile_grid_=0;
+  p_tile_mset_=0;
 }
 
 void BundleTiler::Close(void)
@@ -424,7 +408,7 @@ void BundleTiler::Close(void)
 		delete((*iter).second);
 	}
 	item_list_.empty();
-  p_tile_grid_=0;
+  p_tile_mset_=0;
 }
 
 BundleTiler::~BundleTiler(void)
@@ -436,17 +420,17 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 {
   OGREnvelope bundle_envp = CalcEnvelope();
   int min_x,min_y,max_x,max_y;
-  p_tile_grid_->CalcTileRange(bundle_envp,4,min_x,min_y,max_x,max_y);
+  p_tile_mset_->CalcTileRange(bundle_envp,4,min_x,min_y,max_x,max_y);
   if ((bundle_envp.MaxX>0 && bundle_envp.MinX<0)&&(max_x-min_x>1<<3))
   {
     int min_x0,min_y0,max_x0,max_y0;
     OGREnvelope zero_point_envp;
     zero_point_envp.MinX = -0.001;zero_point_envp.MinY = -0.001;
     zero_point_envp.MaxX = 0.001;zero_point_envp.MaxY = 0.001;
-    p_tile_grid_->CalcTileRange(zero_point_envp,5,min_x0,min_y0,max_x0,max_y0);
+    p_tile_mset_->CalcTileRange(zero_point_envp,5,min_x0,min_y0,max_x0,max_y0);
     for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
 	  {
-      p_tile_grid_->CalcTileRange((*iter).second->tiling_srs_envp_,
+      p_tile_mset_->CalcTileRange((*iter).second->tiling_srs_envp_,
                                   5,min_x,min_y,max_x,max_y);
       if (min_x<=max_x0 && max_x>=min_x0) return true;
     }
@@ -455,42 +439,42 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 	  {
       OGRPolygon* p_poly_envp = 
         VectorOperations::CreateOGRPolygonByOGREnvelope((*iter).second->tiling_srs_envp_);
-      p_tile_grid_->AdjustForOverlapping180Degree(p_poly_envp);
+      p_tile_mset_->AdjustForOverlapping180Degree(p_poly_envp);
       p_poly_envp->getEnvelope(&(*iter).second->tiling_srs_envp_);
       delete(p_poly_envp);
       if ((*iter).second->tiling_srs_cutline_)
-        p_tile_grid_->AdjustForOverlapping180Degree((*iter).second->tiling_srs_cutline_);
+        p_tile_mset_->AdjustForOverlapping180Degree((*iter).second->tiling_srs_cutline_);
     }
   }
   return true;
 }
 
 
-int	BundleTiler::Init (list<string> file_list, ITileGrid* p_tile_grid, string vector_file)
+int	BundleTiler::Init (map<string,string> raster_vector, ITileMatrixSet* p_tile_mset)
 {
 	Close();
   
-  if (!p_tile_grid) return 0;
+  if (!p_tile_mset) return 0;
   else
   {
     char  *p_srs_proj4;
-    if (OGRERR_NONE!=p_tile_grid->GetTilingSRS()->exportToProj4(&p_srs_proj4)) 
+    if (OGRERR_NONE!=p_tile_mset->GetTilingSRS()->exportToProj4(&p_srs_proj4)) 
       return 0;
-    p_tile_grid_=p_tile_grid;
+    p_tile_mset_=p_tile_mset;
     OGRFree(p_srs_proj4);
   }
 
-	if (file_list.size() == 0) return 0;
+	if (raster_vector.size() == 0) return 0;
 
- 	for (std::list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
+ 	for (map<string,string>::iterator iter = raster_vector.begin(); iter!=raster_vector.end(); iter++)
 	{
-    if (file_list.size() > 1 && vector_file == "")
-      AddItemToBundle((*iter),VectorOperations::GetVectorFileNameByRasterFileName(*iter));
-    else AddItemToBundle((*iter),vector_file);
+    if ((*iter).second=="")
+      AddItemToBundle((*iter).first,VectorOperations::GetVectorFileNameByRasterFileName((*iter).first));
+    else AddItemToBundle((*iter).first,(*iter).second);
 	}
 
   AdjustCutlinesForOverlapping180Degree();
-
+  
   return item_list_.size();
 }
 
@@ -510,13 +494,13 @@ bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file)
 
 	if (!image.Init(raster_file))
 	{
-		cout<<"Error: can't init. image: "<<raster_file<<endl;
+		cout<<"ERROR: can't init. image: "<<raster_file<<endl;
 		return 0;
 	}
 
   pair<string,RasterFileCutline*> p;
 	p.first			= raster_file;
-  p.second    = image.GetRasterFileCutline(p_tile_grid_,vector_file);
+  p.second    = image.GetRasterFileCutline(p_tile_mset_,vector_file);
   if (!p.second) return false;
   item_list_.push_back(p);
 	return true;
@@ -558,16 +542,16 @@ OGREnvelope BundleTiler::CalcEnvelope()
 int	BundleTiler::CalcNumberOfTiles (int zoom)
 {
 	int n = 0;
-  double		res = p_tile_grid_->CalcResolutionByZoom(zoom);
+  double		res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
 
 	int minx,maxx,miny,maxy;
-	p_tile_grid_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
+	p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
 	
 	for (int curr_x = minx; curr_x<=maxx; curr_x++)
 	{
 		for (int curr_y = miny; curr_y<=maxy; curr_y++)
 		{
-			OGREnvelope tile_envp = p_tile_grid_->CalcEnvelopeByTile(zoom,curr_x,curr_y);
+			OGREnvelope tile_envp = p_tile_mset_->CalcEnvelopeByTile(zoom,curr_x,curr_y);
 			if (Intersects(tile_envp)) n++;
 		}
 	}
@@ -602,8 +586,8 @@ int		BundleTiler::CalcAppropriateZoom()
 
 	for (int z=0; z<32; z++)
 	{
-		if (p_tile_grid_->CalcResolutionByZoom(z) <res_src || 
-			(fabs(p_tile_grid_->CalcResolutionByZoom(z)-res_src)/p_tile_grid_->CalcResolutionByZoom(z))<0.2) return z;
+		if (p_tile_mset_->CalcPixelSizeByZoom(z) <res_src || 
+			(fabs(p_tile_mset_->CalcPixelSizeByZoom(z)-res_src)/p_tile_mset_->CalcPixelSizeByZoom(z))<0.2) return z;
 	}
 
 	return -1;
@@ -620,22 +604,22 @@ bool	BundleTiler::Intersects(OGREnvelope envp)
 	return FALSE;
 }
 
-///*ToDo
-bool BundleTiler::CalclValuesForStretchingTo8Bit (double *&p_min_values,
-                                                       double *&p_max_values,
-                                                       double *p_nodata_val,
-                                                       BandMapping    *p_band_mapping)
+///*ToDo!!!!!!!
+bool BundleTiler::CalclLinearStretchTo8BitParams (double *&p_min_values,
+                                                  double *&p_max_values,
+                                                  double *p_nodata_val,
+                                                  int      output_bands_num,
+                                                  map<string,int*>*  p_band_mapping)
 {
   if (this->item_list_.size()==0) return FALSE;
   p_min_values = (p_max_values = 0);
-  int bands_num;
   double min,max,mean,std;
    
-  if (!p_band_mapping)
+  if (output_bands_num==0)
   {
     RasterFile rf;
     if (!rf.Init(*GetFileList().begin())) return FALSE;
-    bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
+    int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
     p_min_values = new double[bands_num];
     p_max_values = new double[bands_num]; 
     for (int b=0;b<bands_num;b++)
@@ -652,28 +636,23 @@ bool BundleTiler::CalclValuesForStretchingTo8Bit (double *&p_min_values,
   }
   else
   {
-    if (!(bands_num = p_band_mapping->GetBandsNum())) return FALSE;
-    p_min_values = new double[bands_num];
-    p_max_values = new double[bands_num]; 
-    list<string> file_list = GetFileList();
+    p_min_values = new double[output_bands_num];
+    p_max_values = new double[output_bands_num]; 
     
-    for (int b=0;b<bands_num;b++)
+    for (int b=0;b<output_bands_num;b++)
       p_min_values[b]=(p_max_values[b]=0);
 
-    for (int b=0;b<bands_num;b++)
+
+    for (int b=0;b<output_bands_num;b++)
     {
-      for (list<string>::iterator iter=file_list.begin();iter!=file_list.end();iter++)
+      for (map<string,int*>::iterator iter=p_band_mapping->begin();iter!=p_band_mapping->end();iter++)
       {
-        int _bands_num;
-        int *p_bands=0;
-        p_band_mapping->GetBands((*iter),_bands_num,p_bands);
-        if (p_bands[b]>0)
+        if ((*iter).second[b]>0)
         {
           RasterFile rf;
-          bool error=false;
-          if (!rf.Init(*iter)) error=true;
-          else if (!rf.CalcBandStatistics(p_bands[b],min,max,mean,std,p_nodata_val)) error=true;
-          
+          bool error= rf.Init((*iter).first) ? false : true;
+          if (!error)
+            error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,p_nodata_val) ? false : true;
           if (error)
           {
             delete[]p_min_values;delete[]p_max_values;
@@ -683,17 +662,13 @@ bool BundleTiler::CalclValuesForStretchingTo8Bit (double *&p_min_values,
           {
             p_min_values[b] = mean - 2*std;
   		      p_max_values[b] = mean + 2*std;
-            delete[]p_bands;
             break;
           }
-        }
-        else delete[]p_bands;
-    
+        }  
       }
     }
   }
-
-
+  
   return TRUE;
 }
 //*/
@@ -702,11 +677,10 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
                                             OGREnvelope	    chunk_envp, 
                                             RasterBuffer    *p_dst_buffer, 
                                             int             output_bands_num,
-                                            int             **pp_band_mapping,
+                                            map<string,int*>* p_band_mapping,
                                             GDALResampleAlg resample_alg, 
                                             BYTE            *p_nodata,
                                             BYTE            *p_background_color,
-                                            int  warp_threads_num,
                                             int  tiffinmem_ind)
 {
   //initialize output vrt dataset warp to 
@@ -714,7 +688,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
 	if (p_src_ds==NULL)
 	{
-		cout<<"Error: can't open raster file: "<<(*item_list_.begin()).first<<endl;
+		cout<<"ERROR: can't open raster file: "<<(*item_list_.begin()).first<<endl;
 		return FALSE;
 	}
   GDALDataType	dt		= GetRasterFileType();
@@ -724,7 +698,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
   bool nodata_val_from_file_defined;
   double			nodata_val_from_file = GetNodataValue(nodata_val_from_file_defined);
 
-	double		res			=  p_tile_grid_->CalcResolutionByZoom(zoom);
+	double		res			=  p_tile_mset_->CalcPixelSizeByZoom(zoom);
 	int				buf_width	= int(((chunk_envp.MaxX - chunk_envp.MinX)/res)+0.5);
 	int				buf_height	= int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
 
@@ -753,7 +727,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	geotransform[5] = -res;
 	p_vrt_ds->SetGeoTransform(geotransform);
 	char *p_dst_wkt = NULL;
-  p_tile_grid_->GetTilingSRS()->exportToWkt( &p_dst_wkt );
+  p_tile_mset_->GetTilingSRS()->exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
   
   if (p_background_color)
@@ -793,33 +767,31 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 		char *p_src_wkt	= NULL;
     OGRSpatialReference input_rf_srs;
     if (!input_rf.GetSRS(input_rf_srs)) 
-      input_rf.GetDefaultSpatialRef(input_rf_srs,p_tile_grid_->GetTilingSRS());
+      input_rf.GetDefaultSpatialRef(input_rf_srs,p_tile_mset_->GetTilingSRS());
     
 		input_rf_srs.exportToWkt(&p_src_wkt);
 		CPLAssert( p_src_wkt != NULL && strlen(p_src_wkt) > 0 );
   
     GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
     p_warp_options->papszWarpOptions = NULL;
-    
-    p_warp_options->papszWarpOptions = ( warp_threads_num == 0) ? CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", "ALL_CPUS") :
-                             CSLSetNameValue(p_warp_options->papszWarpOptions,"NUM_THREADS", gmx::ConvertIntToString(warp_threads_num).c_str());
+  
    	p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
 
-    p_warp_options->dfWarpMemoryLimit = 500000000; 
+    p_warp_options->dfWarpMemoryLimit = 250000000; 
     
     double			error_threshold = 0.125;
     
     p_warp_options->panSrcBands = new int[bands_num_dst];
     p_warp_options->panDstBands = new int[bands_num_dst];
-		if (pp_band_mapping)
+		if (p_band_mapping)
     {
       int warp_bands_num =0;
       for (int i=0; i<bands_num_dst; i++)
       {
-        if (pp_band_mapping[file_num][i]>0)
+        if ((*p_band_mapping)[(*iter).first][i]>0)
         {
-          p_warp_options->panSrcBands[warp_bands_num] = pp_band_mapping[file_num][i];
+          p_warp_options->panSrcBands[warp_bands_num] = (*p_band_mapping)[(*iter).first][i];
           p_warp_options->panDstBands[warp_bands_num] = i+1;
           warp_bands_num++;
         }
@@ -887,8 +859,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		   
-    bool  warp_error = (warp_threads_num!=1) ? this->CallAndWaitWarpMulti(&gdal_warp_operation,buf_width,buf_height) :
-                                        (CE_None != gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));  
+    bool  warp_error=(CE_None!=gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));  
 
     GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
     if (p_warp_options->hCutline)
@@ -916,7 +887,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 		input_rf.Close();
 		if (warp_error) 
     {
-      cout<<"Error: warping raster block of image: "<<(*iter).first<<endl;
+      cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
       delete(p_chunk_geom);
       OGRFree(p_dst_wkt);
 	    GDALClose(p_vrt_ds);
@@ -927,11 +898,9 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
 	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 
-
   p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),NULL,0,0,0);
-  
 
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
@@ -939,48 +908,13 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	return TRUE;
 }
 
-bool BundleTiler::CallAndWaitWarpMulti (GDALWarpOperation* p_warp_operation, int width, int height)
-{
-  bool warp_error = false;
-  for (int warp_attempt=0; warp_attempt<2;  warp_attempt++)
-  {
-    unsigned long thread_id;
-      
-    GMXAsyncWarpMultiParams warp_multi_params;
-    warp_multi_params.buf_height_=height;
-    warp_multi_params.buf_width_=width;
-    warp_multi_params.p_warp_operation_= p_warp_operation;
-    warp_multi_params.warp_error_=false; 
-    HANDLE hThread = CreateThread(NULL,0,BundleTiler::CallWarpMulti,&warp_multi_params,0,&thread_id); 
-    DWORD exit_code;
-    int iter_num;
-    for (iter_num=0;iter_num<120;iter_num++)
-    {
-      if (GetExitCodeThread(hThread,&exit_code))
-      {
-        if (exit_code == STILL_ACTIVE) Sleep(250);
-        else 
-        {
-          CloseHandle(hThread);
-          return warp_multi_params.warp_error_;
-        }
-      }
-      else Sleep(250);
-    }
-    TerminateThread(hThread,1);
-    CloseHandle(hThread);
-  }
-  return false;     
-}
-
-
 bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
 								            ITileContainer			*p_tile_container)
 {
   srand(0);
 	int	tiles_generated = 0;
 	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcAppropriateZoom() : p_tiling_params->base_zoom_;
-	double res = p_tile_grid_->CalcResolutionByZoom(zoom);
+	double res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
 
   cout<<"calculating number of tiles: ";
 	int tiles_expected	= CalcNumberOfTiles(zoom);	
@@ -993,13 +927,6 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
   const int MAX_WORK_THREADS = p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : 2;
   const int TILE_CHUNK_WIDTH = p_tiling_params->tile_chunk_size_ != 0 ? p_tiling_params->tile_chunk_size_ :
                                                                        (p_tiling_params->max_work_threads_ > 1) ? 8 : 16;
-
-  extern __int64 TILE_CACHE_MAX_SIZE;
-  TILE_CACHE_MAX_SIZE = p_tiling_params->max_cache_size_ > 0 ? p_tiling_params->max_cache_size_  : TILE_CACHE_MAX_SIZE;
-  
-  extern HANDLE WARP_SEMAPHORE;
-  if (p_tiling_params->max_work_threads_ == 0)
-    WARP_SEMAPHORE = CreateSemaphore(NULL,1,1,NULL);
     
   if (p_tiling_params->auto_stretching_)
 	{
@@ -1011,13 +938,15 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
       double nodata_val = (p_tiling_params->p_transparent_color_) ?
                            p_tiling_params->p_transparent_color_[0] : 0;
-      if (!CalclValuesForStretchingTo8Bit(p_stretch_min_values,
+      if (!CalclLinearStretchTo8BitParams(p_stretch_min_values,
                                                     p_stretch_max_values,
                                                     (p_tiling_params->p_transparent_color_) ?
                                                     &nodata_val : 0,
-                                                    p_tiling_params->p_band_mapping_))
-			{
-        cout<<"Error: can't calculate parameters of auto stretching to 8 bit"<<endl;
+                                                    p_tiling_params->p_bundle_input_->GetBandsNum(),
+                                                    p_tiling_params->p_bundle_input_->GetBandsNum() ?
+                                                    &p_tiling_params->p_bundle_input_->GetBandMapping() : 0))
+      {
+        cout<<"ERROR: can't calculate parameters of auto stretching to 8 bit"<<endl;
 			  return FALSE;
       }
     }
@@ -1027,7 +956,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 	fflush(stdout);
 
 	int minx,maxx,miny,maxy;
-  p_tile_grid_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
+  p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
 
 	HANDLE			thread_handle = NULL;
 
@@ -1048,7 +977,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 			int curr_max_y =	(curr_min_y + TILE_CHUNK_WIDTH - 1 > maxy) ? 
 								maxy : curr_min_y + TILE_CHUNK_WIDTH - 1;
 			
-			OGREnvelope chunk_envp = p_tile_grid_->CalcEnvelopeByTileRange(	zoom,
+			OGREnvelope chunk_envp = p_tile_mset_->CalcEnvelopeByTileRange(	zoom,
 																					curr_min_x,
 																					curr_min_y,
 																					curr_max_x,
@@ -1061,7 +990,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
       if (!CheckStatusAndCloseThreads(&thread_params_list))
       {
         TerminateThreads(&thread_params_list);
-        cout<<"Error: occured in BaseZoomTiling"<<endl;
+        cout<<"ERROR: occured in BaseZoomTiling"<<endl;
         return false;
       }
 
@@ -1095,12 +1024,9 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
   if (!CheckStatusAndCloseThreads(&thread_params_list))
   {
         TerminateThreads(&thread_params_list);
-        cout<<"Error: occured in BaseZoomTiling"<<endl;
+        cout<<"ERROR: occured in BaseZoomTiling"<<endl;
         return false;
   }
-
-  if (WARP_SEMAPHORE)
-    CloseHandle(WARP_SEMAPHORE);
 
   return true;
 }
@@ -1154,7 +1080,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 						                             ITileContainer					*p_tile_container)
 {  
   int min_x,max_x,min_y,max_y;
-  if (!p_tile_grid_->CalcTileRange(buffer_envelope,zoom,min_x,min_y,max_x,max_y))
+  if (!p_tile_mset_->CalcTileRange(buffer_envelope,zoom,min_x,min_y,max_x,max_y))
     return false;
   
   
@@ -1163,17 +1089,17 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 	{
 		for (int y = min_y; y <= max_y; y += 1)
 		{
-			OGREnvelope tile_envelope = p_tile_grid_->CalcEnvelopeByTile(zoom,x,y);
+			OGREnvelope tile_envelope = p_tile_mset_->CalcEnvelopeByTile(zoom,x,y);
 	    if (!Intersects(tile_envelope)) continue;
              
       int x_offset = (int)(((tile_envelope.MinX-buffer_envelope.MinX)/
-                            p_tile_grid_->CalcResolutionByZoom(zoom))+0.5);
+                            p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
       int y_offset = (int)(((buffer_envelope.MaxY-tile_envelope.MaxY)/
-                            p_tile_grid_->CalcResolutionByZoom(zoom))+0.5);
+                            p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
       int tile_size_x = (int)(((tile_envelope.MaxX-tile_envelope.MinX)/
-                          p_tile_grid_->CalcResolutionByZoom(zoom))+0.5);
+                          p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
       int tile_size_y = (int)(((tile_envelope.MaxY-tile_envelope.MinY)/
-                          p_tile_grid_->CalcResolutionByZoom(zoom))+0.5);
+                          p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
       RasterBuffer tile_buffer;
 			void *p_tile_pixel_data = p_buffer->GetPixelDataBlock(x_offset, y_offset,tile_size_x,tile_size_y);
 			tile_buffer.CreateBuffer(	p_buffer->get_num_bands(),
@@ -1223,7 +1149,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
         if (!p_tile_container->AddTile(zoom,x,y,(BYTE*)p_data,size))
         {
           if (p_data) delete[]((BYTE*)p_data);
-          cout<<"Error: AddTile: writing tile to container"<<endl;
+          cout<<"ERROR: AddTile: writing tile to container"<<endl;
           return FALSE;
         }
         
@@ -1239,227 +1165,135 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 }
 
 
-
-BandMapping::~BandMapping()
+void BundleInputData::ClearAll()
 {
   bands_num_=0;
-  for ( map<string,int*>::iterator iter = data_map_.begin(); iter!=data_map_.end(); iter++)
-    delete[](*iter).second;
-  data_map_.empty();
+  for ( map<string,pair<string,int*>>::iterator iter = m_mapInputData.begin(); iter!=m_mapInputData.end(); iter++)
+    delete[](*iter).second.second;
+   m_mapInputData.empty();
+}
+
+BundleInputData::~BundleInputData()
+{
+  ClearAll();
+}
+
+list<string> BundleInputData::GetRasterFiles()
+{
+  list<string> listRasters;
+  for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
+    listRasters.push_back((*iter).first);
+  return listRasters;
 }
 
 
-bool BandMapping::GetBandMappingData (int &output_bands_num, int **&pp_band_mapping)
+map<string,string> BundleInputData::GetFiles()
 {
-  output_bands_num = 0;
-  pp_band_mapping = 0;
+  map<string,string> raster_and_vector;
+  for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
+    raster_and_vector[(*iter).first]=(*iter).second.first;
+  return raster_and_vector;
+}
 
-  if (!bands_num_) return TRUE;
-  else output_bands_num = bands_num_;
-  
-  int i = 0;
-  for ( map<string,int*>::iterator iter = data_map_.begin(); iter!=data_map_.end(); iter++)
+map<string,int*> BundleInputData::GetBandMapping()
+{
+  map<string,int*> raster_and_bands;
+  for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
   {
-    if ((*iter).second)
-    {
-      if (!pp_band_mapping)
-      {
-        pp_band_mapping = new int*[data_map_.size()];
-        for (int j=0;j<data_map_.size();j++)
-          pp_band_mapping[j]=0;
-      }
-      pp_band_mapping[i] = new int[bands_num_];
-      memcpy(pp_band_mapping[i],(*iter).second,bands_num_*sizeof(int));
-    }
-    i++;
+    if (bands_num_==0)
+      raster_and_bands[(*iter).first] = 0;
+    else
+      raster_and_bands[(*iter).first] = (*iter).second.second;
   }
-    
-  return TRUE;
+  return raster_and_bands;
 }
 
 
-bool BandMapping::GetBands(string file_name, int &bands_num, int *&p_bands)
+bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam, 
+                                              list<string> listBorderParam, 
+                                              list<string> listBandParam)
 {
-  bands_num=0;
-  p_bands = NULL;
-  map<string,int*>::iterator iter;
+  list<string>::iterator iterBand;
+  list<string>::iterator iterBorder;
+  int*  panBands = 0;
 
-  if ((iter=data_map_.find(file_name))==data_map_.end()) 
-    return FALSE;
-  else
+  bands_num_=0;
+  if (listBandParam.size()>0 && listBandParam.size()!=listInputParam.size())
   {
-    if (bands_num_ && (*iter).second)
-    {
-      bands_num=bands_num_;
-      p_bands = new int[bands_num_];
-      memcpy(p_bands,(*iter).second,bands_num_*sizeof(int));
-    }
-    return TRUE;
+    cout<<"ERROR: not valid option \"-bnd\" count. Option \"-bnd\" count must be zero or equal to option \"-i\" count"<<endl;
+    return false;
   }
-}
-
-list<string> BandMapping::GetFileList ()
-{
-  list<string> file_list;
-  for (map<string,int*>::iterator iter = data_map_.begin(); iter != data_map_.end(); iter++)\
-    file_list.push_back((*iter).first);
-  return file_list;
-}
-
-
-bool  BandMapping::AddFile(string file_name, int *p_bands)
-{
-  if ((!p_bands) || (bands_num_==0)) return FALSE;
-
-  int *_p_bands = new int[bands_num_];
-  memcpy(_p_bands,p_bands,bands_num_*sizeof(int));
-  map<string,int*>::iterator iter;
-
-  if ((iter=data_map_.find(file_name))!=data_map_.end())
-     data_map_.insert(pair<string,int*>(file_name,_p_bands));
-  else
+  else   if (listBorderParam.size()>0 && listBorderParam.size()!=listInputParam.size())
   {
-    delete[](*iter).second;
-    (*iter).second = _p_bands;
+    cout<<"ERROR: not valid option \"-b\" count. Option \"-b\" count must be zero or equal to option \"-i\" count"<<endl;
+    return false;
   }
-  return TRUE;
-}
-
-
-bool  BandMapping::InitLandsat8  (string file_param, string bands_param)
-{
-  regex	rx_landsat8(".*\\?landsat8");
-  if (!regex_match(file_param,rx_landsat8)) return FALSE;
-
-  //ToDo
-  //ParseBands
-  //ReadFiles
-
-  return TRUE;
-}
-
-
-
-bool  BandMapping::InitByConsoleParams (string file_param, string bands_param)
-{
-  regex	rx_landsat8(".*\\?landsat8");
-  if (regex_match(file_param,rx_landsat8)) return InitLandsat8(file_param,bands_param);
-  else
+  else if (listBandParam.size()!=0)
   {
-    list<string> file_list;
-    int **pp_band_mapping = 0;
-    int *p_bands = 0;
-    if (!ParseFileParameter(file_param,file_list,bands_num_,pp_band_mapping))
-      return FALSE;
-    
-    if ((!pp_band_mapping) && (bands_param!=""))
+    if(!(bands_num_=gmx::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0)))
     {
-      if (!(bands_num_=ParseCommaSeparatedArray(bands_param,p_bands)))
-        return FALSE;
+      cout<<"ERROR: not valid option \"-bnd\" value: "<<*listBandParam.begin()<<endl;
+      return false;
     }
-
-    int i=0;
-    for (list<string>::iterator iter=file_list.begin();iter!=file_list.end();iter++)
+    else delete[]panBands;
+    for (iterBand=(listBandParam.begin()++);iterBand!=listBandParam.end();iterBand++)
     {
-      int *_p_bands=0;
-      if (pp_band_mapping)
+      if (bands_num_!=gmx::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0))
       {
-        if (pp_band_mapping[i])
-        {
-          _p_bands = new int[bands_num_];
-          memcpy(_p_bands,pp_band_mapping[i],bands_num_*sizeof(int));
-        }
-      }
-      else if (p_bands)
-      {
-        _p_bands = new int[bands_num_];
-        memcpy(_p_bands,p_bands,bands_num_*sizeof(int));
-      }
-      data_map_.insert(pair<string,int*>(*iter,_p_bands));
-      i++;
-    }
-  }
-
-  return TRUE;
-}
-
-
-bool  BandMapping::ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
-{
-  string _str_file_param = str_file_param + '|';
-  output_bands_num = 0;
-  pp_band_mapping = 0;
-  std::string::size_type stdf;
-
-  while (_str_file_param.length()>1)
-  {
-    string item = _str_file_param.substr(0,_str_file_param.find('|'));
-    if (item.find('?')!=  string::npos)
-    {
-      int *p_arr = 0;
-      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
-      if (p_arr) delete[]p_arr;
-      if (len==0) 
-      {
-        cout<<"Error: can't parse output bands order from: "<<item.substr(item.find('?')+1)<<endl;
-        file_list.empty();
-        output_bands_num = 0;
+        cout<<"ERROR: not valid option \"-bnd\" value: "<<*iterBand<<endl;
         return false;
       }
-      output_bands_num = (int)max(output_bands_num,len);
-      item = item.substr(0,item.find('?'));
+      delete[]panBands;
     }
+  }
+  
 
-    if (!gmx::FindFilesByPattern(file_list,item))
+  if (bands_num_!=0) iterBand=listBandParam.begin();
+  if (listBorderParam.size()>0) iterBorder=listBorderParam.begin();
+  
+  for (list<string>::iterator iterInput=listInputParam.begin();iterInput!=listInputParam.end();iterInput++)
+  {
+    list<string> listRasterFiles;
+    if (!gmx::FindFilesByPattern(listRasterFiles,(*iterInput)))
     {
-      cout<<"Error: can't find input files by path: "<<item<<endl;
-      file_list.empty();
-      output_bands_num = 0;
+      ClearAll();
+      cout<<"ERROR: can't find files by path: "<<*iterInput<<endl;
       return false;
     }
     
-    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
-  }
-
-  if (output_bands_num>0)
-  {
-    pp_band_mapping = new int*[file_list.size()];
-    for (int i=0;i<file_list.size();i++)
+    list<string> listVectorFiles;
+    if (listBorderParam.size()>0 && (*iterBorder)!="")
     {
-       pp_band_mapping[i] = new int[output_bands_num];
-       for (int j=0;j<output_bands_num;j++)
-         pp_band_mapping[i][j] = j+1;
-    }
-  }
-
-  _str_file_param = str_file_param + '|';
-  int i=0;
-  while (_str_file_param.length()>1)
-  {
-    string item = _str_file_param.substr(0,_str_file_param.find('|'));
-    list<string> _file_list;
-    if (item.find('?')!=string::npos)
-    {
-      gmx::FindFilesByPattern(_file_list,item.substr(0,item.find('?')));
-      int *p_arr = 0;
-      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
-      if (p_arr)
+      if (!gmx::FindFilesByPattern(listVectorFiles,(*iterBorder)))
       {
-        for (int j=i;j<i+_file_list.size();j++)
-        {
-          for (int k=0;k<len;k++)
-            pp_band_mapping[j][k]=p_arr[k];
-        }
-        delete[]p_arr;
+        ClearAll();
+        cout<<"ERROR: can't find files by path: "<<*iterBorder<<endl;
+        return false;
+      }
+      if (listVectorFiles.size()>1 && listVectorFiles.size()!=listRasterFiles.size())
+      {
+         ClearAll();
+         cout<<"ERROR: vector files count doesn't equal to raster file count"<<endl;
+         return false;
       }
     }
-    else gmx::FindFilesByPattern(_file_list,item);
        
-    i+=_file_list.size();
-    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
-  }
+    if (bands_num_>0) gmx::ParseCommaSeparatedArray(*iterBand,panBands,1,0);
+    
+    list<string>::iterator vectorFile = listVectorFiles.begin();
+    for (list<string>::iterator rasterFile=listRasterFiles.begin();
+         rasterFile!=listRasterFiles.end();rasterFile++)
+    {
+      m_mapInputData[*rasterFile].first = listBorderParam.size()==0 ? "" : *vectorFile;
+      if (listVectorFiles.size()>1) vectorFile++;
+      m_mapInputData[*rasterFile].second = (bands_num_>0) ? panBands : 0;
+    }
 
-  return TRUE;
+    if (bands_num_!=0) iterBand++;
+    if (listBorderParam.size()>0) iterBorder++;
+  }
+  return true;
 }
+
 
 }

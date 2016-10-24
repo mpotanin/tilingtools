@@ -15,64 +15,49 @@ bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
 }
 
 
+//parse Tiling Parameters:
+//  init BundleTiler
+//  init ITileContainer instance - how to choose container type
+//  RunBaseZoomTiling
+//  MakePyramid
+// Close TC - extractAndStoreMetadata
+
+
 bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 {
 	LONG t_ = time(0);
 	srand(t_%10000);
 	BundleTiler		raster_bundle;
-  MercatorTileGrid merc_grid( p_tiling_params->merc_type_);
+  MercatorTileMatrixSet merc_grid( p_tiling_params->merc_type_);
 
-  if (!raster_bundle.Init(p_tiling_params->file_list_,&merc_grid,p_tiling_params->vector_file_))
+  if (!raster_bundle.Init(p_tiling_params->p_bundle_input_->GetFiles(),&merc_grid))
 	{
-		cout<<"Error: can't init raster bundle object"<<endl;
+		cout<<"ERROR: can't init raster bundle object"<<endl;
 		return FALSE;
 	}
 
 	int base_zoom = (p_tiling_params->base_zoom_ == 0) ? raster_bundle.CalcAppropriateZoom() : p_tiling_params->base_zoom_;
 	if (base_zoom<=0)
 	{
-		cout<<"Error: can't calculate base zoom for tiling"<<endl;
+		cout<<"ERROR: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
-
-  unsigned int max_gmx_volume_size   = p_tiling_params->max_gmx_volume_size_ > 0 ? p_tiling_params->max_gmx_volume_size_ 
-                                                                                  : GMXTileContainer::DEFAULT_MAX_VOLUME_SIZE;
-  
-  ITileContainer	*p_itile_pyramid =	NULL;
- 
     
-  // initializing p_itile_pyramid - depends on specified 
-  // output format of tile pyramid: .gmxtiles, .mbtiles, tile folder etc.
-  if (  p_tiling_params->use_container_ && 
-        ( GetExtension(p_tiling_params->container_file_) == "tiles" || 
-          GetExtension(p_tiling_params->container_file_) == "gmxtiles")
-      )
-	{
-    p_itile_pyramid = new GMXTileContainer();
-    
-    if ( !((GMXTileContainer*)p_itile_pyramid)->OpenForWriting(p_tiling_params->container_file_,
-														                                  p_tiling_params->tile_type_,
-														                                  p_tiling_params->merc_type_,
-														                                  raster_bundle.CalcEnvelope(),
-														                                  base_zoom,
-														                                  TRUE,
-                                                              NULL,
-                                                              max_gmx_volume_size))
-    {
-      cout<<"Error: can't open for writing gmx-container file: "<<p_tiling_params->container_file_<<endl;
-      return FALSE;
-    }
-  }
-  else if (  p_tiling_params->use_container_ && GetExtension(p_tiling_params->container_file_) == "mbtiles")
+  TileContainerOptions tc_params;
+  tc_params.path_ = p_tiling_params->output_path_;
+  tc_params.p_tile_name_ = p_tiling_params->p_tile_name_;
+  tc_params.max_zoom_=base_zoom;
+  tc_params.tiling_srs_envp_=raster_bundle.CalcEnvelope();
+  tc_params.extra_options_=p_tiling_params->options_;
+  tc_params.tile_type_=p_tiling_params->tile_type_;
+  tc_params.p_matrix_set_=&merc_grid;
+  ITileContainer	*p_itile_pyramid =	TileContainerFactory::OpenForWriting(p_tiling_params->container_type_,&tc_params);//ToDo
+  if (!p_itile_pyramid)
   {
-    p_itile_pyramid = new MBTileContainer(	p_tiling_params->container_file_,
-		p_tiling_params->tile_type_,
-		p_tiling_params->merc_type_,
-		raster_bundle.CalcEnvelope());
+    cout<<"ERROR: can't open for writing tile container"<<endl;
+    return false;
   }
-	else 
-    p_itile_pyramid = new TileFolder(p_tiling_params->p_tile_name_,TRUE);
-  
+ 
   bool no_run_tiling_error = true;
   cout<<"Base zoom "<<base_zoom<<": ";
 	if ((no_run_tiling_error=raster_bundle.RunBaseZoomTiling( p_tiling_params,
@@ -117,7 +102,7 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
     no_run_tiling_error*=p_itile_pyramid->ExtractAndStoreMetadata(p_tiling_params);
 
   if (!p_itile_pyramid->Close())
-     cout<<"Error: can't save tile container to disk"<<endl;
+     cout<<"ERROR: can't save tile container to disk"<<endl;
   delete(p_itile_pyramid);
 
 	return no_run_tiling_error;
@@ -129,7 +114,7 @@ bool GMXMakePyramidFromBaseZoom (	OGREnvelope tiles_envp,
 								int					base_zoom, 
 								int					min_zoom, 
 								TilingParameters		*p_tiling_params, 
-                gmx::ITileGrid  *p_tile_grid,
+                gmx::ITileMatrixSet  *p_tile_mset,
 								int					&tiles_expected, 
 								int					&tiles_generated, 
 								bool					only_calculate, 
@@ -142,17 +127,17 @@ bool GMXMakePyramidFromBaseZoom (	OGREnvelope tiles_envp,
 	bool b;
 
   int min_x,min_y,max_x,max_y;
-  p_tile_grid->CalcTileRange(tiles_envp,min_zoom,min_x,min_y,max_x,max_y);
+  p_tile_mset->CalcTileRange(tiles_envp,min_zoom,min_x,min_y,max_x,max_y);
   for (int x=min_x;x<=max_x;x++)
   {
     for (int y=min_y;y<=max_y;y++)
-      GMXMakePyramidTileRecursively(tiles_envp,min_zoom,x,y,base_zoom,p_tiling_params,p_tile_grid,oBuffer,tiles_expected,
+      GMXMakePyramidTileRecursively(tiles_envp,min_zoom,x,y,base_zoom,p_tiling_params,p_tile_mset,oBuffer,tiles_expected,
 							  tiles_generated,only_calculate,p_itile_pyramid,&was_error);
   }
 
   if (was_error)
   {
-    cout<<"Error: GMXMakePyramidTileRecursively"<<endl;
+    cout<<"ERROR: GMXMakePyramidTileRecursively"<<endl;
     return FALSE;
   }
   else return TRUE;
@@ -165,7 +150,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 					  int				nY, 
 					  int				base_zoom, 
 					  TilingParameters	*p_tiling_params, 
-			      gmx::ITileGrid  *p_tile_grid,
+			      gmx::ITileMatrixSet  *p_tile_mset,
             RasterBuffer		&tile_buffer,  
 					  int				&tiles_expected, 
 					  int				&tiles_generated, 
@@ -193,7 +178,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 				{
 					if(!tile_buffer.CreateBufferFromJpegData(p_data,size))
 					{
-						cout<<"Error: reading jpeg-data"<<endl;
+						cout<<"ERROR: reading jpeg-data"<<endl;
 						return FALSE;
 					}
 					break;
@@ -229,7 +214,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		{
 			for (int j=0;j<2;j++)
 			{
-        if (tiles_envp.Intersects(p_tile_grid->CalcEnvelopeByTile(zoom+1,2*nX+j,2*nY+i)))
+        if (tiles_envp.Intersects(p_tile_mset->CalcEnvelopeByTile(zoom+1,2*nX+j,2*nY+i)))
         {
 					src_quarter_tile_buffers_def[i*2+j] = GMXMakePyramidTileRecursively(tiles_envp,
 															zoom+1,
@@ -237,7 +222,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 															2*nY+i,
 															base_zoom,
 															p_tiling_params,
-															p_tile_grid,
+															p_tile_mset,
                               quarter_tile_buffer[i*2+j],
 															tiles_expected,
 															tiles_generated,

@@ -1,21 +1,80 @@
-﻿Build started 20.12.2013 18:56:11.
-     1>Project "C:\Work\Projects\TilingTools\openjpeg-2.0.0\src\lib\openjp2\openjp2.vcxproj" on node 2 (rebuild target(s)).
-     1>_PrepareForClean:
-         Deleting file "openjp2.dir\Release\openjp2.lastbuildstate".
-     1>C:\Windows\Microsoft.NET\Framework\v4.0.30319\Microsoft.Common.Targets(1200,9): warning : The referenced project 'C:/Work/Projects/openjpeg-2.0.0/ZERO_CHECK.vcxproj' does not exist.
-       PrepareForBuild:
-         Creating directory "C:\Work\Projects\openjpeg-2.0.0\bin\Release\".
-       InitializeBuildStatus:
-         Creating "openjp2.dir\Release\openjp2.unsuccessfulbuild" because "AlwaysCreate" was specified.
-       ComputeCustomBuildOutput:
-         Creating directory "C:\Work\Projects\openjpeg-2.0.0\src\lib\openjp2\CMakeFiles\".
+﻿Build started 17.10.2016 16:25:55.
+     1>Project "C:\Work\Projects\TilingTools\openjpeg-2.0.0\src\lib\openjp2\openjp2.vcxproj" on node 2 (build target(s)).
+     1>c:\Windows\Microsoft.NET\Framework\v4.0.30319\Microsoft.Common.Targets(1200,9): warning : The referenced project 'C:/Work/Projects/openjpeg-2.0.0/ZERO_CHECK.vcxproj' does not exist.
+     1>InitializeBuildStatus:
+         Touching "openjp2.dir\Release\openjp2.unsuccessfulbuild".
        CustomBuild:
          Building Custom Rule C:/Work/Projects/openjpeg-2.0.0/src/lib/openjp2/CMakeLists.txt
-         CMake is re-running because C:\Work\Projects\openjpeg-2.0.0\src\lib\openjp2\CMakeFiles\generate.stamp dependency file is missing.
-     1>CUSTOMBUILD : CMake error : The source directory "C:/Work/Projects/openjpeg-2.0.0" does not appear to contain CMakeLists.txt.
-         Specify --help for usage, or press the help button on the CMake GUI.
-     1>Done Building Project "C:\Work\Projects\TilingTools\openjpeg-2.0.0\src\lib\openjp2\openjp2.vcxproj" (rebuild target(s)) -- FAILED.
+         CMake does not need to re-run because C:\Work\Projects\openjpeg-2.0.0\src\lib\openjp2\CMakeFiles\generate.stamp is up-to-date.
+       ClCompile:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\CL.exe /c /I"C:/Work/Projects/openjpeg-2.0.0/src/lib/openjp2" /nologo /W3 /WX- /O2 /Ob2 /D WIN32 /D _WINDOWS /D NDEBUG /D _CRT_FAR_MAPPINGS_NO_DEPRECATE /D _CRT_IS_WCTYPE_NO_DEPRECATE /D _CRT_MANAGED_FP_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _CRT_SECURE_NO_DEPRECATE /D _CRT_SECURE_NO_DEPRECATE_GLOBALS /D _CRT_SETERRORMODE_BEEP_SLEEP_NO_DEPRECATE /D _CRT_TIME_FUNCTIONS_NO_DEPRECATE /D _CRT_VCCLRIT_NO_DEPRECATE /D _SCL_SECURE_NO_DEPRECATE /D OPJ_EXPORTS /D "CMAKE_INTDIR=\"Release\"" /D openjp2_EXPORTS /D _WINDLL /D _MBCS /Gm- /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"openjp2.dir\Release\\" /Fd"C:/Work/Projects/openjpeg-2.0.0/bin/Release/openjp2.pdb" /Gd /TC /errorReport:prompt bio.c cio.c dwt.c event.c image.c invert.c j2k.c jp2.c mct.c mqc.c openjpeg.c opj_clock.c pi.c raw.c t1.c t2.c tcd.c tgt.c function_list.c
+         bio.c
+         cio.c
+         dwt.c
+         event.c
+         image.c
+         invert.c
+         j2k.c
+     1>j2k.c(2184): warning C4267: '=' : conversion from 'size_t' to 'OPJ_UINT32', possible loss of data
+     1>j2k.c(4246): warning C4267: '=' : conversion from 'size_t' to 'OPJ_UINT32', possible loss of data
+     1>j2k.c(6727): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>j2k.c(6732): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+         jp2.c
+     1>jp2.c(447): warning C4267: '=' : conversion from 'size_t' to 'OPJ_UINT32', possible loss of data
+     1>jp2.c(461): warning C4267: 'initializing' : conversion from 'size_t' to 'OPJ_UINT32', possible loss of data
+     1>jp2.c(1687): warning C4267: '=' : conversion from 'size_t' to 'OPJ_UINT32', possible loss of data
+         mct.c
+         mqc.c
+     1>mqc.c(374): warning C4244: 'return' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+         openjpeg.c
+         opj_clock.c
+         pi.c
+         raw.c
+     1>raw.c(57): warning C4244: 'return' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+         t1.c
+         t2.c
+     1>t2.c(444): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(673): warning C4244: '=' : conversion from 'ptrdiff_t' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(737): warning C4244: '+=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(873): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(895): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(908): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(1019): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(1032): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+     1>t2.c(1147): warning C4244: '=' : conversion from '__int64' to 'OPJ_UINT32', possible loss of data
+         tcd.c
+         tgt.c
+         function_list.c
+         Generating Code...
+       Link:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Work\Projects\openjpeg-2.0.0\bin\Release\openjp2.dll" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /ManifestFile:"openjp2.dir\Release\openjp2.dll.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /PDB:"C:/Work/Projects/openjpeg-2.0.0/bin/Release/openjp2.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Work/Projects/openjpeg-2.0.0/bin/Release/openjp2.lib" /MACHINE:X64 /DLL openjp2.dir\Release\bio.obj
+         openjp2.dir\Release\cio.obj
+         openjp2.dir\Release\dwt.obj
+         openjp2.dir\Release\event.obj
+         openjp2.dir\Release\image.obj
+         openjp2.dir\Release\invert.obj
+         openjp2.dir\Release\j2k.obj
+         openjp2.dir\Release\jp2.obj
+         openjp2.dir\Release\mct.obj
+         openjp2.dir\Release\mqc.obj
+         openjp2.dir\Release\openjpeg.obj
+         openjp2.dir\Release\opj_clock.obj
+         openjp2.dir\Release\pi.obj
+         openjp2.dir\Release\raw.obj
+         openjp2.dir\Release\t1.obj
+         openjp2.dir\Release\t2.obj
+         openjp2.dir\Release\tcd.obj
+         openjp2.dir\Release\tgt.obj
+         openjp2.dir\Release\function_list.obj  /machine:X64 
+            Creating library C:/Work/Projects/openjpeg-2.0.0/bin/Release/openjp2.lib and object C:/Work/Projects/openjpeg-2.0.0/bin/Release/openjp2.exp
+         openjp2.vcxproj -> C:\Work\Projects\openjpeg-2.0.0\bin\Release\openjp2.dll
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\Work\Projects\openjpeg-2.0.0\bin\Release\openjp2.dll;#2" /manifest openjp2.dir\Release\openjp2.dll.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "openjp2.dir\Release\openjp2.unsuccessfulbuild".
+         Touching "openjp2.dir\Release\openjp2.lastbuildstate".
+     1>Done Building Project "C:\Work\Projects\TilingTools\openjpeg-2.0.0\src\lib\openjp2\openjp2.vcxproj" (build target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:03.03
+Time Elapsed 00:00:06.27

@@ -6,11 +6,10 @@
 namespace gmx
 {
 
-extern __int64 TILE_CACHE_MAX_SIZE = 800000000;
-
-TileCache::TileCache(void)
+TileCache::TileCache(__int64 cache_max_size)
 {
   cache_size_=0;
+  cache_max_size_ = (cache_max_size==0) ? DEFAULT_CACHE_MAX_SIZE : cache_max_size;
 }
 
 
@@ -26,7 +25,7 @@ TileCache::~TileCache(void)
 bool	TileCache::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
 
-  if (cache_size_ + size> TILE_CACHE_MAX_SIZE) return FALSE;
+  if (cache_size_ + size> cache_max_size_) return FALSE;
 
 	string tile_key = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
 	if (tile_data_map_.find(tile_key)!=tile_data_map_.end())
@@ -39,8 +38,8 @@ bool	TileCache::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 
 	BYTE	*p_data_copy = new BYTE[size];
 	memcpy(p_data_copy,p_data,size);
-	tile_data_map_.insert(pair<string,BYTE*>(tile_key,p_data_copy));
-	tile_size_map_.insert(pair<string,unsigned int>(tile_key,size));
+	tile_data_map_[tile_key]=p_data_copy;
+	tile_size_map_[tile_key]=size;
   cache_size_+=size;
 	return TRUE;
 }

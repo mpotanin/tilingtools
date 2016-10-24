@@ -3,20 +3,6 @@
 #include "FileSystemFuncs.h"
 using namespace gmx;
 
-/*
-переименовать геттеры и сеттеры
-
-nNumBands
-eDataType
-nDataSize
-nXSize
-nYSize
-poColorTable
-paPixelData
-
-
-*/
-
 
 /*
  * Callback function prototype for read function
@@ -178,7 +164,7 @@ static opj_stream_t* OPJStreamCreate (OPJStreamData *p_stream_data, unsigned int
 	p_opj_stream = opj_stream_create(buffer_size,is_read_only);
 	if (! p_opj_stream) return NULL;
 	
-  opj_stream_set_user_data(p_opj_stream, p_stream_data);
+  opj_stream_set_user_data(p_opj_stream, p_stream_data,0);
   opj_stream_set_user_data_length(p_opj_stream, p_stream_data->size);
   opj_stream_set_read_function(p_opj_stream, (opj_stream_read_fn)OPJStreamReadFunc);
   opj_stream_set_write_function(p_opj_stream, (opj_stream_write_fn)OPJStreamWriteFunc);
@@ -639,94 +625,14 @@ static void warning_callback(const char *msg, void *client_data) {
 //sample debug callback expecting no client object
 
 static void info_callback(const char *msg, void *client_data) {
-	(void)client_data;
+	//debug
+  /*
+  (void)client_data;
 	fprintf(stdout, "[INFO] %s", msg);
+  */
+  //end-debug
 }
 
-#ifdef KAKADU
-bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
-{
- 
-  kdu_simple_buffer_source input(p_data_src, size);
-  kdu_codestream codestream; codestream.create(&input);
-  codestream.set_fussy(); 
-
-  kdu_dims dims; codestream.get_dims(0,dims);
-  int num_components = codestream.get_num_components();
-  
-  codestream.apply_input_restrictions(0,num_components,0,0,NULL);
-  void *p_buffer = codestream.get_bit_depth(0) == 8 ? (void*)new kdu_byte[(int) dims.area()*num_components] :  (void*)new kdu_int16[(int) dims.area()*num_components];
-
-  kdu_stripe_decompressor decompressor;
-  decompressor.start(codestream);
-
-  int *stripe_heights = new int[num_components];
-  for (int b=0;b<num_components;b++)
-    stripe_heights[b]=dims.size.y;
-
-  int bit_depth = codestream.get_bit_depth(0);
-  if (bit_depth == 8) decompressor.pull_stripe((kdu_byte*)p_buffer,stripe_heights);
-  else decompressor.pull_stripe((kdu_int16*)p_buffer,stripe_heights);
-  
-  decompressor.finish();
-  codestream.destroy();
-  input.close(); //ToDo
-  
-   
-  gmx::RasterBuffer rbuf;
-  if (bit_depth == 8) 
-  {
-    CreateBuffer(num_components,dims.size.x,dims.size.y,NULL,GDT_Byte,FALSE);
-    kdu_byte *p_pixel_data_byte = (kdu_byte*)p_pixel_data_;
-    kdu_byte *p_buffer_byte = (kdu_byte*)p_buffer;
-
-    int n =0;
-    int area = x_size_*y_size_;
-    int area2;
-    for (int j=0;j<y_size_;j++)
-    {
-      for (int i=0;i<x_size_;i++)
-      {
-        area2 = j*x_size_;
-        for (int b=0;b<num_bands_;b++)
-        {
-          p_pixel_data_byte[area*b + area2 + i] = p_buffer_byte[n];
-          n++;
-        }
-      }
-    }
-  }
-  else
-  {
-    CreateBuffer(num_components,dims.size.x,dims.size.y,NULL,GDT_UInt16,FALSE);
-    kdu_uint16 *p_pixel_data_uint16 = (kdu_uint16*)p_pixel_data_;
-    kdu_uint16 *p_buffer_uint16 = (kdu_uint16*)p_buffer;
-
-    int n =0;
-    int area = x_size_*y_size_;
-    int area2;
-    for (int j=0;j<y_size_;j++)
-    {
-      for (int i=0;i<x_size_;i++)
-      {
-        area2 = j*x_size_;
-        for (int b=0;b<num_bands_;b++)
-        {
-          p_pixel_data_uint16[area*b + area2 + i] = p_buffer_uint16[n];
-          n++;
-        }
-      }
-    }
-
-  }
-    
-
-  delete[] p_buffer;
-  return TRUE;
-}
-#endif
-
-#ifndef KAKADU
 bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 {
   ClearBuffer();
@@ -862,112 +768,6 @@ bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
 
  	return TRUE;
 }
-#endif
-
-#ifdef KAKADU
-bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
-{
-  int num_components=0, height, width;
-  num_components = num_bands_;
-  height = y_size_;
-  width = x_size_;
- 
-  void *p_data_order2 = GetPixelDataOrder2();
-
-  siz_params siz;
-  siz.set(Scomponents,0,0,num_components);
-  siz.set(Sdims,0,0,height); 
-  siz.set(Sdims,0,1,width);  
-  if (data_type_ == GDT_Byte)
-    siz.set(Sprecision,0,0,8);
-  else if ((data_type_ == GDT_Int16)||((data_type_ == GDT_UInt16)))
-    siz.set(Sprecision,0,0,16);
- 
-  siz.set(Ssigned,0,0,false);
-  kdu_params *siz_ref = &siz; 
-
-  siz_ref->finalize();
-
-  kdu_simple_buffer_target output(1000000);
-
-  kdu_codestream codestream; codestream.create(&siz,&output);
-  codestream.access_siz()->parse_string("Clayers=1");
-  if ((data_type_ == GDT_Int16)||((data_type_ == GDT_UInt16)))
-    codestream.access_siz()->parse_string("Qstep=0.002");
-  
-  codestream.access_siz()->finalize_all(); 
-  
-  kdu_stripe_compressor compressor;
-  kdu_long *layer_sizes = new kdu_long[1];
-  
-  if ((compression_rate<=0) || (compression_rate>100)) compression_rate=10;
-  else switch ((100-compression_rate)/5)
-  {
-    case 0:
-      compression_rate = 2;
-      break;
-    case 1:
-      compression_rate = 3;
-      break;
-    case 2:
-      compression_rate = 5;
-      break;
-    case 3:
-      compression_rate = 10;
-      break;
-    case 4:
-      compression_rate = 20;
-      break;
-    case 5:
-      compression_rate = 30;
-      break;
-    case 6:
-      compression_rate = 50;
-      break;
-    default:
-      compression_rate = 100;
-      break;
-  }
-  layer_sizes[0] = (((double)(num_bands_*256*256*(2-(data_type_==GDT_Byte))))/compression_rate);
-  compressor.start(codestream,1,layer_sizes);
-
-  int * stripe_heights= new int[num_components];
-  for (int b=0; b<num_components;b++)
-    stripe_heights[b]=height;
-  switch (data_type_)
-  {
-    case GDT_Byte:
-      compressor.push_stripe((kdu_byte*)p_data_order2,stripe_heights);
-      break;
-    case GDT_Int16:
-      compressor.push_stripe((kdu_int16*)p_data_order2,stripe_heights);
-      break;
-    case GDT_UInt16:
-      compressor.push_stripe((kdu_int16*)p_data_order2,stripe_heights);
-      break;
-    /*
-    case GDT_Float32:
-      compressor.push_stripe((kdu_float32*)p_data_order2,stripe_heights);
-      break;
-    */
-    default:
-      break;
-  }
-  
-  
-  compressor.finish();
-  codestream.destroy();
-  size = output.cur_pos_;
-  p_data_dst = new BYTE[size];
-  memcpy(p_data_dst,output.p_buffer_data_,size);
-  output.close();
-  delete[]p_data_order2;
-
-  return TRUE;
-}
-#endif
-
-#ifndef KAKADU
 
 bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
 {
@@ -1074,7 +874,8 @@ bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   parameters.tcp_mct = image->numcomps == 3 ? 1 : 0;
 	l_codec = opj_create_compress(OPJ_CODEC_JP2);
 
-	opj_set_info_handler(l_codec, info_callback,00);
+  opj_set_info_handler(l_codec, info_callback,00);
+  
   opj_set_warning_handler(l_codec, warning_callback,00);
   opj_set_error_handler(l_codec, error_callback,00);
 
@@ -1113,18 +914,7 @@ bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_
   
 	return TRUE;
 }
-#endif
 
-/*
-1 канал - png8
-
->1 канала - png24/32:
-   альфаканал - png32 (исп. gdTrueColorAlpha)
-   !альфаканал - Png24 (исп. gdTrueColor)
-   таблица цветов - запись цвета по таблице
-   !таблица цветов - запись цвета по значению
-
-*/
 
 bool RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
 {

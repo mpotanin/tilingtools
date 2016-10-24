@@ -23,20 +23,18 @@ VectorOperations::~VectorOperations()
 
 string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 {
-	string	vector_file_base = RemoveExtension(raster_file);
-	string	vector_file;
-	
-	if (FileExists(vector_file_base+".mif"))	vector_file = vector_file_base+".mif";
-	if (FileExists(vector_file_base+".shp"))	vector_file = vector_file_base+".shp";
-	if (FileExists(vector_file_base+".tab"))	vector_file = vector_file_base+".tab";
-	
+ 	string	vector_file_base = RemoveExtension(raster_file);
+	string	vector_file = FileExists(vector_file_base+".mif") ?	vector_file_base+".mif" :
+                        FileExists(vector_file_base+".shp") ?	vector_file_base+".shp" :
+	                      FileExists(vector_file_base+".tab") ?	vector_file_base+".tab" :"";
 	if (vector_file!="")
 	{
-    OGRDataSource * p_ogr_ds = OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
-    if (p_ogr_ds ==NULL) return "";
-		OGRDataSource::DestroyDataSource( p_ogr_ds );
+    GDALDataset* poDS = (GDALDataset*) GDALOpenEx(vector_file.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+    if (!poDS) return "";
+		GDALClose(poDS);
 	}
-	return vector_file;
+  
+  return vector_file;
 }
 
 
@@ -218,20 +216,21 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
 {
   if (vector_file=="") return 0;
 
-  OGRDataSource *p_ogr_ds= OGRSFDriverRegistrar::Open( vector_file.c_str(), FALSE );
-  
-  if( p_ogr_ds == NULL ) return 0;
+  GDALDataset* poDS = (GDALDataset*) GDALOpenEx(vector_file.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+
+  if (!poDS) return 0;
 	
 	OGRMultiPolygon *p_ogr_multipoly;
 
-  if (!(p_ogr_multipoly=ReadMultiPolygonFromOGRDataSource(p_ogr_ds)))
+  if (!(p_ogr_multipoly=ReadMultiPolygonFromOGRDataSource(poDS)))
   {
-    OGRDataSource::DestroyDataSource(p_ogr_ds); 
+    GDALClose(poDS); 
+    cout<<"ERROR: ReadMultiPolygonFromOGRDataSource: can't read polygon from input vector"<<endl;
     return NULL;
   }
   
   p_ogr_multipoly->closeRings();
-  OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
+  OGRLayer *p_ogr_layer = poDS->GetLayer(0);
   OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
   bool is_ogr_sr_valid = TRUE;
   if (p_input_ogr_sr)
@@ -252,7 +251,7 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
 	  p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
   }
     
-  OGRDataSource::DestroyDataSource(p_ogr_ds);
+  GDALClose(poDS);
   if (!is_ogr_sr_valid)
   {
     OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
@@ -273,30 +272,28 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
   OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
   return p_ogr_multipoly;
 
+
 };
 
-
-OGRMultiPolygon*		VectorOperations::ReadMultiPolygonFromOGRDataSource(OGRDataSource *p_ogr_ds)
+//ToDo - rename
+OGRMultiPolygon*		VectorOperations::ReadMultiPolygonFromOGRDataSource(GDALDataset* poDS)
 {
-	OGRLayer *p_ogr_layer = p_ogr_ds->GetLayer(0);
+	OGRLayer *p_ogr_layer = poDS->GetLayer(0);
 	if( p_ogr_layer == NULL ) return NULL;
 	p_ogr_layer->ResetReading();
 
-	OGRMultiPolygon *p_ogr_multipoly = NULL;
-	bool	is_valid = FALSE;
+	OGRMultiPolygon *p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
 	while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
 	{
-    if (p_ogr_multipoly == NULL) p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
-		if ((poFeature->GetGeometryRef()->getGeometryType() == wkbMultiPolygon) ||
-			(poFeature->GetGeometryRef()->getGeometryType() == wkbPolygon))
-		{
-			if (OGRERR_NONE == p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
-				is_valid = TRUE;
-		}
-		OGRFeature::DestroyFeature( poFeature);
+    if (OGRERR_NONE == p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
+      OGRFeature::DestroyFeature( poFeature);
+    else
+    {
+      delete(p_ogr_multipoly);
+      OGRFeature::DestroyFeature( poFeature);
+      return 0;
+    }
 	}
-
-	if (!is_valid) return NULL;
 
 	return p_ogr_multipoly;
 };
