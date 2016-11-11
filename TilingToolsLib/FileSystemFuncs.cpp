@@ -5,181 +5,237 @@ namespace gmx
 {
 
 
-bool	WriteToTextFile (string filename, string str_text)
+bool	WriteToTextFile (string strFileName, string strText)
 {
-	ReplaceAll(filename,"\\","/");
-	FILE *fp = OpenFile(filename,"w");
+	FILE *fp = OpenFile(strFileName,"w");
 	if (!fp) return FALSE;
-	fprintf(fp,"%s",str_text.data());
+	fprintf(fp,"%s",strText.data());
 	fclose(fp);
 	return TRUE;
 }
 
 
-string	GetPath (string filename)
+string	GetPath (string strFileName)
 {
-	ReplaceAll(filename,"\\","/");
-	if (filename.find_last_of("/")!=string::npos) return filename.substr(0,filename.find_last_of("/")+1);
+	if (strFileName.find_last_of("/")!=string::npos) return strFileName.substr(0,strFileName.find_last_of("/")+1);
 	else return "";
 }
 
 
-bool FileExists (string filename)
+bool FileExists (string strFileName)
 {  
-	ReplaceAll(filename,"\\","/");
-	wstring filename_w;
-	utf8toWStr(filename_w,filename);
-	return !(GetFileAttributesW(filename_w.c_str()) == INVALID_FILE_ATTRIBUTES); //GetFileAttributes ->stat
+#ifdef _WIN32
+	wstring strFileNameW;
+	utf8toWStr(strFileNameW,strFileName);
+
+	return !(GetFileAttributesW(strFileNameW.c_str()) == INVALID_FILE_ATTRIBUTES); //GetFileAttributes ->stat
+#else
+  if (FILE* fp = fopen(strFileName.c_str(),"r"))
+  {
+    fclose(fp);
+    return true;
+  }
+  else if (DIR* psDIR = opendir(strFileName.c_str()))
+  {
+    closedir(psDIR);
+    return true;
+  }
+  else return false;
+#endif
 }
 
 
-bool IsDirectory (string path)
+bool IsDirectory (string strPath)
 {
-	ReplaceAll(path,"\\","/");
-	if (!FileExists(path)) return FALSE;
-	wstring path_w;
-	utf8toWStr(path_w,path);
-	return (GetFileAttributesW(path_w.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
+	if (!FileExists(strPath)) return false;
+#ifdef _WIN32
+	wstring strPathW;
+	utf8toWStr(strPathW,strPath);
+	return (GetFileAttributesW(strPathW.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
+#else
+  if (DIR* psDIR = opendir(strFileName.c_str()))
+  {
+    closedir(psDIR);
+    return true;
+  }
+  else return false;
+#endif
 }
 
 
-string	RemoveEndingSlash(string	foldername)
+string	RemoveEndingSlash(string	strFolderName)
 {		
-	ReplaceAll(foldername,"\\","/");
-
-	return	(foldername == "") ? "" :
-			(foldername[foldername.length()-1]== '/') ? foldername.substr(0,foldername.length()-1) : foldername;
+	return	(strFolderName == "") ? "" :
+			(strFolderName[strFolderName.length()-1]== '/') ? strFolderName.substr(0,strFolderName.length()-1) : strFolderName;
 }
 
 
-string		GetAbsolutePath (string base_path, string relative_path)
+string		GetAbsolutePath (string strBasePath, string strRelativePath)
 {
-	ReplaceAll(base_path,"\\","/");
-	ReplaceAll(relative_path,"\\","/");
-	base_path = RemoveEndingSlash(base_path);
-
-	while (relative_path[0]==L'/' || relative_path[0]==' '|| relative_path[0]=='.')
-	{
-		if (relative_path.find(L'/')==string::npos || base_path.rfind(L'/')==string::npos)
-		{
-			if (relative_path[0]=='.') break;
-			else return "";
-		}
-		relative_path	= relative_path.substr(relative_path.find(L'/')+1);
-		base_path		= base_path.substr(0,base_path.rfind(L'/'));
-	}
-
-	return base_path == "" ? relative_path : base_path+ "/" + relative_path;
-}
-
-
-string RemovePath(string filename)
-{
-  ReplaceAll(filename,"\\","/");
-	return  (filename.find_last_of("/") != string::npos) ?
-          filename.substr(filename.find_last_of("/")+1) :
-          filename;
-}
-
-
-string RemoveExtension (string filename)
-{
-  ReplaceAll(filename,"\\","/");
-	int n_point = filename.rfind(L'.');
-  int n_slash = filename.rfind(L'/');
-  return (n_point>n_slash) ? filename.substr(0,n_point) : filename;	
-}
-
-
-bool FindFilesByPattern (list<string> &file_list, string search_pattern)
-{
-	WIN32_FIND_DATAW find_file_data;
-	HANDLE hFind ;
-
-	wstring search_pattern_w;
-  utf8toWStr(search_pattern_w, search_pattern);
-
-	hFind = FindFirstFileW(search_pattern_w.data(), &find_file_data);
-    
-  if (hFind == INVALID_HANDLE_VALUE)
-  {
-    if (hFind) FindClose(FindClose);
-    return FALSE;
-  }
-	
-	while (true)
-	{
-		if (find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
-		{
-			string find_filename;
-			wstrToUtf8(find_filename,find_file_data.cFileName);
-			file_list.push_back(GetAbsolutePath(GetPath(search_pattern),find_filename));
-		}
-		if (!FindNextFileW(hFind,&find_file_data)) break;
-	}
-
-  if (hFind) FindClose(hFind);
-	return TRUE;
-}
-
-
-bool FindFilesByExtensionRecursive (list<string> &file_list, string folder, string	extension)
-{
-	WIN32_FIND_DATAW find_file_data;
-	HANDLE hFind;
-	
-  extension = (extension[0] == '.') ? extension.substr(1,extension.length()-1) : extension;
-  regex search_pattern(".*\\."+extension+"$");
+	strBasePath = RemoveEndingSlash(strBasePath);
+  regex regUpLevel("^(\\.| )*\\/.+");
   
-  wstring path_w;
-	utf8toWStr(path_w,GetAbsolutePath(folder,"*"));
-  hFind = FindFirstFileW(path_w.c_str(), &find_file_data);
-	
-	if (hFind == INVALID_HANDLE_VALUE)
+	while (regex_match(strRelativePath,regUpLevel))
+	{
+		if (strBasePath.find('/')==string::npos) break;
+		strRelativePath	= strRelativePath.substr(strRelativePath.find('/')+1);
+		strBasePath		= strBasePath.substr(0,strBasePath.rfind('/'));
+	}
+
+	return strBasePath == "" ? strRelativePath : strBasePath+ "/" + strRelativePath;
+}
+
+
+string RemovePath(string strFileName)
+{
+ 	return  (strFileName.find_last_of("/") != string::npos) ?
+          strFileName.substr(strFileName.find_last_of("/")+1) :
+          strFileName;
+}
+
+
+string RemoveExtension (string strFileName)
+{
+	int nPointPos = strFileName.rfind(L'.');
+  int nSlashPos = strFileName.rfind(L'/');
+  return (nPointPos>nSlashPos) ? strFileName.substr(0,nPointPos) : strFileName;	
+}
+
+
+
+bool FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
+{
+#ifdef _WIN32
+	WIN32_FIND_DATAW owinFindFileData;
+	HANDLE powinFind ;
+
+	wstring strSearchPatternW;
+  utf8toWStr(strSearchPatternW, strSearchPattern);
+
+	powinFind = FindFirstFileW(strSearchPatternW.data(), &owinFindFileData);
+    
+  if (powinFind == INVALID_HANDLE_VALUE)
   {
-    FindClose(hFind);
+    if (powinFind) FindClose(FindClose);
     return FALSE;
   }
 	
 	while (true)
 	{
-		string find_filename;
-		wstrToUtf8(find_filename,find_file_data.cFileName);
-		if ((find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) && (find_file_data.dwFileAttributes!=48))
+		if (owinFindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 		{
-			if (regex_match(find_filename,search_pattern))
-        file_list.push_back(GetAbsolutePath(folder,find_filename));
+			string strFoundFile;
+			wstrToUtf8(strFoundFile,owinFindFileData.cFileName);
+			listFiles.push_back(GetAbsolutePath(GetPath(strSearchPattern),strFoundFile));
+		}
+		if (!FindNextFileW(powinFind,&owinFindFileData)) break;
+	}
+
+  if (powinFind) FindClose(powinFind);
+	return TRUE;
+#else
+  string strBasePath = GetPath(strSearchPattern);
+  string strFileNamePattern = RemovePath(strSearchPattern);
+  ReplaceAll(strFileNamePattern,"*",".*");
+  regex regFileNamePattern(strFileNamePattern);
+
+  DIR *dir;
+  struct dirent *ent;
+  if ((dir = opendir (strBasePath.c_str())) !=0) 
+  {
+    while ((ent = readdir (dir)) != NULL) 
+    {
+      if ((regex_match(ent->d_name,regFileNamePattern))&&(!IsDirectory(ent->d_name)))
+        listFiles.push_back(GetAbsolutePath(strBasePath,ent->d_name));
+    }
+    closedir (dir);
+  } 
+  else return false;
+
+  return true;
+#endif
+}
+
+
+bool FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension)
+{
+  strExtension = (strExtension[0] == '.') ? strExtension.substr(1,strExtension.length()-1) : strExtension;
+  regex regFileNamePattern((strExtension=="") ? ".*" : (".*\\."+strExtension+"$"));
+
+#ifdef _WIN32
+	WIN32_FIND_DATAW owinFindFileData;
+	HANDLE powinFind;
+    
+  wstring strPathW;
+	utf8toWStr(strPathW,GetAbsolutePath(strFolder,"*"));
+  powinFind = FindFirstFileW(strPathW.c_str(), &owinFindFileData);
+	
+	if (powinFind == INVALID_HANDLE_VALUE)
+  {
+    FindClose(powinFind);
+    return FALSE;
+  }
+	
+	while (true)
+	{
+		string strFoundFile;
+		wstrToUtf8(strFoundFile,owinFindFileData.cFileName);
+		if ((owinFindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) && (owinFindFileData.dwFileAttributes!=48))
+		{
+			if (regex_match(strFoundFile,regFileNamePattern))
+        listFiles.push_back(GetAbsolutePath(strFolder,strFoundFile));
 		}
 		else
 		{
-			if ((find_filename != ".") && (find_filename != ".."))	
-				FindFilesByExtensionRecursive (file_list,GetAbsolutePath(folder,find_filename),extension);
+			if ((strFoundFile != ".") && (strFoundFile != ".."))	
+				FindFilesByExtensionRecursive (listFiles,GetAbsolutePath(strFolder,strFoundFile),strExtension);
 		}
-		if (!FindNextFileW(hFind,&find_file_data)) break;
+		if (!FindNextFileW(powinFind,&owinFindFileData)) break;
 	}
 
-  if (hFind) FindClose(hFind);
+  if (powinFind) FindClose(powinFind);
 	return TRUE;
+#else
+
+  DIR *dir;
+  struct dirent *ent;
+  if ((dir = opendir (strFolder.c_str())) !=0) 
+  {
+    while ((ent = readdir (dir)) != NULL) 
+    {
+      if ((ent->d_name[0]=='.')&&((ent->d_name[1]==0)||(ent->d_name[2]==0))) continue; 
+      if (IsDirectory(GetAbsolutePath(strFolder,ent->d_name)))
+        FindFilesByExtensionRecursive(listFiles,GetAbsolutePath(strFolder,ent->d_name),strExtension);
+      else if (regex_match(ent->d_name,regFileNamePattern))
+        listFiles.push_back(GetAbsolutePath(strFolder,ent->d_name));
+    }
+    closedir (dir);
+  } 
+  else return false;
+
+
+  return true;
+#endif
 }
 
 
-bool WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
+bool WriteWLDFile (string strRasterFile, double dblULX, double dblULY, double dblRes)
 {
-	if (raster_file.length()>1)
+	if (strRasterFile.length()>1)
 	{
-		raster_file[raster_file.length()-2]=raster_file[raster_file.length()-1];
-		raster_file[raster_file.length()-1]='w';
+		strRasterFile[strRasterFile.length()-2]=strRasterFile[strRasterFile.length()-1];
+		strRasterFile[strRasterFile.length()-1]='w';
 	}
 	
-	FILE *fp = OpenFile(raster_file,"w");
+	FILE *fp = OpenFile(strRasterFile,"w");
 	if (!fp) return FALSE;
 
-	fprintf(fp,"%.10lf\n",res);
+	fprintf(fp,"%.10lf\n",dblRes);
 	fprintf(fp,"%lf\n",0.0);
 	fprintf(fp,"%lf\n",0.0);
-	fprintf(fp,"%.10lf\n",-res);
-	fprintf(fp,"%.10lf\n",ul_x+0.5*res);
-	fprintf(fp,"%.10lf\n",ul_y-0.5*res);
+	fprintf(fp,"%.10lf\n",-dblRes);
+	fprintf(fp,"%.10lf\n",dblULX+0.5*dblRes);
+	fprintf(fp,"%.10lf\n",dblULY-0.5*dblRes);
 	
 	fclose(fp);
 
@@ -187,92 +243,102 @@ bool WriteWLDFile (string raster_file, double ul_x, double ul_y, double res)
 }
 
 
-FILE*		OpenFile(string	filename, string mode)
+FILE*		OpenFile(string	strFileName, string strMode)
 {
-	wstring	filename_w, mode_w;
-	utf8toWStr(filename_w,filename);
-	utf8toWStr(mode_w,mode);
-
-	return _wfopen(filename_w.c_str(),mode_w.c_str()); //_wfopen
+#ifdef _WIN32
+	wstring	strFileName_w, strModeW;
+	utf8toWStr(strFileName_w,strFileName);
+	utf8toWStr(strModeW,strMode);
+  return _wfopen(strFileName_w.c_str(),strModeW.c_str()); //_wfopen
+#else
+  return fopen(strFileName.c_str(),strMode.c_str());
+#endif
 }
 
 
-bool		RenameFile(string old_path, string new_path)
+bool		RenameFile(string strOldPath, string strNewPath)
 {
-	wstring old_path_w, new_path_w;
-	utf8toWStr(old_path_w,old_path);
-	utf8toWStr(new_path_w,new_path);
-	return _wrename(old_path_w.c_str(),new_path_w.c_str()); //check _wrename
+#ifdef _WIN32
+	wstring old_strPathW, new_strPathW;
+	utf8toWStr(old_strPathW,strOldPath);
+	utf8toWStr(new_strPathW,strNewPath);
+  return _wrename(old_strPathW.c_str(),new_strPathW.c_str()); //check _wrename
+#else
+  return 0==rename(strOldPath.c_str(),strNewPath.c_str());
+#endif
 }
 
 
-bool		GMXDeleteFile(string path)
+bool		GMXDeleteFile(string strPath)
 {
-	wstring	path_w;
-	utf8toWStr(path_w,path);
-	return ::DeleteFileW(path_w.c_str()); //DeleteFile ->...
+#ifdef _WIN32
+	wstring	strPathW;
+	utf8toWStr(strPathW,strPath);
+	return ::DeleteFileW(strPathW.c_str());
+#else
+  return (0==remove(strPath.c_str()));
+#endif
 }
 
 
-bool		GMXCreateDirectory(string path)
+bool		GMXCreateDirectory(string strPath)
 {
-  #ifdef WIN32
- 	  wstring	path_w;
-	  utf8toWStr(path_w,path);
-    return (_wmkdir(path_w.c_str())==0);
-  #else
+#ifdef WIN32
+ 	  wstring	strPathW;
+	  utf8toWStr(strPathW,strPath);
+    return (_wmkdir(strPathW.c_str())==0);
+#else
     return (mkdir(path.c_str())==0);
-  #endif
+#endif
 }
 
 
-bool	SaveDataToFile(string filename, void *p_data, int size)
+bool	SaveDataToFile(string strFileName, void *pabData, int nSize)
 {
 	FILE *fp;
-	if (!(fp = OpenFile(filename,"wb"))) return FALSE;
-	fwrite(p_data,sizeof(BYTE),size,fp);
+	if (!(fp = OpenFile(strFileName,"wb"))) return FALSE;
+	fwrite(pabData,sizeof(BYTE),nSize,fp);
 	fclose(fp);
 	
 	return TRUE;
 }
 
 
-string		GetExtension (string path)
+string		GetExtension (string strPath)
 {
-  ReplaceAll(path,"\\","/");
-	int n1 = path.rfind('.');
+	int n1 = strPath.rfind('.');
   if (n1 == string::npos) return "";
-  int n2 = path.rfind('/');
+  int n2 = strPath.rfind('/');
 
-  if (n2==string::npos || n1>n2) return path.substr(n1+1);
+  if (n2==string::npos || n1>n2) return strPath.substr(n1+1);
 	else return "";
 }
 
-string  ReadTextFile(string filename)
+string  ReadTextFile(string strFileName)
 {
-  FILE *fp = OpenFile(filename,"r");
+  FILE *fp = OpenFile(strFileName,"r");
   if (!fp) return "";
 
-  string str_file;  
+  string strFile;  
 	char c;
 	while (1==fscanf(fp,"%c",&c))
-		str_file+=c;
+		strFile+=c;
 	fclose(fp);
 
-	return str_file;
+	return strFile;
 }
 
 
-bool ReadBinaryFile(string filename, void *&p_data, int &size)
+bool ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 {
-	FILE *fp = OpenFile(filename,"rb");
+	FILE *fp = OpenFile(strFileName,"rb");
 	if (!fp) return FALSE;
 	fseek(fp, 0, SEEK_END);
-	size = ftell(fp);
+	nSize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
-	p_data = new BYTE[size];
-	fread(p_data,sizeof(BYTE),size,fp);
+	pabData = new BYTE[nSize];
+	fread(pabData,sizeof(BYTE),nSize,fp);
 
 	fclose(fp);
 	return TRUE;

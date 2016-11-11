@@ -29,6 +29,7 @@ const string astrUsageExamples[] =
  "copytiles -i tiles -i_tnt {z}/{x}/{y}.png -o tiles_new -o_tnt {z}_{x}_{y}.png"
 };
 
+
 int _tmain(int nArgs, wchar_t* argvW[])
 {
   string *pastrArgs = new string[nArgs];
@@ -44,6 +45,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
 
   //debug
   //gmx::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
+ 	//for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
   

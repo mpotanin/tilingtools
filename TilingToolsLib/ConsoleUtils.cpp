@@ -95,6 +95,7 @@ void	SetEnvironmentVariables (string gdal_path)
   utf8toWStr(gdal_data_path_w,GetAbsolutePath(gdal_path,"bins\\gdal-data"));
   gdal_driver_path_w=L"";
 
+  _wputenv((L"OGR_ENABLE_PARTIAL_REPROJECTION=YES" + gdal_driver_path_w).c_str());
 	_wputenv((L"PATH=" + gdal_path_w + L";" + env_PATH).c_str());
   _wputenv((L"GDAL_DATA=" + gdal_data_path_w).c_str());
   _wputenv((L"GDAL_DRIVER_PATH=" + gdal_driver_path_w).c_str());
@@ -113,7 +114,8 @@ bool LoadGDAL (int argc, string argv[])
 		GetModuleFileNameW(NULL,exe_filename_w,_MAX_PATH); 
 		string exe_filename;
 		wstrToUtf8(exe_filename,exe_filename_w);
-		gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_filename));
+    ReplaceAll(exe_filename,"\\","/");
+    gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_filename));
 	}
 
 	if (gdal_path=="")

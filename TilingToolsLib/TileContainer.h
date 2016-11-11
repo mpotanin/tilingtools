@@ -205,6 +205,7 @@ protected:
 	sqlite3	*p_sql3_db_;
 	TileType				tile_type_;
 	MercatorProjType		merc_type_;
+  bool  read_only_;
 };
 
 

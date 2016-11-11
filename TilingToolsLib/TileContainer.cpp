@@ -805,6 +805,7 @@ void GMXTileContainer::MakeEmpty ()
 
 MBTileContainer::MBTileContainer ()
 {
+  read_only_=true;
 	p_sql3_db_ = NULL;
 };
 
@@ -853,7 +854,7 @@ int		MBTileContainer::GetMaxZoom()
 	
 bool MBTileContainer::OpenForReading  (string file_name)
 {
-	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_))
+  if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_))
 	{
 		cout<<"ERROR: can't open mbtiles file: "<<file_name<<endl;
 		return FALSE;
@@ -957,13 +958,14 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 		Close();
 		return;
 	}		
+  read_only_=false;
 }
 
 
 
 bool	MBTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
-	if (p_sql3_db_ == NULL) return FALSE;
+	if ((!p_sql3_db_) || read_only_) return FALSE;
 
 	char buf[256];
 	string str_sql;
@@ -1153,16 +1155,18 @@ MercatorProjType	MBTileContainer::GetProjType()
 
 bool MBTileContainer::Close ()
 {
-  if (p_sql3_db_!=NULL)
-	{
+  if (!p_sql3_db_) return false;
+  else if (! read_only_)
+  {
     char	*p_err_msg = NULL;
     string str_sql = "INSERT INTO metadata VALUES ('maxzoom','" + ConvertIntToString(GetMaxZoom())+"')";
     sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
     str_sql = "INSERT INTO metadata VALUES ('minzoom','" + ConvertIntToString(GetMinZoom())+"')";
     sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
-    sqlite3_close(p_sql3_db_);
-		p_sql3_db_ = NULL;
   }
+  
+  sqlite3_close(p_sql3_db_);
+  p_sql3_db_ = NULL;
 	return TRUE;
 };
 

@@ -259,6 +259,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 
   //debug
   //gmx::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
+  //for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
   

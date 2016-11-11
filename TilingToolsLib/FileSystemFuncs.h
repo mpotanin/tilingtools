@@ -3,32 +3,29 @@
 #include <windows.h>
 
 
-//string		_GetAbsolutePath(string path, string file_name);
 namespace gmx
 {
 
-string		RemovePath	(string filename);
-string		RemoveExtension(string filename);
-string		GetPath(string filename);
-string		RemoveEndingSlash(string	foldername);
-bool		FileExists	(string filename);
-bool		IsDirectory	(string path);
+string	RemovePath	(string strFile);
+string	RemoveExtension(string strFile);
+string	GetPath(string strFileName);
+string	RemoveEndingSlash(string	strFolderName);
+bool		FileExists	(string strFileName);
+bool		IsDirectory	(string strPath);
 
-bool		FindFilesByPattern (list<string> &file_list, string search_pattern);
-bool		FindFilesByExtensionRecursive (list<string> &file_list, string folder, string	extension);
+bool		FindFilesByPattern (list<string> &listFiles, string strSearchPattern);
+bool		FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension);
 
-bool		WriteToTextFile(string filename, string str_text);
-bool		WriteWLDFile	(string filename, double ul_x, double ul_y, double res);
-bool		SaveDataToFile	(string filename, void *p_data, int size);
-bool		ReadBinaryFile(string filename, void *&p_data, int &size);
-string  ReadTextFile(string filename);
-string	GetAbsolutePath (string base_path, string relative_path);
-string	GetExtension (string path);
-bool		GMXCreateDirectory(string path);
-bool		GMXDeleteFile(string	path);
-bool		RenameFile(string old_path, string new_path);
-FILE*		OpenFile(string	file_name, string mode);
-
-
+bool		WriteToTextFile(string strFileName, string strText);
+bool		WriteWLDFile	(string strFileName, double dblULX, double dblULY, double dblRes);
+bool		SaveDataToFile	(string strFileName, void *pabData, int nSize);
+bool		ReadBinaryFile(string strFileName, void *&pabData, int &nSize);
+string  ReadTextFile(string strFileName);
+string	GetAbsolutePath (string strBasePath, string strRelativePath);
+string	GetExtension (string strPath);
+bool		GMXCreateDirectory(string strPath);
+bool		GMXDeleteFile(string	strPath);
+bool		RenameFile(string strOldPath, string strNewPath);
+FILE*		OpenFile(string	strFileName, string strMode);
 
 }

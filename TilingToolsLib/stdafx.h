@@ -10,19 +10,30 @@
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 #define _FILE_OFFSET_BITS 64
 
+#ifdef WIN32
 #include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
 #include <string>
 #include <list>
 #include <map>
 #include <iostream>
 #include <fstream>
 #include <regex>
-#include <math.h>
-#include <cstdlib>
-#include <time.h>
 
+#else
+#include <string.h>
+#include <list.h>
+#include <map.h>
+#include <iostream.h>
+#include <fstream.h>
+#include <regex.h>
+#include <dirent.h>
+#endif
+
+#include <stdio.h>
+#include <tchar.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "../gdal210/include/gdal_priv.h"
 #include "../gdal210/include/ogrsf_frmts.h"
