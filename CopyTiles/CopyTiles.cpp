@@ -35,8 +35,8 @@ int _tmain(int nArgs, wchar_t* argvW[])
   string *pastrArgs = new string[nArgs];
 	for (int i=0;i<nArgs;i++)
 	{
-		gmx::wstrToUtf8(pastrArgs[i],argvW[i]);
-		gmx::ReplaceAll(pastrArgs[i],"\\","/");
+		GMXString::wstrToUtf8(pastrArgs[i],argvW[i]);
+		GMXString::ReplaceAll(pastrArgs[i],"\\","/");
 	}
 	
  	if (!gmx::LoadGDAL(nArgs,pastrArgs)) return 1;
@@ -93,17 +93,17 @@ int _tmain(int nArgs, wchar_t* argvW[])
 		return 1;
 	}
 
-	if (!gmx::FileExists(strSrcPath))
+	if (!GMXFileSys::FileExists(strSrcPath))
 	{
 		cout<<"ERROR: can't find input path: "<<strSrcPath<<endl;
 		return 1;
 	}
 
-	if (gmx::FileExists(strDestPath))
+	if (GMXFileSys::FileExists(strDestPath))
 	{
-		if (!gmx::IsDirectory(strDestPath))
+		if (!GMXFileSys::IsDirectory(strDestPath))
 		{
-			if (!gmx::GMXDeleteFile(strDestPath))
+			if (!GMXFileSys::FileDelete(strDestPath))
 			{
 				cout<<"ERROR: can't delete file: "<<strDestPath<<endl;
 				return 1;
@@ -111,7 +111,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
 		}
 	}
 
-  if ((strBorderFilePath != "") && !gmx::FileExists(strBorderFilePath))
+  if ((strBorderFilePath != "") && !GMXFileSys::FileExists(strBorderFilePath))
 	{
 		cout<<"ERROR: can't open file: "<<strBorderFilePath<<endl;
 		return 1;
@@ -142,7 +142,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
 	gmx::MercatorProjType eMercType;
   gmx::Metadata *p_metadata = NULL;
   gmx::TileName		*poSrcTileName = NULL;
-  if (!gmx::IsDirectory(strSrcPath))
+  if (!GMXFileSys::IsDirectory(strSrcPath))
   {
     poSrcTC = gmx::TileContainerFactory::OpenForReading(strSrcPath);
 
@@ -211,9 +211,9 @@ int _tmain(int nArgs, wchar_t* argvW[])
   }
   if (eDestTCType==gmx::TileContainerType::TILEFOLDER) //TODO: should refactor
 	{
-    if (!gmx::FileExists(strDestPath))
+    if (!GMXFileSys::FileExists(strDestPath))
 		{
-			if (!gmx::GMXCreateDirectory(strDestPath.c_str()))
+			if (!GMXFileSys::CreateDir(strDestPath.c_str()))
 			{
 				cout<<"ERROR: can't create folder: "<<strDestPath<<endl;
 				return 1;

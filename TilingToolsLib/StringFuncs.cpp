@@ -1,10 +1,7 @@
 ﻿#include "StringFuncs.h"
 
 
-namespace gmx
-{
-
-string MakeLower(string str)
+string GMXString::MakeLower(string str)
 {
 	string str_lower = str;
 	for (int i=0;i<str.length();i++)
@@ -13,7 +10,7 @@ string MakeLower(string str)
 
 }
 
-int	StrLen	(const unsigned char *str)
+int	GMXString::StrLen	(const unsigned char *str)
 {
 	if (str == 0) return -1;
 	int len = 0;
@@ -22,17 +19,17 @@ int	StrLen	(const unsigned char *str)
 	return (len<1000) ? len : -1;
 }
 
-void ReplaceAll(string	&str, const string	&from, const string	&to) {
-    size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        //size_t end_pos = start_pos + from.length();
-		  str = str.replace(start_pos, from.length(), to);
-      start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-    }
+void GMXString::ReplaceAll(string	&strInput, string	from, string	to)
+{
+  size_t start_pos = 0;
+  while((start_pos = strInput.find(from, start_pos)) != std::string::npos) {
+		strInput = strInput.replace(start_pos, from.length(), to);
+    start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+  }
 }
 
 
-string ConvertIntToString(int number, bool hexadecimal, int adjust_len)
+string GMXString::ConvertIntToString(int number, bool hexadecimal, int adjust_len)
 {
   char buf[100];
   string str;
@@ -50,7 +47,7 @@ string ConvertIntToString(int number, bool hexadecimal, int adjust_len)
 }
 
 
-int			ParseCommaSeparatedArray (string input_str, int *&p_arr, bool is_missing_vals, int nodata_val)	
+int			GMXString::ParseCommaSeparatedArray (string input_str, int *&p_arr, bool is_missing_vals, int nodata_val)	
 {
   p_arr = 0;
   while (input_str!="")
@@ -93,9 +90,9 @@ int			ParseCommaSeparatedArray (string input_str, int *&p_arr, bool is_missing_v
 }
 
 
-bool	ConvertStringToRGB (string str_color, BYTE rgb[3])
+bool	GMXString::ConvertStringToRGB (string str_color, BYTE rgb[3])
 {
-	str_color = MakeLower(str_color);
+	str_color = GMXString::MakeLower(str_color);
 	regex rgb_dec_pattern("([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");
 	regex rgb_hex_pattern("[0-9,a,b,c,d,e,f]{6}");
   regex single_value_pattern("[0-9]{1,5}");
@@ -126,7 +123,7 @@ bool	ConvertStringToRGB (string str_color, BYTE rgb[3])
 }
 
 	
-void utf8toWStr(WStr& dest, const Str& input){
+void GMXString::utf8toWStr(wstring& dest, const string& input){
 	dest.clear();
 	wchar_t w = 0;
 	int bytes = 0;
@@ -172,7 +169,7 @@ void utf8toWStr(WStr& dest, const Str& input){
 		dest.push_back(err);
 }
 
-void wstrToUtf8(Str& dest, const WStr& input){
+void GMXString::wstrToUtf8(string& dest, const wstring& input){
 	dest.clear();
 	for (size_t i = 0; i < input.size(); i++){
 		wchar_t w = input[i];
@@ -198,30 +195,30 @@ void wstrToUtf8(Str& dest, const WStr& input){
 	}
 }
 
-Str wstrToUtf8(const WStr& str){
-	Str result;
+string GMXString::wstrToUtf8(const wstring& str){
+	string result;
 	wstrToUtf8(result, str);
 	return result;
 }
 
-WStr utf8toWStr(const Str& str){
-	WStr result;
+wstring GMXString::utf8toWStr(const string& str){
+	wstring result;
 	utf8toWStr(result, str);
 	return result;
 }
 
-std::ostream& operator<<(std::ostream& f, const WStr& s){
-	Str s1;
-	wstrToUtf8(s1, s);
+/*
+std::ostream& operator<<(std::ostream& f, const wstring& s){
+	string s1;
+	GMXString::wstrToUtf8(s1, s);
 	f << s1;
 	return f;
 }
 
-std::istream& operator>>(std::istream& f, WStr& s){
-	Str s1;
+std::istream& operator>>(std::istream& f, wstring& s){
+	string s1;
 	f >> s1;
-	utf8toWStr(s, s1);
+	GMXString::utf8toWStr(s, s1);
 	return f;
 }
-
-}
+*/

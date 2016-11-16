@@ -251,7 +251,7 @@ GDALDataset*	RasterFile::get_gdal_ds_ref()
 
 bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs)
 {
-	FILE *fp = OpenFile(tab_file,"r");
+	FILE *fp = GMXFileSys::OpenFile(tab_file,"r");
 	if (!fp) return FALSE;
 	fseek(fp, 0, SEEK_END);
 	long size = ftell(fp);
@@ -278,14 +278,14 @@ bool	RasterFile::GetSRS(OGRSpatialReference  &srs)
  const char* strProjRef      = this->p_gdal_ds_->GetProjectionRef();
 
 	if (OGRERR_NONE == srs.SetFromUserInput(strProjRef)) return true;
-  else if (FileExists(RemoveExtension(this->raster_file_)+".prj"))
+  else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".prj"))
 	{
-		string prjFile		= RemoveExtension(this->raster_file_)+".prj";
+		string prjFile		= GMXFileSys::RemoveExtension(this->raster_file_)+".prj";
 		if (OGRERR_NONE==srs.SetFromUserInput(prjFile.c_str())) return true;	
 	}
-	else if (FileExists(RemoveExtension(this->raster_file_)+".tab"))
+	else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".tab"))
   {
-    string tabFile = RemoveExtension(this->raster_file_)+".tab";
+    string tabFile = GMXFileSys::RemoveExtension(this->raster_file_)+".tab";
     if (ReadSpatialRefFromMapinfoTabFile(tabFile,srs)) return true;
   }
  
@@ -703,7 +703,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	int				buf_height	= int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
 
 	
-  string			tiff_in_mem = ("/vsimem/tiffinmem_" + ConvertIntToString(tiffinmem_ind));
+  string			tiff_in_mem = ("/vsimem/tiffinmem_" + GMXString::ConvertIntToString(tiffinmem_ind));
   
   GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
@@ -1230,7 +1230,7 @@ bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam,
   }
   else if (listBandParam.size()!=0)
   {
-    if(!(bands_num_=gmx::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0)))
+    if(!(bands_num_=GMXString::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0)))
     {
       cout<<"ERROR: not valid option \"-bnd\" value: "<<*listBandParam.begin()<<endl;
       return false;
@@ -1238,7 +1238,7 @@ bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam,
     else delete[]panBands;
     for (iterBand=(listBandParam.begin()++);iterBand!=listBandParam.end();iterBand++)
     {
-      if (bands_num_!=gmx::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0))
+      if (bands_num_!=GMXString::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0))
       {
         cout<<"ERROR: not valid option \"-bnd\" value: "<<*iterBand<<endl;
         return false;
@@ -1254,7 +1254,7 @@ bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam,
   for (list<string>::iterator iterInput=listInputParam.begin();iterInput!=listInputParam.end();iterInput++)
   {
     list<string> listRasterFiles;
-    if (!gmx::FindFilesByPattern(listRasterFiles,(*iterInput)))
+    if (!GMXFileSys::FindFilesByPattern(listRasterFiles,(*iterInput)))
     {
       ClearAll();
       cout<<"ERROR: can't find files by path: "<<*iterInput<<endl;
@@ -1264,7 +1264,7 @@ bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam,
     list<string> listVectorFiles;
     if (listBorderParam.size()>0 && (*iterBorder)!="")
     {
-      if (!gmx::FindFilesByPattern(listVectorFiles,(*iterBorder)))
+      if (!GMXFileSys::FindFilesByPattern(listVectorFiles,(*iterBorder)))
       {
         ClearAll();
         cout<<"ERROR: can't find files by path: "<<*iterBorder<<endl;
@@ -1278,7 +1278,7 @@ bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam,
       }
     }
        
-    if (bands_num_>0) gmx::ParseCommaSeparatedArray(*iterBand,panBands,1,0);
+    if (bands_num_>0) GMXString::ParseCommaSeparatedArray(*iterBand,panBands,1,0);
     
     list<string>::iterator vectorFile = listVectorFiles.begin();
     for (list<string>::iterator rasterFile=listRasterFiles.begin();

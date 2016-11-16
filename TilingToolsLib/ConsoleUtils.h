@@ -9,7 +9,7 @@ namespace gmx
 void SetEnvironmentVariables (string gdal_path);
 bool LoadGDAL (int argc, string argv[]);
 
-bool LoadGDALDLLs (string gdal_path);
+bool LoadGDALDLLs (string strGDALDir);
 string ReadGDALPathFromConfigFile (string config_file_path);
 string ParseValueFromCmdLine (string strKey, int nArgs, string pastrArgv[], bool bIsBoolean=false);
 map<string,string> ParseKeyValueCollectionFromCmdLine (string strCollectionName, int nArgs, string pastrArgv[]);

@@ -27,7 +27,7 @@ bool	TileCache::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 
   if (cache_size_ + size> cache_max_size_) return FALSE;
 
-	string tile_key = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
+	string tile_key = GMXString::ConvertIntToString(z) + "_" + GMXString::ConvertIntToString(x) + "_" + GMXString::ConvertIntToString(y);
 	if (tile_data_map_.find(tile_key)!=tile_data_map_.end())
 	{
     delete[](*tile_data_map_.find(tile_key)).second;
@@ -47,7 +47,7 @@ bool	TileCache::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 
 bool	TileCache::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
 {
-	string tile_key = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
+	string tile_key = GMXString::ConvertIntToString(z) + "_" + GMXString::ConvertIntToString(x) + "_" + GMXString::ConvertIntToString(y);
 	map<string,BYTE*>::const_iterator iter;
 	if ((iter=tile_data_map_.find(tile_key)) == tile_data_map_.end())
 	{
@@ -66,7 +66,7 @@ bool	TileCache::GetTile(int z, int x, int y, BYTE *&p_data, unsigned int &size)
 
 bool	TileCache::FindTile(int z, int x, int y)
 {
-  string tile_key = ConvertIntToString(z) + "_" + ConvertIntToString(x) + "_" + ConvertIntToString(y);
+  string tile_key = GMXString::ConvertIntToString(z) + "_" + GMXString::ConvertIntToString(x) + "_" + GMXString::ConvertIntToString(y);
 	return (tile_data_map_.find(tile_key) == tile_data_map_.end()) ? FALSE : TRUE;
 }
 

@@ -58,18 +58,18 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
       return 1;
     }
   }
-  else if (gmx::GetExtension(oOptionParser.GetOptionValue("-tnt"))!="")
+  else if (GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt"))!="")
   {
-    if (!gmx::TileName::TileTypeByExtension(gmx::GetExtension(oOptionParser.GetOptionValue("-tnt")),
+    if (!gmx::TileName::TileTypeByExtension(GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
                                             oTilingParams.tile_type_))
     {
-      cout<<"ERROR: not valid value of \"-tnt\" parameter: "<<gmx::GetExtension(oOptionParser.GetOptionValue("-tnt"))<<endl;
+      cout<<"ERROR: not valid value of \"-tnt\" parameter: "<<GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt"))<<endl;
       return 1;
     }
   }
   else 
   {
-    oTilingParams.tile_type_ = gmx::MakeLower(gmx::GetExtension(*listRasters.begin()))=="png" ? 
+    oTilingParams.tile_type_ = GMXString::MakeLower(GMXFileSys::GetExtension(*listRasters.begin()))=="png" ? 
                                gmx::TileType::PNG_TILE : gmx::TileType::JPEG_TILE;
   }
   
@@ -79,13 +79,13 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
     oTilingParams.output_path_=oOptionParser.GetOptionValue("-o");
   else
     oTilingParams.output_path_= oTilingParams.container_type_==gmx::TileContainerType::TILEFOLDER ?
-                                gmx::RemoveExtension(*listRasters.begin())+"_tiles" :
-                                oTilingParams.output_path_=gmx::RemoveExtension(*listRasters.begin()) + "." +
+                                GMXFileSys::RemoveExtension(*listRasters.begin())+"_tiles" :
+                                oTilingParams.output_path_=GMXFileSys::RemoveExtension(*listRasters.begin()) + "." +
                                 gmx::TileContainerFactory::GetExtensionByTileContainerType(oTilingParams.container_type_);
   if ( (oTilingParams.container_type_==gmx::TileContainerType::TILEFOLDER) &&
-       (!gmx::FileExists(oTilingParams.output_path_)) )
+       (!GMXFileSys::FileExists(oTilingParams.output_path_)) )
   {
-    if (!gmx::GMXCreateDirectory(oTilingParams.output_path_))
+    if (!GMXFileSys::CreateDir(oTilingParams.output_path_))
     {
       cout<<"ERROR: can't create folder: "<<oTilingParams.output_path_<<endl;
       return 1;
@@ -131,7 +131,7 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-nd")!="")
   {
     BYTE	pabyRGB[3];
-    if (!gmx::ConvertStringToRGB(oOptionParser.GetOptionValue("-nd"),pabyRGB))
+    if (!GMXString::ConvertStringToRGB(oOptionParser.GetOptionValue("-nd"),pabyRGB))
     {
       cout<<"ERROR: not valid value of \"-nd\" parameter: "<<oOptionParser.GetOptionValue("-nd")<<endl;
       return FALSE;
@@ -148,7 +148,7 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-bgc")!="")
   {
     BYTE	pabyRGB[3];
-    if (!gmx::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"),pabyRGB))
+    if (!GMXString::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"),pabyRGB))
     {
       cout<<"ERROR: not valid value of \"-bgc\" parameter: "<<oOptionParser.GetOptionValue("-bgc")<<endl;
       return FALSE;
@@ -244,8 +244,8 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   string* pastrArgs = new string[nArgs];
   for (int i=0;i<nArgs;i++)
   {
-    gmx::wstrToUtf8(pastrArgs[i],pastrArgsW[i]);
-    gmx::ReplaceAll(pastrArgs[i],"\\","/");
+    GMXString::wstrToUtf8(pastrArgs[i],pastrArgsW[i]);
+    GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   }
 
   if (!gmx::LoadGDAL(nArgs,pastrArgs))
@@ -256,10 +256,11 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   }
   GDALAllRegister();
   OGRRegisterAll();
+  CPLSetConfigOption("OGR_ENABLE_PARTIAL_REPROJECTION","YES");
 
   //debug
   //gmx::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
-  //for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
+  //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
   
@@ -328,9 +329,9 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
       
         if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
         {
-          if (!gmx::FileExists(mapConsoleParams.at("-tiles"))) 
+          if (!gmx::GMXFileSys::FileExists(mapConsoleParams.at("-tiles"))) 
           {
-            if (!gmx::GMXCreateDirectory(mapConsoleParams.at("-tiles").c_str()))
+            if (!gmx::GMXFileSys::CreateDir(mapConsoleParams.at("-tiles").c_str()))
             {
               cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
               return 1;
@@ -340,12 +341,12 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
           if (bUseContainer)
           {
             mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ? 
-                                          gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".mbtiles" :
-                                          gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +".tiles"; 
+                                          gmx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(gmx::GMXFileSys::RemoveExtension(*iter)) +".mbtiles" :
+                                          gmx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(gmx::GMXFileSys::RemoveExtension(*iter)) +".tiles"; 
           }
           else
           {
-            mapConsoleParamsFix.at("-tiles") = gmx::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + gmx::RemovePath(gmx::RemoveExtension(*iter)) +"_tiles"; 
+            mapConsoleParamsFix.at("-tiles") = gmx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(gmx::GMXFileSys::RemoveExtension(*iter)) +"_tiles"; 
           }
         }
         

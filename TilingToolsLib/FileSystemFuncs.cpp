@@ -1,13 +1,11 @@
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
-namespace gmx
-{
 
 
-bool	WriteToTextFile (string strFileName, string strText)
+bool	GMXFileSys::WriteToTextFile (string strFileName, string strText)
 {
-	FILE *fp = OpenFile(strFileName,"w");
+	FILE *fp = GMXFileSys::OpenFile(strFileName,"w");
 	if (!fp) return FALSE;
 	fprintf(fp,"%s",strText.data());
 	fclose(fp);
@@ -15,18 +13,18 @@ bool	WriteToTextFile (string strFileName, string strText)
 }
 
 
-string	GetPath (string strFileName)
+string	GMXFileSys::GetPath (string strFileName)
 {
 	if (strFileName.find_last_of("/")!=string::npos) return strFileName.substr(0,strFileName.find_last_of("/")+1);
 	else return "";
 }
 
 
-bool FileExists (string strFileName)
+bool GMXFileSys::FileExists (string strFileName)
 {  
 #ifdef _WIN32
 	wstring strFileNameW;
-	utf8toWStr(strFileNameW,strFileName);
+	GMXString::utf8toWStr(strFileNameW,strFileName);
 
 	return !(GetFileAttributesW(strFileNameW.c_str()) == INVALID_FILE_ATTRIBUTES); //GetFileAttributes ->stat
 #else
@@ -45,12 +43,12 @@ bool FileExists (string strFileName)
 }
 
 
-bool IsDirectory (string strPath)
+bool GMXFileSys::IsDirectory (string strPath)
 {
-	if (!FileExists(strPath)) return false;
+	if (!GMXFileSys::FileExists(strPath)) return false;
 #ifdef _WIN32
 	wstring strPathW;
-	utf8toWStr(strPathW,strPath);
+	GMXString::utf8toWStr(strPathW,strPath);
 	return (GetFileAttributesW(strPathW.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
 #else
   if (DIR* psDIR = opendir(strFileName.c_str()))
@@ -63,16 +61,16 @@ bool IsDirectory (string strPath)
 }
 
 
-string	RemoveEndingSlash(string	strFolderName)
+string	GMXFileSys::RemoveEndingSlash(string	strFolderName)
 {		
 	return	(strFolderName == "") ? "" :
 			(strFolderName[strFolderName.length()-1]== '/') ? strFolderName.substr(0,strFolderName.length()-1) : strFolderName;
 }
 
 
-string		GetAbsolutePath (string strBasePath, string strRelativePath)
+string		GMXFileSys::GetAbsolutePath (string strBasePath, string strRelativePath)
 {
-	strBasePath = RemoveEndingSlash(strBasePath);
+	strBasePath = GMXFileSys::RemoveEndingSlash(strBasePath);
   regex regUpLevel("^(\\.| )*\\/.+");
   
 	while (regex_match(strRelativePath,regUpLevel))
@@ -86,7 +84,7 @@ string		GetAbsolutePath (string strBasePath, string strRelativePath)
 }
 
 
-string RemovePath(string strFileName)
+string GMXFileSys::RemovePath(string strFileName)
 {
  	return  (strFileName.find_last_of("/") != string::npos) ?
           strFileName.substr(strFileName.find_last_of("/")+1) :
@@ -94,7 +92,7 @@ string RemovePath(string strFileName)
 }
 
 
-string RemoveExtension (string strFileName)
+string GMXFileSys::RemoveExtension (string strFileName)
 {
 	int nPointPos = strFileName.rfind(L'.');
   int nSlashPos = strFileName.rfind(L'/');
@@ -103,14 +101,14 @@ string RemoveExtension (string strFileName)
 
 
 
-bool FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
+bool GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
 {
 #ifdef _WIN32
 	WIN32_FIND_DATAW owinFindFileData;
 	HANDLE powinFind ;
 
 	wstring strSearchPatternW;
-  utf8toWStr(strSearchPatternW, strSearchPattern);
+  GMXString::utf8toWStr(strSearchPatternW, strSearchPattern);
 
 	powinFind = FindFirstFileW(strSearchPatternW.data(), &owinFindFileData);
     
@@ -124,9 +122,8 @@ bool FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
 	{
 		if (owinFindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
 		{
-			string strFoundFile;
-			wstrToUtf8(strFoundFile,owinFindFileData.cFileName);
-			listFiles.push_back(GetAbsolutePath(GetPath(strSearchPattern),strFoundFile));
+			string strFoundFile = GMXString::wstrToUtf8(owinFindFileData.cFileName);
+			listFiles.push_back(GMXFileSys::GetAbsolutePath(GMXFileSys::GetPath(strSearchPattern),strFoundFile));
 		}
 		if (!FindNextFileW(powinFind,&owinFindFileData)) break;
 	}
@@ -134,9 +131,9 @@ bool FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
   if (powinFind) FindClose(powinFind);
 	return TRUE;
 #else
-  string strBasePath = GetPath(strSearchPattern);
-  string strFileNamePattern = RemovePath(strSearchPattern);
-  ReplaceAll(strFileNamePattern,"*",".*");
+  string strBasePath = GMXFileSys::GetPath(strSearchPattern);
+  string strFileNamePattern = GMXFileSys::RemovePath(strSearchPattern);
+  GMXString::ReplaceAll(strFileNamePattern,"*",".*");
   regex regFileNamePattern(strFileNamePattern);
 
   DIR *dir;
@@ -145,8 +142,8 @@ bool FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
   {
     while ((ent = readdir (dir)) != NULL) 
     {
-      if ((regex_match(ent->d_name,regFileNamePattern))&&(!IsDirectory(ent->d_name)))
-        listFiles.push_back(GetAbsolutePath(strBasePath,ent->d_name));
+      if ((regex_match(ent->d_name,regFileNamePattern))&&(!GMXFileSys::IsDirectory(ent->d_name)))
+        listFiles.push_back(GMXFileSys::GetAbsolutePath(strBasePath,ent->d_name));
     }
     closedir (dir);
   } 
@@ -157,7 +154,7 @@ bool FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
 }
 
 
-bool FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension)
+bool GMXFileSys::FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension)
 {
   strExtension = (strExtension[0] == '.') ? strExtension.substr(1,strExtension.length()-1) : strExtension;
   regex regFileNamePattern((strExtension=="") ? ".*" : (".*\\."+strExtension+"$"));
@@ -167,7 +164,7 @@ bool FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, s
 	HANDLE powinFind;
     
   wstring strPathW;
-	utf8toWStr(strPathW,GetAbsolutePath(strFolder,"*"));
+	GMXString::utf8toWStr(strPathW,GMXFileSys::GetAbsolutePath(strFolder,"*"));
   powinFind = FindFirstFileW(strPathW.c_str(), &owinFindFileData);
 	
 	if (powinFind == INVALID_HANDLE_VALUE)
@@ -178,17 +175,16 @@ bool FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, s
 	
 	while (true)
 	{
-		string strFoundFile;
-		wstrToUtf8(strFoundFile,owinFindFileData.cFileName);
+		string strFoundFile = GMXString::wstrToUtf8(owinFindFileData.cFileName);
 		if ((owinFindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) && (owinFindFileData.dwFileAttributes!=48))
 		{
 			if (regex_match(strFoundFile,regFileNamePattern))
-        listFiles.push_back(GetAbsolutePath(strFolder,strFoundFile));
+        listFiles.push_back(GMXFileSys::GetAbsolutePath(strFolder,strFoundFile));
 		}
 		else
 		{
 			if ((strFoundFile != ".") && (strFoundFile != ".."))	
-				FindFilesByExtensionRecursive (listFiles,GetAbsolutePath(strFolder,strFoundFile),strExtension);
+				GMXFileSys::FindFilesByExtensionRecursive (listFiles,GMXFileSys::GetAbsolutePath(strFolder,strFoundFile),strExtension);
 		}
 		if (!FindNextFileW(powinFind,&owinFindFileData)) break;
 	}
@@ -204,10 +200,10 @@ bool FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, s
     while ((ent = readdir (dir)) != NULL) 
     {
       if ((ent->d_name[0]=='.')&&((ent->d_name[1]==0)||(ent->d_name[2]==0))) continue; 
-      if (IsDirectory(GetAbsolutePath(strFolder,ent->d_name)))
-        FindFilesByExtensionRecursive(listFiles,GetAbsolutePath(strFolder,ent->d_name),strExtension);
+      if (GMXFileSys::IsDirectory(GMXFileSys::GetAbsolutePath(strFolder,ent->d_name)))
+        GMXFileSys::FindFilesByExtensionRecursive(listFiles,GMXFileSys::GetAbsolutePath(strFolder,ent->d_name),strExtension);
       else if (regex_match(ent->d_name,regFileNamePattern))
-        listFiles.push_back(GetAbsolutePath(strFolder,ent->d_name));
+        listFiles.push_back(GMXFileSys::GetAbsolutePath(strFolder,ent->d_name));
     }
     closedir (dir);
   } 
@@ -219,7 +215,7 @@ bool FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, s
 }
 
 
-bool WriteWLDFile (string strRasterFile, double dblULX, double dblULY, double dblRes)
+bool GMXFileSys::WriteWLDFile (string strRasterFile, double dblULX, double dblULY, double dblRes)
 {
 	if (strRasterFile.length()>1)
 	{
@@ -227,7 +223,7 @@ bool WriteWLDFile (string strRasterFile, double dblULX, double dblULY, double db
 		strRasterFile[strRasterFile.length()-1]='w';
 	}
 	
-	FILE *fp = OpenFile(strRasterFile,"w");
+	FILE *fp = GMXFileSys::OpenFile(strRasterFile,"w");
 	if (!fp) return FALSE;
 
 	fprintf(fp,"%.10lf\n",dblRes);
@@ -243,12 +239,12 @@ bool WriteWLDFile (string strRasterFile, double dblULX, double dblULY, double db
 }
 
 
-FILE*		OpenFile(string	strFileName, string strMode)
+FILE*		GMXFileSys::OpenFile(string	strFileName, string strMode)
 {
 #ifdef _WIN32
 	wstring	strFileName_w, strModeW;
-	utf8toWStr(strFileName_w,strFileName);
-	utf8toWStr(strModeW,strMode);
+	GMXString::utf8toWStr(strFileName_w,strFileName);
+	GMXString::utf8toWStr(strModeW,strMode);
   return _wfopen(strFileName_w.c_str(),strModeW.c_str()); //_wfopen
 #else
   return fopen(strFileName.c_str(),strMode.c_str());
@@ -256,12 +252,12 @@ FILE*		OpenFile(string	strFileName, string strMode)
 }
 
 
-bool		RenameFile(string strOldPath, string strNewPath)
+bool		GMXFileSys::RenameFile(string strOldPath, string strNewPath)
 {
 #ifdef _WIN32
 	wstring old_strPathW, new_strPathW;
-	utf8toWStr(old_strPathW,strOldPath);
-	utf8toWStr(new_strPathW,strNewPath);
+	GMXString::utf8toWStr(old_strPathW,strOldPath);
+	GMXString::utf8toWStr(new_strPathW,strNewPath);
   return _wrename(old_strPathW.c_str(),new_strPathW.c_str()); //check _wrename
 #else
   return 0==rename(strOldPath.c_str(),strNewPath.c_str());
@@ -269,11 +265,11 @@ bool		RenameFile(string strOldPath, string strNewPath)
 }
 
 
-bool		GMXDeleteFile(string strPath)
+bool		GMXFileSys::FileDelete(string strPath)
 {
 #ifdef _WIN32
 	wstring	strPathW;
-	utf8toWStr(strPathW,strPath);
+	GMXString::utf8toWStr(strPathW,strPath);
 	return ::DeleteFileW(strPathW.c_str());
 #else
   return (0==remove(strPath.c_str()));
@@ -281,11 +277,11 @@ bool		GMXDeleteFile(string strPath)
 }
 
 
-bool		GMXCreateDirectory(string strPath)
+bool		GMXFileSys::CreateDir(string strPath)
 {
 #ifdef WIN32
  	  wstring	strPathW;
-	  utf8toWStr(strPathW,strPath);
+	  GMXString::utf8toWStr(strPathW,strPath);
     return (_wmkdir(strPathW.c_str())==0);
 #else
     return (mkdir(path.c_str())==0);
@@ -293,10 +289,10 @@ bool		GMXCreateDirectory(string strPath)
 }
 
 
-bool	SaveDataToFile(string strFileName, void *pabData, int nSize)
+bool	GMXFileSys::SaveDataToFile(string strFileName, void *pabData, int nSize)
 {
 	FILE *fp;
-	if (!(fp = OpenFile(strFileName,"wb"))) return FALSE;
+	if (!(fp = GMXFileSys::OpenFile(strFileName,"wb"))) return FALSE;
 	fwrite(pabData,sizeof(BYTE),nSize,fp);
 	fclose(fp);
 	
@@ -304,7 +300,7 @@ bool	SaveDataToFile(string strFileName, void *pabData, int nSize)
 }
 
 
-string		GetExtension (string strPath)
+string		GMXFileSys::GetExtension (string strPath)
 {
 	int n1 = strPath.rfind('.');
   if (n1 == string::npos) return "";
@@ -314,9 +310,9 @@ string		GetExtension (string strPath)
 	else return "";
 }
 
-string  ReadTextFile(string strFileName)
+string  GMXFileSys::ReadTextFile(string strFileName)
 {
-  FILE *fp = OpenFile(strFileName,"r");
+  FILE *fp = GMXFileSys::OpenFile(strFileName,"r");
   if (!fp) return "";
 
   string strFile;  
@@ -329,9 +325,9 @@ string  ReadTextFile(string strFileName)
 }
 
 
-bool ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
+bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 {
-	FILE *fp = OpenFile(strFileName,"rb");
+	FILE *fp = GMXFileSys::OpenFile(strFileName,"rb");
 	if (!fp) return FALSE;
 	fseek(fp, 0, SEEK_END);
 	nSize = ftell(fp);
@@ -345,4 +341,3 @@ bool ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 }
 
 
-}

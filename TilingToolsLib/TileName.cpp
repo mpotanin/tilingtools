@@ -9,9 +9,9 @@ namespace gmx
 StandardTileName::StandardTileName (string base_folder, string str_template)
 {
 	if (!ValidateTemplate(str_template)) return;
-	if (!FileExists(base_folder)) return;
+	if (!GMXFileSys::FileExists(base_folder)) return;
 
-  if (!TileName::TileTypeByExtension(GetExtension(str_template),tile_type_))
+  if (!TileName::TileTypeByExtension(GMXFileSys::GetExtension(str_template),tile_type_))
   {
     cout<<"ERROR: can't parse tile type from input template: "<<str_template<<endl;
     return;
@@ -21,7 +21,7 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 	zxy_pos_[0] = (zxy_pos_[1] = (zxy_pos_[2] = 0));
 
 	if (str_template[0] == L'/' || str_template[0] == L'\\') 	str_template = str_template.substr(1,str_template.length()-1);
-	ReplaceAll(str_template,"\\","/");
+	GMXString::ReplaceAll(str_template,"\\","/");
 	str_template_ = str_template;
 		
 	//ReplaceAll(strTemplate,"\\","\\\\");
@@ -41,9 +41,9 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 		n = str_template.find(L'}',n) + 1;
 	}
 
-	ReplaceAll(str_template,"{z}","(\\d+)");
-	ReplaceAll(str_template,"{x}","(\\d+)");
-	ReplaceAll(str_template,"{y}","(\\d+)");
+	GMXString::ReplaceAll(str_template,"{z}","(\\d+)");
+	GMXString::ReplaceAll(str_template,"{x}","(\\d+)");
+	GMXString::ReplaceAll(str_template,"{y}","(\\d+)");
 	rx_template_ = ("(.*[\\/])" + str_template) + "(.*)";
   //rx_template_ = str_template;
 }
@@ -74,7 +74,7 @@ bool	StandardTileName::ValidateTemplate	(string str_template)
 	}
 		
   TileType tt;
-  if (!TileName::TileTypeByExtension(GetExtension(str_template),tt))
+  if (!TileName::TileTypeByExtension(GMXFileSys::GetExtension(str_template),tt))
   {
 		cout<<"ERROR: not valid tile type in template: "<<str_template<<endl;
 		return FALSE;
@@ -85,9 +85,9 @@ bool	StandardTileName::ValidateTemplate	(string str_template)
 string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	ReplaceAll(tile_name,"{z}",ConvertIntToString(zoom));
-	ReplaceAll(tile_name,"{x}",ConvertIntToString(nX));
-	ReplaceAll(tile_name,"{y}",ConvertIntToString(nY));
+	GMXString::ReplaceAll(tile_name,"{z}",GMXString::ConvertIntToString(zoom));
+	GMXString::ReplaceAll(tile_name,"{x}",GMXString::ConvertIntToString(nX));
+	GMXString::ReplaceAll(tile_name,"{y}",GMXString::ConvertIntToString(nY));
 	return tile_name;
 }
 
@@ -117,8 +117,8 @@ bool StandardTileName::CreateFolder (int zoom, int x, int y)
 	int n = 0;
 	while (tile_name.find("/",n)!=std::string::npos)
 	{
-		if (!FileExists(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
-			if (!GMXCreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+		if (!GMXFileSys::FileExists(GMXFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
+			if (!GMXFileSys::CreateDir(GMXFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
 		n = (tile_name.find("/",n)) + 1;
 	}
 	return TRUE;
@@ -131,8 +131,8 @@ bool ESRITileName::CreateFolder (int zoom, int x, int y)
 	int n = 0;
 	while (tile_name.find("/",n)!=std::string::npos)
 	{
-		if (!FileExists(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
-			if (!GMXCreateDirectory(GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+		if (!GMXFileSys::FileExists(GMXFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
+			if (!GMXFileSys::CreateDir(GMXFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
 		n = (tile_name.find("/",n)) + 1;
 	}
 	return TRUE;
@@ -141,7 +141,7 @@ bool ESRITileName::CreateFolder (int zoom, int x, int y)
 
 bool	ESRITileName::ValidateTemplate	(string str_template)
 {
-  str_template = MakeLower(str_template);
+  str_template = GMXString::MakeLower(str_template);
 	if (str_template.find("{l}",0)==string::npos)
 	{
 		//cout<<"Error: bad tile name template: missing {L}"<<endl;
@@ -165,7 +165,7 @@ bool	ESRITileName::ValidateTemplate	(string str_template)
 	}
 		
 	TileType tt;
-  if (!TileName::TileTypeByExtension(GetExtension(str_template),tt))
+  if (!TileName::TileTypeByExtension(GMXFileSys::GetExtension(str_template),tt))
   {
 		cout<<"ERROR: not valid tile type in template: "<<str_template<<endl;
 		return FALSE;
@@ -176,15 +176,15 @@ bool	ESRITileName::ValidateTemplate	(string str_template)
 
 ESRITileName::ESRITileName (string base_folder, string str_template)
 {
-  ReplaceAll(str_template,"\\","/");
-  ReplaceAll(str_template,"{l}","{L}");
-  ReplaceAll(str_template,"{r}","{R}");
-  ReplaceAll(str_template,"{c}","{C}");
+  GMXString::ReplaceAll(str_template,"\\","/");
+  GMXString::ReplaceAll(str_template,"{l}","{L}");
+  GMXString::ReplaceAll(str_template,"{r}","{R}");
+  GMXString::ReplaceAll(str_template,"{c}","{C}");
 
 	if (!ValidateTemplate(str_template)) return;
-	if (!FileExists(base_folder)) return;
+	if (!GMXFileSys::FileExists(base_folder)) return;
 
-	if (!TileName::TileTypeByExtension(GetExtension(str_template),tile_type_))
+	if (!TileName::TileTypeByExtension(GMXFileSys::GetExtension(str_template),tile_type_))
   {
     cout<<"ERROR: can't parse tile type from input template: "<<str_template<<endl;
     return;
@@ -195,9 +195,9 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 	if (str_template[0] == L'/') 	str_template = str_template.substr(1,str_template.length()-1);
   str_template_ = str_template;
 		
-  ReplaceAll(str_template,"{L}","(L\\d{2})");
-  ReplaceAll(str_template,"{C}","(C[A-Fa-f0-9]{8,8})");
-  ReplaceAll(str_template,"{R}","(R[A-Fa-f0-9]{8,8})");
+  GMXString::ReplaceAll(str_template,"{L}","(L\\d{2})");
+  GMXString::ReplaceAll(str_template,"{C}","(C[A-Fa-f0-9]{8,8})");
+  GMXString::ReplaceAll(str_template,"{R}","(R[A-Fa-f0-9]{8,8})");
 	rx_template_ = ("(.*)" + str_template) + "(.*)";
 }
 
@@ -205,9 +205,9 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	ReplaceAll(tile_name,"{L}","L"+ ConvertIntToString(zoom,FALSE,2));
-	ReplaceAll(tile_name,"{C}","C"+ConvertIntToString(nX,TRUE,8));
-	ReplaceAll(tile_name,"{R}","R"+ConvertIntToString(nY,TRUE,8));
+	GMXString::ReplaceAll(tile_name,"{L}","L"+GMXString::ConvertIntToString(zoom,FALSE,2));
+	GMXString::ReplaceAll(tile_name,"{C}","C"+GMXString::ConvertIntToString(nX,TRUE,8));
+	GMXString::ReplaceAll(tile_name,"{R}","R"+GMXString::ConvertIntToString(nY,TRUE,8));
 
   return tile_name;
 }
@@ -251,8 +251,8 @@ string	KosmosnimkiTileName::GetTileName (int zoom, int x, int y)
 
 bool KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
 {
-	tile_name = RemovePath(tile_name);
-	tile_name = RemoveExtension(tile_name);
+	tile_name = GMXFileSys::RemovePath(tile_name);
+	tile_name = GMXFileSys::RemoveExtension(tile_name);
 	int k;
 
 	regex pattern("[0-9]{1,2}_-{0,1}[0-9]{1,7}_-{0,1}[0-9]{1,7}");
@@ -285,17 +285,17 @@ bool KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
 	}
 
 	sprintf(buf,"%d",zoom);
-	string str = GetAbsolutePath(base_folder_, buf);
-	if (!FileExists(str))
+	string str = GMXFileSys::GetAbsolutePath(base_folder_, buf);
+	if (!GMXFileSys::FileExists(str))
 	{
-		if (!GMXCreateDirectory(str.c_str())) return FALSE;	
+		if (!GMXFileSys::CreateDir(str.c_str())) return FALSE;	
 	}
 
 	sprintf(buf,"%d",x);
-	str = GetAbsolutePath(str,buf);
-	if (!FileExists(str))
+	str = GMXFileSys::GetAbsolutePath(str,buf);
+	if (!GMXFileSys::FileExists(str))
 	{
-		if (!GMXCreateDirectory(str.c_str())) return FALSE;	
+		if (!GMXFileSys::CreateDir(str.c_str())) return FALSE;	
 	}
 		
 	return TRUE;

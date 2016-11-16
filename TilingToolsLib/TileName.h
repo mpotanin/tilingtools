@@ -130,11 +130,11 @@ public:
 	  {
 		  for (int k=0;k<pp_ogr_rings[i]->getNumPoints()-1;k++)
 		  {
-         if (fabs(pp_ogr_rings[i]->getX(k) - pp_ogr_rings[i]->getX(k+1))>-ULX()/2)
-         {
-           delete[]pp_ogr_rings;
-           return true; 
-         }
+        if (fabs(pp_ogr_rings[i]->getX(k) - pp_ogr_rings[i]->getX(k+1))>-ULX())
+        {
+          delete[]pp_ogr_rings;
+          return true; 
+        }
 		  }
 	  }
 
@@ -323,7 +323,7 @@ public:
 
   static bool TileTypeByExtension (string tile_extension, TileType &tile_type)
 	{
-    tile_extension = MakeLower(tile_extension);
+    tile_extension = GMXString::MakeLower(tile_extension);
 		if ((tile_extension == "jpg") || (tile_extension == "jpeg") || (tile_extension == ".jpg"))
       tile_type = JPEG_TILE;
     else if ((tile_extension == "png") || (tile_extension == ".png"))

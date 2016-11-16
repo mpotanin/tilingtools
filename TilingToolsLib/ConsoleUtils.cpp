@@ -20,7 +20,7 @@ bool    ParseFileParameter (string str_file_param, list<string> &file_list, int 
     if (item.find('?')!=  string::npos)
     {
       int *p_arr = 0;
-      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
+      int len = GMXString::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
       if (p_arr) delete[]p_arr;
       if (len==0) 
       {
@@ -33,7 +33,7 @@ bool    ParseFileParameter (string str_file_param, list<string> &file_list, int 
       item = item.substr(0,item.find('?'));
     }
 
-    if (!gmx::FindFilesByPattern(file_list,item))
+    if (!GMXFileSys::FindFilesByPattern(file_list,item))
     {
       cout<<"ERROR: can't find input files by path: "<<item<<endl;
       file_list.empty();
@@ -63,9 +63,9 @@ bool    ParseFileParameter (string str_file_param, list<string> &file_list, int 
     list<string> _file_list;
     if (item.find('?')!=string::npos)
     {
-      gmx::FindFilesByPattern(_file_list,item.substr(0,item.find('?')));
+      GMXFileSys::FindFilesByPattern(_file_list,item.substr(0,item.find('?')));
       int *p_arr = 0;
-      int len = gmx::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
+      int len = GMXString::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
       if (p_arr)
       {
         for (int j=i;j<i+_file_list.size();j++)
@@ -76,7 +76,7 @@ bool    ParseFileParameter (string str_file_param, list<string> &file_list, int 
         delete[]p_arr;
       }
     }
-    else gmx::FindFilesByPattern(_file_list,item);
+    else GMXFileSys::FindFilesByPattern(_file_list,item);
        
     i+=_file_list.size();
     _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
@@ -90,12 +90,11 @@ void	SetEnvironmentVariables (string gdal_path)
 {
 	wstring env_PATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
 
-	wstring gdal_path_w, gdal_data_path_w, gdal_driver_path_w;
-	utf8toWStr(gdal_path_w,GetAbsolutePath(gdal_path,"bins"));
-  utf8toWStr(gdal_data_path_w,GetAbsolutePath(gdal_path,"bins\\gdal-data"));
-  gdal_driver_path_w=L"";
-
-  _wputenv((L"OGR_ENABLE_PARTIAL_REPROJECTION=YES" + gdal_driver_path_w).c_str());
+	wstring gdal_path_w = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(gdal_path,"bins"));
+  wstring gdal_data_path_w = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(gdal_path,"bins\\gdal-data"));
+  wstring gdal_driver_path_w = L"";
+  
+  //_wputenv((L"OGR_ENABLE_PARTIAL_REPROJECTION=YES" + gdal_driver_path_w).c_str());
 	_wputenv((L"PATH=" + gdal_path_w + L";" + env_PATH).c_str());
   _wputenv((L"GDAL_DATA=" + gdal_data_path_w).c_str());
   _wputenv((L"GDAL_DRIVER_PATH=" + gdal_driver_path_w).c_str());
@@ -112,10 +111,9 @@ bool LoadGDAL (int argc, string argv[])
 	{
 		wchar_t exe_filename_w[_MAX_PATH + 1];
 		GetModuleFileNameW(NULL,exe_filename_w,_MAX_PATH); 
-		string exe_filename;
-		wstrToUtf8(exe_filename,exe_filename_w);
-    ReplaceAll(exe_filename,"\\","/");
-    gdal_path = ReadGDALPathFromConfigFile(GetPath(exe_filename));
+		string exe_filename = GMXString::wstrToUtf8(exe_filename_w);
+    GMXString::ReplaceAll(exe_filename,"\\","/");
+    gdal_path = ReadGDALPathFromConfigFile(GMXFileSys::GetPath(exe_filename));
 	}
 
 	if (gdal_path=="")
@@ -135,13 +133,13 @@ bool LoadGDAL (int argc, string argv[])
 	return TRUE;
 }
 
-bool LoadGDALDLLs (string gdal_path)
+bool LoadGDALDLLs (string strGDALDir)
 {
-	wstring gdal_dll_w;
-	utf8toWStr(gdal_dll_w, GetAbsolutePath(gdal_path,"bins\\gdal201.dll")); 
-  HMODULE b = LoadLibraryW(gdal_dll_w.c_str());
+  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir,"bins\\gdal201.dll");
+  HMODULE b = LoadLibraryW(GMXString::utf8toWStr(strGDALDLL).c_str());
+  
   if (b==NULL)
-    cout<<"gdal dll path: "<<gdal_dll_w<<endl;
+    cout<<"ERROR: can't load GDAL by path: "<<strGDALDLL<<endl;
   
   return (b != NULL);
 }
@@ -149,8 +147,8 @@ bool LoadGDALDLLs (string gdal_path)
 
 string ReadGDALPathFromConfigFile (string config_file_path)
 {
-	string	configFile = (config_file_path=="") ? "TilingTools.config" : GetAbsolutePath (config_file_path,"TilingTools.config");
-	string  config_str = ReadTextFile(configFile) + ' ';
+	string	configFile = (config_file_path=="") ? "TilingTools.config" : GMXFileSys::GetAbsolutePath (config_file_path,"TilingTools.config");
+	string  config_str = GMXFileSys::ReadTextFile(configFile) + ' ';
 
 	std::tr1::regex rx_template;
 	rx_template = "^GdalPath=(.*[^\\s$])";
@@ -161,7 +159,7 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 		cout<<"ERROR: can't read GdalPath from file: "<<configFile<<endl;
 		return "";
 	}
-  else return GetAbsolutePath (config_file_path,mr[1]);
+  else return GMXFileSys::GetAbsolutePath (config_file_path,mr[1]);
 }
 
 
@@ -171,7 +169,7 @@ map<string,string> ParseKeyValueCollectionFromCmdLine (string strCollectionName,
   regex rgxKeyValue(".+=.+"); //todo - check
   for (int i=0;i<nArgs;i++)
 	{
-		if (MakeLower(strCollectionName)==MakeLower(pastrArg[i]))
+		if (GMXString::MakeLower(strCollectionName)==GMXString::MakeLower(pastrArg[i]))
 		{
       if (i!=nArgs-1)
       {
@@ -190,7 +188,7 @@ string  ParseValueFromCmdLine (string strKey, int nArgs, string pastrArg[], bool
 {
 	for (int i=0;i<nArgs;i++)
 	{
-		if (MakeLower(strKey)==MakeLower(pastrArg[i]))
+		if (GMXString::MakeLower(strKey)==GMXString::MakeLower(pastrArg[i]))
 		{
 			if (bIsBoolean) return strKey;
 			else if (i!=nArgs-1) 
@@ -212,7 +210,7 @@ name, boolean,
 
 bool InitCmdLineArgsFromFile (string strFileName,int &nArgs,string *&pastrArgv, string strExeFilePath)
 {
-  string strFileContent = gmx::ReadTextFile(strFileName);
+  string strFileContent = GMXFileSys::ReadTextFile(strFileName);
   if (strFileContent=="") return false;
   strFileContent = " " + ((strFileContent.find('\n')!=string::npos) ? strFileContent.substr(0,strFileContent.find('\n')) : strFileContent) + " ";
     

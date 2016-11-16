@@ -112,7 +112,7 @@ int _tmain(int argc, wchar_t* argv[])
 		
 
 
-	if (!FileExists(strTilesFolder))
+	if (!GMXFileSys::FileExists(strTilesFolder))
 	{
 		wcout<<L"Error: parameter -tiles: folder "<<strTilesFolder<<L" doesn't exist"<<endl;
 		return 0;
@@ -152,7 +152,7 @@ int _tmain(int argc, wchar_t* argv[])
 
 	int n1 = max(strVectorFile.find(L'\\'),strVectorFile.find(L'/'));
 	int n2 = max(max(MakeLower(strVectorFile).find(L".tab"),MakeLower(strVectorFile).find(L".shp")),MakeLower(strVectorFile).find(L".mif"));
-	if ((!FileExists(strVectorFile))&&(n1<0)&&(n2<0)) strPoints = strVectorFile;
+	if ((!GMXFileSys::FileExists(strVectorFile))&&(n1<0)&&(n2<0)) strPoints = strVectorFile;
 		
 	//cout<<1111<<endl;
 	if (strPoints!=L"")
@@ -251,13 +251,13 @@ int _tmain(int argc, wchar_t* argv[])
 	{
 		wstring strWldExt = L".jgw";
 		if ((MakeLower(strTileType) == L"png")||(MakeLower(strTileType) == L".png")) strWldExt = L".pgw";
-		wstring strWldFile = RemoveExtension(strImageFile)+strWldExt;
-		oGeoRef.WriteWLDFile(oEnvelope.MinX,oEnvelope.MaxY,dResolution,strWldFile);
+		wstring strWldFile = GMXFileSys::RemoveExtension(strImageFile)+strWldExt;
+		oGeoRef.GMXFileSys::WriteWLDFile(oEnvelope.MinX,oEnvelope.MaxY,dResolution,strWldFile);
 			
 	}
 	if (bTabFile)
 	{
-		wstring strTabFile = RemoveExtension(strImageFile)+L".tab";
+		wstring strTabFile = GMXFileSys::RemoveExtension(strImageFile)+L".tab";
 		int nWidth	= floor(0.5+((oEnvelope.MaxX-oEnvelope.MinX)/dResolution));
 		int nHeight = floor(0.5+((oEnvelope.MaxY-oEnvelope.MinY)/dResolution));
 		oGeoRef.WriteTabFile(RemovePath(strImageFile),nWidth,nHeight,oEnvelope.MinX,oEnvelope.MaxY,dResolution,strTabFile);
@@ -265,16 +265,16 @@ int _tmain(int argc, wchar_t* argv[])
 	}
 	if (bPrjFile)
 	{
-		wstring strPrjFile = RemoveExtension(strImageFile) + L".prj";
+		wstring strPrjFile = GMXFileSys::RemoveExtension(strImageFile) + L".prj";
 	}
 	if (bAuxFile)
 	{
-		wstring strAuxFile = RemoveExtension(strImageFile) + L".jpg.aux.xml";
+		wstring strAuxFile = GMXFileSys::RemoveExtension(strImageFile) + L".jpg.aux.xml";
 		oGeoRef.WriteAuxFile(strAuxFile);
 	}
 	if (bMapFile)
 	{
-		wstring strMapFile = RemoveExtension(strImageFile) + L".map";
+		wstring strMapFile = GMXFileSys::RemoveExtension(strImageFile) + L".map";
 		int nWidth	= floor(0.5+((oEnvelope.MaxX-oEnvelope.MinX)/dResolution));
 		int nHeight = floor(0.5+((oEnvelope.MaxY-oEnvelope.MinY)/dResolution));
 		oGeoRef.WriteMapFile(RemovePath(strImageFile),nWidth,nHeight,oEnvelope.MinX,oEnvelope.MaxY,dResolution,strMapFile);
@@ -282,8 +282,8 @@ int _tmain(int argc, wchar_t* argv[])
 
 	if (bKmlFile)
 	{
-		wstring strKmlFile = RemoveExtension(strImageFile) + L".kml";
-		oGeoRef.WriteKmlFile(strKmlFile,RemovePath(RemoveExtension(strImageFile)),RemovePath(strImageFile),oEnvelopeLatLon.MaxY,oEnvelopeLatLon.MinX,oEnvelopeLatLon.MinY,oEnvelopeLatLon.MaxX);
+		wstring strKmlFile = GMXFileSys::RemoveExtension(strImageFile) + L".kml";
+		oGeoRef.WriteKmlFile(strKmlFile,RemovePath(GMXFileSys::RemoveExtension(strImageFile)),RemovePath(strImageFile),oEnvelopeLatLon.MaxY,oEnvelopeLatLon.MinX,oEnvelopeLatLon.MinY,oEnvelopeLatLon.MaxX);
 	}
 
 	*/

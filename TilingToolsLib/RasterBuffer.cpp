@@ -503,7 +503,7 @@ bool	RasterBuffer::SaveBufferToFileAndData	(string file_name, void* &p_data_dst,
 	else return FALSE;
 
 	bool result = TRUE;
-	if (!SaveDataToFile(file_name,p_data_dst,size)) result = FALSE;
+	if (!GMXFileSys::SaveDataToFile(file_name,p_data_dst,size)) result = FALSE;
 	return TRUE;
 }
 
@@ -1088,7 +1088,7 @@ bool	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 {
   
   srand(999);
-  string			tiff_in_mem = ("/vsimem/tiffinmem" + ConvertIntToString(rand()));
+  string			tiff_in_mem = ("/vsimem/tiffinmem" + GMXString::ConvertIntToString(rand()));
 
 	GDALDataset* p_ds = (GDALDataset*)GDALCreate(
 		GDALGetDriverByName("GTiff"),
@@ -1110,7 +1110,7 @@ bool	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 	memcpy((p_data_dst = new BYTE[size]),p_data_dstBuf,size);
   VSIUnlink(tiff_in_mem.c_str());
 	
-	//SaveDataToFile("e:\\1.tif",p_data_dst,size);
+	//GMXFileSys::SaveDataToFile("e:\\1.tif",p_data_dst,size);
 	//delete[]p_data_dst;
 	//ToDo: delete p_ds
 	return TRUE;

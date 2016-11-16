@@ -23,10 +23,10 @@ VectorOperations::~VectorOperations()
 
 string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 {
- 	string	vector_file_base = RemoveExtension(raster_file);
-	string	vector_file = FileExists(vector_file_base+".mif") ?	vector_file_base+".mif" :
-                        FileExists(vector_file_base+".shp") ?	vector_file_base+".shp" :
-	                      FileExists(vector_file_base+".tab") ?	vector_file_base+".tab" :"";
+ 	string	vector_file_base = GMXFileSys::RemoveExtension(raster_file);
+	string	vector_file = GMXFileSys::FileExists(vector_file_base+".mif") ?	vector_file_base+".mif" :
+                        GMXFileSys::FileExists(vector_file_base+".shp") ?	vector_file_base+".shp" :
+	                      GMXFileSys::FileExists(vector_file_base+".tab") ?	vector_file_base+".tab" :"";
 	if (vector_file!="")
 	{
     GDALDataset* poDS = (GDALDataset*) GDALOpenEx(vector_file.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
