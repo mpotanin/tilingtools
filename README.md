@@ -7,10 +7,48 @@
   * [Building from Source](#building-from-source)
   
 ## Download Binary
+f
+f
+f
+f
+f
+f
+
+f
+f
+f
+f
+
+f
+f
 
 ## Using ImageTiling
-
+f
+f
+f
+f
+f
+f
+f
+f
+f
+f
+f
+f
+f
 ## Using CopyTiles
+gfdsg
+f
+f
+
+ff
+f
+f
+f
+f
+f
+f
+
 
 ## Building from Source
 Набор утилит для работы с тайлами.
