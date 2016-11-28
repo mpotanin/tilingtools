@@ -16,4 +16,9 @@
 - скомпилировать в конфигурации Release-x64 или Debug-x64
 
 
+Demos
+------
+  * [Layers integration](http://ScanEx.github.com/Leaflet-GeoMixer/examples/GMXLayerLeaflet.html) - intergrate GeoMixer layers into map. Demonstrates work with temporal layers.
+  
+  
 
