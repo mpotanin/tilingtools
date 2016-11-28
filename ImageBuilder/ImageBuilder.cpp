@@ -16,7 +16,7 @@ using namespace std;
 int _tmain(int argc, wchar_t* argv[])
 {
 	/*
-	if (!LoadGDAL(argc,argv)) return 0;
+	if (!Load(argc,argv)) return 0;
 	GDALAllRegister();
 
 	int nRetCode = 0;

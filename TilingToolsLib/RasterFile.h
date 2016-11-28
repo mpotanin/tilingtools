@@ -8,6 +8,7 @@
 #include "TileName.h"
 #include "TileContainer.h"
 #include "TilingParameters.h"
+#include "ThreadFuncs.h"
 
 using namespace std;
 

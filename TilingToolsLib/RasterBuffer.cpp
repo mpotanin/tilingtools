@@ -4,80 +4,6 @@
 using namespace gmx;
 
 
-/*
- * Callback function prototype for read function
- */
-//typedef OPJ_SIZE_T (* opj_stream_read_fn) (void * p_buffer, OPJ_SIZE_T p_nb_bytes, void * p_user_data) ;
-
-
-/*
-static OPJ_SIZE_T opj_read_from_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, FILE * p_file)
-{
-	OPJ_SIZE_T l_nb_read = fread(p_buffer,1,p_nb_bytes,p_file);
-	return l_nb_read ? l_nb_read : (OPJ_SIZE_T)-1;
-}
-*/
-
-
-//	opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_file);
-//	opj_stream_set_write_function(l_stream, (opj_stream_write_fn) opj_write_from_file);
-//	opj_stream_set_skip_function(l_stream, (opj_stream_skip_fn) opj_skip_from_file);
-//	opj_stream_set_seek_function(l_stream, (opj_stream_seek_fn) opj_seek_from_file);
-
-/*
-static OPJ_SIZE_T opj_read_from_file (void * p_buffer, OPJ_SIZE_T p_nb_bytes, FILE * p_file)
-{
-        OPJ_SIZE_T l_nb_read = fread(p_buffer,1,p_nb_bytes,p_file);
-        return l_nb_read ? l_nb_read : (OPJ_SIZE_T)-1;
-}
-
-static OPJ_UINT64 opj_get_data_length_from_file (FILE * p_file)
-{
-        OPJ_OFF_T file_length = 0;
-
-        fseek(p_file, 0, SEEK_END);
-        file_length = (OPJ_UINT64)ftell(p_file);
-        fseek(p_file, 0, SEEK_SET);
-
-        return file_length;
-}
-
-
-
-static OPJ_OFF_T opj_skip_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
-{
-        if (fseek(p_user_data,p_nb_bytes,SEEK_CUR)) {
-                return -1;
-        }
-
-        return p_nb_bytes;
-}
-
-static OPJ_BOOL opj_seek_from_file (OPJ_OFF_T p_nb_bytes, FILE * p_user_data)
-{
-        if (fseek(p_user_data,p_nb_bytes,SEEK_SET)) {
-                return OPJ_FALSE;
-        }
-
-        return OPJ_TRUE;
-}
-
-
-static opj_stream_t* gmx_opj_stream_create_default_file_stream(FILE *p_file, bool p_is_read_stream)
-{
-	opj_stream_t*	l_stream = opj_stream_create(1000000,false);
-	opj_stream_set_user_data(l_stream, p_file);
-  opj_stream_set_user_data_length(l_stream, opj_get_data_length_from_file(p_file));
-  opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_file);
-  opj_stream_set_write_function(l_stream, (opj_stream_write_fn) opj_write_from_file);
-  opj_stream_set_skip_function(l_stream, (opj_stream_skip_fn) opj_skip_from_file);
-  opj_stream_set_seek_function(l_stream, (opj_stream_seek_fn) opj_seek_from_file);
-
-	return l_stream;
-}
-*/
-
-
 namespace gmx
 {
 
@@ -130,32 +56,6 @@ static OPJ_BOOL OPJStreamSeekFunc (OPJ_OFF_T n_seek, void *p_stream_data)
   return OPJ_TRUE;
 }
 
-/*
-opj_stream_t* OPJ_CALLCONV opj_stream_create_file_stream (	FILE * p_file, 
-															OPJ_SIZE_T p_size, 
-															OPJ_BOOL p_is_read_stream)
-{
-	opj_stream_t* l_stream = 00;
-
-	if (! p_file) {
-		return NULL;
-	}
-
-	l_stream = opj_stream_create(p_size,p_is_read_stream);
-	if (! l_stream) {
-		return NULL;
-	}
-
-	opj_stream_set_user_data(l_stream, p_file);
-	opj_stream_set_user_data_length(l_stream, opj_get_data_length_from_file(p_file));
-	opj_stream_set_read_function(l_stream, (opj_stream_read_fn) opj_read_from_file);
-	opj_stream_set_write_function(l_stream, (opj_stream_write_fn) opj_write_from_file);
-	opj_stream_set_skip_function(l_stream, (opj_stream_skip_fn) opj_skip_from_file);
-	opj_stream_set_seek_function(l_stream, (opj_stream_seek_fn) opj_seek_from_file);
-
-	return l_stream;
-}
-*/
 
 static opj_stream_t* OPJStreamCreate (OPJStreamData *p_stream_data, unsigned int buffer_size, bool is_read_only)
 {
@@ -1034,7 +934,6 @@ bool RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 {
 
 	if ((x_size_ ==0)||(y_size_ == 0)||(data_type_!=GDT_Byte)) return FALSE;
-	//if (p_color_table_==NULL) return SaveToPng24Data(p_data_dst,size);
   if (num_bands_>1) return SaveToPng24Data(p_data_dst,size);
   
   gdImagePtr im	= gdImageCreate(x_size_,y_size_);
@@ -1053,7 +952,6 @@ bool RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
   else
   {
     im->colorsTotal = p_color_table_->GetColorEntryCount();
-    //im->
     for (int i=0;(i<im->colorsTotal)&&(i<gdMaxColors);i++)
     {
 	    const GDALColorEntry *p_color_entry = p_color_table_->GetColorEntry(i);
@@ -1110,138 +1008,8 @@ bool	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 	memcpy((p_data_dst = new BYTE[size]),p_data_dstBuf,size);
   VSIUnlink(tiff_in_mem.c_str());
 	
-	//GMXFileSys::SaveDataToFile("e:\\1.tif",p_data_dst,size);
-	//delete[]p_data_dst;
-	//ToDo: delete p_ds
 	return TRUE;
 }
-
-
-
-
-
-/*
-bool  RasterBuffer::MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged)
-{
-	if ((this->get_x_size()!=oBackGround.get_x_size())||
-		(this->get_y_size()!=oBackGround.get_y_size())||
-		(num_bands_!=oBackGround.get_num_bands()))
-	{
-		return FALSE;
-	}
-
-	oMerged.CreateBuffer(num_bands_,x_size_,y_size_);
-	BYTE *pMergedData = (BYTE*)oMerged.getData();
-
-	memcpy(pMergedData,oBackGround.getData(),x_size_*y_size_*num_bands_);
-
-	int k,s;
-	int n = x_size_*y_size_;
-
-	for (int i=0;i<y_size_;i++)
-	{
-		int l = i*x_size_;
-		for (int j=0;j<x_size_;j++)
-		{
-			s=0;
-			for (k=0;k<num_bands_;k++)
-			{
-				if (this->p_data[l+j+s]!=0) break;
-				s+=n;
-			}
-			if (k==num_bands_) 
-			{
-				s=0;
-				for (k=0;k<num_bands_;k++)
-				{
-					pMergedData[l+j+s]!=this->p_data[l+j+s];
-					s+=n;
-				}
-			}
-		}
-	}
-	return TRUE;
-}
-*/
-
-/*
-bool	RasterBuffer::ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight)
-{
-	if ((x_size_==0)||(y_size_==0)) return FALSE;
-	if (this->pTable!=NULL) ConvertFromIndexToRGB();
-
-	gdImagePtr im	= gdImageCreateTrueColor(x_size_,y_size_);
-	int n = x_size_*y_size_;
-	if (num_bands_==1) n =0;
-	int color = 0;
-	for (int j=0;j<y_size_;j++)
-	{
-		for (int i=0;i<x_size_;i++)
-		{
-			color = 65536*this->p_data[j*x_size_+i] + 256*this->p_data[j*x_size_+i+n]+this->p_data[j*x_size_+i+n+n];
-			im->tpixels[j][i] = color;
-		}
-	}
-	gdImagePtr im_out;
-	im_out = gdImageCreateTrueColor(nNewWidth,nNewHeight);
-	gdImageCopyResampled(im_out, im, 0, 0, 0, 0, im_out->sx, im_out->sy, im->sx, im->sy);  
-	BYTE	*pDataOut = new BYTE[3*nNewWidth*nNewHeight];
-	n=nNewWidth*nNewHeight;
-	int num;
-	for (int j=0;j<nNewHeight;j++)
-	{
-		for (int i=0;i<nNewWidth;i++)
-		{
-			color = im_out->tpixels[j][i];
-			num = j*nNewWidth+i;
-			pDataOut[num] = color/65536;
-			color-=pDataOut[num]*65536;
-			pDataOut[n+num] = color/256;
-			color-=256*pDataOut[n+num];
-			pDataOut[n+n+num] = color;
-		}
-	}
-
-	gdImageDestroy(im);
-	gdImageDestroy(im_out);
-	delete[]p_data;
-	p_data = pDataOut;
-	x_size_ = nNewWidth;
-	y_size_ = nNewHeight;
-
-	return TRUE;
-}
-*/
-
-
-
-/*
-bool RasterBuffer::makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue)
-{
-	if (p_data==NULL) return FALSE;
-	if ((nLeft<0)||(nLeft+nWidth>x_size_)) return FALSE;
-	if ((nTop<0)||(nTop+nHeight>y_size_)) return FALSE;
-	
-	LONG n = x_size_*y_size_;
-
-	int n1,n2;
-	n1=0;
-	for (int j=nTop;j<nTop+nHeight;j++)
-	{	
-		n1=j*x_size_;
-		for (int i=nLeft;i<nLeft+nWidth;i++)
-		{
-			n2=0;			
-			for (int k=0;k<num_bands_;k++)
-			{
-				((BYTE*)p_data)[n1+i+n2] = nNoDataValue;
-				n2+=n;
-			}
-		}	
-	}
-	return TRUE;	
-}
-*/
 
 
 bool RasterBuffer::InitByValue(int value)
@@ -1624,26 +1392,6 @@ void* RasterBuffer::ZoomOut	(T type, GDALResampleAlg resampling_method)
 }
 
 
-
-
-/*
-bool	RasterBuffer::dataIO	(bool operationFlag, 
-								int left, int top, int w, int h, 
-								void *p_data, 
-								int bands = 0, bool stretchTo8Bit = FALSE, double min = 0, double max = 0)
-{
-	if (operationFlag==FALSE)
-	{
-		void *pData_ = copyData(left,top,w,h);
-	}
-	else
-	{
-		return setData(left,top,w,h,p_data,bands);
-
-	}
-	return TRUE;
-}
-*/
 bool	RasterBuffer::IsAlphaBand()
 {
 	return alpha_band_defined_;

@@ -1010,7 +1010,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
       p_chunk_tiling_params->tiffinmem_ind_=(chunk_num++);
       
       gmx::CURR_WORK_THREADS++;
-      HANDLE hThread = CreateThread(NULL,0,BundleTiler::CallProcessChunk,p_chunk_tiling_params,0,&thread_id);      
+      HANDLE hThread = GMXThread::CreateThread(BundleTiler::CallProcessChunk,p_chunk_tiling_params,&thread_id);      
       if (hThread)
          thread_params_list.push_back(
         pair<HANDLE,GMXAsyncChunkTilingParams*>(hThread,p_chunk_tiling_params));
@@ -1039,13 +1039,13 @@ bool BundleTiler::CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_
       p_thread_list->begin();iter!=p_thread_list->end();iter++)
   {
     DWORD exit_code;
-    if (GetExitCodeThread((*iter).first,&exit_code))
+    if (GMXThread::GetExitCodeThread((*iter).first,&exit_code))
     {
       if (exit_code != STILL_ACTIVE)
       {
         if (exit_code==1)
         {
-          CloseHandle((*iter).first);
+          GMXThread::CloseHandle((*iter).first);
           delete((GMXAsyncChunkTilingParams*)(*iter).second);
           p_thread_list->remove(*iter);
           break;
@@ -1063,8 +1063,8 @@ bool BundleTiler::TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list)
   for (list<pair<HANDLE,void*>>::iterator iter = 
       p_thread_list->begin();iter!=p_thread_list->end();iter++)
   {
-    TerminateThread((*iter).first,1);
-    CloseHandle((*iter).first);
+    GMXThread::TerminateThread((*iter).first,1);
+    GMXThread::CloseHandle((*iter).first);
   }
 
   return true;

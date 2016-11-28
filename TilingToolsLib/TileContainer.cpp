@@ -251,20 +251,20 @@ bool		GMXTileContainer::AddTile(int z, int x, int y, BYTE *p_data, unsigned int 
   __int64 n	= TileID(z,x,y);
   if ((n>= max_tiles_)||(n<0)) return FALSE;
 
-  WaitForSingleObject(addtile_semaphore_,INFINITE); 
+  GMXThread::WaitForSingleObject(addtile_semaphore_); 
 
 	if (p_tile_cache_)
 	{
     if (p_tile_cache_->AddTile(z,x,y,p_data,size))
     {
       p_sizes_[n]		= size;
-      ReleaseSemaphore(addtile_semaphore_,1,NULL);
+      GMXThread::ReleaseSemaphore(addtile_semaphore_,1);
       return TRUE;
     }
 	}
 	
   bool result = AddTileToContainerFile(z,x,y,p_data,size);
-  ReleaseSemaphore(addtile_semaphore_,1,NULL);
+  GMXThread::ReleaseSemaphore(addtile_semaphore_,1);
 
   return result;
 };
@@ -457,7 +457,7 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
   
   max_volume_size_	= max_volume_size;
   
-  addtile_semaphore_ = CreateSemaphore(NULL,1,1,NULL);
+  addtile_semaphore_ = GMXThread::CreateSemaphore(1,1);
 
   if (!DeleteVolumes()) return FALSE;
     
@@ -781,7 +781,7 @@ void GMXTileContainer::MakeEmpty ()
 	max_tiles_ = 0;
 	
  
-  if (addtile_semaphore_) CloseHandle(addtile_semaphore_);
+  if (addtile_semaphore_) GMXThread::CloseHandle(addtile_semaphore_);
   addtile_semaphore_ = NULL;
   
 	for (int i=0;i<32;i++)
@@ -1188,7 +1188,7 @@ TileFolder::TileFolder (TileName *p_tile_name, MercatorProjType merc_type, bool 
 	p_tile_name_	= p_tile_name;
 	use_cache_	= use_cache;
 	p_tile_cache_		= (use_cache) ? new TileCache() :  NULL;
-  addtile_semaphore_    = CreateSemaphore(NULL,1,1,NULL);
+  addtile_semaphore_    = GMXThread::CreateSemaphore(1,1);
 };
 
 
@@ -1204,7 +1204,7 @@ bool TileFolder::Close()
 	p_tile_cache_ = NULL;
 	if (addtile_semaphore_)
   {
-    CloseHandle(addtile_semaphore_);
+    GMXThread::CloseHandle(addtile_semaphore_);
     addtile_semaphore_ = NULL;
   }
   return TRUE;
@@ -1231,10 +1231,10 @@ MercatorProjType		TileFolder::GetProjType()
 
 bool	TileFolder::AddTile(int z, int x, int y, BYTE *p_data, unsigned int size)
 {
-  WaitForSingleObject(addtile_semaphore_,INFINITE); 
+  GMXThread::WaitForSingleObject(addtile_semaphore_); 
 	if (use_cache_)	p_tile_cache_->AddTile(z,x,y,p_data,size);
 	bool result = writeTileToFile(z,x,y,p_data,size);
-  ReleaseSemaphore(addtile_semaphore_,1,NULL);
+  GMXThread::ReleaseSemaphore(addtile_semaphore_,1);
   return result;
 };
 

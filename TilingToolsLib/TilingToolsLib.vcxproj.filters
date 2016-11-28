@@ -59,6 +59,9 @@
     <ClInclude Include="TilingParameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ThreadFuncs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FileSystemFuncs.cpp">
@@ -95,6 +98,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TileCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadFuncs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

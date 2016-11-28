@@ -266,6 +266,7 @@
     <ClInclude Include="RasterFile.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StringFuncs.h" />
+    <ClInclude Include="ThreadFuncs.h" />
     <ClInclude Include="TileCache.h" />
     <ClInclude Include="TileName.h" />
     <ClInclude Include="TileContainer.h" />
@@ -281,6 +282,7 @@
     <ClCompile Include="RasterFile.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="StringFuncs.cpp" />
+    <ClCompile Include="ThreadFuncs.cpp" />
     <ClCompile Include="TileCache.cpp" />
     <ClCompile Include="TileName.cpp" />
     <ClCompile Include="TileContainer.cpp" />

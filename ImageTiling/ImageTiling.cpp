@@ -248,18 +248,15 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   }
 
-  if (!gmx::LoadGDAL(nArgs,pastrArgs))
+  if (!GMXGDALLoader::Load())
   {
     cout<<"ERROR: can't load GDAL"<<endl;
     delete[]pastrArgs;
     return 1;
   }
-  GDALAllRegister();
-  OGRRegisterAll();
-  CPLSetConfigOption("OGR_ENABLE_PARTIAL_REPROJECTION","YES");
 
   //debug
-  //gmx::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
+  //GMXOptionParser::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
   //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 

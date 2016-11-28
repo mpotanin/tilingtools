@@ -39,12 +39,12 @@ int _tmain(int nArgs, wchar_t* argvW[])
 		GMXString::ReplaceAll(pastrArgs[i],"\\","/");
 	}
 	
- 	if (!gmx::LoadGDAL(nArgs,pastrArgs)) return 1;
+ 	if (!GMXGDALLoader::Load()) return 1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
   //debug
-  //gmx::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
+  //GMXOptionParser::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
  	//for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 

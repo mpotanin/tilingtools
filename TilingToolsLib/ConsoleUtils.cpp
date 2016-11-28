@@ -4,89 +4,7 @@
 #include "FileSystemFuncs.h"
 
 
-namespace gmx
-{
-
-bool    ParseFileParameter (string str_file_param, list<string> &file_list, int &output_bands_num, int **&pp_band_mapping)
-{
-  string _str_file_param = str_file_param + '|';
-  output_bands_num = 0;
-  pp_band_mapping = 0;
-  std::string::size_type stdf;
-
-  while (_str_file_param.length()>1)
-  {
-    string item = _str_file_param.substr(0,_str_file_param.find('|'));
-    if (item.find('?')!=  string::npos)
-    {
-      int *p_arr = 0;
-      int len = GMXString::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
-      if (p_arr) delete[]p_arr;
-      if (len==0) 
-      {
-        cout<<"ERROR: can't parse output bands order from: "<<item.substr(item.find('?')+1)<<endl;
-        file_list.empty();
-        output_bands_num = 0;
-        return false;
-      }
-      output_bands_num = (int)max(output_bands_num,len);
-      item = item.substr(0,item.find('?'));
-    }
-
-    if (!GMXFileSys::FindFilesByPattern(file_list,item))
-    {
-      cout<<"ERROR: can't find input files by path: "<<item<<endl;
-      file_list.empty();
-      output_bands_num = 0;
-      return false;
-    }
-    
-    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
-  }
-
-  if (output_bands_num>0)
-  {
-    pp_band_mapping = new int*[file_list.size()];
-    for (int i=0;i<file_list.size();i++)
-    {
-       pp_band_mapping[i] = new int[output_bands_num];
-       for (int j=0;j<output_bands_num;j++)
-         pp_band_mapping[i][j] = j+1;
-    }
-  }
-
-  _str_file_param = str_file_param + '|';
-  int i=0;
-  while (_str_file_param.length()>1)
-  {
-    string item = _str_file_param.substr(0,_str_file_param.find('|'));
-    list<string> _file_list;
-    if (item.find('?')!=string::npos)
-    {
-      GMXFileSys::FindFilesByPattern(_file_list,item.substr(0,item.find('?')));
-      int *p_arr = 0;
-      int len = GMXString::ParseCommaSeparatedArray(item.substr(item.find('?')+1),p_arr,true,0);
-      if (p_arr)
-      {
-        for (int j=i;j<i+_file_list.size();j++)
-        {
-          for (int k=0;k<len;k++)
-            pp_band_mapping[j][k]=p_arr[k];
-        }
-        delete[]p_arr;
-      }
-    }
-    else GMXFileSys::FindFilesByPattern(_file_list,item);
-       
-    i+=_file_list.size();
-    _str_file_param = _str_file_param.substr(_str_file_param.find('|')+1);
-  }
-
-  return TRUE;
-}
-
-
-void	SetEnvironmentVariables (string gdal_path)
+void	GMXGDALLoader::SetEnvVars (string gdal_path)
 {
 	wstring env_PATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
 
@@ -94,7 +12,6 @@ void	SetEnvironmentVariables (string gdal_path)
   wstring gdal_data_path_w = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(gdal_path,"bins\\gdal-data"));
   wstring gdal_driver_path_w = L"";
   
-  //_wputenv((L"OGR_ENABLE_PARTIAL_REPROJECTION=YES" + gdal_driver_path_w).c_str());
 	_wputenv((L"PATH=" + gdal_path_w + L";" + env_PATH).c_str());
   _wputenv((L"GDAL_DATA=" + gdal_data_path_w).c_str());
   _wputenv((L"GDAL_DRIVER_PATH=" + gdal_driver_path_w).c_str());
@@ -103,37 +20,41 @@ void	SetEnvironmentVariables (string gdal_path)
 }
 
 
-
-bool LoadGDAL (int argc, string argv[])
+bool GMXGDALLoader::Load (string strGDALPath)
 {
-	string gdal_path	=  ParseValueFromCmdLine("-gdal",argc,argv);
-	if (gdal_path == "")
+	if (strGDALPath == "")
 	{
 		wchar_t exe_filename_w[_MAX_PATH + 1];
 		GetModuleFileNameW(NULL,exe_filename_w,_MAX_PATH); 
 		string exe_filename = GMXString::wstrToUtf8(exe_filename_w);
     GMXString::ReplaceAll(exe_filename,"\\","/");
-    gdal_path = ReadGDALPathFromConfigFile(GMXFileSys::GetPath(exe_filename));
+    strGDALPath = ReadPathFromConfigFile(GMXFileSys::GetPath(exe_filename));
 	}
 
-	if (gdal_path=="")
+	if (strGDALPath=="")
 	{
 		cout<<"ERROR: GDAL path isn't specified"<<endl;
 		return FALSE;
 	}
 	
-	SetEnvironmentVariables(gdal_path);
+	SetEnvVars(strGDALPath);
    
-	if (!LoadGDALDLLs(gdal_path))
+	if (!LoadDLLs(strGDALPath))
 	{
-		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified: "<<gdal_path<<endl;
+		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified: "<<strGDALPath<<endl;
 		return FALSE;
 	}
+  else
+  {
+    GDALAllRegister();
+    OGRRegisterAll();
+    CPLSetConfigOption("OGR_ENABLE_PARTIAL_REPROJECTION","YES");
+  }
 
 	return TRUE;
 }
 
-bool LoadGDALDLLs (string strGDALDir)
+bool GMXGDALLoader::LoadDLLs (string strGDALDir)
 {
   string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir,"bins\\gdal201.dll");
   HMODULE b = LoadLibraryW(GMXString::utf8toWStr(strGDALDLL).c_str());
@@ -145,7 +66,7 @@ bool LoadGDALDLLs (string strGDALDir)
 }
 
 
-string ReadGDALPathFromConfigFile (string config_file_path)
+string GMXGDALLoader::ReadPathFromConfigFile (string config_file_path)
 {
 	string	configFile = (config_file_path=="") ? "TilingTools.config" : GMXFileSys::GetAbsolutePath (config_file_path,"TilingTools.config");
 	string  config_str = GMXFileSys::ReadTextFile(configFile) + ' ';
@@ -163,52 +84,9 @@ string ReadGDALPathFromConfigFile (string config_file_path)
 }
 
 
-map<string,string> ParseKeyValueCollectionFromCmdLine (string strCollectionName, int nArgs, string pastrArg[])
-{
-  map<string,string> mapReturn;
-  regex rgxKeyValue(".+=.+"); //todo - check
-  for (int i=0;i<nArgs;i++)
-	{
-		if (GMXString::MakeLower(strCollectionName)==GMXString::MakeLower(pastrArg[i]))
-		{
-      if (i!=nArgs-1)
-      {
-        if (regex_match(pastrArg[i+1],rgxKeyValue))
-        {
-          int nPos=pastrArg[i+1].find('=');
-          mapReturn.insert(pair<string,string>(pastrArg[i+1].substr(0,nPos),pastrArg[i+1].substr(nPos+1)));
-        }
-      }
-		}
-	}
-  return mapReturn;
-}
-
-string  ParseValueFromCmdLine (string strKey, int nArgs, string pastrArg[], bool bIsBoolean)
-{
-	for (int i=0;i<nArgs;i++)
-	{
-		if (GMXString::MakeLower(strKey)==GMXString::MakeLower(pastrArg[i]))
-		{
-			if (bIsBoolean) return strKey;
-			else if (i!=nArgs-1) 
-				return pastrArg[i+1];
-		}
-	}
-	return "";
-}
 
 
-/*
-Class ImageTilingParametersList
-{
-name, boolean, 
-}
-
-*/
-
-
-bool InitCmdLineArgsFromFile (string strFileName,int &nArgs,string *&pastrArgv, string strExeFilePath)
+bool GMXOptionParser::InitCmdLineArgsFromFile (string strFileName,int &nArgs,string *&pastrArgv, string strExeFilePath)
 {
   string strFileContent = GMXFileSys::ReadTextFile(strFileName);
   if (strFileContent=="") return false;
@@ -243,7 +121,6 @@ bool InitCmdLineArgsFromFile (string strFileName,int &nArgs,string *&pastrArgv, 
   return true;
 }
 
-};
 
 void GMXOptionParser::PrintUsage (const GMXOptionDescriptor asDescriptors[], 
                                   int nDescriptors, 

@@ -5,6 +5,7 @@
 #include "VectorBorder.h"
 #include "histogram.h"
 #include "TilingParameters.h"
+#include "ThreadFuncs.h"
 
 namespace gmx
 {
