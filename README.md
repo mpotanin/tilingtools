@@ -1,10 +1,18 @@
 # Command-line utilities for tiling georeferenced raster data
 
 ## Table of Contents
+  * [Download binary](#download)
+  * [Using ImageTiling](#imagetiling)
+  * [Using CopyTiles](#copytiles)
+  * [Building fromSource](#building)
+  
+## Download Binary
 
-## ImageTiling
+## Using ImageTiling
 
-## CopyTiles
+## Using CopyTiles
+
+## Building from Source
 
 Набор утилит для работы с тайлами.
 Документация на сайте GeoMixer: http://geomixer.ru/index.php/ru/docs/manual/tilingtools.
