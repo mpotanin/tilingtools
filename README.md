@@ -60,7 +60,7 @@ ImageTiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
  copytiles -i tiles -i_tnt {z}/{x}/{y}.png -o tiles_new -o_tnt {z}_{x}_{y}.png
 ```
 
-## Building TilingTools from Source
+## Building from Source
 ### Building on Windows
 * download TilingTools repository
 * unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include)
