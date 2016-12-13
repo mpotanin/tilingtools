@@ -1,5 +1,2 @@
 copy "..\tilingtools_x64.config" "..\x64\release\tilingtools.config"
-copy "..\msvcp100.dll" "..\x64\release\msvcp100.dll"
-copy "..\msvcr71.dll" "..\x64\release\msvcr71.dll"
-copy "..\msvcr100.dll" "..\x64\release\msvcr100.dll"
 copy "..\version.txt" "..\x64\release\version.txt"

@@ -256,13 +256,14 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   }
 
   //debug
-  //GMXOptionParser::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
+  GMXOptionParser::InitCmdLineArgsFromFile("../autotest/debug_input.txt",nArgs,pastrArgs);
   //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
   
   if (nArgs == 1)
   {
+	cout << "version: " << GMXFileSys::ReadTextFile("version.txt") << endl;
     cout<<"build date: "<<__DATE__<<endl;
     GMXOptionParser::PrintUsage(asDescriptors,nDescriptors,astrUsageExamples,nExamples);
     delete[]pastrArgs;
