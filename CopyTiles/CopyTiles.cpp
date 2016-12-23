@@ -43,7 +43,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
 	GDALAllRegister();
 	OGRRegisterAll();
 
-  //debug
+ //debug
   //GMXOptionParser::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
  	//for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
@@ -218,13 +218,13 @@ int _tmain(int nArgs, wchar_t* argvW[])
 				cout<<"ERROR: can't create folder: "<<strDestPath<<endl;
 				return 1;
 			}
-		}
+	  }
     
-    if ((strDestTemplate=="") || (strDestTemplate=="kosmosnimki"))
-			poDestTileName = new gmx::KosmosnimkiTileName(strDestPath,tile_type);
+    if (strDestTemplate=="kosmosnimki")
+	      poDestTileName = new gmx::KosmosnimkiTileName(strDestPath,tile_type);
 		else if (gmx::ESRITileName::ValidateTemplate(strDestTemplate))
       poDestTileName = new gmx::ESRITileName(strDestPath,strDestTemplate);
-    else if (strDestTemplate=="standard") 
+    else if ((strDestTemplate == "standard") || ((strDestTemplate == "")))
 			poDestTileName = new gmx::StandardTileName(strDestPath,("{z}/{x}/{y}."+gmx::TileName::ExtensionByTileType(tile_type)));
     else if (gmx::StandardTileName::ValidateTemplate(strDestTemplate))
 			poDestTileName = new gmx::StandardTileName(strDestPath,strDestTemplate);

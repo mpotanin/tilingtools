@@ -279,8 +279,10 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
 OGRMultiPolygon*		VectorOperations::ReadMultiPolygonFromOGRDataSource(GDALDataset* poDS)
 {
 	OGRLayer *p_ogr_layer = poDS->GetLayer(0);
-	if( p_ogr_layer == NULL ) return NULL;
-	p_ogr_layer->ResetReading();
+	if( p_ogr_layer == 0 ) return 0;
+  if (p_ogr_layer->GetFeatureCount()==0) return 0;
+	
+  p_ogr_layer->ResetReading();
 
 	OGRMultiPolygon *p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
 	while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())

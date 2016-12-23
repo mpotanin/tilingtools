@@ -66,8 +66,7 @@ public:
   bool			      Close();
   RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string vector_file=""); 
   bool			GetPixelSize (int &width, int &height);
-  bool      GetSRS (OGRSpatialReference  &srs); 
-  bool			GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
+  bool      GetSRS(OGRSpatialReference  &srs, ITileMatrixSet *p_tile_mset = 0);
 
 	GDALDataset*	get_gdal_ds_ref();
 
@@ -78,7 +77,8 @@ public:
   static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
 
 protected:
-	bool		GetEnvelope (OGREnvelope &envelope); //ToDo - delete
+  bool			GetDefaultSpatialRef(OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
+
 
 protected:
  	_TCHAR	buf[256];

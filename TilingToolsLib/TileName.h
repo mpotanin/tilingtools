@@ -19,8 +19,8 @@ public:
   virtual OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y) =0;
   virtual OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy) =0;
 	virtual bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y) =0;
-  
-  //virtual bool AdjustIfOverlapAbscissa(OGRGeometry *poGeometry) {return true;};
+  virtual bool GetRasterEnvelope(GDALDataset* p_rf_ds, OGREnvelope &envp) =0;
+    
 
   virtual bool AdjustForOverlapping180Degree(OGRGeometry *poGeometry) {return true;};
   virtual bool DoesOverlap180Degree (OGRGeometry *poGeometry) {return false;};
@@ -142,6 +142,78 @@ public:
     return false;
   }
 
+  bool GetRasterEnvelope(GDALDataset* p_rf_ds, OGREnvelope &envp)
+  {
+    if (!p_rf_ds) return false;
+    
+    void* hTransformArg = 0;
+    char* pszMercWKT = NULL;
+ 
+    if (CE_None != GetTilingSRS()->exportToWkt(&pszMercWKT)) return false;
+    if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds,0,0,pszMercWKT,1,0.125,0)))
+    {
+      OGRFree(pszMercWKT);
+      return false;
+    }
+
+    double adfDstGeoTransform[6];
+    int nPixels = 0, nLines = 0;
+    if (CE_None != GDALSuggestedWarpOutput(p_rf_ds, GDALGenImgProjTransform, hTransformArg, adfDstGeoTransform, &nPixels, &nLines))
+    {
+      OGRFree(pszMercWKT);
+      GDALDestroyGenImgProjTransformer(hTransformArg);
+      return false;
+    }
+    OGRFree(pszMercWKT);
+    GDALDestroyGenImgProjTransformer(hTransformArg);
+
+    OGRSpatialReference merc_srs_shifted;
+    if (merc_type_ == WORLD_MERCATOR)
+    {
+      merc_srs_shifted.SetWellKnownGeogCS("WGS84");
+      merc_srs_shifted.SetMercator(0, 90, 1, 0, 0);
+    }
+    else
+    {
+      merc_srs_shifted.importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=90.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
+    }
+    if (CE_None != merc_srs_shifted.exportToWkt(&pszMercWKT)) return false;
+    if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds, 0, 0, pszMercWKT, 1, 0.125, 0)))
+    {
+      OGRFree(pszMercWKT);
+      return false;
+    }
+
+    double adfDstGeoTransform2[6];
+    int nPixels2 = 0, nLines2 = 0;
+    if (CE_None != GDALSuggestedWarpOutput(p_rf_ds, GDALGenImgProjTransform, hTransformArg, adfDstGeoTransform2, &nPixels2, &nLines2))
+    {
+      OGRFree(pszMercWKT);
+      GDALDestroyGenImgProjTransformer(hTransformArg);
+      return false;
+    }
+    OGRFree(pszMercWKT);
+    GDALDestroyGenImgProjTransformer(hTransformArg);
+
+  
+    if ((((double)nPixels) / ((double)nLines)) > 2 * (((double)nPixels2) / ((double)nLines2)))
+    {
+      envp.MinX = adfDstGeoTransform2[0] + (-0.5*ULX());
+      envp.MaxY = adfDstGeoTransform2[3];
+      envp.MaxX = adfDstGeoTransform2[0] + nPixels2*adfDstGeoTransform2[1] + (-0.5*ULX());
+      envp.MinY = adfDstGeoTransform2[3] + nLines2*adfDstGeoTransform2[5];
+    }
+    else
+    {
+      envp.MinX = adfDstGeoTransform[0];
+      envp.MaxY = adfDstGeoTransform[3];
+      envp.MaxX = adfDstGeoTransform[0] + nPixels*adfDstGeoTransform[1];
+      envp.MinY = adfDstGeoTransform[3] + nLines*adfDstGeoTransform[5];
+    }
+    
+    return true;
+  }
+
 		
   bool			AdjustForOverlapping180Degree (OGRGeometry	*p_ogr_geom_merc)
   {
@@ -258,9 +330,8 @@ static	double MercToLat (double MercY, MercatorProjType merc_type)
 	}
 }
 
-
 	
-private:
+protected:
   double	ULX()//get_ulx(
 	{
 		return -20037508.3427812843076588408880691;

@@ -256,7 +256,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   }
 
   //debug
-  GMXOptionParser::InitCmdLineArgsFromFile("../autotest/debug_input.txt",nArgs,pastrArgs);
+  //GMXOptionParser::InitCmdLineArgsFromFile("../autotest/debug_input.txt",nArgs,pastrArgs);
   //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
