@@ -915,9 +915,12 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 	if (GMXFileSys::FileExists(file_name)) GMXFileSys::FileDelete(file_name.c_str());
 	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_)) return;
 
-	string	str_sql = "CREATE TABLE metadata (name text, value text)";
 	char	*p_err_msg = NULL;
-	sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
+  sqlite3_exec(p_sql3_db_,
+               "CREATE TABLE metadata (name text, value text)",
+               NULL, 
+               0,
+               &p_err_msg);
 	if (p_err_msg!=NULL)
 	{
 		cout<<"ERROR: sqlite: "<<p_err_msg<<endl;
@@ -926,6 +929,7 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 		return;
 	}
 
+  string	str_sql;
 	str_sql = "INSERT INTO metadata VALUES ('format',";
 	str_sql += (tile_type == JPEG_TILE) ? "'jpg')" :  (tile_type == PNG_TILE) ? "'png')" : "'tif')";
 	sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
@@ -948,9 +952,15 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 									latlong_envp.MaxX,
 									latlong_envp.MaxY);
 	sqlite3_exec(p_sql3_db_, buf, NULL, 0, &p_err_msg);
+
 				
-	str_sql = "CREATE TABLE tiles (zoom_level int, tile_column int, tile_row int, tile_data blob)";
-	sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
+
+  sqlite3_exec(p_sql3_db_, "CREATE TABLE tiles ("
+  "zoom_level INTEGER NOT NULL,"
+  "tile_column INTEGER NOT NULL,"
+  "tile_row INTEGER NOT NULL,"
+  "tile_data BLOB NOT NULL,"
+  "UNIQUE (zoom_level, tile_column, tile_row) )", 0, 0, &p_err_msg);
 	if (p_err_msg!=NULL)
 	{
 		cout<<"ERROR: sqlite: "<<p_err_msg<<endl;

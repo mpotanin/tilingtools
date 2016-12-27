@@ -40,11 +40,9 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
 
 
   string strProjType = oOptionParser.GetOptionValue("-tsrs");
-  oTilingParams.merc_type_ = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")
-                      || (strProjType == "epsg:3395")
-                    ) ? gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
+  oTilingParams.merc_type_ =  ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ? 
+                              gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
 
-  
   list<string> listRasters = oBundleInputData.GetRasterFiles();
 
   if (oOptionParser.GetOptionValue("-pseudo_png")!="") 

@@ -178,8 +178,8 @@ int _tmain(int nArgs, wchar_t* argvW[])
 	    return 1;
     }
     
-    eMercType = ((strProjType == "") || (strProjType == "0") || (strProjType == "world_mercator")|| 
-			          (strProjType == "epsg:3395")) ? gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
+    eMercType = ((strProjType == "0") || (strProjType == "world_mercator")||(strProjType == "epsg:3395")) ? 
+                gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
     
        
 	  if (strSrcTemplate=="kosmosnimki")
