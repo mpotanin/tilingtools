@@ -15,6 +15,8 @@ public:
   static bool		FileExists	(string strFileName);
   static bool		IsDirectory	(string strPath);
 
+  static string GetRuntimeModulePath();
+
   static bool		FindFilesByPattern (list<string> &listFiles, string strSearchPattern);
   static bool		FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension);
 

@@ -81,9 +81,9 @@ int			GMXString::ParseCommaSeparatedArray (string input_str, int *&p_arr, bool i
   for (int i=0;i<len;i++)
   {
     str = input_str.substr(0,input_str.find(','));
-    p_arr[i] = !is_missing_vals ? (int)atof(str.c_str()) :
+    p_arr[i] = !is_missing_vals ? atoi(str.c_str()) :
              str == "" ? nodata_val :
-                         (int)atof(str.c_str());
+                         atoi(str.c_str());
     input_str = input_str.substr(input_str.find(',')+1);
   }
   return len;
@@ -102,7 +102,7 @@ bool	GMXString::ConvertStringToRGB (string str_color, BYTE rgb[3])
 		match_results<string::const_iterator> mr;
 		regex_search(str_color, mr, rgb_dec_pattern);
     for (int i=1;i<4;i++)
-			rgb[i-1] = (int)atof(mr[i].str().c_str());
+			rgb[i-1] = atoi(mr[i].str().c_str());
 	}
 	else if (regex_match(str_color,rgb_hex_pattern))
 	{
@@ -114,7 +114,7 @@ bool	GMXString::ConvertStringToRGB (string str_color, BYTE rgb[3])
   }
   else if (regex_match(str_color,single_value_pattern))
   {
-    rgb[0] = (int)atof(str_color.c_str());
+    rgb[0] = atoi(str_color.c_str());
     rgb[1]=(rgb[2]=0);
   }
   else return FALSE;

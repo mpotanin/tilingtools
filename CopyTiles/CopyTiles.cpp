@@ -39,11 +39,14 @@ int _tmain(int nArgs, wchar_t* argvW[])
 		GMXString::ReplaceAll(pastrArgs[i],"\\","/");
 	}
 	
- 	if (!GMXGDALLoader::Load()) return 1;
+ 	if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0]))) return 1;
 	GDALAllRegister();
 	OGRRegisterAll();
 
  //debug
+  //GMXOptionParser::InitCmdLineArgsFromFile("../autotest/debug_input.txt", nArgs, pastrArgs);
+  //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
+
   //GMXOptionParser::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
  	//for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
@@ -51,6 +54,10 @@ int _tmain(int nArgs, wchar_t* argvW[])
   
   if (nArgs == 1)
   {
+    cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
+                                                    GMXFileSys::GetPath(pastrArgs[0]),
+                                                    "version.txt")
+                                                    ) << endl;
     cout<<"build date: "<<__DATE__<<endl;
     GMXOptionParser::PrintUsage(asDescriptors,nDescriptors,astrUsageExamples,nExamples);
     delete[]pastrArgs;
@@ -83,13 +90,13 @@ int _tmain(int nArgs, wchar_t* argvW[])
 	
 	if (strSrcPath == "")
 	{
-		cout<<"ERROR: missing \"-from\" parameter"<<endl;
+		cout<<"ERROR: missing \"-i\" parameter"<<endl;
 		return 1;
 	}
 
 	if (strDestPath == "")
 	{
-		cout<<"ERROR: missing \"-to\" parameter"<<endl;
+		cout<<"ERROR: missing \"-o\" parameter"<<endl;
 		return 1;
 	}
 
@@ -129,8 +136,8 @@ int _tmain(int nArgs, wchar_t* argvW[])
       cout<<"ERROR: not valid value of \"-z\" parameter: "<<strZooms<<endl;
       return 1;
     }
-		nMinZoom = (int)atof(strZooms.substr(0,strZooms.find("-")).data());
-		nMaxZoom = (int)atof(strZooms.substr(strZooms.find("-")+1,strZooms.size()-strZooms.find("-")-1).data());
+		nMinZoom = atoi(strZooms.substr(0,strZooms.find("-")).data());
+		nMaxZoom = atoi(strZooms.substr(strZooms.find("-")+1,strZooms.size()-strZooms.find("-")-1).data());
 		if (nMinZoom>nMaxZoom) {int t; t=nMaxZoom; nMaxZoom = nMinZoom; nMinZoom = t;}
 		
 	}
@@ -186,7 +193,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
 		  poSrcTileName = new gmx::KosmosnimkiTileName(strSrcPath,tile_type);
 	  else if ((strSrcTemplate=="standard") || (strSrcTemplate=="" )) 
 		  poSrcTileName = new gmx::StandardTileName(strSrcPath,("{z}/{x}/{y}."+ gmx::TileName::ExtensionByTileType(tile_type)));
-    else if (gmx::ESRITileName::ValidateTemplate(strDestTemplate))
+    else if (gmx::ESRITileName::ValidateTemplate(strSrcTemplate))
       poSrcTileName = new gmx::ESRITileName(strSrcPath,strSrcTemplate);
     else if (gmx::StandardTileName::ValidateTemplate(strSrcTemplate))
 		  poSrcTileName = new gmx::StandardTileName(strSrcPath,strSrcTemplate);

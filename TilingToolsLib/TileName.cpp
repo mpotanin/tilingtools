@@ -91,7 +91,7 @@ string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 	return tile_name;
 }
 
-bool StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+bool StandardTileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 {
 	if (!regex_match(tile_name,rx_template_)) return FALSE;
 	match_results<string::const_iterator> mr;
@@ -103,9 +103,9 @@ bool StandardTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x,
   }
 
 	if ((mr.size()<=zxy_pos_[0])||(mr.size()<=zxy_pos_[1])||(mr.size()<=zxy_pos_[2])) return FALSE;
-	z = (int)atof(mr[zxy_pos_[0]].str().c_str());
-	x = (int)atof(mr[zxy_pos_[1]].str().c_str());
-	y = (int)atof(mr[zxy_pos_[2]].str().c_str());
+	z = atoi(mr[zxy_pos_[0]].str().c_str());
+	x = atoi(mr[zxy_pos_[1]].str().c_str());
+	y = atoi(mr[zxy_pos_[2]].str().c_str());
 		
 	return TRUE;
 }
@@ -213,7 +213,7 @@ string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 }
 
 
-bool ESRITileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+bool ESRITileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 {
 	if (!regex_match(tile_name,rx_template_)) return FALSE;
 	match_results<string::const_iterator> mr;
@@ -221,9 +221,9 @@ bool ESRITileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int
   
   for (int i=0;i<mr.size();i++)
   {
-    if (mr[i].str()[0]=='L') z = (int)atof(mr[i].str().c_str());
-    if (mr[i].str()[0]=='R') y = (int)atof(mr[i].str().c_str());
-    if (mr[i].str()[0]=='C') x = (int)atof(mr[i].str().c_str());
+    if (mr[i].str()[0] == 'L') z = strtol(mr[i].str().substr(1).c_str(), 0, 10); 
+    if (mr[i].str()[0] == 'R') y = strtol(mr[i].str().substr(1).c_str(), 0, 16);
+    if (mr[i].str()[0] == 'C') x = strtol(mr[i].str().substr(1).c_str(), 0, 16);
   }
 
  	return TRUE;
@@ -249,7 +249,7 @@ string	KosmosnimkiTileName::GetTileName (int zoom, int x, int y)
 	return buf;
 }
 
-bool KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y)
+bool KosmosnimkiTileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 {
 	tile_name = GMXFileSys::RemovePath(tile_name);
 	tile_name = GMXFileSys::RemoveExtension(tile_name);
@@ -260,11 +260,11 @@ bool KosmosnimkiTileName::ExtractXYZFromTileName (string tile_name, int &z, int 
 
 	if (!regex_match(tile_name,pattern)) return FALSE;
 
-	z = (int)atof(tile_name.substr(0,tile_name.find('_')).c_str());
+	z = atoi(tile_name.substr(0,tile_name.find('_')).c_str());
 	tile_name = tile_name.substr(tile_name.find('_')+1);
 		
-	x = (int)atof(tile_name.substr(0,tile_name.find('_')).c_str());
-	y = (int)atof(tile_name.substr(tile_name.find('_')+1).c_str());
+	x = atoi(tile_name.substr(0,tile_name.find('_')).c_str());
+	y = atoi(tile_name.substr(tile_name.find('_')+1).c_str());
 
 	if (z>0)
 	{

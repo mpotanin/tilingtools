@@ -414,7 +414,7 @@ public:
 ///Эти методы нужно реализовать в производном классе (см. KosmosnimkiTileName)
 ////////////////////////////////////////////////////////////////////////////////////////////
 	virtual	string		GetTileName				(int zoom, int x, int y) = 0;
-	virtual	bool	ExtractXYZFromTileName	(string tile_name, int &z, int &x, int &y) = 0;
+	virtual	bool	ExtractXYZ	(string tile_name, int &z, int &x, int &y) = 0;
 	virtual	bool	CreateFolder			(int zoom, int x, int y) = 0;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -448,7 +448,7 @@ public:
 	static bool	ValidateTemplate	(string str_template);
 	string	GetTileName (int zoom, int nX, int nY);
 
-	bool ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	bool ExtractXYZ (string tile_name, int &z, int &x, int &y);
 	bool CreateFolder (int zoom, int nX, int nY);
 protected:
 	string	str_template_;
@@ -462,7 +462,7 @@ class KosmosnimkiTileName : public TileName
 public:
 	KosmosnimkiTileName (string tiles_folder, TileType tile_type = JPEG_TILE);
 	string	GetTileName (int zoom, int x, int y);
-	bool ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	bool ExtractXYZ (string tile_name, int &z, int &x, int &y);
 	bool CreateFolder (int zoom, int x, int y);
 };
 
@@ -474,7 +474,7 @@ public:
 	static bool	ValidateTemplate	(string str_template);
 	string	GetTileName (int zoom, int nX, int nY);
 
-	bool ExtractXYZFromTileName (string tile_name, int &z, int &x, int &y);
+	bool ExtractXYZ (string tile_name, int &z, int &x, int &y);
 	bool CreateFolder (int zoom, int nX, int nY);
 protected:
 	string	str_template_;

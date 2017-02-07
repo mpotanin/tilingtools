@@ -3,8 +3,9 @@
 #include "StringFuncs.h"
 #include "FileSystemFuncs.h"
 
+string GMXGDALLoader::strGDALVer = "201";
 
-void	GMXGDALLoader::SetEnvVars (string gdal_path)
+void	GMXGDALLoader::SetWinEnvVars (string gdal_path)
 {
 	wstring env_PATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
 
@@ -20,45 +21,39 @@ void	GMXGDALLoader::SetEnvVars (string gdal_path)
 }
 
 
-bool GMXGDALLoader::Load (string strGDALPath)
+bool GMXGDALLoader::Load (string strExecPath)
 {
-	if (strGDALPath == "")
-	{
-		wchar_t exe_filename_w[_MAX_PATH + 1];
-		GetModuleFileNameW(NULL,exe_filename_w,_MAX_PATH); 
-		string exe_filename = GMXString::wstrToUtf8(exe_filename_w);
-    GMXString::ReplaceAll(exe_filename,"\\","/");
-    strGDALPath = ReadPathFromConfigFile(GMXFileSys::GetPath(exe_filename));
-	}
+#ifdef _WIN32
+  string strGDALPath = ReadPathFromConfigFile(strExecPath);
 
 	if (strGDALPath=="")
 	{
 		cout<<"ERROR: GDAL path isn't specified"<<endl;
-		return FALSE;
+		return false;
 	}
 	
-	SetEnvVars(strGDALPath);
+  SetWinEnvVars(strGDALPath);
    
-	if (!LoadDLLs(strGDALPath))
+  if (!LoadWinDll(strGDALPath, GMXGDALLoader::strGDALVer))
 	{
-		cout<<"ERROR: can't load gdal dlls: bad path to gdal specified: "<<strGDALPath<<endl;
+		cout<<"ERROR: can't load GDAL by path: "<<strGDALPath<<endl;
 		return FALSE;
 	}
-  else
-  {
-    GDALAllRegister();
-    OGRRegisterAll();
-    CPLSetConfigOption("OGR_ENABLE_PARTIAL_REPROJECTION","YES");
-  }
+#else
+//ToDo
+#endif
 
-	return TRUE;
+  GDALAllRegister();
+  OGRRegisterAll();
+  CPLSetConfigOption("OGR_ENABLE_PARTIAL_REPROJECTION","YES");
+
+	return true;
 }
 
-bool GMXGDALLoader::LoadDLLs (string strGDALDir)
+bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
 {
-  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir,"bins\\gdal201.dll");
+  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir,"bins/gdal"+strDllVer+".dll");
   HMODULE b = LoadLibraryW(GMXString::utf8toWStr(strGDALDLL).c_str());
-  
   if (b==NULL)
     cout<<"ERROR: can't load GDAL by path: "<<strGDALDLL<<endl;
   
@@ -77,7 +72,7 @@ string GMXGDALLoader::ReadPathFromConfigFile (string config_file_path)
 	regex_search(config_str, mr, rx_template);
 	if (mr.size()<2)
 	{
-		cout<<"ERROR: can't read GdalPath from file: "<<configFile<<endl;
+		cout<<"ERROR: can't read GDAL path from file: "<<configFile<<endl;
 		return "";
 	}
   else return GMXFileSys::GetAbsolutePath (config_file_path,mr[1]);

@@ -7,12 +7,14 @@
 class GMXGDALLoader
 {
 public:
-  static bool Load (string strGDALPath = "");
+  static bool Load (string strExecPath);
 
-private:
-  static void SetEnvVars (string gdal_path);
-  static bool LoadDLLs (string strGDALDir);
+protected:
+  static void SetWinEnvVars (string gdal_path);
+  static bool LoadWinDll (string strGDALDir, string strDllVer);
   static string ReadPathFromConfigFile (string config_file_path);
+protected:
+  static string strGDALVer;
 };
 
 typedef struct 

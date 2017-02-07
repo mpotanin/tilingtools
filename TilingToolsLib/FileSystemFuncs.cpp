@@ -60,6 +60,20 @@ bool GMXFileSys::IsDirectory (string strPath)
 #endif
 }
 
+string GMXFileSys::GetRuntimeModulePath()
+{
+#ifdef _WIN32
+  wchar_t exe_filename_w[_MAX_PATH + 1];
+  GetModuleFileNameW(NULL, exe_filename_w, _MAX_PATH);
+  string exe_filename = GMXString::wstrToUtf8(exe_filename_w);
+  GMXString::ReplaceAll(exe_filename,"\\","/");
+  return GMXFileSys::GetPath(exe_filename);
+#else
+  
+#endif
+}
+
+
 
 string	GMXFileSys::RemoveEndingSlash(string	strFolderName)
 {		

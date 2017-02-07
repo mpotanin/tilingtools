@@ -17,10 +17,10 @@ GMXTileContainer* GMXTileContainer::OpenForWriting (TileContainerOptions *p_para
   GMXTileContainer* p_gmx_tc = new GMXTileContainer();
   
   int cache_size = p_params->extra_options_["cache_size"]!="" ?
-                    (int)atof(p_params->extra_options_["cache_size"].c_str()) :
+                    atoi(p_params->extra_options_["cache_size"].c_str()) :
                     -1;
   int max_volume_size = p_params->extra_options_["volume_size"]!="" ?
-                     (int)atof(p_params->extra_options_["volume_size"].c_str()) :
+                     atoi(p_params->extra_options_["volume_size"].c_str()) :
                       GMXTileContainer::DEFAULT_MAX_VOLUME_SIZE;
   MercatorProjType merc_type = ((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type();
   
@@ -1186,7 +1186,7 @@ TileFolder* TileFolder::OpenForWriting (TileContainerOptions *p_params)
   if (!p_params) return 0;
   if (!p_params->p_tile_name_) return 0;
   bool b_use_cache = p_params->extra_options_["cache_size"]=="" ? true :
-                    (int)atof(p_params->extra_options_["cache_size"].c_str()) == 0 ? false : true;
+                    atoi(p_params->extra_options_["cache_size"].c_str()) == 0 ? false : true;
   return new TileFolder(p_params->p_tile_name_,((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type(),b_use_cache);
 };
 
@@ -1304,7 +1304,7 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 	for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
 	{
 		int x,y,z;
-		if(!p_tile_name_->ExtractXYZFromTileName((*iter),z,x,y)) continue;
+		if(!p_tile_name_->ExtractXYZ((*iter),z,x,y)) continue;
 		if ((max_zoom>=0)&&(z>max_zoom)) continue;
 		if ((min_zoom>=0)&&(z<min_zoom)) continue;
     if (vector_file!="")

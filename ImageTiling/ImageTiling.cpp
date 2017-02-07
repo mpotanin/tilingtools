@@ -22,7 +22,12 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
 {
   gmx::TilingParameters oTilingParams;
   
-
+  if (oOptionParser.GetValueList("-i").size() == 0)
+  {
+    cout << "ERROR: missing \"-i\" parameter" << endl;
+    return 1;
+  }
+  
   gmx::BundleInputData oBundleInputData;
   if (!oBundleInputData.InitByConsoleParams(oOptionParser.GetValueList("-i"),
                                             oOptionParser.GetValueList("-b"),
@@ -111,11 +116,11 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
  
   
   if (oOptionParser.GetOptionValue("-z")!="")
-    oTilingParams.base_zoom_ = (int)atof(oOptionParser.GetOptionValue("-z").c_str());
+    oTilingParams.base_zoom_ = atoi(oOptionParser.GetOptionValue("-z").c_str());
   
 
   if (oOptionParser.GetOptionValue("-minz")!="")
-    oTilingParams.min_zoom_ = (int)atof(oOptionParser.GetOptionValue("-minz").c_str());
+    oTilingParams.min_zoom_ = atoi(oOptionParser.GetOptionValue("-minz").c_str());
   
   
   if (oOptionParser.GetOptionValue("-b")!="")
@@ -123,7 +128,7 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
     
 
   if (oOptionParser.GetOptionValue("-q")!="")
-    oTilingParams.jpeg_quality_ = (int)atof(oOptionParser.GetOptionValue("-q").c_str());
+    oTilingParams.jpeg_quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
   
  
   if (oOptionParser.GetOptionValue("-nd")!="")
@@ -140,7 +145,7 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
   
 
   if (oOptionParser.GetOptionValue("-ndt")!="")
-    oTilingParams.nodata_tolerance_ = (int)atof(oOptionParser.GetOptionValue("-ndt").c_str());
+    oTilingParams.nodata_tolerance_ = atoi(oOptionParser.GetOptionValue("-ndt").c_str());
   
   
   if (oOptionParser.GetOptionValue("-bgc")!="")
@@ -187,7 +192,7 @@ int ParseCmdLineAndCallTiling (GMXOptionParser &oOptionParser)
 
 
   if (oOptionParser.GetOptionValue("-wt")!="")
-    oTilingParams.max_work_threads_ = (int)atof(oOptionParser.GetOptionValue("-wt").c_str());
+    oTilingParams.max_work_threads_ = atoi(oOptionParser.GetOptionValue("-wt").c_str());
   
   
   if (oOptionParser.GetKeyValueCollection("-co").size()!=0)
@@ -238,7 +243,6 @@ const string astrUsageExamples[] =
 
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
-
   string* pastrArgs = new string[nArgs];
   for (int i=0;i<nArgs;i++)
   {
@@ -246,7 +250,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   }
 
-  if (!GMXGDALLoader::Load())
+  if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0])))
   {
     cout<<"ERROR: can't load GDAL"<<endl;
     delete[]pastrArgs;
@@ -261,7 +265,10 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   
   if (nArgs == 1)
   {
-	cout << "version: " << GMXFileSys::ReadTextFile("version.txt") << endl;
+    cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
+                                                    GMXFileSys::GetPath(pastrArgs[0]),
+                                                    "version.txt")
+                                                    ) << endl;
     cout<<"build date: "<<__DATE__<<endl;
     GMXOptionParser::PrintUsage(asDescriptors,nDescriptors,astrUsageExamples,nExamples);
     delete[]pastrArgs;
