@@ -35,17 +35,13 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../gdal210/include/gdal_priv.h"
-#include "../gdal210/include/ogrsf_frmts.h"
-#include "../gdal210/include/gd.h"
-#include "../gdal210/include/vrtdataset.h"
-#include "../gdal210/include/gdalwarper.h"
-#include "../gdal210/include/sqlite3.h"
-
-#include "../gdal210/include/openjpeg-2.1/openjpeg.h"
-
-
 using namespace std;
-// TODO: reference additional headers your program requires here
+
+#include "gdal_priv.h"
+#include "ogrsf_frmts.h"
+#include "vrtdataset.h"
+#include "gdalwarper.h"
+#include "gd.h"
+#include "sqlite3.h"
 
 #endif

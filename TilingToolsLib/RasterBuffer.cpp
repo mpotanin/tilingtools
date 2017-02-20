@@ -7,73 +7,6 @@ using namespace gmx;
 namespace gmx
 {
 
-struct OPJStreamData
-{
-  OPJ_SIZE_T offset;
-  OPJ_SIZE_T size;
-  OPJ_SIZE_T max_size;
-  void *p_data;
-};
-
-static OPJ_SIZE_T OPJStreamReadFunc (void* p_buffer, OPJ_SIZE_T n_bytes, void* p_stream_data)
-{
-  OPJStreamData *p_stream_obj = (OPJStreamData*)p_stream_data;
-  if (p_stream_obj->offset >= p_stream_obj->size) return 0;
-  int read_size =  min(p_stream_obj->size-p_stream_obj->offset,n_bytes);
-  if (!memcpy(p_buffer,(BYTE*)p_stream_obj->p_data+p_stream_obj->offset,read_size)) return 0;
-  p_stream_obj->offset+=read_size;
-  return read_size;
-}
-
-static OPJ_SIZE_T OPJStreamWriteFunc (void* p_buffer, OPJ_SIZE_T n_bytes, void* p_stream_data)
-{
-  OPJStreamData *p_stream_obj = (OPJStreamData*)p_stream_data;
-  if (p_stream_obj->offset + n_bytes > p_stream_obj->max_size)
-  {
-    cout<<"Error: OPJStreamWriteFunc: max_size exceeded"<<endl;
-    return 0;
-  }
-  if (! memcpy((BYTE*)p_stream_obj->p_data+p_stream_obj->offset,p_buffer,n_bytes)) return 0;
-  p_stream_obj->offset+=n_bytes;
-  p_stream_obj->size+=n_bytes;
-  return n_bytes;
-}
-
-static OPJ_OFF_T OPJStreamSkipFunc (OPJ_OFF_T n_skip, void *p_stream_data)
-{
-  OPJStreamData *p_stream_obj = (OPJStreamData*)p_stream_data;
-  if (p_stream_obj->offset + n_skip > p_stream_obj->max_size) return -1;
-  p_stream_obj->offset+=n_skip;
-  return n_skip;
-}
-
-
-static OPJ_BOOL OPJStreamSeekFunc (OPJ_OFF_T n_seek, void *p_stream_data)
-{
-  OPJStreamData *p_stream_obj = (OPJStreamData*)p_stream_data;
-  if (n_seek<=p_stream_obj->size) p_stream_obj->offset=n_seek;
-  else return OPJ_FALSE;
-  return OPJ_TRUE;
-}
-
-
-static opj_stream_t* OPJStreamCreate (OPJStreamData *p_stream_data, unsigned int buffer_size, bool is_read_only)
-{
-  opj_stream_t* p_opj_stream = 00;
-  if (! p_stream_data) return NULL;
-	p_opj_stream = opj_stream_create(buffer_size,is_read_only);
-	if (! p_opj_stream) return NULL;
-	
-  opj_stream_set_user_data(p_opj_stream, p_stream_data,0);
-  opj_stream_set_user_data_length(p_opj_stream, p_stream_data->size);
-  opj_stream_set_read_function(p_opj_stream, (opj_stream_read_fn)OPJStreamReadFunc);
-  opj_stream_set_write_function(p_opj_stream, (opj_stream_write_fn)OPJStreamWriteFunc);
-  opj_stream_set_skip_function(p_opj_stream, (opj_stream_skip_fn)OPJStreamSkipFunc);
-  opj_stream_set_seek_function(p_opj_stream, (opj_stream_seek_fn)OPJStreamSeekFunc);
-
-  return p_opj_stream;
-}
-
 
 
 RasterBuffer::RasterBuffer(void)
@@ -533,285 +466,50 @@ static void info_callback(const char *msg, void *client_data) {
   //end-debug
 }
 
-bool RasterBuffer::CreateFromJP2Data (void *p_data_src, int size)
+bool RasterBuffer::CreateFromJP2Data (void *pabData, int nSize)
 {
-  ClearBuffer();
-  if (size>10000000) return FALSE;
-  OPJStreamData opj_stream_data;
-  opj_stream_data.max_size = (opj_stream_data.size=size);
-  opj_stream_data.offset = 0;
-  opj_stream_data.p_data = new BYTE[size];
-  memcpy(opj_stream_data.p_data,p_data_src,size);
-  opj_stream_t *l_stream = OPJStreamCreate(&opj_stream_data,10000000,TRUE);
+  //ToDo - if nodata defined must create alphaband
+  VSIFileFromMemBuffer("/vsimem/jp2inmem", (BYTE*)pabData, nSize, 0);
+  GDALDataset *poJP2DS = (GDALDataset*)GDALOpen("/vsimem/jp2inmem", GA_ReadOnly);
+  CreateBuffer(poJP2DS->GetRasterCount(), poJP2DS->GetRasterXSize(), poJP2DS->GetRasterYSize(), NULL, poJP2DS->GetRasterBand(1)->GetRasterDataType());
 
-
-	opj_dparameters_t parameters;   // decompression parameters //
-	opj_image_t* image = NULL;      
-	opj_codec_t* l_codec = NULL;				// Handle to a decompressor //
-	opj_codestream_index_t* cstr_index = NULL;
-
-	char indexfilename[OPJ_PATH_LEN];	// index file name //
-
-	OPJ_INT32 num_images, imageno;
-	//img_fol_t img_fol;
-	//dircnt_t *dirptr = NULL;
-
-	// set decoding parameters to default values //
-	opj_set_default_decoder_parameters(&parameters);
-
-	// FIXME Initialize indexfilename and img_fol //
-	*indexfilename = 0;
-
-	// Initialize img_fol //
-	//memset(&img_fol,0,sizeof(img_fol_t));
-
-	// read the input file and put it in memory //
-	//fsrc = fopen("e:\\erosb_16bit.jp2", "rb");
-	//opj_stream_t l_stream_f = opj_stream_create_default_file_stream(fsrc,1);
-	
-	l_codec = opj_create_decompress(OPJ_CODEC_JP2);
-
-	// catch events using our callbacks and give a local context //		
-	opj_set_info_handler(l_codec, info_callback,00);
-	opj_set_warning_handler(l_codec, warning_callback,00);
-	opj_set_error_handler(l_codec, error_callback,00);
-
-
-	// Setup the decoder decoding parameters using user parameters //
-	if ( !opj_setup_decoder(l_codec, &parameters) ){
-		fprintf(stderr, "Error -> j2k_dump: failed to setup the decoder\n");
-		opj_stream_destroy(l_stream);
-		//fclose(fsrc);
-		opj_destroy_codec(l_codec);
-		return EXIT_FAILURE;
-	}
-
-
-	// Read the main header of the codestream and if necessary the JP2 boxes //
-	if(! opj_read_header(l_stream, l_codec, &image)){
-		fprintf(stderr, "Error -> opj_decompress: failed to read the header\n");
-		opj_stream_destroy(l_stream);
-	  delete[]opj_stream_data.p_data;
-		opj_destroy_codec(l_codec);
-		opj_image_destroy(image);
-		return EXIT_FAILURE;
-	}
-
-	// Optional if you want decode the entire image //
-	if (!opj_set_decode_area(l_codec, image, parameters.DA_x0,
-			parameters.DA_y0, parameters.DA_x1, parameters.DA_y1)){
-		fprintf(stderr,	"Error -> opj_decompress: failed to set the decoded area\n");
-		opj_stream_destroy(l_stream);
-		opj_destroy_codec(l_codec);
-		opj_image_destroy(image);
-    delete[]opj_stream_data.p_data;
-		return EXIT_FAILURE;
-	}
-
-  //opj_stream_private 
-	// Get the decoded image //
-
-	if (!(opj_decode(l_codec, l_stream, image) )) {//&& opj_end_decompress(l_codec,	l_stream)
-		fprintf(stderr,"Error -> opj_decompress: failed to decode image!\n");
-		opj_destroy_codec(l_codec);
-		opj_stream_destroy(l_stream);
-		opj_image_destroy(image);
-    delete[]opj_stream_data.p_data;
-    return EXIT_FAILURE;
-	}
-
-  opj_destroy_codec(l_codec);
-	opj_stream_destroy(l_stream);
-	delete[]opj_stream_data.p_data;
-
-  this->CreateBuffer(image->numcomps,
-                      image->comps[0].w,
-                      image->comps[0].h,
-                      NULL,
-                      (image->comps[0].prec == 8) ? GDT_Byte : GDT_UInt16,
-                      FALSE,
-                      NULL);
-
-  int area = x_size_*y_size_;
-  int index=0;
-  if (data_type_==GDT_Byte)
-  {
-    BYTE *p_pixel_data = (BYTE*)p_pixel_data_;
-    for (int i=0;i<y_size_;i++)
-    {
-      for (int j=0;j<x_size_;j++)
-      {
-        for (int k=0;k<num_bands_;k++)
-        {
-          p_pixel_data[k*area+index] = image->comps[k].data[index];
-        }
-        index++;
-      }
-    }
-  }
-  else
-  {
-    unsigned __int16 *p_pixel_data = (unsigned __int16*)p_pixel_data_;
-    for (int i=0;i<y_size_;i++)
-    {
-      for (int j=0;j<x_size_;j++)
-      {
-        for (int k=0;k<num_bands_;k++)
-        {
-          p_pixel_data[k*area+index] = image->comps[k].data[index];
-        }
-        index++;
-      }
-    }
-  }
-  opj_image_destroy(image);
+  poJP2DS->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+  GDALClose(poJP2DS);
+  VSIUnlink("/vsimem/jp2inmem");
 
  	return TRUE;
 }
 
-bool RasterBuffer::SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate)
+bool RasterBuffer::SaveToJP2Data(void* &pabData, int &nSize, int nRate)
 {
-	//int subsampling_dx;
-	//int subsampling_dy;
-  if ((compression_rate<=0) || (compression_rate>100)) compression_rate=10;
-  else switch ((100-compression_rate)/5)
-  {
-    case 0:
-      compression_rate = 2;
-      break;
-    case 1:
-      compression_rate = 3;
-      break;
-    case 2:
-      compression_rate = 5;
-      break;
-    case 3:
-      compression_rate = 10;
-      break;
-    case 4:
-      compression_rate = 20;
-      break;
-    case 5:
-      compression_rate = 30;
-      break;
-    case 6:
-      compression_rate = 50;
-      break;
-    default:
-      compression_rate = 100;
-      break;
-  }
-    
-	int j, numcomps, w, h,index;
-  OPJ_COLOR_SPACE color_space;
-	opj_image_cmptparm_t cmptparm[4]; // RGBA //
-	opj_image_t *image = NULL;
-	int imgsize = 0;
-	int has_alpha = 0;
-	
-	w		= this->get_x_size();
-	h		= this->get_y_size();
- 	memset(&cmptparm[0], 0, 4 * sizeof(opj_image_cmptparm_t));
-	
-	numcomps = num_bands_;
-	color_space = (num_bands_>=3) ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_GRAY;
-	for(j = 0; j < numcomps; j++) 
-	{
-		cmptparm[j].prec= (data_type_ == GDT_Byte) ? 8: 16;
-		cmptparm[j].bpp	= (data_type_ == GDT_Byte) ? 8: 16;
- 		cmptparm[j].dx	= 1;	
-		cmptparm[j].dy	= 1;
-		cmptparm[j].w	= w;
-		cmptparm[j].h	= h;
-	}
-
-	image = opj_image_create(numcomps, &cmptparm[0], color_space);
-	image->x0 = 0;
-	image->y0 = 0;
-	image->x1 =	w;
-	image->y1 =	h;
-
-	index = 0;
-	imgsize = image->comps[0].w * image->comps[0].h ;
-	if (data_type_ == GDT_Byte)
-	{
-    BYTE	*pData8 = (BYTE*)p_pixel_data_;
-		for(int i=0; i<h; i++) 
-		{
-			for(j = 0; j < w; j++) 
-			{
-				for (int k=0;k<num_bands_;k++)
-					image->comps[k].data[index] = pData8[index + k*imgsize];
-				index++;
-			}
-		}
-	}
-	else 
-	{
-		unsigned __int16	*pData16 = (unsigned __int16*) p_pixel_data_;
-		for(int i=0; i<h; i++) 
-		{
-			for(j = 0; j < w; j++) 
-			{
-				for (int k=0;k<num_bands_;k++)
-					image->comps[k].data[index] = pData16[index + k*imgsize];
-				index++;
-			}
-		}
-	}
-	
-	opj_cparameters_t parameters;
-  opj_stream_t *l_stream = 00;
-  opj_codec_t* l_codec = 00;
-  char indexfilename[OPJ_PATH_LEN];
-  unsigned int i, num_images, imageno;
-
-  OPJ_BOOL bSuccess;
-	OPJ_BOOL bUseTiles = OPJ_FALSE;
-  OPJ_UINT32 l_nb_tiles = 4;
-
-	opj_set_default_encoder_parameters(&parameters);
-  parameters.tcp_mct = image->numcomps == 3 ? 1 : 0;
-	l_codec = opj_create_compress(OPJ_CODEC_JP2);
-
-  opj_set_info_handler(l_codec, info_callback,00);
+  string	strTiffInMem = ("/vsimem/tiffinmem" + GMXString::ConvertIntToString(rand()));
+  GDALDataset* poTiffDS = (GDALDataset*)GDALCreate(
+      GDALGetDriverByName("GTiff"),
+      strTiffInMem.c_str(),
+      x_size_,
+      y_size_,
+      num_bands_,
+      data_type_,
+      NULL
+      );
+  poTiffDS->RasterIO(GF_Write, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+  GDALFlushCache(poTiffDS);
   
-  opj_set_warning_handler(l_codec, warning_callback,00);
-  opj_set_error_handler(l_codec, error_callback,00);
+  string strJP2DriverName = JP2000DriverFactory::GetDriverName();
+  string strJP2InMem = ("/vsimem/jp2inmem" + GMXString::ConvertIntToString(rand()));
+  GDALDatasetH poJP2DS = GDALCreateCopy(GDALGetDriverByName(strJP2DriverName.c_str()),
+                                       strJP2InMem.c_str(),
+                                       poTiffDS, 0, 0, 0, 0);
+  GDALFlushCache(poJP2DS);
+  GDALClose(poJP2DS);
+  GDALClose(poTiffDS);
+  vsi_l_offset length;
+  BYTE * pabDataBuf = VSIGetMemFileBuffer(strJP2InMem.c_str(), &length, FALSE);
+  nSize = length;
+  memcpy((pabData = new BYTE[nSize]), pabDataBuf, nSize);
+  VSIUnlink(strJP2InMem.c_str());
+  VSIUnlink(strTiffInMem.c_str());
 
-	parameters.tcp_numlayers = 1;
-	parameters.cod_format = 0;
-	parameters.cp_disto_alloc = 1;
-  parameters.tcp_rates[0]=compression_rate;
-  bool r = opj_setup_encoder(l_codec, &parameters, image);
-
-  OPJStreamData opj_stream_data;
-  opj_stream_data.max_size = 10000000;
-  opj_stream_data.offset = (opj_stream_data.size = 0);
-  opj_stream_data.p_data = new BYTE[opj_stream_data.max_size];
-  l_stream = OPJStreamCreate(&opj_stream_data,10000000,FALSE);
-
-	bSuccess = opj_start_compress(l_codec,image,l_stream);
-	if (!bSuccess) 
-    fprintf(stderr, "failed to encode image: opj_start_compress\n");
-    
- bSuccess = bSuccess && opj_encode(l_codec, l_stream);
- if (!bSuccess)
-   fprintf(stderr, "failed to encode image: opj_encode\n");
-    
-	bSuccess = bSuccess && opj_end_compress(l_codec, l_stream);
-  if(!bSuccess) 
-    fprintf(stderr, "failed to encode image: opj_end_compress\n");
-  
-  opj_destroy_codec(l_codec);
-  opj_image_destroy(image);
-  opj_stream_destroy(l_stream);
- 
-  p_data_dst = opj_stream_data.p_data;
-  size = opj_stream_data.size;
-  if(parameters.cp_comment)   free(parameters.cp_comment);
-  if(parameters.cp_matrice)   free(parameters.cp_matrice);
-  
 	return TRUE;
 }
 
@@ -1625,5 +1323,16 @@ GDALColorTable*	RasterBuffer::get_color_table_ref ()
 	return p_color_table_;
 }
 
+
+string JP2000DriverFactory::GetDriverName()
+{
+  if (strDriverName != "") return strDriverName;
+  else if (GDALGetDriverByName("JP2KAK")) strDriverName = "JP2KAK";
+  else if (GDALGetDriverByName("JP2OpenJPEG")) strDriverName = "JP2OpenJPEG";
+  else if (GDALGetDriverByName("JPEG2000")) strDriverName = "JPEG2000";
+  return strDriverName;
+}
+
+string JP2000DriverFactory::strDriverName = "";
 
 }

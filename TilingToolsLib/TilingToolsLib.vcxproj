@@ -211,7 +211,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../gdal210/include;../openjpeg-2.1.2/src/src/lib/openjp2/;../openjpeg-2.1.2/src/build/src/lib/openjp2/;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../gdal210/include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

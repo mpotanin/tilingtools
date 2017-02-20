@@ -241,6 +241,7 @@ const string astrUsageExamples[] =
 };
 
 
+
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
   string* pastrArgs = new string[nArgs];
@@ -262,7 +263,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
   //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
-  
+ 
   if (nArgs == 1)
   {
     cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(

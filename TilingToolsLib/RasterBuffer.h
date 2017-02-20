@@ -31,7 +31,7 @@ public:
 	bool			CreateBufferFromJpegData	(void *p_data_src, int size);
 	bool			CreateBufferFromPngData		(void *p_data_src, int size);
  	bool			CreateBufferFromPseudoPngData	(void *p_data_src, int size);
-  bool			CreateFromJP2Data			(void *p_data_src, int size);
+  bool			CreateFromJP2Data			(void *pabData, int nSize);
 	bool			CreateBufferFromTiffData	(void *p_data_src, int size);
 
 	bool			SaveToPngData	(void* &p_data_dst, int &size);
@@ -39,7 +39,7 @@ public:
 	bool			SaveToPseudoPngData	(void* &p_data_dst, int &size);
   bool			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
 	bool			SaveToTiffData	(void* &p_data_dst, int &size);
-	bool			SaveToJP2Data	(void* &p_data_dst, int &size, int compression_rate = 0);
+	bool			SaveToJP2Data	(void* &pabData, int &nSize, int nRate = 0);
 
 	//bool			IsAnyNoDataPixel			();
 
@@ -103,6 +103,17 @@ protected:
 	GDALColorTable	*p_color_table_;
 };
 
+
+class JP2000DriverFactory
+{
+public:
+  JP2000DriverFactory(){};
+  ~JP2000DriverFactory(){};
+
+public:
+  static string GetDriverName();
+  static string strDriverName;
+};
 
 }
 
