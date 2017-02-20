@@ -1,5 +1,5 @@
-#include "StringFuncs.h"
-#include "FileSystemFuncs.h"
+#include "stringfuncs.h"
+#include "filesystemfuncs.h"
 
 
 

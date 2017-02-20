@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "TilingFuncs.h"
+#include "tilingfuncs.h"
 
 using namespace gmx;
 

@@ -3,9 +3,9 @@
 #ifndef IMAGE_TILLING_TILENAME_H
 #define IMAGE_TILLING_TILENAME_H
 #include "stdafx.h"
-#include "StringFuncs.h"
-#include "FileSystemFuncs.h"
-#include "VectorBorder.h"
+#include "stringfuncs.h"
+#include "filesystemfuncs.h"
+#include "vectorborder.h"
 
 namespace gmx
 {

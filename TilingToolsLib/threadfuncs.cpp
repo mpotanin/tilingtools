@@ -1,4 +1,4 @@
-#include "ThreadFuncs.h"
+#include "threadfuncs.h"
 
 
 void* GMXThread::CreateThread(GMXThreadFunc pfunc,void* poParams, unsigned long* pnThreadID)

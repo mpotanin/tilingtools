@@ -1,5 +1,5 @@
-#include "StdAfx.h"
-#include "TileContainer.h"
+#include "stdafx.h"
+#include "tilecontainer.h"
 using namespace gmx;
 
 namespace gmx

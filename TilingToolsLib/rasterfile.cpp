@@ -1,8 +1,8 @@
-#include "StdAfx.h"
-#include "RasterFile.h"
+#include "stdafx.h"
+#include "rasterfile.h"
 
-#include "StringFuncs.h"
-#include "FileSystemFuncs.h"
+#include "stringfuncs.h"
+#include "filesystemfuncs.h"
 
 
 

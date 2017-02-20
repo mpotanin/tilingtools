@@ -1,6 +1,6 @@
-#include "StdAfx.h"
-#include "RasterBuffer.h"
-#include "FileSystemFuncs.h"
+#include "stdafx.h"
+#include "rasterbuffer.h"
+#include "filesystemfuncs.h"
 using namespace gmx;
 
 

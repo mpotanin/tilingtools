@@ -3,12 +3,12 @@
 #define GMX_RASTERFILE_H
 
 #include "stdafx.h"
-#include "VectorBorder.h"
-#include "RasterBuffer.h"
-#include "TileName.h"
-#include "TileContainer.h"
-#include "TilingParameters.h"
-#include "ThreadFuncs.h"
+#include "vectorborder.h"
+#include "rasterbuffer.h"
+#include "tileName.h"
+#include "tilecontainer.h"
+#include "tilingparameters.h"
+#include "threadfuncs.h"
 
 using namespace std;
 

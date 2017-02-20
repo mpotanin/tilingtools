@@ -3,7 +3,7 @@
 #define IMAGE_BUFFER_H
 #include "stdafx.h"
 #include "histogram.h"
-#include "VectorBorder.h"
+#include "vectorborder.h"
 
 
 namespace gmx

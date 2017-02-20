@@ -2,8 +2,8 @@
 #ifndef		gmxVECTORBORDER_H
 #define		gmxVECTORBORDER_H 
 #include "stdafx.h"
-#include "FileSystemFuncs.h"
-#include "StringFuncs.h"
+#include "filesystemfuncs.h"
+#include "stringfuncs.h"
 
 namespace gmx
 {

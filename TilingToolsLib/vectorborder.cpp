@@ -1,5 +1,5 @@
-#include "StdAfx.h"
-#include "VectorBorder.h"
+#include "stdafx.h"
+#include "vectorborder.h"
 namespace gmx
 {
 

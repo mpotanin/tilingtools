@@ -1,6 +1,6 @@
-#include "StdAfx.h"
-#include "TileCache.h"
-#include "StringFuncs.h"
+#include "stdafx.h"
+#include "tilecache.h"
+#include "stringfuncs.h"
 
 
 namespace gmx

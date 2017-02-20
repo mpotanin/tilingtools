@@ -1,9 +1,9 @@
 #pragma once
 
 #include "stdafx.h"
-#include "FileSystemFuncs.h"
-#include "StringFuncs.h"
-#include "TileName.h"
+#include "filesystemfuncs.h"
+#include "stringfuncs.h"
+#include "tilename.h"
 
 
 namespace gmx

@@ -1,7 +1,7 @@
-#include "StdAfx.h"
-#include "ConsoleUtils.h"
-#include "StringFuncs.h"
-#include "FileSystemFuncs.h"
+#include "stdafx.h"
+#include "consoleutils.h"
+#include "stringfuncs.h"
+#include "filesystemfuncs.h"
 
 string GMXGDALLoader::strGDALVer = "201";
 

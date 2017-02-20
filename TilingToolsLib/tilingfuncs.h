@@ -1,10 +1,10 @@
 #pragma once
 
 #include "stdafx.h"
-#include "TileName.h"
-#include "TileContainer.h"
-#include "RasterFile.h"
-#include "TilingParameters.h"
+#include "tilename.h"
+#include "tilecontainer.h"
+#include "rasterfile.h"
+#include "tilingparameters.h"
 
 
 

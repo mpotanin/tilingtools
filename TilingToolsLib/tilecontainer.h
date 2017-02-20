@@ -1,11 +1,11 @@
 #pragma once
 #include "stdafx.h"
-#include "TileName.h"
-#include "TileCache.h"
-#include "VectorBorder.h"
+#include "tilename.h"
+#include "tilecache.h"
+#include "vectorborder.h"
 #include "histogram.h"
-#include "TilingParameters.h"
-#include "ThreadFuncs.h"
+#include "tilingparameters.h"
+#include "threadfuncs.h"
 
 namespace gmx
 {

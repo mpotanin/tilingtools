@@ -1,4 +1,4 @@
-﻿#include "StringFuncs.h"
+﻿#include "stringfuncs.h"
 
 
 string GMXString::MakeLower(string str)
