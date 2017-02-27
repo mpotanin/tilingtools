@@ -167,7 +167,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		if (only_calculate) return TRUE;
 
 		unsigned int size	= 0;
-		BYTE		*p_data	= NULL;
+		char		*p_data	= NULL;
 	
 		p_itile_pyramid->GetTile(zoom,nX,nY,p_data,size);
 		if (size ==0) return FALSE;
@@ -201,7 +201,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 			default:
 				tile_buffer.CreateBufferFromTiffData(p_data,size);
 		}
-		delete[]((BYTE*)p_data);
+		delete[]((char*)p_data);
 	
 		return TRUE;
 	}
@@ -279,8 +279,8 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
     }
 
 
-		(*p_was_error) =  (!p_itile_pyramid->AddTile(zoom,nX,nY,(BYTE*)p_data,size));
-    delete[]((BYTE*)p_data);
+		(*p_was_error) =  (!p_itile_pyramid->AddTile(zoom,nX,nY,(char*)p_data,size));
+    delete[]((char*)p_data);
 		if (*p_was_error) return FALSE;
     tiles_generated++;
 		GMXPrintTilingProgress(tiles_expected,tiles_generated);
@@ -297,7 +297,7 @@ bool GMXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4],
                             bool src_quarter_tile_buffers_def[4], 
                             RasterBuffer &zoomed_out_tile_buffer, 
                             GDALResampleAlg resampling_method,
-                            BYTE *p_background) 
+                            unsigned char *p_background) 
 {
 	int i;
   int tile_size;

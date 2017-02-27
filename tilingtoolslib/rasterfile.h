@@ -71,14 +71,14 @@ public:
 	double		get_nodata_value		(bool &nodata_defined);
 
 	static			bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs);
-  static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3]); 
+  static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3]); 
 
 protected:
   bool			GetDefaultSpatialRef(OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
 
 
 protected:
- 	_TCHAR	buf[256];
+ 	char	buf[256];
 	string	raster_file_;
 	GDALDataset	*p_gdal_ds_;
 	double		nodata_value_;
@@ -142,8 +142,8 @@ protected:
                                 int         output_bands_num = 0,
                                 map<string,int*>*   p_band_mapping = 0,
                                 GDALResampleAlg resample_alg = GRA_Cubic,
-                                BYTE *p_nodata = NULL,
-                                BYTE *p_background_color = NULL,
+                                unsigned char *p_nodata = NULL,
+                                unsigned char *p_background_color = NULL,
                                 int  tiffinmem_ind=0);
 
   bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 

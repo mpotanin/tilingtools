@@ -85,8 +85,8 @@ public:
 	int	base_zoom_;				//максимальный зум (базовый зум)
 	int	min_zoom_;				//минимальный зум
 	string vector_file_;			//векторная граница
-	BYTE *p_background_color_;		//RGB-цвет для заливки фона в тайлах
-	BYTE *p_transparent_color_;		//RGB-цвет для маски прозрачности
+	unsigned char *p_background_color_;		//RGB-цвет для заливки фона в тайлах
+  unsigned char *p_transparent_color_;		//RGB-цвет для маски прозрачности
 	int nodata_tolerance_;     //радиус цвета для маски прозрачности
 	bool auto_stretching_;		//автоматически пересчитывать значения к 8 бит		
   GDALResampleAlg gdal_resampling_;	      //название фильтра для ресемплинга			

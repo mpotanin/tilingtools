@@ -31,7 +31,7 @@ void RasterBuffer::ClearBuffer()
 		switch (data_type_)
 		{
 			case GDT_Byte:
-				delete[]((BYTE*)p_pixel_data_);
+				delete[]((unsigned char*)p_pixel_data_);
 				break;
 			case GDT_UInt16:
 				delete[]((unsigned __int16*)p_pixel_data_);
@@ -76,7 +76,7 @@ bool RasterBuffer::CreateBuffer	(int			num_bands,
 	switch (data_type_)
 	{
 		case GDT_Byte:
-				this->p_pixel_data_ = new BYTE[num_bands_*x_size_*y_size_];
+				this->p_pixel_data_ = new unsigned char[num_bands_*x_size_*y_size_];
 				data_size_ = 1;
 				break;
 		case GDT_UInt16:
@@ -117,12 +117,12 @@ bool RasterBuffer::CreateBuffer		(RasterBuffer *pSrcBuffer)
 
 
 
-bool RasterBuffer::InitByRGBColor	 (BYTE rgb[3])
+bool RasterBuffer::InitByRGBColor	 (unsigned char rgb[3])
 {
 	if (data_type_ != GDT_Byte) return FALSE;
 	if (p_pixel_data_ == NULL) return FALSE;
 
-	BYTE *p_pixel_data_byte = (BYTE*)p_pixel_data_;
+	unsigned char *p_pixel_data_byte = (unsigned char*)p_pixel_data_;
 	__int64 n = x_size_*y_size_;
 	
 	if (num_bands_ < 3)
@@ -148,7 +148,7 @@ bool	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
 {
 
 	//ToDo - if nodata defined must create alphaband
-  VSIFileFromMemBuffer("/vsimem/tiffinmem",(BYTE*)p_data_src,size,0);
+  VSIFileFromMemBuffer("/vsimem/tiffinmem",(GByte*)p_data_src,size,0);
 	GDALDataset *p_ds = (GDALDataset*) GDALOpen("/vsimem/tiffinmem",GA_ReadOnly);
 
 	CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),NULL,p_ds->GetRasterBand(1)->GetRasterDataType());
@@ -169,7 +169,7 @@ bool	RasterBuffer::CreateBufferFromJpegData (void *p_data_src, int size)
 	CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
 	//gdImageDestroy(im);
 	//return TRUE;
-	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+	unsigned char	*p_pixel_data_byte	= (unsigned char*)p_pixel_data_;
 
 	
 	int n = im->sx * im->sy;
@@ -247,7 +247,7 @@ bool	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
     }
     else CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
     
-    BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+    unsigned char	*p_pixel_data_byte	= (unsigned char*)p_pixel_data_;
     int n = (num_bands_==1) ? 0 : im->sx * im->sy;
   	int color, k;
     for (int j=0;j<im->sy;j++)
@@ -282,7 +282,7 @@ bool	RasterBuffer::CreateBufferFromPngData (void *p_data_src, int size)
     CreateBuffer(1,im->sx,im->sy,NULL,GDT_Byte,false,p_table);
     delete(p_table);
     
-    BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+    unsigned char	*p_pixel_data_byte	= (unsigned char*)p_pixel_data_;
     for (int j=0;j<im->sy;j++)
 	  {
 		  for (int i=0;i<im->sx;i++)
@@ -303,7 +303,7 @@ bool RasterBuffer::SaveBufferToFile (string file_name, int quality)
 	void *p_data_dst = NULL;
 	int size = 0;
 	bool result = SaveBufferToFileAndData(file_name,p_data_dst,size,quality);
-	delete[]((BYTE*)p_data_dst);
+	delete[]((unsigned char*)p_data_dst);
 	return result;
 }
 
@@ -348,7 +348,7 @@ bool RasterBuffer::ConvertFromPanToRGB ()
 	if (this->p_pixel_data_==NULL)	return FALSE;
   int num_bands_new = IsAlphaBand() ? 4 : 3;
 	
-	BYTE *p_pixel_data_new = new BYTE[num_bands_new*x_size_*y_size_];
+	unsigned char *p_pixel_data_new = new unsigned char[num_bands_new*x_size_*y_size_];
 	int n = x_size_*y_size_;
   int m;
 	for (int j=0;j<y_size_;j++)
@@ -357,14 +357,14 @@ bool RasterBuffer::ConvertFromPanToRGB ()
 		{
       m = j*x_size_+i;
 			p_pixel_data_new[m + n + n] =
-				(p_pixel_data_new[m +n] = (p_pixel_data_new[m] = ((BYTE*)p_pixel_data_)[m]));
+				(p_pixel_data_new[m +n] = (p_pixel_data_new[m] = ((unsigned char*)p_pixel_data_)[m]));
       if (IsAlphaBand())
-        p_pixel_data_new[m + n + n + n] = ((BYTE*)p_pixel_data_)[m + n];
+        p_pixel_data_new[m + n + n + n] = ((unsigned char*)p_pixel_data_)[m + n];
 		}
 	}
 	
 	num_bands_ = num_bands_new;
-	delete[]((BYTE*)p_pixel_data_);
+	delete[]((unsigned char*)p_pixel_data_);
 	p_pixel_data_ = p_pixel_data_new;
 	return TRUE;
 }
@@ -378,7 +378,7 @@ bool	RasterBuffer::ConvertFromIndexToRGB ()
 		int n = x_size_*y_size_;
 		int num_bands_new = IsAlphaBand() ? 4 : 3;
     
-    BYTE *p_pixel_data_new = new BYTE[num_bands_new*n];
+    unsigned char *p_pixel_data_new = new unsigned char[num_bands_new*n];
 		int m;
 		const GDALColorEntry *p_color_entry;
 		for (int i=0;i<x_size_;i++)
@@ -386,15 +386,15 @@ bool	RasterBuffer::ConvertFromIndexToRGB ()
 			for (int j=0;j<y_size_;j++)
 			{
 				m = j*x_size_+i;
-				p_color_entry = p_color_table_->GetColorEntry(((BYTE*)p_pixel_data_)[m]);
+				p_color_entry = p_color_table_->GetColorEntry(((unsigned char*)p_pixel_data_)[m]);
 				p_pixel_data_new[m] = p_color_entry->c1;
 				p_pixel_data_new[m+n] = p_color_entry->c2;
 				p_pixel_data_new[m+n+n] = p_color_entry->c3;
         if (IsAlphaBand())
-         	p_pixel_data_new[m+n+n+n]=((BYTE*)p_pixel_data_)[n+m];
+         	p_pixel_data_new[m+n+n+n]=((unsigned char*)p_pixel_data_)[n+m];
  			}
 		}
-		delete[]((BYTE*)p_pixel_data_);
+		delete[]((unsigned char*)p_pixel_data_);
 		p_pixel_data_ = p_pixel_data_new;
 		num_bands_ = num_bands_new;
 		GDALDestroyColorTable(p_color_table_);
@@ -413,7 +413,7 @@ bool RasterBuffer::SaveToJpegData (void* &p_data_dst, int &size, int quality)
 	
 	int n = (num_bands_ < 3) ? 0 : x_size_*y_size_;
 	int color = 0;
-	BYTE	*p_pixel_data_byte = (BYTE*)p_pixel_data_;
+	unsigned char	*p_pixel_data_byte = (unsigned char*)p_pixel_data_;
 
 	const GDALColorEntry *p_color_entry;
 	for (int j=0;j<y_size_;j++)
@@ -430,7 +430,7 @@ bool RasterBuffer::SaveToJpegData (void* &p_data_dst, int &size, int quality)
 		}
 	}
 	
-	if (!(p_data_dst = (BYTE*)gdImageJpegPtr(im,&size,quality)))
+	if (!(p_data_dst = (unsigned char*)gdImageJpegPtr(im,&size,quality)))
 	{
 		gdImageDestroy(im);
 		return FALSE;
@@ -469,7 +469,7 @@ static void info_callback(const char *msg, void *client_data) {
 bool RasterBuffer::CreateFromJP2Data (void *pabData, int nSize)
 {
   //ToDo - if nodata defined must create alphaband
-  VSIFileFromMemBuffer("/vsimem/jp2inmem", (BYTE*)pabData, nSize, 0);
+  VSIFileFromMemBuffer("/vsimem/jp2inmem", (GByte*)pabData, nSize, 0);
   GDALDataset *poJP2DS = (GDALDataset*)GDALOpen("/vsimem/jp2inmem", GA_ReadOnly);
   CreateBuffer(poJP2DS->GetRasterCount(), poJP2DS->GetRasterXSize(), poJP2DS->GetRasterYSize(), NULL, poJP2DS->GetRasterBand(1)->GetRasterDataType());
 
@@ -504,9 +504,9 @@ bool RasterBuffer::SaveToJP2Data(void* &pabData, int &nSize, int nRate)
   GDALClose(poJP2DS);
   GDALClose(poTiffDS);
   vsi_l_offset length;
-  BYTE * pabDataBuf = VSIGetMemFileBuffer(strJP2InMem.c_str(), &length, FALSE);
+  unsigned unsigned char* pabDataBuf = VSIGetMemFileBuffer(strJP2InMem.c_str(), &length, FALSE);
   nSize = length;
-  memcpy((pabData = new BYTE[nSize]), pabDataBuf, nSize);
+  memcpy((pabData = new unsigned char[nSize]), pabDataBuf, nSize);
   VSIUnlink(strJP2InMem.c_str());
   VSIUnlink(strTiffInMem.c_str());
 
@@ -523,7 +523,7 @@ bool RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
   
   if (this->data_type_== GDT_Byte)
   {
-    BYTE *p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+    unsigned char *p_pixel_data_byte	= (unsigned char*)p_pixel_data_;
     for (int j=0;j<y_size_;j++)
 		{
 			for (int i=0;i<x_size_;i++)
@@ -549,7 +549,7 @@ bool RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
 		}
   }
 
-  if (!(p_data_dst = (BYTE*)gdImagePngPtr(im,&size)))
+  if (!(p_data_dst = (unsigned char*)gdImagePngPtr(im,&size)))
 	{
 		gdImageDestroy(im);
 		return FALSE;
@@ -567,7 +567,7 @@ bool RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 	gdImagePtr im		= gdImageCreateTrueColor(x_size_,y_size_);
 
  
- 	BYTE	*p_pixel_data_byte	= (BYTE*)p_pixel_data_;
+ 	unsigned char	*p_pixel_data_byte	= (unsigned char*)p_pixel_data_;
 	int n = y_size_*x_size_;
 	int transparency = 0;
 
@@ -618,7 +618,7 @@ bool RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 		}
 	}
   
-	if (!(p_data_dst = (BYTE*)gdImagePngPtr(im,&size)))
+	if (!(p_data_dst = (unsigned char*)gdImagePngPtr(im,&size)))
 	{
 		gdImageDestroy(im);
 		return FALSE;
@@ -665,11 +665,11 @@ bool RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 	{
 		for (int i=0;i<x_size_;i++)
 		{			
-			im->pixels[j][i] = ((BYTE*)p_pixel_data_)[j*x_size_+i];
+			im->pixels[j][i] = ((unsigned char*)p_pixel_data_)[j*x_size_+i];
 		}
 	}
 
-	if (!(p_data_dst = (BYTE*)gdImagePngPtr(im,&size)))
+	if (!(p_data_dst = (unsigned char*)gdImagePngPtr(im,&size)))
 	{
 		gdImageDestroy(im);
 		return FALSE;
@@ -700,10 +700,10 @@ bool	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 	GDALClose(p_ds);
 	vsi_l_offset length; 
 	
-	BYTE * p_data_dstBuf = VSIGetMemFileBuffer(tiff_in_mem.c_str(),&length, FALSE);
+	unsigned char * p_data_dstBuf = VSIGetMemFileBuffer(tiff_in_mem.c_str(),&length, FALSE);
 	size = length;
 	//GDALClose(p_ds);
-	memcpy((p_data_dst = new BYTE[size]),p_data_dstBuf,size);
+	memcpy((p_data_dst = new unsigned char[size]),p_data_dstBuf,size);
   VSIUnlink(tiff_in_mem.c_str());
 	
 	return TRUE;
@@ -718,7 +718,7 @@ bool RasterBuffer::InitByValue(int value)
 	{
 		case GDT_Byte:
 		{
-			BYTE t  = 1;
+			unsigned char t  = 1;
 			return InitByValue(t,value);
 		}
 		case GDT_UInt16:
@@ -749,7 +749,7 @@ void* RasterBuffer::GetPixelDataOrder2()
 	{
 		case GDT_Byte:
 		{
-			BYTE t  = 1;
+			unsigned char t  = 1;
 			return GetPixelDataOrder2(t);
 		}
 		case GDT_UInt16:
@@ -833,7 +833,7 @@ bool	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
 	{
 		case GDT_Byte:
 		{
-			BYTE t  = 1;
+			unsigned char t  = 1;
 			return StretchDataTo8Bit(t,minValues,maxValues);
 		}
 		case GDT_UInt16:
@@ -860,7 +860,7 @@ bool	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
 template <typename T>
 bool	RasterBuffer::StretchDataTo8Bit(T type, double *p_min_values, double *p_max_values)
 {
-  BYTE  *p_pixel_stretched_data = new BYTE[x_size_*y_size_*this->num_bands_];
+  unsigned char  *p_pixel_stretched_data = new unsigned char[x_size_*y_size_*this->num_bands_];
   T     *p_pixel_data_t = (T*)p_pixel_data_;
   int n = x_size_*y_size_;
   double d;
@@ -909,7 +909,7 @@ void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 	{
 		case GDT_Byte:
 		{
-			BYTE t  = 1;
+			unsigned char t  = 1;
 			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		case GDT_UInt16:
@@ -968,7 +968,7 @@ void*		RasterBuffer::ZoomOut	(GDALResampleAlg resampling_method)
 	{
 		case GDT_Byte:
 		{
-			BYTE t = 1;
+			unsigned char t = 1;
 			return ZoomOut(t,resampling_method);
 		}
 		case GDT_UInt16:
@@ -1100,7 +1100,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 {
 
   if (x_size_==0 || y_size_==0 || num_bands_==0) return FALSE;
-  BYTE *vector_mask = new BYTE[x_size_*y_size_];
+  unsigned char *vector_mask = new unsigned char[x_size_*y_size_];
 
   //OGRGeometry *p_ogr_geom = p_vb->get_ogr_geometry_ref();
   for (int j=0;j<y_size_;j++)
@@ -1136,7 +1136,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
   int n = x_size_*y_size_*num_bands_;
   int m = x_size_*y_size_;
   
-  void *p_new_pixel_data = new BYTE[(n+m)*data_size_];
+  void *p_new_pixel_data = new unsigned char[(n+m)*data_size_];
   if (!p_new_pixel_data ) return FALSE;
   if (!memcpy(p_new_pixel_data,p_pixel_data_,n))
   {
@@ -1148,7 +1148,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 	{
 		case GDT_Byte:
 		{
-      BYTE *p_new_pixel_data_B = (BYTE*)p_new_pixel_data;
+      unsigned char *p_new_pixel_data_B = (unsigned char*)p_new_pixel_data;
       for (int i=0;i<m;i++)
          p_new_pixel_data_B[i+n]=vector_mask[i];
     }
@@ -1187,13 +1187,13 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 
 
 
-bool	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
+bool	RasterBuffer::CreateAlphaBandByRGBColor(unsigned char	*pRGB, int tolerance)
 {
 	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3)) return FALSE;
 
 	int n = x_size_ *y_size_;
 	int num_bands_new = (num_bands_==1 || num_bands_==3) ? num_bands_+1 : num_bands_;
-  BYTE	*p_pixel_data_new = new BYTE[num_bands_new * n];
+  unsigned char	*p_pixel_data_new = new unsigned char[num_bands_new * n];
   memcpy(p_pixel_data_new,p_pixel_data_,num_bands_ * n);
 	int d = (num_bands_new == 4) ? 1 : 0;
 
@@ -1211,7 +1211,7 @@ bool	RasterBuffer::CreateAlphaBandByRGBColor(BYTE	*pRGB, int tolerance)
 														? 100 : 0;
 			*/
 	}
-	delete[]((BYTE*)p_pixel_data_);
+	delete[]((unsigned char*)p_pixel_data_);
 	p_pixel_data_ = p_pixel_data_new;
 	num_bands_ = num_bands_new;
 	alpha_band_defined_ = TRUE;
@@ -1230,7 +1230,7 @@ bool	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_b
 	{
 		case GDT_Byte:
 		{
-			BYTE t = 1;
+			unsigned char t = 1;
 			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
 		}
 		case GDT_UInt16:

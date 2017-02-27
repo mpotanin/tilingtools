@@ -31,7 +31,7 @@ bool RasterFile::Close()
 }
 
 
-bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, BYTE background[3])
+bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3])
 {
   ///
   //p_ds->GetRasterBand(1)->GetHistogram(
@@ -648,8 +648,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
                                             int             output_bands_num,
                                             map<string,int*>* p_band_mapping,
                                             GDALResampleAlg resample_alg, 
-                                            BYTE            *p_nodata,
-                                            BYTE            *p_background_color,
+                                            unsigned char            *p_nodata,
+                                            unsigned char            *p_background_color,
                                             int  tiffinmem_ind)
 {
   //initialize output vrt dataset warp to 
@@ -705,7 +705,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
   }
   else if ((p_nodata || nodata_val_from_file_defined) && (bands_num_dst<=3) ) 
   {
-    BYTE rgb[3];
+    unsigned char rgb[3];
     if (p_nodata) memcpy(rgb,p_nodata,3);
     else rgb[0] = (rgb[1] = (rgb[2] = (int)nodata_val_from_file));
     
@@ -1123,14 +1123,14 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 						tile_buffer.SaveToTiffData(p_data,size);
 				}
         
-        if (!p_tile_container->AddTile(zoom,x,y,(BYTE*)p_data,size))
+        if (!p_tile_container->AddTile(zoom,x,y,(char*)p_data,size))
         {
-          if (p_data) delete[]((BYTE*)p_data);
+          if (p_data) delete[]((char*)p_data);
           cout<<"ERROR: AddTile: writing tile to container"<<endl;
           return FALSE;
         }
         
-				delete[]((BYTE*)p_data);
+				delete[]((char*)p_data);
 				(*p_tiles_generated)++;
 			}
 			

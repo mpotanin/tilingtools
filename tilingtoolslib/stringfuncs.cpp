@@ -14,9 +14,10 @@ int	GMXString::StrLen	(const unsigned char *str)
 {
 	if (str == 0) return -1;
 	int len = 0;
-	while ((str[len] != 0) && (len<1000))
+  int max_len = 1000000;
+	while ((str[len] != 0) && (len<max_len))
 		len++;
-	return (len<1000) ? len : -1;
+	return (len<max_len) ? len : -1;
 }
 
 void GMXString::ReplaceAll(string	&strInput, string	from, string	to)
@@ -90,7 +91,7 @@ int			GMXString::ParseCommaSeparatedArray (string input_str, int *&p_arr, bool i
 }
 
 
-bool	GMXString::ConvertStringToRGB (string str_color, BYTE rgb[3])
+bool	GMXString::ConvertStringToRGB (string str_color, unsigned char rgb[3])
 {
 	str_color = GMXString::MakeLower(str_color);
 	regex rgb_dec_pattern("([0-9]{1,3}) ([0-9]{1,3}) ([0-9]{1,3})");
@@ -106,8 +107,7 @@ bool	GMXString::ConvertStringToRGB (string str_color, BYTE rgb[3])
 	}
 	else if (regex_match(str_color,rgb_hex_pattern))
 	{
-		char * p;
-		unsigned int nColor =  strtol( str_color.c_str(), & p, 16 );
+		unsigned int nColor =  strtol( str_color.c_str(),0,16);
 		rgb[0] = nColor>>16;
 		rgb[1] = (nColor>>8)%256;
 		rgb[2] = nColor%256;
@@ -131,14 +131,14 @@ void GMXString::utf8toWStr(wstring& dest, const string& input){
 
 	for (size_t i = 0; i < input.size(); i++){
 		unsigned char c = (unsigned char)input[i];
-		if (c <= 0x7f){//first byte
+		if (c <= 0x7f){//first char
 			if (bytes){
 				dest.push_back(err);
 				bytes = 0;
 			}
 			dest.push_back((wchar_t)c);
 		}
-		else if (c <= 0xbf){//second/third/etc byte
+		else if (c <= 0xbf){//second/third/etc bytes
 			if (bytes){
 				w = ((w << 6)|(c & 0x3f));
 				bytes--;

@@ -48,7 +48,7 @@ public:
 	//bool			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
 
 	//bool			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
-	bool			InitByRGBColor	 (BYTE rgb[3]);
+	bool			InitByRGBColor	 (unsigned char rgb[3]);
 	bool			InitByValue(int value = 0);	
 
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
@@ -56,7 +56,7 @@ public:
 	void*			ZoomOut	(GDALResampleAlg resampling_method);	
 	bool			ConvertFromIndexToRGB ();
 	bool			ConvertFromPanToRGB();
-	bool			CreateAlphaBandByRGBColor(BYTE	*p_rgb, int tolerance = 0);
+	bool			CreateAlphaBandByRGBColor(unsigned char	*p_rgb, int tolerance = 0);
 
 	bool      CreateAlphaBandByPixelLinePolygon(VectorOperations *p_vb);
 

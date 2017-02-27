@@ -6,24 +6,17 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <string>
-#include <list>
-#include <map>
-#include <iostream>
-#include <fstream>
-#include <regex>
-
 #else
 #include <string.h>
-#include <list.h>
-#include <map.h>
-#include <iostream.h>
-#include <fstream.h>
-#include <regex.h>
 #include <dirent.h>
 #endif
 
+#include <regex>
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <map>
 #include <stdio.h>
-#include <tchar.h>
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>

@@ -40,11 +40,9 @@ int _tmain(int nArgs, wchar_t* argvW[])
   //debug
   //GMXOptionParser::InitCmdLineArgsFromFile("../autotest/debug_input.txt", nArgs, pastrArgs);
   //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
-
-  //GMXOptionParser::InitCmdLineArgsFromFile("C:\\Work\\Projects\\TilingTools\\autotest\\debug_input.txt",nArgs,pastrArgs);
-  //for (int i=0;i<nArgs;i++) gmx::ReplaceAll(pastrArgs[i],"\\","/");
   //end-debug
 
+  
 
   if (nArgs == 1)
   {
@@ -277,7 +275,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
       int x = (*iter).second.first;
       int y = (*iter).second.second;
 
-      BYTE      *tileData = NULL;
+      char     *tileData = NULL;
       unsigned int            tileSize = 0;
       if (poSrcTC->GetTile(z, x, y, tileData, tileSize))
       {

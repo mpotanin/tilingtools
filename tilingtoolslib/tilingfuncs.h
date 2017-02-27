@@ -41,4 +41,4 @@ bool GMXZoomOutFourIntoOne		          (	gmx::RasterBuffer			src_quarter_tile_buf
 								bool							      src_quarter_tile_buffers_def[4], 
 								gmx::RasterBuffer				&zoomed_out_tile_buffer,
                 GDALResampleAlg         resampling_method,
-                BYTE                    *p_background = NULL); 
+                unsigned char           *p_background = NULL); 

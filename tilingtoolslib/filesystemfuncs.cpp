@@ -305,7 +305,7 @@ bool	GMXFileSys::SaveDataToFile(string strFileName, void *pabData, int nSize)
 {
 	FILE *fp;
 	if (!(fp = GMXFileSys::OpenFile(strFileName,"wb"))) return FALSE;
-	fwrite(pabData,sizeof(BYTE),nSize,fp);
+	fwrite(pabData,sizeof(char),nSize,fp);
 	fclose(fp);
 	
 	return TRUE;
@@ -345,8 +345,8 @@ bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 	nSize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
-	pabData = new BYTE[nSize];
-	fread(pabData,sizeof(BYTE),nSize,fp);
+	pabData = new char[nSize];
+	fread(pabData,sizeof(char),nSize,fp);
 
 	fclose(fp);
 	return TRUE;

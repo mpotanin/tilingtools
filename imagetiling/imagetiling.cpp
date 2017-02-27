@@ -130,13 +130,13 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
   if (oOptionParser.GetOptionValue("-nd") != "")
   {
-    BYTE        pabyRGB[3];
+    unsigned char pabyRGB[3];
     if (!GMXString::ConvertStringToRGB(oOptionParser.GetOptionValue("-nd"), pabyRGB))
     {
       cout << "ERROR: not valid value of \"-nd\" parameter: " << oOptionParser.GetOptionValue("-nd") << endl;
       return FALSE;
     }
-    oTilingParams.p_transparent_color_ = new BYTE[3];
+    oTilingParams.p_transparent_color_ = new unsigned char[3];
     memcpy(oTilingParams.p_transparent_color_, pabyRGB, 3);
   }
 
@@ -147,13 +147,13 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
   if (oOptionParser.GetOptionValue("-bgc") != "")
   {
-    BYTE        pabyRGB[3];
+    unsigned char        pabyRGB[3];
     if (!GMXString::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"), pabyRGB))
     {
       cout << "ERROR: not valid value of \"-bgc\" parameter: " << oOptionParser.GetOptionValue("-bgc") << endl;
       return FALSE;
     }
-    oTilingParams.p_background_color_ = new BYTE[3];
+    oTilingParams.p_background_color_ = new unsigned char[3];
     memcpy(oTilingParams.p_background_color_, pabyRGB, 3);
   }
 
