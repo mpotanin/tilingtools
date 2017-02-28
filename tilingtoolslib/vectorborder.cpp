@@ -1,5 +1,8 @@
-#include "stdafx.h"
 #include "vectorborder.h"
+#include "filesystemfuncs.h"
+#include "stringfuncs.h"
+
+
 namespace gmx
 {
 
@@ -27,13 +30,14 @@ string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 	string	vector_file = GMXFileSys::FileExists(vector_file_base+".mif") ?	vector_file_base+".mif" :
                         GMXFileSys::FileExists(vector_file_base+".shp") ?	vector_file_base+".shp" :
 	                      GMXFileSys::FileExists(vector_file_base+".tab") ?	vector_file_base+".tab" :"";
-	if (vector_file!="")
-	{
-    GDALDataset* poDS = (GDALDataset*) GDALOpenEx(vector_file.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
-    if (!poDS) return "";
-		GDALClose(poDS);
-	}
-  
+	
+  if (vector_file != "")
+  {
+    VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file);
+    if (!poVecDS) vector_file = "";
+    else VectorOperations::CloseVECTORDS(poVecDS);
+  }
+
   return vector_file;
 }
 
@@ -212,25 +216,45 @@ bool VectorOperations::AddIntermediatePoints(OGRPolygon *p_polygon, int points_o
   return true;
 }
 
+VECTORDS* VectorOperations::OpenVectorFile(string strVectorFile, bool bReadOnly)
+{
+#ifdef GDAL_OF_VECTOR
+  return (VECTORDS*)GDALOpenEx(strVectorFile.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+#else
+  return (VECTORDS*)OGROpen(vector_file.c_str(), 0, 0);
+#endif
+}
+
+void VectorOperations::CloseVECTORDS(VECTORDS* poVecDS)
+{
+#ifdef GDAL_OF_VECTOR
+  GDALClose(poVecDS);
+#else
+  OGRDataSource::DestroyDataSource(poVecDS);
+#endif
+}
+
+
+
+
 OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRSpatialReference *p_tiling_srs)
 {
   if (vector_file=="") return 0;
-
-  GDALDataset* poDS = (GDALDataset*) GDALOpenEx(vector_file.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
-
-  if (!poDS) return 0;
+  
+  VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file.c_str());
+  if (!poVecDS) return 0;
 	
 	OGRMultiPolygon *p_ogr_multipoly;
 
-  if (!(p_ogr_multipoly=ReadMultiPolygonFromOGRDataSource(poDS)))
+  if (!(p_ogr_multipoly=ReadMultiPolygonFromOGRDataSource(poVecDS)))
   {
-    GDALClose(poDS); 
+    CloseVECTORDS(poVecDS);
     cout<<"ERROR: ReadMultiPolygonFromOGRDataSource: can't read polygon from input vector"<<endl;
     return NULL;
   }
   
   p_ogr_multipoly->closeRings();
-  OGRLayer *p_ogr_layer = poDS->GetLayer(0);
+  OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
   OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
   bool is_ogr_sr_valid = TRUE;
   if (p_input_ogr_sr)
@@ -251,7 +275,7 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
 	  p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
   }
     
-  GDALClose(poDS);
+  CloseVECTORDS(poVecDS);
   if (!is_ogr_sr_valid)
   {
     OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
@@ -275,10 +299,9 @@ OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRS
 
 };
 
-//ToDo - rename
-OGRMultiPolygon*		VectorOperations::ReadMultiPolygonFromOGRDataSource(GDALDataset* poDS)
+OGRMultiPolygon* VectorOperations::ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS)
 {
-	OGRLayer *p_ogr_layer = poDS->GetLayer(0);
+  OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
 	if( p_ogr_layer == 0 ) return 0;
   if (p_ogr_layer->GetFeatureCount()==0) return 0;
 	

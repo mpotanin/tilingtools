@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "tilingfuncs.h"
 
 using namespace gmx;

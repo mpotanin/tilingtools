@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "tilecache.h"
 #include "stringfuncs.h"
 
@@ -6,7 +5,7 @@
 namespace gmx
 {
 
-TileCache::TileCache(__int64 cache_max_size)
+TileCache::TileCache(int64_t cache_max_size)
 {
   cache_size_=0;
   cache_max_size_ = (cache_max_size==0) ? DEFAULT_CACHE_MAX_SIZE : cache_max_size;
@@ -71,7 +70,7 @@ bool	TileCache::FindTile(int z, int x, int y)
 }
 
 
-unsigned __int64 TileCache::cache_size()
+uint64_t TileCache::cache_size()
 {
   return cache_size_;
 }

@@ -12,7 +12,7 @@ protected:
   static bool LoadWinDll (string strGDALDir, string strDllVer);
   static string ReadPathFromConfigFile (string config_file_path);
 protected:
-  static string strGDALVer;
+  static string strGDALWinVer;
 };
 
 typedef struct 

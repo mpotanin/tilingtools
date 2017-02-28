@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "histogram.h"
 
 using namespace gmx;
@@ -150,10 +149,10 @@ bool MetaHistogram::Init(int num_bands, double min_val, double step, int num_val
   min_val_=min_val;
   num_vals_=num_vals;
   
-  freqs_ = new __int64*[num_bands];
+  freqs_ = new int64_t*[num_bands];
   for (int i=0;i<num_bands_;i++)
   {
-     freqs_[i]=new __int64[num_vals_];
+     freqs_[i]=new int64_t[num_vals_];
      for (int j=0;j<num_vals_;j++)
        freqs_[i][j]=0;
   }
@@ -177,7 +176,7 @@ void MetaHistogram::AddValue(int band, double value)
   freqs_[band][n]++;
 }
 
-__int64 MetaHistogram::GetFrequency(int band, double value)
+int64_t MetaHistogram::GetFrequency(int band, double value)
 {
   if (band>=num_bands_) return 0;
   int n = (int)(((value-min_val_)/step_)+0.5);
@@ -283,7 +282,7 @@ void MetaHistogram::CalcStatisticsByBand(int band, double &min, double &max, dou
     }
   }
 
-  unsigned __int64 total_freqs = 0;
+  uint64_t total_freqs = 0;
 
   for (int i = 0; i<num_vals_; i++)
   {
@@ -318,14 +317,14 @@ int MetaHistogram::CalcNumOfExistingValues(int band)
   return num;
 }
 
-bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs)
+bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, int64_t *&freqs)
 {
   if (band>=num_bands_) return FALSE;
 
   min_val = min_val_;
   step = step_;
   num_vals = num_vals_;
-  freqs =  new __int64[num_vals];
+  freqs =  new int64_t[num_vals];
   for (int i=0;i<num_vals_;i++)
     freqs[i]=freqs_[band][i];
   
@@ -467,10 +466,10 @@ bool MetaHistogram::Init(int num_bands, GDALDataType gdt)
       break;
   }
   
-  freqs_ = new __int64*[num_bands];
+  freqs_ = new int64_t*[num_bands];
   for (int i=0;i<num_bands_;i++)
   {
-     freqs_[i]=new __int64[num_vals_];
+     freqs_[i]=new int64_t[num_vals_];
      for (int j=0;j<num_vals_;j++)
        freqs_[i][j]=0;
   }
@@ -486,10 +485,10 @@ bool MetaHistogram::Init(int num_bands, double min_val, double step, double max_
   min_val_=min_val;
   num_vals_=(int)(((max_val-min_val_)/step_)+1.5);
   
-  freqs_ = new __int64*[num_bands];
+  freqs_ = new int64_t*[num_bands];
   for (int i=0;i<num_bands_;i++)
   {
-     freqs_[i]=new __int64[num_vals_];
+     freqs_[i]=new int64_t[num_vals_];
      for (int j=0;j<num_vals_;j++)
        freqs_[i][j]=0;
   }
@@ -513,7 +512,7 @@ void MetaHistogram::AddValue(int band, double value)
   freqs_[band][n]++;
 }
 
-__int64 MetaHistogram::GetFrequency(int band, double value)
+int64_t MetaHistogram::GetFrequency(int band, double value)
 {
   if (band>=num_bands_) return 0;
   int n = (int)(((value-min_val_)/step_)+0.5);
@@ -656,7 +655,7 @@ void MetaHistogram::CalcStatistics(int band, double &min, double &max, double &m
     }
   }
 
-  unsigned __int64 total_freqs = 0;
+  uint64_t total_freqs = 0;
 
   for (int i = 0; i<num_vals_; i++)
   {
@@ -691,14 +690,14 @@ int MetaHistogram::CalcNumOfExistingValues(int band)
   return num;
 }
 
-bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs)
+bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, int64_t *&freqs)
 {
   if (band>=num_bands_) return FALSE;
 
   min_val = min_val_;
   step = step_;
   num_vals = num_vals_;
-  freqs =  new __int64[num_vals];
+  freqs =  new int64_t[num_vals];
   for (int i=0;i<num_vals_;i++)
     freqs[i]=freqs_[band][i];
   

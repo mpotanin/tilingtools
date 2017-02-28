@@ -199,10 +199,10 @@ public:
 
   ~MetaHistogram();
   void AddValue(int band, double value);
-  __int64 GetFrequency(int band,double value);
+  int64_t GetFrequency(int band,double value);
   bool CalcStatistics(MetaHistogramStatistics *p_hist_stat, double *p_nodata);
   int CalcNumOfExistingValues(int band);
-  bool GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
+  bool GetHistogram(int band, double &min_val, double &step, int &num_vals, int64_t *&freqs);
 
 protected:
   void CalcStatisticsByBand(int band, double &min, double &max, double &mean, double &stdev, double *p_nodata);
@@ -212,84 +212,11 @@ private:
   double step_;
   int num_bands_;
   int num_vals_;
-  __int64 **freqs_;
+  int64_t **freqs_;
   
 };
 
 
-
-
-/*
-class MetaHistogram
-{
-public:
-  MetaHistogram () 
-  {
-    min_val_=0;
-    step_=0;
-    num_bands_=0;
-    num_vals_=0;
-    freqs_=0;
-  };
-
-  bool Init(int num_bands, GDALDataType gdt);
-  bool Init(int num_bands, double min_val, double step, double max_val);
-  bool IsInitiated() {return num_bands_!=0;};
-  bool GetSerializedMetaHistogram (int &size, void *&data, bool converted_to_float = false);
-  int GetSerializedMetaHistogramSize (bool converted_to_float = false);
-  bool GetSerializedStatistics (int &size, void *&data, double *p_nodata=NULL);
-  int GetSerializedStatisticsSize ();
-
-  bool Deserialize (int size, void *data, bool converted_to_float=false);
-  bool SaveToTextFile(string filename);
-
-  //MetaHistogram(int num_bands, GDALDataType gdt);
-  //MetaHistogram(int num_bands, double min_val, double step, double max_val);
-  ~MetaHistogram();
-  void AddValue(int band, double value);
-  __int64 GetFrequency(int band,double value);
-  void CalcStatistics(int band, double &min, double &max, double &mean, double &stdev, double *p_nodata = NULL);
-  int CalcNumOfExistingValues(int band);
-  bool GetHistogram(int band, double &min_val, double &step, int &num_vals, __int64 *&freqs);
-
-private:
-  double min_val_;
-  double step_;
-  int num_bands_;
-  int num_vals_;
-  __int64 **freqs_;
-  
-};
-*/
-/*
-class Metadata {
-public:
-  Metadata();
-  ~Metadata();
-  bool AddTag(char name[4], int size, void *data);
-  int GetAllSize();
-  bool GetAllSerialized(int &size, void* &data);
-  bool PrepareTag(char[4], int size);
-  int TagCount(){return num_tags_;};
-  bool GetSerializedTagByName(char name[4],int &size, void* &data);
-  bool HISTToText(int &text_size, char* &text_data);
-  bool STATToText(int &text_size, char* &text_data);
-  bool STATToText(int &text_size, char* &text_data);
-
-  bool FromBinaryToText(char name[4], int &text_size, char* &text_data);
-  bool SaveMetadataToTextFile(file_name);
-
-private:
-  int FindTag (char name[4]);
-
-private:
-  char **names_;
-  int *sizes_;
-  char **data_;
-  int num_tags_;
-  int max_tags_;
-};
-*/
 
 
 }

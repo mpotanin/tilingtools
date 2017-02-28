@@ -49,7 +49,7 @@ bool GMXFileSys::IsDirectory (string strPath)
 	GMXString::utf8toWStr(strPathW,strPath);
 	return (GetFileAttributesW(strPathW.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
 #else
-  if (DIR* psDIR = opendir(strFileName.c_str()))
+  if (DIR* psDIR = opendir(strPath.c_str()))
   {
     closedir(psDIR);
     return true;
@@ -296,7 +296,7 @@ bool		GMXFileSys::CreateDir(string strPath)
 	  GMXString::utf8toWStr(strPathW,strPath);
     return (_wmkdir(strPathW.c_str())==0);
 #else
-    return (mkdir(path.c_str())==0);
+  return (mkdir(strPath.c_str(),0777) == 0);
 #endif
 }
 

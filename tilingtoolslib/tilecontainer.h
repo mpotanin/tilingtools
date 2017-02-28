@@ -55,23 +55,23 @@ public:
   virtual bool ExtractAndStoreMetadata (TilingParameters* p_params) {return true;}; 
   
 
-	virtual __int64		TileID( int z, int x, int y)
+	virtual int64_t		TileID( int z, int x, int y)
 	{
-		__int64 n = ((((__int64)1)<<(2*z))-1)/3;
+		int64_t n = ((((int64_t)1)<<(2*z))-1)/3;
 		n = n<<1;
-		n += y*(((__int64)1)<<(z+1)) + x;
+		n += y*(((int64_t)1)<<(z+1)) + x;
 		return n;
 	};
 
-	virtual bool		TileXYZ(__int64 id, int &z, int &x, int &y)
+	virtual bool		TileXYZ(int64_t id, int &z, int &x, int &y)
 	{
 		int i = 0;
 		for (i=0;i<32;i++)
-			if (( (((((__int64)1)<<(2*i+2))-1)/3)<<1) > id) break;
+			if (( (((((int64_t)1)<<(2*i+2))-1)/3)<<1) > id) break;
 		if (i==32) return FALSE;
 		else z = i;
 		
-		__int64 n = (((((__int64)1)<<(2*z))-1)/3)<<1;
+		int64_t n = (((((int64_t)1)<<(2*z))-1)/3)<<1;
 
 		y = ((id-n)>>(z+1));
 		x = (id-n) % (1<<(z+1));
@@ -123,8 +123,8 @@ public:
   virtual Metadata* GetMetadata (); 
   virtual bool ExtractAndStoreMetadata (TilingParameters* p_params);
 
-	__int64				TileID			( int z, int x, int y);
-	bool				TileXYZ			(__int64 n, int &z, int &x, int &y);
+	int64_t				TileID			( int z, int x, int y);
+	bool				TileXYZ			(int64_t n, int &z, int &x, int &y);
 	TileType			GetTileType	();
 	MercatorProjType	GetProjType();
 	int					GetMaxZoom		();
@@ -144,9 +144,9 @@ protected:
 
   int               FillUpCurrentVolume();
 
-  int                 GetVolumeNum (unsigned __int64 tile_offset);
+  int                 GetVolumeNum (uint64_t tile_offset);
   string              GetVolumeName (int num);
-  unsigned __int64    GetTileOffsetInVolume (unsigned __int64 tile_container_offset);
+  uint64_t    GetTileOffsetInVolume (uint64_t tile_container_offset);
   bool                DeleteVolumes();
 
 protected:
@@ -160,7 +160,7 @@ protected:
 	//int						max_zoom;
 	unsigned int			max_tiles_;
 	unsigned int			*p_sizes_;
-	unsigned __int64		*p_offsets_;
+	uint64_t		*p_offsets_;
 	TileType				tile_type_;
 	MercatorProjType		merc_type_;
 
@@ -170,7 +170,7 @@ protected:
 	string				container_file_name_;
 	Metadata*     p_metadata_;
   FILE**        pp_container_volumes_;
-	unsigned __int64		container_byte_size_;
+	uint64_t		container_byte_size_;
 
   HANDLE addtile_semaphore_;
 

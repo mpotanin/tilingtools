@@ -1,9 +1,8 @@
-#include "stdafx.h"
 #include "consoleutils.h"
 #include "stringfuncs.h"
 #include "filesystemfuncs.h"
 
-string GMXGDALLoader::strGDALVer = "201";
+string GMXGDALLoader::strGDALWinVer = "201";
 
 void	GMXGDALLoader::SetWinEnvVars (string gdal_path)
 {
@@ -34,7 +33,7 @@ bool GMXGDALLoader::Load (string strExecPath)
 	
   SetWinEnvVars(strGDALPath);
    
-  if (!LoadWinDll(strGDALPath, GMXGDALLoader::strGDALVer))
+  if (!LoadWinDll(strGDALPath, GMXGDALLoader::strGDALWinVer))
 	{
 		cout<<"ERROR: can't load GDAL by path: "<<strGDALPath<<endl;
 		return FALSE;

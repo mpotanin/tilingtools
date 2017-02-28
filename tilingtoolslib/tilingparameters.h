@@ -1,8 +1,6 @@
 #pragma once
 
 #include "stdafx.h"
-#include "filesystemfuncs.h"
-#include "stringfuncs.h"
 #include "tilename.h"
 
 

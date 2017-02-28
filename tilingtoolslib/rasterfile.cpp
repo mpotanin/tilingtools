@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "rasterfile.h"
 
 #include "stringfuncs.h"

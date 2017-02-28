@@ -1,6 +1,4 @@
-#include "stdafx.h"
 #include "tilecontainer.h"
-using namespace gmx;
 
 namespace gmx
 {
@@ -123,11 +121,11 @@ bool GMXTileContainer::OpenForReading (string container_file_name)
 	fread(offset_size,1,max_tiles_*13,pp_container_volumes_[0]);
 
   p_sizes_		= new unsigned int[max_tiles_];
-	p_offsets_		= new unsigned __int64[max_tiles_];
+	p_offsets_		= new uint64_t[max_tiles_];
 
 	for (int i=0; i<max_tiles_;i++)
 	{
-		p_offsets_[i]	= *((unsigned __int64*)(&offset_size[i*13]));
+		p_offsets_[i]	= *((uint64_t*)(&offset_size[i*13]));
 		if ((p_offsets_[i]<<32) == 0)
 			p_offsets_[i]	= (p_offsets_[i]>>32);
 		p_sizes_[i]	= *((unsigned int*)(&offset_size[i*13+8]));
@@ -248,7 +246,7 @@ bool    RasterBuffer::AddPixelDataToMetaHistogram(T type, MetaHistogram *p_hist)
 bool		GMXTileContainer::AddTile(int z, int x, int y, char *p_data, unsigned int size)
 {
   if (read_only_ || !is_opened_) return FALSE;
-  __int64 n	= TileID(z,x,y);
+  int64_t n	= TileID(z,x,y);
   if ((n>= max_tiles_)||(n<0)) return FALSE;
 
   GMXThread::WaitForSingleObject(addtile_semaphore_); 
@@ -386,7 +384,7 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 	return tile_list.size();	
 };
 	
-__int64		GMXTileContainer::TileID( int z, int x, int y)
+int64_t		GMXTileContainer::TileID( int z, int x, int y)
 {
   if (!is_opened_) return -1;
   if ((x<minx_[z]) || (x>=maxx_[z]) || (y<miny_[z]) || (y>=maxy_[z])) return -1;
@@ -397,7 +395,7 @@ __int64		GMXTileContainer::TileID( int z, int x, int y)
 	return (num + (maxx_[z]-minx_[z])*(y-miny_[z]) + x-minx_[z]);
 };
 
-bool		GMXTileContainer::TileXYZ(__int64 n, int &z, int &x, int &y)
+bool		GMXTileContainer::TileXYZ(int64_t n, int &z, int &x, int &y)
 {
   if (!is_opened_) return FALSE;
 
@@ -497,7 +495,7 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 	max_tiles_ = TileID(max_zoom,maxx_[max_zoom]-1,maxy_[max_zoom]-1) + 1;
 
 	p_sizes_		= new unsigned int[max_tiles_];
-	p_offsets_		= new unsigned __int64[max_tiles_];
+	p_offsets_		= new uint64_t[max_tiles_];
 	for (unsigned int i=0;i<max_tiles_;i++)
 	{
 		p_sizes_[i]		= 0;
@@ -546,14 +544,14 @@ bool   GMXTileContainer::DeleteVolumes()
 }
 
 
-int  GMXTileContainer::GetVolumeNum (unsigned __int64 tile_offset)
+int  GMXTileContainer::GetVolumeNum (uint64_t tile_offset)
 {
   return (max_volume_size_ == 0) ? 0 : (tile_offset/max_volume_size_);
 }
 
-unsigned __int64  GMXTileContainer::GetTileOffsetInVolume (unsigned __int64 tile_container_offset)
+uint64_t  GMXTileContainer::GetTileOffsetInVolume (uint64_t tile_container_offset)
 {
-  return tile_container_offset - GetVolumeNum(tile_container_offset)*((unsigned __int64)max_volume_size_);
+  return tile_container_offset - GetVolumeNum(tile_container_offset)*((uint64_t)max_volume_size_);
 }
 
 

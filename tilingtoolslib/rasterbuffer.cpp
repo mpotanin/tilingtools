@@ -1,6 +1,6 @@
-#include "stdafx.h"
 #include "rasterbuffer.h"
 #include "filesystemfuncs.h"
+#include "stringfuncs.h"
 using namespace gmx;
 
 
@@ -26,6 +26,7 @@ RasterBuffer::~RasterBuffer(void)
 
 void RasterBuffer::ClearBuffer()
 {
+
 	if (p_pixel_data_!=NULL)
 	{
 		switch (data_type_)
@@ -34,10 +35,10 @@ void RasterBuffer::ClearBuffer()
 				delete[]((unsigned char*)p_pixel_data_);
 				break;
 			case GDT_UInt16:
-				delete[]((unsigned __int16*)p_pixel_data_);
+				delete[]((uint16_t*)p_pixel_data_);
 				break;
 			case GDT_Int16:
-				delete[]((__int16*)p_pixel_data_);
+				delete[]((int16_t*)p_pixel_data_);
 				break;
 			case GDT_Float32:
 				delete[]((float*)p_pixel_data_);
@@ -80,11 +81,11 @@ bool RasterBuffer::CreateBuffer	(int			num_bands,
 				data_size_ = 1;
 				break;
 		case GDT_UInt16:
-				this->p_pixel_data_ = new unsigned __int16[num_bands_*x_size_*y_size_];
+				this->p_pixel_data_ = new uint16_t[num_bands_*x_size_*y_size_];
 				data_size_ = 2;
 				break;
 		case GDT_Int16:
-				this->p_pixel_data_ = new __int16[num_bands_*x_size_*y_size_];
+				this->p_pixel_data_ = new int16_t[num_bands_*x_size_*y_size_];
 				data_size_ = 2;
 				break;
 		case GDT_Float32:
@@ -123,16 +124,16 @@ bool RasterBuffer::InitByRGBColor	 (unsigned char rgb[3])
 	if (p_pixel_data_ == NULL) return FALSE;
 
 	unsigned char *p_pixel_data_byte = (unsigned char*)p_pixel_data_;
-	__int64 n = x_size_*y_size_;
+	int64_t n = x_size_*y_size_;
 	
 	if (num_bands_ < 3)
 	{
-		for (__int64 i = 0;i<n;i++)
+		for (int64_t i = 0;i<n;i++)
 			p_pixel_data_byte[i] = rgb[0];
 	}
 	else
 	{
-		for (__int64 i = 0;i<n;i++)
+		for (int64_t i = 0;i<n;i++)
 		{
 			p_pixel_data_byte[i]		= rgb[0];
 			p_pixel_data_byte[i+n]		= rgb[1];
@@ -206,7 +207,7 @@ bool	RasterBuffer::CreateBufferFromPseudoPngData	(void *p_data_src, int size)
     if (im->tpixels[0][0]<<24)
     {
       CreateBuffer(1,im->sx,im->sy,NULL,GDT_Int16);
-      __int16* p_pixel_data_int16 = (__int16*)p_pixel_data_;
+      int16_t* p_pixel_data_int16 = (int16_t*)p_pixel_data_;
       for (int j=0;j<im->sy;j++)
 	    {
 		    for (int i=0;i<im->sx;i++)
@@ -218,7 +219,7 @@ bool	RasterBuffer::CreateBufferFromPseudoPngData	(void *p_data_src, int size)
     else
     {
       CreateBuffer(1,im->sx,im->sy,NULL,GDT_UInt16);
-      unsigned __int16* p_pixel_data_uint16 = (unsigned __int16*)p_pixel_data_;
+      uint16_t* p_pixel_data_uint16 = (uint16_t*)p_pixel_data_;
       for (int j=0;j<im->sy;j++)
 	    {
 		    for (int i=0;i<im->sx;i++)
@@ -532,7 +533,7 @@ bool RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
   }
   else if (this->data_type_==GDT_UInt16)
   {
-    unsigned __int16 *p_pixel_data_uint16	= (unsigned __int16*)p_pixel_data_;
+    uint16_t *p_pixel_data_uint16	= (uint16_t*)p_pixel_data_;
     for (int j=0;j<y_size_;j++)
 		{
 			for (int i=0;i<x_size_;i++)
@@ -541,7 +542,7 @@ bool RasterBuffer::SaveToPseudoPngData	(void* &p_data_dst, int &size)
   }
   else if (this->data_type_==GDT_Int16)
   {
-    __int16	*p_pixel_data_int16	= (__int16*)p_pixel_data_;
+    int16_t	*p_pixel_data_int16	= (int16_t*)p_pixel_data_;
     for (int j=0;j<y_size_;j++)
 		{
 			for (int i=0;i<x_size_;i++)
@@ -723,12 +724,12 @@ bool RasterBuffer::InitByValue(int value)
 		}
 		case GDT_UInt16:
 		{
-			unsigned __int16 t = 257;
+			uint16_t t = 257;
 			return InitByValue(t,value);
 		}
 		case GDT_Int16:
 		{
-			__int16 t = -257;
+			int16_t t = -257;
 			return InitByValue(t,value);
 		}
 		case GDT_Float32:
@@ -754,12 +755,12 @@ void* RasterBuffer::GetPixelDataOrder2()
 		}
 		case GDT_UInt16:
 		{
-			__int16 t = 257;
+			int16_t t = 257;
 			return GetPixelDataOrder2(t);
 		}
 		case GDT_Int16:
 		{
-			__int16 t = 257;
+			int16_t t = 257;
 			return GetPixelDataOrder2(t);
 		}
 		case GDT_Float32:
@@ -806,17 +807,17 @@ bool RasterBuffer::InitByValue(T type, int value)
 	T *p_pixel_data_t= (T*)p_pixel_data_;
 	if (!alpha_band_defined_)
 	{
-		unsigned __int64 n = num_bands_*x_size_*y_size_;
-		for (unsigned __int64 i=0;i<n;i++)
+		uint64_t n = num_bands_*x_size_*y_size_;
+		for (uint64_t i=0;i<n;i++)
 			p_pixel_data_t[i]=value;
 	}
 	else
 	{
-		unsigned __int64 n = (num_bands_-1)*x_size_*y_size_;
-		for (unsigned __int64 i=0;i<n;i++)
+		uint64_t n = (num_bands_-1)*x_size_*y_size_;
+		for (uint64_t i=0;i<n;i++)
 			p_pixel_data_t[i]=value;
 		n = num_bands_*x_size_*y_size_;
-		for (unsigned __int64 i=(num_bands_-1)*x_size_*y_size_;i<n;i++)
+		for (uint64_t i=(num_bands_-1)*x_size_*y_size_;i<n;i++)
 			p_pixel_data_t[i]=0;
 
 	}
@@ -838,12 +839,12 @@ bool	RasterBuffer::StretchDataTo8Bit(double *minValues, double *maxValues)
 		}
 		case GDT_UInt16:
 		{
-			unsigned __int16 t = 257;
+			uint16_t t = 257;
 			return StretchDataTo8Bit(t,minValues,maxValues);
 		}
 		case GDT_Int16:
 		{
-			__int16 t = -257;
+			int16_t t = -257;
 			return StretchDataTo8Bit(t,minValues,maxValues);
 		}
 		case GDT_Float32:
@@ -914,12 +915,12 @@ void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 		}
 		case GDT_UInt16:
 		{
-			unsigned __int16 t = 257;
+			uint16_t t = 257;
 			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		case GDT_Int16:
 		{
-			__int16 t = -257;
+			int16_t t = -257;
 			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		case GDT_Float32:
@@ -939,7 +940,7 @@ void*	RasterBuffer::GetPixelDataBlock (T type, int left, int top, int w, int h)
 {
 	if (num_bands_==0) return NULL;
 	int					n = w*h;
-	unsigned __int64	m = x_size_*y_size_;
+	uint64_t	m = x_size_*y_size_;
 	T				*p_pixel_block_t;
 	p_pixel_block_t		= new T[num_bands_*n];
 
@@ -973,12 +974,12 @@ void*		RasterBuffer::ZoomOut	(GDALResampleAlg resampling_method)
 		}
 		case GDT_UInt16:
 		{
-			unsigned __int16 t = 257;
+			uint16_t t = 257;
 			return ZoomOut(t,resampling_method);
 		}
 		case GDT_Int16:
 		{
-			__int16 t = -257;
+			int16_t t = -257;
 			return ZoomOut(t,resampling_method);
 		}
 		case GDT_Float32:
@@ -1155,14 +1156,14 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 
     case GDT_UInt16:
 		{
-      unsigned __int16 *p_new_pixel_data_UInt16 = (unsigned __int16*)p_new_pixel_data;
+      uint16_t *p_new_pixel_data_UInt16 = (uint16_t*)p_new_pixel_data;
       for (int i=0;i<m;i++)
          p_new_pixel_data_UInt16[i+n]=vector_mask[i];
     }
 
     case GDT_Int16:
 		{
-      __int16 *p_new_pixel_data_Int16 = (__int16*)p_new_pixel_data;
+      int16_t *p_new_pixel_data_Int16 = (int16_t*)p_new_pixel_data;
       for (int i=0;i<m;i++)
          p_new_pixel_data_Int16[i+n]=vector_mask[i];
     }
@@ -1235,12 +1236,12 @@ bool	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_b
 		}
 		case GDT_UInt16:
 		{
-			unsigned __int16 t = 257;
+			uint16_t t = 257;
 			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
 		}
 		case GDT_Int16:
 		{
-			__int16 t = -257;
+			int16_t t = -257;
 			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
 		}
 		case GDT_Float32:

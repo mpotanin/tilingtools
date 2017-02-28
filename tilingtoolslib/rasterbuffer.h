@@ -1,6 +1,5 @@
 #pragma once
 #include "stdafx.h"
-#include "histogram.h"
 #include "vectorborder.h"
 
 

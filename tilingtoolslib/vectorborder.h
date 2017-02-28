@@ -1,15 +1,20 @@
 #pragma once
 #include "stdafx.h"
-#include "filesystemfuncs.h"
-#include "stringfuncs.h"
 
 namespace gmx
 {
 
+#ifdef GDAL_OF_VECTOR
+#define VECTORDS GDALDataset  
+#else
+#define VECTORDS OGRDataSource
+#endif
 
 class VectorOperations
 {
 public:
+  static VECTORDS*          OpenVectorFile(string strVectorFile, bool bReadOnly=true);
+  static void               CloseVECTORDS(VECTORDS* poVecDS);
   static OGRGeometry*		    ReadAndTransformGeometry				(string vector_file, OGRSpatialReference  *p_tiling_srs);
 
  	static string				      GetVectorFileNameByRasterFileName	(string raster_file);
@@ -38,8 +43,8 @@ protected:
 
 
 protected:
-	static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource	(GDALDataset* poDS); 
-	
-
+  static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS);
 };
+
+
 }
