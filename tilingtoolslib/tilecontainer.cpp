@@ -66,7 +66,6 @@ GMXTileContainer::GMXTileContainer	()
 	p_offsets_		= NULL;
 	p_tile_cache_	= NULL;
 	use_cache_	  = FALSE;
-  addtile_semaphore_    = NULL;
   is_opened_    = FALSE;
   p_metadata_=0;
   max_volumes_ = 1000;
@@ -248,21 +247,21 @@ bool		GMXTileContainer::AddTile(int z, int x, int y, char *p_data, unsigned int 
   if (read_only_ || !is_opened_) return FALSE;
   int64_t n	= TileID(z,x,y);
   if ((n>= max_tiles_)||(n<0)) return FALSE;
-
-  GMXThread::WaitForSingleObject(addtile_semaphore_); 
+  
+  addtile_mutex_.lock(); 
 
 	if (p_tile_cache_)
 	{
     if (p_tile_cache_->AddTile(z,x,y,p_data,size))
     {
       p_sizes_[n]		= size;
-      GMXThread::ReleaseSemaphore(addtile_semaphore_,1);
+      addtile_mutex_.unlock();
       return TRUE;
     }
 	}
 	
   bool result = AddTileToContainerFile(z,x,y,p_data,size);
-  GMXThread::ReleaseSemaphore(addtile_semaphore_,1);
+  addtile_mutex_.unlock();
 
   return result;
 };
@@ -447,7 +446,6 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 	merc_type_					  = merc_type;
 	container_file_name_	= container_file_name;
  	container_byte_size_	= 0;
-  addtile_semaphore_    = NULL;
 
   pp_container_volumes_ = new FILE*[max_volumes_];
   for (int i=0;i<max_volumes_;i++)
@@ -455,7 +453,6 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
   
   max_volume_size_	= max_volume_size;
   
-  addtile_semaphore_ = GMXThread::CreateSemaphore(1,1);
 
   if (!DeleteVolumes()) return FALSE;
     
@@ -779,8 +776,7 @@ void GMXTileContainer::MakeEmpty ()
 	max_tiles_ = 0;
 	
  
-  if (addtile_semaphore_) GMXThread::CloseHandle(addtile_semaphore_);
-  addtile_semaphore_ = NULL;
+  //addtile_mutex_.unlock();
   
 	for (int i=0;i<32;i++)
 		maxx_[i]=(minx_[i]=(maxy_[i]=(miny_[i]=0)));
@@ -1196,7 +1192,6 @@ TileFolder::TileFolder (TileName *p_tile_name, MercatorProjType merc_type, bool 
 	p_tile_name_	= p_tile_name;
 	use_cache_	= use_cache;
 	p_tile_cache_		= (use_cache) ? new TileCache() :  NULL;
-  addtile_semaphore_    = GMXThread::CreateSemaphore(1,1);
 };
 
 
@@ -1210,12 +1205,7 @@ bool TileFolder::Close()
 {
 	delete(p_tile_cache_);
 	p_tile_cache_ = NULL;
-	if (addtile_semaphore_)
-  {
-    GMXThread::CloseHandle(addtile_semaphore_);
-    addtile_semaphore_ = NULL;
-  }
-  return TRUE;
+	return TRUE;
 };
 
 bool	TileFolder::OpenForReading (string folder_name)
@@ -1239,10 +1229,10 @@ MercatorProjType		TileFolder::GetProjType()
 
 bool	TileFolder::AddTile(int z, int x, int y, char *p_data, unsigned int size)
 {
-  GMXThread::WaitForSingleObject(addtile_semaphore_); 
+  addtile_mutex_.lock();
 	if (use_cache_)	p_tile_cache_->AddTile(z,x,y,p_data,size);
 	bool result = writeTileToFile(z,x,y,p_data,size);
-  GMXThread::ReleaseSemaphore(addtile_semaphore_,1);
+  addtile_mutex_.unlock();
   return result;
 };
 

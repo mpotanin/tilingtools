@@ -172,7 +172,7 @@ protected:
   FILE**        pp_container_volumes_;
 	uint64_t		container_byte_size_;
 
-  HANDLE addtile_semaphore_;
+  std::mutex  addtile_mutex_;
 
 };
 
@@ -238,7 +238,7 @@ protected:
 	TileName	*p_tile_name_;
 	bool		use_cache_;
 	TileCache	*p_tile_cache_;
-  HANDLE addtile_semaphore_;
+  std::mutex addtile_mutex_;
   MercatorProjType		merc_type_;
 
 };

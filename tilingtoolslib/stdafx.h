@@ -13,6 +13,10 @@
 #endif
 
 #include <stdint.h>
+#include <thread>
+#include <mutex>
+#include <future>
+#include <chrono>
 #include <regex>
 #include <fstream>
 #include <iostream>

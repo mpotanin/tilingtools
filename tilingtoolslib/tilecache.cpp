@@ -24,7 +24,12 @@ TileCache::~TileCache(void)
 bool	TileCache::AddTile(int z, int x, int y, char *p_data, unsigned int size)
 {
 
-  if (cache_size_ + size> cache_max_size_) return FALSE;
+  addtile_mutex_.lock();
+  if (cache_size_ + size> cache_max_size_)
+  {
+    addtile_mutex_.unlock();
+    return FALSE;
+  }
 
 	string tile_key = GMXString::ConvertIntToString(z) + "_" + GMXString::ConvertIntToString(x) + "_" + GMXString::ConvertIntToString(y);
 	if (tile_data_map_.find(tile_key)!=tile_data_map_.end())
@@ -40,6 +45,7 @@ bool	TileCache::AddTile(int z, int x, int y, char *p_data, unsigned int size)
 	tile_data_map_[tile_key]=p_data_copy;
 	tile_size_map_[tile_key]=size;
   cache_size_+=size;
+  addtile_mutex_.unlock();
 	return TRUE;
 }
 

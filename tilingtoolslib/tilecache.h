@@ -21,6 +21,7 @@ protected:
 	map<string,unsigned int>	tile_size_map_;
   int64_t cache_size_;
   int64_t cache_max_size_;
+  std::mutex addtile_mutex_;
 
 
 };

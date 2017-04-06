@@ -16,8 +16,8 @@ public:
 
   static string GetRuntimeModulePath();
 
-  static bool		FindFilesByPattern (list<string> &listFiles, string strSearchPattern);
-  static bool		FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension);
+  static int		FindFilesByPattern (list<string> &listFiles, string strSearchPattern);
+  static int		FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension);
 
   static bool		WriteToTextFile(string strFileName, string strText);
   static bool		WriteWLDFile	(string strFileName, double dblULX, double dblULY, double dblRes);

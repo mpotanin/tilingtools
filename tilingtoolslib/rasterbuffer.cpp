@@ -459,12 +459,7 @@ static void warning_callback(const char *msg, void *client_data) {
 //sample debug callback expecting no client object
 
 static void info_callback(const char *msg, void *client_data) {
-	//debug
-  /*
-  (void)client_data;
-	fprintf(stdout, "[INFO] %s", msg);
-  */
-  //end-debug
+
 }
 
 bool RasterBuffer::CreateFromJP2Data (void *pabData, int nSize)

@@ -90,25 +90,6 @@ protected:
 
 int _stdcall gmxPrintNoProgress ( double, const char*,void*);
 
-struct GMXAsyncChunkTilingParams
-{
-	gmx::TilingParameters			*p_tiling_params_;
-	void            	        *p_bundle_; 
-	OGREnvelope               chunk_envp_;
-  int								        z_;
-	int								        tiles_expected_; 
-	int								        *p_tiles_generated_;
-  bool                      *p_was_error_;
-	gmx::ITileContainer				*p_tile_container_;
-  bool                      need_stretching_;
-  double		                *p_stretch_min_values_;
-  double                    *p_stretch_max_values_;
-  int                       tiffinmem_ind_;
-  string                    temp_file_path_;
-
-  //bool (*pfCleanAfterTiling)(gmx::RasterBuffer*p_buffer);
-};
-
 
 class BundleTiler
 {
@@ -127,9 +108,29 @@ public:
   bool RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
 								            ITileContainer			*p_tile_container);
   
-  bool ProcessChunk (GMXAsyncChunkTilingParams* p_chunk_params);
-  static DWORD WINAPI CallProcessChunk (void *p_params);
-  static DWORD WINAPI BundleTiler::CallWarpMulti (void *p_params);
+  int RunChunk (gmx::TilingParameters* p_tiling_params,
+                gmx::ITileContainer* p_tile_container,
+                int zoom,
+                OGREnvelope chunk_envp,
+                int tiles_expected,
+                int* p_tiles_generated,
+                bool bStretchingNeeded,
+                double* p_stretch_min_values,
+                double* p_stretch_max_values,
+                int nRandInd
+              );
+  static int CallRunChunk(BundleTiler* p_bundle,
+                          gmx::TilingParameters* p_tiling_params,
+                          gmx::ITileContainer* p_tile_container,
+                          int zoom,
+                          OGREnvelope chunk_envp,
+                          int tiles_expected,
+                          int* p_tiles_generated,
+                          bool bStretchingNeeded,
+                          double* p_stretch_min_values,
+                          double* p_stretch_max_values,
+                          int nRandInd
+                          );
     
 protected:
   //ToDo bool      GetRasterProfile(bool &nodata_defined); GDALDataType, nodata_val, colortable
@@ -165,10 +166,11 @@ protected:
 
 protected:
 	bool			AddItemToBundle (string raster_file, string	vector_file);
-  bool      CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list);
-  bool      TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list);
   bool      AdjustCutlinesForOverlapping180Degree();
 
+  bool      InspectTilingResults(list<future<int>> &tiling_results);
+  bool      TerminateTilingThreads(list<future<int>> &tiling_results);
+   
 protected:
 	list<pair<string,RasterFileCutline*>>	item_list_;
   ITileMatrixSet*  p_tile_mset_;

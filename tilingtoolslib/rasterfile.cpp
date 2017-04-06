@@ -276,33 +276,37 @@ bool	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialRefer
 	return true;
 }
 
-DWORD WINAPI BundleTiler::CallWarpMulti (void *p_params)
-{
 
-  GMXAsyncWarpMultiParams   *p_warp_multi_params = (GMXAsyncWarpMultiParams*)p_params;
-  p_warp_multi_params->warp_error_ = (CE_None != p_warp_multi_params->p_warp_operation_->ChunkAndWarpMulti(0,
-                                                            0,
-                                                            p_warp_multi_params->buf_width_,
-                                                            p_warp_multi_params->buf_height_));
-  return true;
+int BundleTiler::CallRunChunk( BundleTiler* p_bundle,
+                                gmx::TilingParameters* p_tiling_params,
+                                gmx::ITileContainer* p_tile_container,
+                                int zoom,
+                                OGREnvelope chunk_envp,
+                                int tiles_expected,
+                                int* p_tiles_generated,
+                                bool bStretchingNeeded,
+                                double* p_stretch_min_values,
+                                double* p_stretch_max_values,
+                                int nRandInd
+                              )
+{
+  return p_bundle->RunChunk(p_tiling_params,p_tile_container,zoom,chunk_envp,tiles_expected,
+    p_tiles_generated,bStretchingNeeded,p_stretch_min_values,p_stretch_max_values,nRandInd);
 }
 
 
-DWORD WINAPI BundleTiler::CallProcessChunk (void* p_params)
+int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
+                           gmx::ITileContainer* p_tile_container,
+                           int zoom,
+                           OGREnvelope chunk_envp,
+                           int tiles_expected,
+                           int* p_tiles_generated,
+                           bool bStretchingNeeded,
+                           double* p_stretch_min_values,
+                           double* p_stretch_max_values,
+                           int nRandInd                            
+                          )
 {
-  GMXAsyncChunkTilingParams* p_chunk_params = (GMXAsyncChunkTilingParams*)p_params;
-
-  return ((BundleTiler*)p_chunk_params->p_bundle_)->ProcessChunk(p_chunk_params);
-}
-
-bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
-{
-  
-  gmx::TilingParameters*  p_tiling_params = p_chunk_params->p_tiling_params_;
-  gmx::ITileContainer*    p_tile_container = p_chunk_params->p_tile_container_;
-  int                     zoom = p_chunk_params->z_;
-  OGREnvelope             chunk_envp = p_chunk_params->chunk_envp_;
-   
   gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
 
   //ToDo...
@@ -319,29 +323,24 @@ bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
                                       p_tiling_params->gdal_resampling_,
                                       p_tiling_params->p_transparent_color_,
                                       p_tiling_params->p_background_color_,
-                                      p_chunk_params->tiffinmem_ind_);
+                                      nRandInd);
     
   if (!warp_result)	
   {
 	  cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
     gmx::CURR_WORK_THREADS--;
-	  return FALSE;
+	  return 1;
 	}
 
-  if (p_chunk_params->need_stretching_)	
+  if (bStretchingNeeded)
   {
-    if (! p_merc_buffer->StretchDataTo8Bit (
-                          p_chunk_params->p_stretch_min_values_,
-                          p_chunk_params->p_stretch_max_values_))
+    if (! p_merc_buffer->StretchDataTo8Bit (p_stretch_min_values,p_stretch_max_values))
     {
       cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
       gmx::CURR_WORK_THREADS--;
-			return FALSE;
+			return 1;
 		}
 	}
-
-  int tiles_expected = p_chunk_params->tiles_expected_;
-  int *p_tiles_generated = p_chunk_params->p_tiles_generated_;
   
   if (!RunTilingFromBuffer(p_tiling_params,
 										p_merc_buffer,
@@ -353,12 +352,12 @@ bool BundleTiler::ProcessChunk(GMXAsyncChunkTilingParams* p_chunk_params)
 	{
 			cout<<"ERROR: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
 			gmx::CURR_WORK_THREADS--;
-      return FALSE;
+      return 1;
 	}
 
   delete(p_merc_buffer);
   gmx::CURR_WORK_THREADS--;
-  return TRUE;
+  return 0;
 }
 
 
@@ -885,7 +884,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 }
 
 bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
-								            ITileContainer			*p_tile_container)
+								                      ITileContainer			*p_tile_container)
 {
   srand(0);
 	int	tiles_generated = 0;
@@ -934,12 +933,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 	int minx,maxx,miny,maxy;
   p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
 
-	HANDLE			thread_handle = NULL;
-
-  bool tiling_error = FALSE;
-  
-  unsigned long thread_id;
-  list<pair<HANDLE,void*>> thread_params_list; 
+  list<future<int>> tiling_results;
   
   //ToDo shoud refactor this cycle - thread creation and control 
   int chunk_num=0;
@@ -961,72 +955,64 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 			if (!Intersects(chunk_envp)) continue;
 	    
       while (CURR_WORK_THREADS >= MAX_WORK_THREADS)        
-        Sleep(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
       
-      if (!CheckStatusAndCloseThreads(&thread_params_list))
+      if (!InspectTilingResults(tiling_results))
       {
-        TerminateThreads(&thread_params_list);
+        TerminateTilingThreads(tiling_results);
         cout<<"ERROR: occured in BaseZoomTiling"<<endl;
         return false;
       }
-
-      GMXAsyncChunkTilingParams	*p_chunk_tiling_params = new  GMXAsyncChunkTilingParams();
-          
-      p_chunk_tiling_params->p_tiling_params_ = p_tiling_params;
-      p_chunk_tiling_params->chunk_envp_ = chunk_envp;
-      p_chunk_tiling_params->p_bundle_ = this;
-      p_chunk_tiling_params->p_tile_container_ = p_tile_container;
-      p_chunk_tiling_params->p_tiles_generated_ = &tiles_generated;
-      p_chunk_tiling_params->tiles_expected_ = tiles_expected;
-      p_chunk_tiling_params->need_stretching_ = need_stretching;
-      p_chunk_tiling_params->p_stretch_min_values_ = p_stretch_min_values;
-      p_chunk_tiling_params->p_stretch_max_values_ = p_stretch_max_values;
-      p_chunk_tiling_params->z_ = zoom;
-
-      p_chunk_tiling_params->tiffinmem_ind_=(chunk_num++);
+      
       
       gmx::CURR_WORK_THREADS++;
-      HANDLE hThread = GMXThread::CreateThread(BundleTiler::CallProcessChunk,p_chunk_tiling_params,&thread_id);      
-      if (hThread)
-         thread_params_list.push_back(
-        pair<HANDLE,GMXAsyncChunkTilingParams*>(hThread,p_chunk_tiling_params));
-      Sleep(100);    
+      
+      tiling_results.push_back(
+        std::async(BundleTiler::CallRunChunk,
+                   this,
+                   p_tiling_params,
+                   p_tile_container,
+                   zoom,
+                   chunk_envp,
+                   tiles_expected,
+                   &tiles_generated,
+                   need_stretching,
+                   p_stretch_min_values,
+                   p_stretch_max_values,
+                   (chunk_num++)
+                   ));
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      //debug
+      //cout << tiling_results.size()<<endl;
+      //end-debug
     }
 	}
 
   while (CURR_WORK_THREADS > 0)
-    Sleep(100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-  if (!CheckStatusAndCloseThreads(&thread_params_list))
+  if (!InspectTilingResults(tiling_results))
   {
-        TerminateThreads(&thread_params_list);
-        cout<<"ERROR: occured in BaseZoomTiling"<<endl;
-        return false;
+    TerminateTilingThreads(tiling_results);
+    cout << "ERROR: occured in BaseZoomTiling" << endl;
+    return false;
   }
 
   return true;
 }
 
 
-bool BundleTiler::CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_list)
+bool BundleTiler::InspectTilingResults(list<future<int>> &tiling_results)
 {
-  
-  for (list<pair<HANDLE,void*>>::iterator iter = 
-      p_thread_list->begin();iter!=p_thread_list->end();iter++)
+  for (list<future<int>>::iterator iter=tiling_results.begin(); iter!=tiling_results.end(); iter++)
   {
-    DWORD exit_code;
-    if (GMXThread::GetExitCodeThread((*iter).first,&exit_code))
+    if ((*iter).wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
     {
-      if (exit_code != STILL_ACTIVE)
+      if ((*iter).get()!=0) return false;
+      else
       {
-        if (exit_code==1)
-        {
-          GMXThread::CloseHandle((*iter).first);
-          delete((GMXAsyncChunkTilingParams*)(*iter).second);
-          p_thread_list->remove(*iter);
-          break;
-        }
-        else return false;
+        tiling_results.erase(iter);
+        break;
       }
     }
   }
@@ -1034,17 +1020,18 @@ bool BundleTiler::CheckStatusAndCloseThreads(list<pair<HANDLE,void*>>* p_thread_
 }
 
 
-bool BundleTiler::TerminateThreads(list<pair<HANDLE,void*>>* p_thread_list)
+bool BundleTiler::TerminateTilingThreads(list<future<int>> &tiling_results)
 {
-  for (list<pair<HANDLE,void*>>::iterator iter = 
-      p_thread_list->begin();iter!=p_thread_list->end();iter++)
+  for (list<future<int>>::iterator iter = tiling_results.begin(); iter != tiling_results.end(); iter++)
   {
-    GMXThread::TerminateThread((*iter).first,1);
-    GMXThread::CloseHandle((*iter).first);
+#ifdef _WIN32
+    //(*iter).first->
+#endif
   }
 
   return true;
 }
+
 
 
 bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params, 

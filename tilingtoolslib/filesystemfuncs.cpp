@@ -1,6 +1,10 @@
 #include "stringfuncs.h"
 #include "filesystemfuncs.h"
 
+#ifdef _WIN32
+#define GMXFSWIN32
+#endif
+
 bool	GMXFileSys::WriteToTextFile (string strFileName, string strText)
 {
 	FILE *fp = GMXFileSys::OpenFile(strFileName,"w");
@@ -20,7 +24,7 @@ string	GMXFileSys::GetPath (string strFileName)
 
 bool GMXFileSys::FileExists (string strFileName)
 {  
-#ifdef _WIN32
+#ifdef GMXFSWIN32
 	wstring strFileNameW;
 	GMXString::utf8toWStr(strFileNameW,strFileName);
 
@@ -44,7 +48,7 @@ bool GMXFileSys::FileExists (string strFileName)
 bool GMXFileSys::IsDirectory (string strPath)
 {
 	if (!GMXFileSys::FileExists(strPath)) return false;
-#ifdef _WIN32
+#ifdef GMXFSWIN32
 	wstring strPathW;
 	GMXString::utf8toWStr(strPathW,strPath);
 	return (GetFileAttributesW(strPathW.c_str()) & FILE_ATTRIBUTE_DIRECTORY);
@@ -60,14 +64,14 @@ bool GMXFileSys::IsDirectory (string strPath)
 
 string GMXFileSys::GetRuntimeModulePath()
 {
-#ifdef _WIN32
+#ifdef GMXFSWIN32
   wchar_t exe_filename_w[_MAX_PATH + 1];
   GetModuleFileNameW(NULL, exe_filename_w, _MAX_PATH);
   string exe_filename = GMXString::wstrToUtf8(exe_filename_w);
   GMXString::ReplaceAll(exe_filename,"\\","/");
   return GMXFileSys::GetPath(exe_filename);
 #else
-  
+  return "";
 #endif
 }
 
@@ -113,9 +117,9 @@ string GMXFileSys::RemoveExtension (string strFileName)
 
 
 
-bool GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
+int GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPattern)
 {
-#ifdef _WIN32
+#ifdef GMXFSWIN32
 	WIN32_FIND_DATAW owinFindFileData;
 	HANDLE powinFind ;
 
@@ -127,7 +131,7 @@ bool GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPa
   if (powinFind == INVALID_HANDLE_VALUE)
   {
     if (powinFind) FindClose(FindClose);
-    return FALSE;
+    return 0;
   }
 	
 	while (true)
@@ -141,7 +145,7 @@ bool GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPa
 	}
 
   if (powinFind) FindClose(powinFind);
-	return TRUE;
+  return listFiles.size();
 #else
   string strBasePath = GMXFileSys::GetPath(strSearchPattern);
   string strFileNamePattern = GMXFileSys::RemovePath(strSearchPattern);
@@ -150,7 +154,7 @@ bool GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPa
 
   DIR *dir;
   struct dirent *ent;
-  if ((dir = opendir (strBasePath.c_str())) !=0) 
+  if ((dir = opendir(strBasePath == "" ? "." : strBasePath.c_str())) != 0)
   {
     while ((ent = readdir (dir)) != NULL) 
     {
@@ -159,19 +163,19 @@ bool GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPa
     }
     closedir (dir);
   } 
-  else return false;
+  else return 0;
 
-  return true;
+  return listFiles.size();
 #endif
 }
 
 
-bool GMXFileSys::FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension)
+int GMXFileSys::FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension)
 {
   strExtension = (strExtension[0] == '.') ? strExtension.substr(1,strExtension.length()-1) : strExtension;
   regex regFileNamePattern((strExtension=="") ? ".*" : (".*\\."+strExtension+"$"));
 
-#ifdef _WIN32
+#ifdef GMXFSWIN32
 	WIN32_FIND_DATAW owinFindFileData;
 	HANDLE powinFind;
     
@@ -182,7 +186,7 @@ bool GMXFileSys::FindFilesByExtensionRecursive (list<string> &listFiles, string 
 	if (powinFind == INVALID_HANDLE_VALUE)
   {
     FindClose(powinFind);
-    return FALSE;
+    return 0;
   }
 	
 	while (true)
@@ -202,12 +206,12 @@ bool GMXFileSys::FindFilesByExtensionRecursive (list<string> &listFiles, string 
 	}
 
   if (powinFind) FindClose(powinFind);
-	return TRUE;
+  return listFiles.size();
 #else
 
   DIR *dir;
   struct dirent *ent;
-  if ((dir = opendir (strFolder.c_str())) !=0) 
+  if ((dir = opendir(strFolder == "" ? "." : strFolder.c_str())) != 0)
   {
     while ((ent = readdir (dir)) != NULL) 
     {
@@ -219,10 +223,9 @@ bool GMXFileSys::FindFilesByExtensionRecursive (list<string> &listFiles, string 
     }
     closedir (dir);
   } 
-  else return false;
+  else return 0;
 
-
-  return true;
+  return listFiles.size();
 #endif
 }
 
@@ -253,11 +256,9 @@ bool GMXFileSys::WriteWLDFile (string strRasterFile, double dblULX, double dblUL
 
 FILE*		GMXFileSys::OpenFile(string	strFileName, string strMode)
 {
-#ifdef _WIN32
-	wstring	strFileName_w, strModeW;
-	GMXString::utf8toWStr(strFileName_w,strFileName);
-	GMXString::utf8toWStr(strModeW,strMode);
-  return _wfopen(strFileName_w.c_str(),strModeW.c_str()); //_wfopen
+#ifdef GMXFSWIN32
+  return _wfopen(GMXString::utf8toWStr(strFileName).c_str(),
+                 GMXString::utf8toWStr(strMode).c_str());
 #else
   return fopen(strFileName.c_str(),strMode.c_str());
 #endif
@@ -266,11 +267,9 @@ FILE*		GMXFileSys::OpenFile(string	strFileName, string strMode)
 
 bool		GMXFileSys::RenameFile(string strOldPath, string strNewPath)
 {
-#ifdef _WIN32
-	wstring old_strPathW, new_strPathW;
-	GMXString::utf8toWStr(old_strPathW,strOldPath);
-	GMXString::utf8toWStr(new_strPathW,strNewPath);
-  return _wrename(old_strPathW.c_str(),new_strPathW.c_str()); //check _wrename
+#ifdef GMXFSWIN32
+  return 0==_wrename(GMXString::utf8toWStr(strOldPath).c_str(),
+                    GMXString::utf8toWStr(strNewPath).c_str());
 #else
   return 0==rename(strOldPath.c_str(),strNewPath.c_str());
 #endif
@@ -279,10 +278,8 @@ bool		GMXFileSys::RenameFile(string strOldPath, string strNewPath)
 
 bool		GMXFileSys::FileDelete(string strPath)
 {
-#ifdef _WIN32
-	wstring	strPathW;
-	GMXString::utf8toWStr(strPathW,strPath);
-	return ::DeleteFileW(strPathW.c_str());
+#ifdef GMXFSWIN32
+  return ::DeleteFileW(GMXString::utf8toWStr(strPath).c_str());
 #else
   return (0==remove(strPath.c_str()));
 #endif
@@ -292,9 +289,7 @@ bool		GMXFileSys::FileDelete(string strPath)
 bool		GMXFileSys::CreateDir(string strPath)
 {
 #ifdef WIN32
- 	  wstring	strPathW;
-	  GMXString::utf8toWStr(strPathW,strPath);
-    return (_wmkdir(strPathW.c_str())==0);
+  return (_wmkdir(GMXString::utf8toWStr(strPath).c_str()) == 0);
 #else
   return (mkdir(strPath.c_str(),0777) == 0);
 #endif
@@ -327,13 +322,13 @@ string  GMXFileSys::ReadTextFile(string strFileName)
   FILE *fp = GMXFileSys::OpenFile(strFileName,"r");
   if (!fp) return "";
 
-  string strFile;  
+  string strFileContent;  
 	char c;
 	while (1==fscanf(fp,"%c",&c))
-		strFile+=c;
+    strFileContent += c;
 	fclose(fp);
 
-	return strFile;
+  return strFileContent;
 }
 
 

@@ -238,9 +238,113 @@ const string astrUsageExamples[] =
 };
 
 
+//debug
+/*
+double callee(int tid) {
+  std::cout << "Hello from thread " << tid << std::endl;
+  double x = 0;
+  int maxIter = 0x7FFFFFFF;
+  for (int j = 0; j < maxIter; j++) {
+    x += sin(j);
+  }
+  std::cout << "Bye from thread " << tid << std::endl;
+  return x;
+}
+
+int asyncF(int n, double x)
+{
+ // cout << "start "<<x<<endl;
+  //cout << x << endl;
+  //double* a = new double[n];
+  double sum=0;
+  for (int i=0;i<n;i++)
+    sum+=sin(cos(i+x));
+  //cout << "end " <<x<< endl;
+  //p.set_value((int)(10*sum));
+  cout << sum << endl;
+  return sum;
+}
+*/
+//end-debug
+
+
 
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
+//debug
+  /*
+  int num = _wtoi(pastrArgsW[1]);
+
+  std::future<double> * funcs = new std::future<double>[num];
+  for (int i = 0; i < num; i++) {
+    funcs[i] = std::async(std::launch::async,callee, i);
+  }
+  for (int i = 0; i < num; i++) {
+    funcs[i].wait();
+    std::cout << "Function " << i << " returns " << funcs[i].get() << '\n';
+  }
+
+  //auto f = p.get_future();
+
+  int n = atoi(GMXString::wstrToUtf8(pastrArgsW[1]).c_str());
+  int m = atoi(GMXString::wstrToUtf8(pastrArgsW[2]).c_str());
+  int nMaxProc = atoi(GMXString::wstrToUtf8(pastrArgsW[3]).c_str());
+  
+  //std::thread **poThreads = new std::thread*[nMaxProc];
+  list<future<int>> listProc;
+  //list<std::thread> listProc;
+  //std::thread t(asyncF, std::move(p), n, 4 + 1);
+
+  for (int i=0;i<nMaxProc;i++)
+    //poThreads[i] = new std::thread(asyncF,n,0.5);
+    listProc.push_back(std::async(std::launch::async, asyncF, n, i + 1));
+    //listProc.push_back(std::thread(asyncF,std::move(p),n,i + 1))
+    //t = std::thread(asyncF, std::move(p), n, i + 1);
+
+  //std::thread second(asyncF, n, 0.5);
+  //std::thread third(asyncF, n, 0.5);
+  cin>>m;
+  //cout << f.get()<<endl;
+  return 1; 
+
+  /*
+  //int n=1;
+  //int m=10000000;
+  //cout<<m<<endl;
+  //double* a = new double[m];
+  //cin >> n;
+  //for (int i=0;i<m;i++)
+  //  a[i] = i;
+  //cin >> n;
+  //std::mutex oM;
+  //oM.lock();
+  //oM.
+  list<future<int>> listProc;
+  int nDone = 0;
+  for (int i = 0; i < n; i++)
+  {
+    while (listProc.size() >= nMaxProc)
+    {
+      list<future<int>>::iterator iter;
+      for (iter = listProc.begin(); iter != listProc.end(); iter++)
+      {
+        if ((*iter).wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+        {
+          cout << (nDone++) << ": " << (*iter).get()<<endl;
+          listProc.erase(iter);
+          break;        
+        }
+      }
+      if (iter == listProc.end())
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    listProc.push_back(std::async(std::launch::async, asyncF, m, i + 1));
+  }
+  //std::this_thread::sleep_for(std::chrono::milliseconds(200000));
+  return 0;
+  */
+  //end-debug
+
   string* pastrArgs = new string[nArgs];
   for (int i = 0; i<nArgs; i++)
   {
