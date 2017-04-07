@@ -1109,14 +1109,14 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 						tile_buffer.SaveToTiffData(p_data,size);
 				}
         
-        if (!p_tile_container->AddTile(zoom,x,y,(char*)p_data,size))
+        if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
         {
-          if (p_data) delete[]((char*)p_data);
+          if (p_data) delete[]((unsigned char*)p_data);
           cout<<"ERROR: AddTile: writing tile to container"<<endl;
           return FALSE;
         }
         
-				delete[]((char*)p_data);
+				delete[]((unsigned char*)p_data);
 				(*p_tiles_generated)++;
 			}
 			

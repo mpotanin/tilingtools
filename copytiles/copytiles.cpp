@@ -275,7 +275,7 @@ int _tmain(int nArgs, wchar_t* argvW[])
       int x = (*iter).second.first;
       int y = (*iter).second.second;
 
-      char     *tileData = NULL;
+      unsigned char* tileData = 0;
       unsigned int            tileSize = 0;
       if (poSrcTC->GetTile(z, x, y, tileData, tileSize))
       {

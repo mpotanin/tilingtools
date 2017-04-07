@@ -500,7 +500,7 @@ bool RasterBuffer::SaveToJP2Data(void* &pabData, int &nSize, int nRate)
   GDALClose(poJP2DS);
   GDALClose(poTiffDS);
   vsi_l_offset length;
-  unsigned unsigned char* pabDataBuf = VSIGetMemFileBuffer(strJP2InMem.c_str(), &length, FALSE);
+  unsigned char* pabDataBuf = VSIGetMemFileBuffer(strJP2InMem.c_str(), &length, FALSE);
   nSize = length;
   memcpy((pabData = new unsigned char[nSize]), pabDataBuf, nSize);
   VSIUnlink(strJP2InMem.c_str());

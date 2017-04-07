@@ -14,14 +14,14 @@ TileCache::TileCache(int64_t cache_max_size)
 
 TileCache::~TileCache(void)
 {
-	for (map<string,char*>::const_iterator iter = tile_data_map_.begin(); iter!=tile_data_map_.end(); iter++)
+	for (map<string,unsigned char*>::const_iterator iter = tile_data_map_.begin(); iter!=tile_data_map_.end(); iter++)
 		delete[]((*iter).second);
 	tile_data_map_.empty();
 	tile_size_map_.empty();
 }
 
 
-bool	TileCache::AddTile(int z, int x, int y, char *p_data, unsigned int size)
+bool	TileCache::AddTile(int z, int x, int y, unsigned char* p_data, unsigned int size)
 {
 
   addtile_mutex_.lock();
@@ -40,7 +40,7 @@ bool	TileCache::AddTile(int z, int x, int y, char *p_data, unsigned int size)
     tile_size_map_.erase(tile_key);
 	}
 
-	char	*p_data_copy = new char[size];
+	unsigned char* p_data_copy = new unsigned char[size];
 	memcpy(p_data_copy,p_data,size);
 	tile_data_map_[tile_key]=p_data_copy;
 	tile_size_map_[tile_key]=size;
@@ -50,10 +50,10 @@ bool	TileCache::AddTile(int z, int x, int y, char *p_data, unsigned int size)
 }
 
 
-bool	TileCache::GetTile(int z, int x, int y, char *&p_data, unsigned int &size)
+bool	TileCache::GetTile(int z, int x, int y, unsigned char* &p_data, unsigned int &size)
 {
 	string tile_key = GMXString::ConvertIntToString(z) + "_" + GMXString::ConvertIntToString(x) + "_" + GMXString::ConvertIntToString(y);
-	map<string,char*>::const_iterator iter;
+	map<string,unsigned char*>::const_iterator iter;
 	if ((iter=tile_data_map_.find(tile_key)) == tile_data_map_.end())
 	{
 		p_data	= NULL;
@@ -63,7 +63,7 @@ bool	TileCache::GetTile(int z, int x, int y, char *&p_data, unsigned int &size)
 	else
 	{
 		size	= (*tile_size_map_.find(tile_key)).second;
-		p_data = new char[size];
+		p_data = new unsigned char[size];
 		memcpy(p_data,(*iter).second,size);
 	}
 	return TRUE;

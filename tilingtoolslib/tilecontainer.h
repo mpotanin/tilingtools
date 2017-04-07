@@ -41,8 +41,8 @@ class ITileContainer
 {
 public:
   virtual ~ITileContainer() {};
-  virtual bool		          AddTile(int z, int x, int y, char *p_data, unsigned int size) = 0;
-	virtual	bool		          GetTile(int z, int x, int y, char *&p_data, unsigned int &size) = 0;
+  virtual bool		          AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size) = 0;
+	virtual	bool		          GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size) = 0;
 	virtual	bool		          TileExists(int z, int x, int y) = 0; 
 	virtual bool		          Close() = 0;
 	virtual int 		          GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "") = 0;
@@ -109,8 +109,8 @@ public:
 	~GMXTileContainer				();
 
 	bool				OpenForReading			(string container_file_name);
-	bool				AddTile			(int z, int x, int y, char *p_data, unsigned int size);
-	bool				GetTile			(int z, int x, int y, char *&p_data, unsigned int &size);
+	bool				AddTile			(int z, int x, int y, unsigned char *p_data, unsigned int size);
+	bool				GetTile			(int z, int x, int y, unsigned char *&p_data, unsigned int &size);
 	bool				TileExists		(int z, int x, int y);
 	bool				Close			();
 	int 				GetTileList		( list<pair<int, pair<int,int>>> &tile_list, 
@@ -134,11 +134,11 @@ protected:
 	
 
 protected:
-  bool	AddTileToContainerFile(int z, int x, int y, char *p_data, unsigned int size);
-	bool	GetTileFromContainerFile (int z, int x, int y, char *&p_data, unsigned int &size);
+  bool	AddTileToContainerFile(int z, int x, int y, unsigned char *p_data, unsigned int size);
+	bool	GetTileFromContainerFile (int z, int x, int y, unsigned char *&p_data, unsigned int &size);
 	bool	WriteTilesToContainerFileFromCache();
 	
-	bool	WriteHeaderToByteArray(char*	&p_data);
+	bool	WriteHeaderToByteArray(unsigned char*	&p_data);
 	unsigned int HeaderSize();
 	void MakeEmpty ();
 
@@ -191,10 +191,10 @@ public:
 	bool OpenForReading  (string file_name);
 	MBTileContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp);
 	
-	bool		AddTile(int z, int x, int y, char *p_data, unsigned int size);
+	bool		AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
 	bool		TileExists(int z, int x, int y);
 
-	bool		GetTile(int z, int x, int y, char *&p_data, unsigned int &size);
+	bool		GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size);
 	int 		GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "");
 	
 	bool		GetTileBounds (int tile_bounds[128]);
@@ -217,8 +217,8 @@ public:
 	TileFolder (TileName *p_tile_name, MercatorProjType merc_type, bool use_cache);
 	~TileFolder ();
 	bool  Close();
-	bool	AddTile(int z, int x, int y, char *p_data, unsigned int size);
-	bool	GetTile(int z, int x, int y, char *&p_data, unsigned int &size);
+	bool	AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
+	bool	GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size);
 	bool	TileExists(int z, int x, int y);
 	int		GetMaxZoom();
 	int 	GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "");
@@ -230,8 +230,8 @@ public:
   void GetMetadata (Metadata* &p_metadata); 
 	
 protected:
-	bool	writeTileToFile (int z, int x, int y, char *p_data, unsigned int size);
-	bool	ReadTileFromFile (int z,int x, int y, char *&p_data, unsigned int &size);
+	bool	writeTileToFile (int z, int x, int y, unsigned char *p_data, unsigned int size);
+	bool	ReadTileFromFile (int z,int x, int y, unsigned char *&p_data, unsigned int &size);
 
 
 protected:
