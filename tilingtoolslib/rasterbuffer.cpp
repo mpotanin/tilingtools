@@ -1102,7 +1102,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
   for (int j=0;j<y_size_;j++)
   {
     int num_points = 0;
-    int  *p_x = NULL;
+    int* p_x = 0;
     
     int n = j*x_size_;
     for (int i = 0; i<x_size_; i++)
@@ -1123,23 +1123,18 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
       }
     }
 
-    delete[]((unsigned char*)p_x);
+    delete[]p_x;
   } 
 
   RasterBuffer temp_buffer;
-  if (!temp_buffer.CreateBuffer(num_bands_+1,x_size_,y_size_,NULL,data_type_,1,p_color_table_)) return FALSE;
+  if (!temp_buffer.CreateBuffer(num_bands_+1,x_size_,y_size_,0,data_type_,1,p_color_table_)) return FALSE;
 
   int n = x_size_*y_size_*num_bands_;
   int m = x_size_*y_size_;
   
-  void *p_new_pixel_data = new unsigned char[(n+m)*data_size_];
-  if (!p_new_pixel_data ) return FALSE;
-  if (!memcpy(p_new_pixel_data,p_pixel_data_,n))
-  {
-    delete[]p_new_pixel_data;
-    return FALSE;
-  }
-    
+  unsigned char* p_new_pixel_data = new unsigned char[(n + m)*data_size_];
+  memcpy(p_new_pixel_data,p_pixel_data_,n);
+   
   switch (data_type_)
 	{
 		case GDT_Byte:
@@ -1169,11 +1164,11 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
       for (int i=0;i<m;i++)
          p_new_pixel_data_F32[i+n]=vector_mask[i];
     }
-    default:
-      return FALSE;
   }
 
   delete[]((unsigned char*)p_pixel_data_);
+  delete[]vector_mask;
+
   p_pixel_data_=p_new_pixel_data;
   num_bands_++;
   alpha_band_defined_ = TRUE;
