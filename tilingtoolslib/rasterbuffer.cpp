@@ -870,7 +870,7 @@ bool	RasterBuffer::StretchDataTo8Bit(T type, double *p_min_values, double *p_max
       for (int b=0;b<_num_bands;b++)
       {
         m = i*x_size_+j+b*n;
-        d = max(min(p_pixel_data_t[m],p_max_values[b]),p_min_values[b]);
+        d = max(min((double)p_pixel_data_t[m],p_max_values[b]),p_min_values[b]);
         p_pixel_stretched_data[m] = (int)(0.5+255*((d-p_min_values[b])/(p_max_values[b]-p_min_values[b])));
       }
     }
@@ -893,13 +893,13 @@ bool	RasterBuffer::StretchDataTo8Bit(T type, double *p_min_values, double *p_max
   p_pixel_data_= p_pixel_stretched_data;
   data_type_=GDT_Byte;
 
-  return TRUE;
+  return true;
 }
 
 
 void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 {
-	if (p_pixel_data_ == NULL || x_size_ == 0 || y_size_==0) return NULL;
+	if (p_pixel_data_ == 0 || x_size_ == 0 || y_size_==0) return 0;
 	
 	switch (data_type_)
 	{
@@ -1123,7 +1123,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
       }
     }
 
-    delete[]p_x;
+    delete[]((unsigned char*)p_x);
   } 
 
   RasterBuffer temp_buffer;
@@ -1173,7 +1173,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
       return FALSE;
   }
 
-  delete[]p_pixel_data_;
+  delete[]((unsigned char*)p_pixel_data_);
   p_pixel_data_=p_new_pixel_data;
   num_bands_++;
   alpha_band_defined_ = TRUE;
@@ -1185,7 +1185,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 
 bool	RasterBuffer::CreateAlphaBandByRGBColor(unsigned char	*pRGB, int tolerance)
 {
-	if ((this-p_pixel_data_ == NULL) || (data_type_!=GDT_Byte) || (num_bands_>3)) return FALSE;
+	if ((this->p_pixel_data_==0) || (data_type_!=GDT_Byte) || (num_bands_>3)) return FALSE;
 
 	int n = x_size_ *y_size_;
 	int num_bands_new = (num_bands_==1 || num_bands_==3) ? num_bands_+1 : num_bands_;
