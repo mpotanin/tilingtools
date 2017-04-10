@@ -5,7 +5,6 @@
 #include "tileName.h"
 #include "tilecontainer.h"
 #include "tilingparameters.h"
-#include "threadfuncs.h"
 
 using namespace std;
 
@@ -13,7 +12,6 @@ namespace gmx
 {
 
 extern int	CURR_WORK_THREADS;
-extern HANDLE WARP_SEMAPHORE;
 
 
 class RasterFileCutline

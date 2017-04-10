@@ -39,9 +39,6 @@
     <ClInclude Include="stringfuncs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="threadfuncs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tilecache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -78,9 +75,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stringfuncs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="threadfuncs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tilecache.cpp">

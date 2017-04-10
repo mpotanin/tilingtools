@@ -155,7 +155,6 @@ copy "..\version.txt" "..\x64\release\version.txt"
     <ClInclude Include="rasterfile.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="stringfuncs.h" />
-    <ClInclude Include="threadfuncs.h" />
     <ClInclude Include="tilecache.h" />
     <ClInclude Include="tilecontainer.h" />
     <ClInclude Include="tilename.h" />
@@ -170,7 +169,6 @@ copy "..\version.txt" "..\x64\release\version.txt"
     <ClCompile Include="rasterbuffer.cpp" />
     <ClCompile Include="rasterfile.cpp" />
     <ClCompile Include="stringfuncs.cpp" />
-    <ClCompile Include="threadfuncs.cpp" />
     <ClCompile Include="tilecache.cpp" />
     <ClCompile Include="tilecontainer.cpp" />
     <ClCompile Include="tilename.cpp" />
