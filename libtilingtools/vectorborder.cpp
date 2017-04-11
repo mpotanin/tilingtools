@@ -42,36 +42,21 @@ string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 }
 
 
-OGREnvelope	VectorOperations::CombineOGREnvelopes (OGREnvelope	&envp1, OGREnvelope	&envp2)
+OGREnvelope	VectorOperations::MergeEnvelopes (OGREnvelope	&envp1, OGREnvelope	&envp2)
 {
-	OGREnvelope envp;
-  envp.MaxX = max(envp1.MaxX,envp2.MaxX);
-	envp.MaxY = max(envp1.MaxY,envp2.MaxY);
-	envp.MinX = min(envp1.MinX,envp2.MinX);
-	envp.MinY = min(envp1.MinY,envp2.MinY);
+	OGREnvelope envp(envp1);
+  envp.Merge(envp2);
+  return envp;
+}
+
+OGREnvelope	VectorOperations::InetersectEnvelopes (OGREnvelope	&envp1,OGREnvelope	&envp2)
+{
+	OGREnvelope envp(envp1);
+  envp.Intersect(envp2);
 	return envp;
 }
 
-OGREnvelope	VectorOperations::InetersectOGREnvelopes (OGREnvelope	&envp1,OGREnvelope	&envp2)
-{
-	OGREnvelope envp;
-	envp.MaxX = min(envp1.MaxX,envp2.MaxX);
-	envp.MaxY = min(envp1.MaxY,envp2.MaxY);
-	envp.MinX = max(envp1.MinX,envp2.MinX);
-	envp.MinY = max(envp1.MinY,envp2.MinY);
-	return envp;
-}
 
-/*
-
-bool VectorBorder::ConvertOGRGeometryToArrayOfSegments (OGRGeometry *p_ogr_geom, int &num_segments, OGRLineString **pp_ls)
-{
-  if (p_ogr_geom->getGeometryType()!=OGRWkb 
-  OGRPolygon *p_polygons = NULL;
-
-  return TRUE;
-}
-*/
 
 bool VectorOperations::IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeometry *po_ogr_geom)
 {
@@ -131,8 +116,8 @@ bool VectorOperations::IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeomet
 
 }
 
-
-bool VectorOperations::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
+/*
+bool VectorOperations::IntersectYLineWithPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
 {
   double e = 1e-6;
 
@@ -183,7 +168,7 @@ bool VectorOperations::CalcIntersectionBetweenLineAndPixelLineGeometry (int y_li
   delete[]pp_lr;
   return TRUE;
 }
-
+*/
 
 bool VectorOperations::AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segment)
 {
@@ -403,7 +388,7 @@ OGREnvelope VectorOperations::GetEnvelope ()
 
 
 
-OGRPolygon*		VectorOperations::CreateOGRPolygonByOGREnvelope (OGREnvelope &envelope)
+OGRPolygon*		VectorOperations::CreateOGRPolygonByOGREnvelope (const OGREnvelope &envelope)
 {
 	OGRPolygon *p_ogr_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
 

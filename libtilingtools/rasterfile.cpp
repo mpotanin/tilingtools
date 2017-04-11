@@ -491,12 +491,12 @@ OGREnvelope BundleTiler::CalcEnvelope()
     {
       OGREnvelope envp_cutline;
       (*iter).second->tiling_srs_cutline_->getEnvelope(&envp_cutline);
-      envp = VectorOperations::CombineOGREnvelopes(envp, 
-                                              VectorOperations::InetersectOGREnvelopes(envp_cutline,
+      envp = VectorOperations::MergeEnvelopes(envp, 
+                                              VectorOperations::InetersectEnvelopes(envp_cutline,
                                                                                   (*iter).second->tiling_srs_envp_)
                                               );
     }
-    else envp = VectorOperations::CombineOGREnvelopes(envp,((*iter).second->tiling_srs_envp_));
+    else envp = VectorOperations::MergeEnvelopes(envp,((*iter).second->tiling_srs_envp_));
 	}
 	return envp; 
 }

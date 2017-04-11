@@ -1092,6 +1092,7 @@ bool	RasterBuffer::IsAlphaBand()
 }
 
 
+/*
 bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 {
 
@@ -1109,7 +1110,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
         vector_mask[n+i]=0;
     
     //ToDo
-    if ((!VectorOperations::CalcIntersectionBetweenLineAndPixelLineGeometry(j,p_vb->get_ogr_geometry_ref(),num_points,p_x)) || 
+    if ((!VectorOperations::IntersectYLineWithPixelLineGeometry(j,p_vb->get_ogr_geometry_ref(),num_points,p_x)) || 
         (num_points == 0) || ((num_points%2)==1))
       continue;
             
@@ -1175,7 +1176,7 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 
   return TRUE;
 }
-
+*/
 
 
 bool	RasterBuffer::CreateAlphaBandByRGBColor(unsigned char	*pRGB, int tolerance)

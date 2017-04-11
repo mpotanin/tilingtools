@@ -57,7 +57,7 @@ public:
 	bool			ConvertFromPanToRGB();
 	bool			CreateAlphaBandByRGBColor(unsigned char	*p_rgb, int tolerance = 0);
 
-	bool      CreateAlphaBandByPixelLinePolygon(VectorOperations *p_vb);
+	//bool      CreateAlphaBandByPixelLinePolygon(VectorOperations *p_vb);
 
   bool			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
