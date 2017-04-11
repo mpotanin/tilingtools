@@ -295,7 +295,8 @@ bool		GMXTileContainer::Close()
   else
 	{
     if (p_tile_cache_) WriteTilesToContainerFileFromCache();
-    _fseeki64(pp_container_volumes_[0],0,0);
+    //_fseeki64(pp_container_volumes_[0],0,0);
+    fseek(pp_container_volumes_[0], 0, 0);
     unsigned char* header;
     this->WriteHeaderToByteArray(header);
     fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
@@ -506,7 +507,8 @@ int GMXTileContainer::FillUpCurrentVolume ()
 {
 
   int volume_num = GetVolumeNum(container_byte_size_);
-  _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  fseek(pp_container_volumes_[volume_num], 0, SEEK_END);
   int block_size = max_volume_size_ - (container_byte_size_ % max_volume_size_);
   unsigned char *block = new unsigned char[block_size];
   for (int i=0;i<block_size;i++)
@@ -590,7 +592,8 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
       return FALSE;
   }
 
-  _fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
+  fseek(pp_container_volumes_[volume_num], 0, SEEK_END);
   fwrite(p_data,sizeof(char),size,pp_container_volumes_[volume_num]);
   
   p_offsets_[n] = container_byte_size_;
@@ -616,7 +619,8 @@ bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, unsigned c
     }
   }
 
-  _fseeki64(pp_container_volumes_[volume_num],GetTileOffsetInVolume(p_offsets_[n]),0);
+  //_fseeki64(pp_container_volumes_[volume_num],GetTileOffsetInVolume(p_offsets_[n]),0);
+  fseek(pp_container_volumes_[volume_num], GetTileOffsetInVolume(p_offsets_[n]), 0);
   p_data			= new unsigned char[size];
 	return (size==fread(p_data,1,size,pp_container_volumes_[volume_num]));
 };
