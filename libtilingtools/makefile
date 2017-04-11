@@ -1,5 +1,4 @@
 libtilingtools:
-	gcc -std=c++11 -I /usr/include/gdal -c tilingparameters.h -o tilingparameters.o
 	gcc -std=c++11 -I /usr/include/gdal -c vectorborder.cpp -o vectorborder.o
 	gcc -std=c++11 -I /usr/include/gdal -c tilingfuncs.cpp -o tilingfuncs.o
 	gcc -std=c++11 -I /usr/include/gdal -c tilename.cpp -o tilename.o
@@ -10,4 +9,5 @@ libtilingtools:
 	gcc -std=c++11 -I /usr/include/gdal -c rasterbuffer.cpp -o rasterbuffer.o
 	gcc -std=c++11 -I /usr/include/gdal -c filesystemfuncs.cpp -o filesystem.o
 	gcc -std=c++11 -I /usr/include/gdal -c hystogram.cpp -o hystogram.o
+	gcc -std=c++11 -I /usr/include/gdal -c tilingparameters.h -o tilingparameters.o
 	gcc -std=c++11 -I /usr/include/gdal -c consoleutils.cpp -o consoleutils.o

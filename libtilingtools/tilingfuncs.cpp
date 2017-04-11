@@ -14,17 +14,10 @@ bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
 }
 
 
-//parse Tiling Parameters:
-//  init BundleTiler
-//  init ITileContainer instance - how to choose container type
-//  RunBaseZoomTiling
-//  MakePyramid
-// Close TC - extractAndStoreMetadata
-
 
 bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 {
-	LONG t_ = time(0);
+	long t_ = time(0);
 	srand(t_%10000);
 	BundleTiler		raster_bundle;
   MercatorTileMatrixSet merc_grid( p_tiling_params->merc_type_);

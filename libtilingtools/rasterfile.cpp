@@ -1,20 +1,18 @@
 #include "rasterfile.h"
-
 #include "stringfuncs.h"
 #include "filesystemfuncs.h"
 
+
+int GMXPrintProgressStub(double dfComplete, const char *pszMessage, void * pProgressArg)
+{
+  return 1;
+}
 
 
 namespace gmx
 {
 
 extern int CURR_WORK_THREADS = 0;
-
-
-int _stdcall gmxPrintNoProgress ( double dfComplete, const char *pszMessage, void * pProgressArg )
-{
-	return 1;
-}
 
 
 bool RasterFile::Close()
@@ -809,7 +807,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
       }
     }
     
-    p_warp_options->pfnProgress = gmxPrintNoProgress;  
+    p_warp_options->pfnProgress = GMXPrintProgressStub;
+    //p_warp_options->pfnProgress = 0;
 
     p_warp_options->pTransformerArg = p_src_wkt ?
 				GDALCreateApproxTransformer( GDALGenImgProjTransform, 

@@ -221,7 +221,7 @@ VECTORDS* VectorOperations::OpenVectorFile(string strVectorFile, bool bReadOnly)
 #ifdef GDAL_OF_VECTOR
   return (VECTORDS*)GDALOpenEx(strVectorFile.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
 #else
-  return (VECTORDS*)OGROpen(vector_file.c_str(), 0, 0);
+  return (VECTORDS*)OGROpen(strVectorFile.c_str(), 0, 0);
 #endif
 }
 

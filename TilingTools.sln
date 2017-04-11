@@ -4,8 +4,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imagetiling", "imagetiling\imagetiling.vcxproj", "{EDE7ED09-BCF3-4A00-91B6-ECF5655BC300}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B42922FF-F567-4539-BCAA-91BF3E33B9FE} = {B42922FF-F567-4539-BCAA-91BF3E33B9FE}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "copytiles", "copytiles\copytiles.vcxproj", "{BCD915A9-4AFD-450D-B8B8-70B4C7C3C69B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B42922FF-F567-4539-BCAA-91BF3E33B9FE} = {B42922FF-F567-4539-BCAA-91BF3E33B9FE}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtilingtools", "libtilingtools\libtilingtools.vcxproj", "{B42922FF-F567-4539-BCAA-91BF3E33B9FE}"
 EndProject

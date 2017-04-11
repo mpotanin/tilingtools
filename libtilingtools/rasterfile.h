@@ -2,11 +2,14 @@
 #include "stdafx.h"
 #include "vectorborder.h"
 #include "rasterbuffer.h"
-#include "tileName.h"
+#include "tilename.h"
 #include "tilecontainer.h"
 #include "tilingparameters.h"
 
 using namespace std;
+
+int GMXPrintProgressStub(double, const char*, void*);
+
 
 namespace gmx
 {
@@ -85,8 +88,6 @@ protected:
 	GDALDataType gdal_data_type_;
 };
 
-
-int _stdcall gmxPrintNoProgress ( double, const char*,void*);
 
 
 class BundleTiler
