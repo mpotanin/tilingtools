@@ -19,8 +19,8 @@ public:
 
  	static string				      GetVectorFileNameByRasterFileName	(string raster_file);
 	static OGRPolygon*			  CreateOGRPolygonByOGREnvelope		(const OGREnvelope &envelope);
-	static OGREnvelope			  MergeEnvelopes					(OGREnvelope	&envp1, OGREnvelope	&envp2);
-	static OGREnvelope			  InetersectEnvelopes				(OGREnvelope	&envp1, OGREnvelope	&envp2);
+	static OGREnvelope			  MergeEnvelopes					(const OGREnvelope	&envp1, const OGREnvelope	&envp2);
+	static OGREnvelope			  InetersectEnvelopes				(const OGREnvelope	&envp1, const OGREnvelope	&envp2);
 	static OGRLinearRing**		GetLinearRingsRef					(OGRGeometry	*p_ogr_geom, int &num_rings);
   //static bool               IntersectYLineWithPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x);
   static bool               IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeometry *po_ogr_geom);

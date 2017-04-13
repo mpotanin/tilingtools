@@ -42,14 +42,14 @@ string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 }
 
 
-OGREnvelope	VectorOperations::MergeEnvelopes (OGREnvelope	&envp1, OGREnvelope	&envp2)
+OGREnvelope	VectorOperations::MergeEnvelopes (const OGREnvelope	&envp1, const OGREnvelope	&envp2)
 {
 	OGREnvelope envp(envp1);
   envp.Merge(envp2);
   return envp;
 }
 
-OGREnvelope	VectorOperations::InetersectEnvelopes (OGREnvelope	&envp1,OGREnvelope	&envp2)
+OGREnvelope	VectorOperations::InetersectEnvelopes (const OGREnvelope	&envp1, const OGREnvelope	&envp2)
 {
 	OGREnvelope envp(envp1);
   envp.Intersect(envp2);

@@ -909,13 +909,14 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
       double nodata_val = (p_tiling_params->p_transparent_color_) ?
                            p_tiling_params->p_transparent_color_[0] : 0;
+      map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
       if (!CalclLinearStretchTo8BitParams(p_stretch_min_values,
                                                     p_stretch_max_values,
                                                     (p_tiling_params->p_transparent_color_) ?
                                                     &nodata_val : 0,
                                                     p_tiling_params->p_bundle_input_->GetBandsNum(),
                                                     p_tiling_params->p_bundle_input_->GetBandsNum() ?
-                                                    &p_tiling_params->p_bundle_input_->GetBandMapping() : 0))
+                                                    &band_mapping : 0))
       {
         cout<<"ERROR: can't calculate parameters of auto stretching to 8 bit"<<endl;
 			  return FALSE;
