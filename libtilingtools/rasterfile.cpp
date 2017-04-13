@@ -309,15 +309,12 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
 
   //ToDo...
   int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
-
   map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
- 
-    
   bool warp_result = WarpChunkToBuffer(zoom,
                                       chunk_envp,
                                       p_merc_buffer,
                                       bands_num,
-                                      bands_num==0 ? 0 : &p_tiling_params->p_bundle_input_->GetBandMapping(),
+                                      bands_num == 0 ? 0 : &band_mapping,
                                       p_tiling_params->gdal_resampling_,
                                       p_tiling_params->p_transparent_color_,
                                       p_tiling_params->p_background_color_,
@@ -496,7 +493,7 @@ OGREnvelope BundleTiler::CalcEnvelope()
                                                                                   (*iter).second->tiling_srs_envp_)
                                               );
     }
-    else envp = VectorOperations::MergeEnvelopes(envp,((*iter).second->tiling_srs_envp_));
+    else envp = VectorOperations::MergeEnvelopes(envp,(*iter).second->tiling_srs_envp_);
 	}
 	return envp; 
 }
@@ -1071,7 +1068,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 											p_buffer->get_data_type(),
 											FALSE,
 											p_buffer->get_color_table_ref());
-      delete[]p_tile_pixel_data;
+      delete[]((unsigned char*)p_tile_pixel_data);
       
       if (p_tiling_params->p_transparent_color_ != NULL  && 
           p_tiling_params->tile_type_ == PNG_TILE)
@@ -1161,12 +1158,7 @@ map<string,int*> BundleInputData::GetBandMapping()
 {
   map<string,int*> raster_and_bands;
   for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
-  {
-    if (bands_num_==0)
-      raster_and_bands[(*iter).first] = 0;
-    else
-      raster_and_bands[(*iter).first] = (*iter).second.second;
-  }
+    raster_and_bands[(*iter).first] = (bands_num_ == 0) ? 0 : (*iter).second.second;
   return raster_and_bands;
 }
 
