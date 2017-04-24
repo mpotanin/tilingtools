@@ -18,7 +18,7 @@ extern int CURR_WORK_THREADS = 0;
 bool RasterFile::Close()
 {
   if (p_gdal_ds_) delete(p_gdal_ds_);
-  p_gdal_ds_ = NULL;
+  p_gdal_ds_ = 0;
 	
 	raster_file_="";
 	num_bands_= 0;
@@ -36,17 +36,17 @@ bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char ba
 
   if (!p_ds) return FALSE;
   if (p_ds->GetRasterCount() == 0 || p_ds->GetRasterXSize() == 0 || p_ds->GetRasterYSize()==0 || 
-    p_ds->GetRasterBand(1) == NULL || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return NULL;
+    p_ds->GetRasterBand(1) == 0 || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return 0;
 
   RasterBuffer rb;
-  if (!rb.CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),NULL,p_ds->GetRasterBand(1)->GetRasterDataType(),0,NULL))
+  if (!rb.CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),0,p_ds->GetRasterBand(1)->GetRasterDataType(),0,0))
     return FALSE;
 
   rb.InitByRGBColor(background);
 
   if (!p_ds->RasterIO(GF_Write,0,0,p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
                       rb.get_pixel_data_ref(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
-                      rb.get_data_type(),rb.get_num_bands(),NULL,0,0,0)) 
+                      rb.get_data_type(),rb.get_num_bands(),0,0,0,0)) 
                       return FALSE;
   
   return TRUE;
@@ -58,7 +58,7 @@ bool RasterFile::Init(string raster_file)
 	Close();
 	p_gdal_ds_ = (GDALDataset *) GDALOpen(raster_file.c_str(), GA_ReadOnly );
 	
-	if (p_gdal_ds_==NULL)
+	if (p_gdal_ds_==0)
 	{
 		cout<<"ERROR: RasterFile::init: can't open raster image"<<endl;
     Close();
@@ -148,10 +148,10 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
 
 bool	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
 {
-	if (this->p_gdal_ds_ == NULL) return FALSE;
+	if (this->p_gdal_ds_ == 0) return FALSE;
   if (this->p_gdal_ds_->GetRasterCount()<band_num) return FALSE;
   if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(band_num)->SetNoDataValue(*p_nodata_val);
-  return (CE_None==p_gdal_ds_->GetRasterBand(band_num)->ComputeStatistics(0,&min,&max,&mean,&std,NULL,NULL));
+  return (CE_None==p_gdal_ds_->GetRasterBand(band_num)->ComputeStatistics(0,&min,&max,&mean,&std,0,0));
 }
 
 
@@ -164,7 +164,7 @@ double RasterFile::get_nodata_value (bool &nodata_defined)
 
 RasterFile::RasterFile()
 {
-	p_gdal_ds_=NULL;
+	p_gdal_ds_=0;
 	raster_file_="";
 	num_bands_= 0;
 	nodata_value_=0;
@@ -181,7 +181,7 @@ RasterFile::~RasterFile(void)
 
 bool RasterFile::GetPixelSize (int &width, int &height)
 {  
-	if (this->p_gdal_ds_ == NULL)
+	if (this->p_gdal_ds_ == 0)
   {	
     width=0;
     height=0;
@@ -484,7 +484,7 @@ OGREnvelope BundleTiler::CalcEnvelope()
 
 	for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
 	{
-    if ((*iter).second->tiling_srs_cutline_ != NULL)
+    if ((*iter).second->tiling_srs_cutline_ != 0)
     {
       OGREnvelope envp_cutline;
       (*iter).second->tiling_srs_cutline_->getEnvelope(&envp_cutline);
@@ -521,7 +521,7 @@ int	BundleTiler::CalcNumberOfTiles (int zoom)
 
 double BundleTiler::GetNodataValue(bool &nodata_defined)
 {
-  if (item_list_.size()==0) return NULL;
+  if (item_list_.size()==0) return 0;
   RasterFile rf;
   rf.Init((*item_list_.begin()).first);
   return rf.get_nodata_value(nodata_defined);
@@ -648,7 +648,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
 	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
-	if (p_src_ds==NULL)
+	if (p_src_ds==0)
 	{
 		cout<<"ERROR: can't open raster file: "<<(*item_list_.begin()).first<<endl;
 		return FALSE;
@@ -674,7 +674,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 								buf_height,
 								bands_num_dst,
 								dt,
-								NULL
+								0
 								);
   if (p_src_ds->GetRasterBand(1)->GetColorTable())
 		p_vrt_ds->GetRasterBand(1)->SetColorTable(p_src_ds->GetRasterBand(1)->GetColorTable());
@@ -688,7 +688,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	geotransform[4] = 0;
 	geotransform[5] = -res;
 	p_vrt_ds->SetGeoTransform(geotransform);
-	char *p_dst_wkt = NULL;
+	char *p_dst_wkt = 0;
   p_tile_mset_->GetTilingSRS()->exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
   
@@ -715,7 +715,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
     //check if image envelope Intersects destination buffer envelope
     if (!(*iter).second->tiling_srs_envp_.Intersects(chunk_envp)) continue;
 			
-    if ((*iter).second->tiling_srs_cutline_ != NULL)
+    if ((*iter).second->tiling_srs_cutline_ != 0)
 		{
 			if (!(*iter).second->tiling_srs_cutline_->Intersects(p_chunk_geom)) continue;
 		}
@@ -732,12 +732,12 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
     if (input_srs_defined)
     {
       input_rf_srs.exportToWkt(&p_src_wkt);
-      CPLAssert(p_src_wkt != NULL && strlen(p_src_wkt) > 0);
+      CPLAssert(p_src_wkt != 0 && strlen(p_src_wkt) > 0);
     }
     else p_src_wkt = 0;   
   
     GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
-    p_warp_options->papszWarpOptions = NULL;
+    p_warp_options->papszWarpOptions = 0;
   
    	p_warp_options->hSrcDS = p_src_ds;
 		p_warp_options->hDstDS = p_vrt_ds;
@@ -836,7 +836,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
     if (p_warp_options->hCutline)
     {
       delete((OGRGeometry*)p_warp_options->hCutline);
-      p_warp_options->hCutline = NULL;
+      p_warp_options->hCutline = 0;
     }
 
     if (p_warp_options->padfSrcNoDataReal)
@@ -844,14 +844,14 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
       delete[]p_warp_options->padfSrcNoDataReal;
       delete[]p_warp_options->padfSrcNoDataImag;
       
-      p_warp_options->padfSrcNoDataReal = NULL;
-      p_warp_options->padfSrcNoDataImag = NULL;
+      p_warp_options->padfSrcNoDataReal = 0;
+      p_warp_options->padfSrcNoDataImag = 0;
     }
 
     delete[]p_warp_options->panSrcBands;
     delete[]p_warp_options->panDstBands;
-    p_warp_options->panSrcBands = NULL;
-    p_warp_options->panDstBands = NULL;
+    p_warp_options->panSrcBands = 0;
+    p_warp_options->panDstBands = 0;
    
 		GDALDestroyWarpOptions( p_warp_options );
 		OGRFree(p_src_wkt);
@@ -867,11 +867,11 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	}
   delete(p_chunk_geom);
 
-	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,NULL,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,0,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 
   p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
-						p_dst_buffer->get_num_bands(),NULL,0,0,0);
+						p_dst_buffer->get_num_bands(),0,0,0,0);
 
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
@@ -893,7 +893,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
   if (tiles_expected == 0) return FALSE;
  
   bool		need_stretching = false;
-	double		*p_stretch_min_values = NULL, *p_stretch_max_values = NULL;
+	double		*p_stretch_min_values = 0, *p_stretch_max_values = 0;
 
   const int MAX_WORK_THREADS = p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : 2;
   const int TILE_CHUNK_WIDTH = p_tiling_params->tile_chunk_size_ != 0 ? p_tiling_params->tile_chunk_size_ :
@@ -1071,14 +1071,14 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 											p_buffer->get_color_table_ref());
       delete[]((unsigned char*)p_tile_pixel_data);
       
-      if (p_tiling_params->p_transparent_color_ != NULL  && 
+      if (p_tiling_params->p_transparent_color_ != 0  && 
           p_tiling_params->tile_type_ == PNG_TILE)
         tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, 
                                               p_tiling_params->nodata_tolerance_);
-      if (p_tile_container != NULL)
+      if (p_tile_container != 0)
 			{
 				
-				void *p_data=NULL;
+				void *p_data=0;
 				int size = 0;
 				switch (p_tiling_params->tile_type_)
 				{

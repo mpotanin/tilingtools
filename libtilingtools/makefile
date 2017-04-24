@@ -8,6 +8,5 @@ libtilingtools:
 	gcc -std=c++11 -I /usr/include/gdal -c rasterfile.cpp -o rasterfile.o
 	gcc -std=c++11 -I /usr/include/gdal -c rasterbuffer.cpp -o rasterbuffer.o
 	gcc -std=c++11 -I /usr/include/gdal -c filesystemfuncs.cpp -o filesystem.o
-	gcc -std=c++11 -I /usr/include/gdal -c hystogram.cpp -o hystogram.o
-	gcc -std=c++11 -I /usr/include/gdal -c tilingparameters.h -o tilingparameters.o
+	gcc -std=c++11 -I /usr/include/gdal -c histogram.cpp -o histogram.o
 	gcc -std=c++11 -I /usr/include/gdal -c consoleutils.cpp -o consoleutils.o

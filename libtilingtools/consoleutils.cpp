@@ -4,6 +4,7 @@
 
 string GMXGDALLoader::strGDALWinVer = "201";
 
+#ifdef _WIN32
 void	GMXGDALLoader::SetWinEnvVars (string gdal_path)
 {
 	wstring env_PATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
@@ -19,6 +20,16 @@ void	GMXGDALLoader::SetWinEnvVars (string gdal_path)
 
 }
 
+bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
+{
+  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir, "bins/gdal" + strDllVer + ".dll");
+  HMODULE b = LoadLibraryW(GMXString::utf8toWStr(strGDALDLL).c_str());
+  if (b == NULL)
+    cout << "ERROR: can't load GDAL by path: " << strGDALDLL << endl;
+
+  return (b != NULL);
+}
+#endif
 
 bool GMXGDALLoader::Load (string strExecPath)
 {
@@ -49,15 +60,6 @@ bool GMXGDALLoader::Load (string strExecPath)
 	return true;
 }
 
-bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
-{
-  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir,"bins/gdal"+strDllVer+".dll");
-  HMODULE b = LoadLibraryW(GMXString::utf8toWStr(strGDALDLL).c_str());
-  if (b==NULL)
-    cout<<"ERROR: can't load GDAL by path: "<<strGDALDLL<<endl;
-  
-  return (b != NULL);
-}
 
 
 string GMXGDALLoader::ReadPathFromConfigFile (string config_file_path)
