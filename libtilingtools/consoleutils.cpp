@@ -67,7 +67,7 @@ string GMXGDALLoader::ReadPathFromConfigFile (string config_file_path)
 	string	configFile = (config_file_path=="") ? "TilingTools.config" : GMXFileSys::GetAbsolutePath (config_file_path,"TilingTools.config");
 	string  config_str = GMXFileSys::ReadTextFile(configFile) + ' ';
 
-	std::tr1::regex rx_template;
+	std::regex rx_template;
 	rx_template = "^GdalPath=(.*[^\\s$])";
 	match_results<string::const_iterator> mr;
 	regex_search(config_str, mr, rx_template);

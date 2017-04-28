@@ -10,3 +10,4 @@ libtilingtools:
 	gcc -std=c++11 -I /usr/include/gdal -c filesystemfuncs.cpp -o filesystem.o
 	gcc -std=c++11 -I /usr/include/gdal -c histogram.cpp -o histogram.o
 	gcc -std=c++11 -I /usr/include/gdal -c consoleutils.cpp -o consoleutils.o
+	ar cr libtilingtools.a vectorborder.o tilingfuncs.o tilename.o tilecontainer.o tilecache.o stringfuncs.o rasterfile.o rasterbuffer.o filesystem.o histogram.o consoleutils.o
