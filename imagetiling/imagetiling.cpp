@@ -19,6 +19,10 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 {
   gmx::TilingParameters oTilingParams;
 
+  //debug
+  //end-debug
+
+
   if (oOptionParser.GetValueList("-i").size() == 0)
   {
     cout << "ERROR: missing \"-i\" parameter" << endl;
@@ -236,6 +240,7 @@ const string astrUsageExamples[] =
   "imagetiling -i images/*.tif -of mbtiles -o images_tiles -tnt {z}_{x}_{y}.png",
   "imagetiling -i image.tif -b zone.shp -nd 0 -of mbtiles -o image.mbtiles -tt png"
 };
+
 
 
 

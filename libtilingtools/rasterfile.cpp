@@ -930,7 +930,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 	int minx,maxx,miny,maxy;
   p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
 
-  list<future<int>> tiling_results;
+  list<future<int>> tiling_threads;
   
   //ToDo shoud refactor this cycle - thread creation and control 
   int chunk_num=0;
@@ -951,20 +951,18 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 																					curr_max_y);
 			if (!Intersects(chunk_envp)) continue;
 	    
-      while (CURR_WORK_THREADS >= MAX_WORK_THREADS)        
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-      
-      if (!InspectTilingResults(tiling_results))
+      while (tiling_threads.size() >= MAX_WORK_THREADS)
       {
-        TerminateTilingThreads(tiling_results);
-        cout<<"ERROR: occured in BaseZoomTiling"<<endl;
-        return false;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        if (!InspectTilingThreads(tiling_threads))
+        {
+          TerminateTilingThreads(tiling_threads);
+          cout << "ERROR: occured in BaseZoomTiling" << endl;
+          return false;
+        }
       }
-      
-      
-      gmx::CURR_WORK_THREADS++;
-      
-      tiling_results.push_back(
+             
+      tiling_threads.push_back(
         std::async(BundleTiler::CallRunChunk,
                    this,
                    p_tiling_params,
@@ -979,36 +977,34 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
                    (chunk_num++)
                    ));
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      //debug
-      //cout << tiling_results.size()<<endl;
-      //end-debug
     }
 	}
 
-  while (CURR_WORK_THREADS > 0)
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-  if (!InspectTilingResults(tiling_results))
+  while (tiling_threads.size() > 0)
   {
-    TerminateTilingThreads(tiling_results);
-    cout << "ERROR: occured in BaseZoomTiling" << endl;
-    return false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (!InspectTilingThreads(tiling_threads))
+    {
+      TerminateTilingThreads(tiling_threads);
+      cout << "ERROR: occured in BaseZoomTiling" << endl;
+      return false;
+    }
   }
-
+    
   return true;
 }
 
 
-bool BundleTiler::InspectTilingResults(list<future<int>> &tiling_results)
+bool BundleTiler::InspectTilingThreads(list<future<int>> &tiling_threads)
 {
-  for (list<future<int>>::iterator iter=tiling_results.begin(); iter!=tiling_results.end(); iter++)
+  for (list<future<int>>::iterator iter=tiling_threads.begin(); iter!=tiling_threads.end(); iter++)
   {
     if ((*iter).wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
     {
       if ((*iter).get()!=0) return false;
       else
       {
-        tiling_results.erase(iter);
+        tiling_threads.erase(iter);
         break;
       }
     }
@@ -1017,9 +1013,9 @@ bool BundleTiler::InspectTilingResults(list<future<int>> &tiling_results)
 }
 
 
-bool BundleTiler::TerminateTilingThreads(list<future<int>> &tiling_results)
+bool BundleTiler::TerminateTilingThreads(list<future<int>> &tiling_threads)
 {
-  for (list<future<int>>::iterator iter = tiling_results.begin(); iter != tiling_results.end(); iter++)
+  for (list<future<int>>::iterator iter = tiling_threads.begin(); iter != tiling_threads.end(); iter++)
   {
 #ifdef _WIN32
     //(*iter).first->

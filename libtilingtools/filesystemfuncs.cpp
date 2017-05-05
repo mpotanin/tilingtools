@@ -8,10 +8,10 @@
 bool	GMXFileSys::WriteToTextFile (string strFileName, string strText)
 {
 	FILE *fp = GMXFileSys::OpenFile(strFileName,"w");
-	if (!fp) return FALSE;
+	if (!fp) return false;
 	fprintf(fp,"%s",strText.data());
 	fclose(fp);
-	return TRUE;
+	return true;
 }
 
 
@@ -239,7 +239,7 @@ bool GMXFileSys::WriteWLDFile (string strRasterFile, double dblULX, double dblUL
 	}
 	
 	FILE *fp = GMXFileSys::OpenFile(strRasterFile,"w");
-	if (!fp) return FALSE;
+	if (!fp) return false;
 
 	fprintf(fp,"%.10lf\n",dblRes);
 	fprintf(fp,"%lf\n",0.0);
@@ -250,7 +250,7 @@ bool GMXFileSys::WriteWLDFile (string strRasterFile, double dblULX, double dblUL
 	
 	fclose(fp);
 
-	return TRUE;
+	return true;
 }
 
 
@@ -299,11 +299,11 @@ bool		GMXFileSys::CreateDir(string strPath)
 bool	GMXFileSys::SaveDataToFile(string strFileName, void *pabData, int nSize)
 {
 	FILE *fp;
-	if (!(fp = GMXFileSys::OpenFile(strFileName,"wb"))) return FALSE;
+	if (!(fp = GMXFileSys::OpenFile(strFileName,"wb"))) return false;
 	fwrite(pabData,sizeof(char),nSize,fp);
 	fclose(fp);
 	
-	return TRUE;
+	return true;
 }
 
 
@@ -335,7 +335,7 @@ string  GMXFileSys::ReadTextFile(string strFileName)
 bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 {
 	FILE *fp = GMXFileSys::OpenFile(strFileName,"rb");
-	if (!fp) return FALSE;
+	if (!fp) return false;
 	fseek(fp, 0, SEEK_END);
 	nSize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -344,7 +344,7 @@ bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 	fread(pabData,sizeof(char),nSize,fp);
 
 	fclose(fp);
-	return TRUE;
+	return true;
 }
 
 

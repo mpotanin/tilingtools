@@ -14,9 +14,6 @@ int GMXPrintProgressStub(double, const char*, void*);
 namespace gmx
 {
 
-extern int	CURR_WORK_THREADS;
-
-
 class RasterFileCutline
 {
 public:
@@ -167,7 +164,7 @@ protected:
 	bool			AddItemToBundle (string raster_file, string	vector_file);
   bool      AdjustCutlinesForOverlapping180Degree();
 
-  bool      InspectTilingResults(list<future<int>> &tiling_results);
+  bool      InspectTilingThreads(list<future<int>> &tiling_results);
   bool      TerminateTilingThreads(list<future<int>> &tiling_results);
    
 protected:
