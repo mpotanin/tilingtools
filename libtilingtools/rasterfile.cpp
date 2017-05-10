@@ -12,9 +12,6 @@ int GMXPrintProgressStub(double dfComplete, const char *pszMessage, void * pProg
 namespace gmx
 {
 
-extern int CURR_WORK_THREADS = 0;
-
-
 bool RasterFile::Close()
 {
   if (p_gdal_ds_) delete(p_gdal_ds_);
@@ -323,8 +320,7 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
   if (!warp_result)	
   {
 	  cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
-    gmx::CURR_WORK_THREADS--;
-	  return 1;
+    return 1;
 	}
 
   if (bStretchingNeeded)
@@ -332,8 +328,7 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
     if (! p_merc_buffer->StretchDataTo8Bit (p_stretch_min_values,p_stretch_max_values))
     {
       cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
-      gmx::CURR_WORK_THREADS--;
-			return 1;
+    	return 1;
 		}
 	}
   
@@ -346,12 +341,10 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
 										p_tile_container))
 	{
 			cout<<"ERROR: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
-			gmx::CURR_WORK_THREADS--;
       return 1;
 	}
 
   delete(p_merc_buffer);
-  gmx::CURR_WORK_THREADS--;
   return 0;
 }
 
@@ -951,19 +944,19 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 																					curr_max_y);
 			if (!Intersects(chunk_envp)) continue;
 	    
-      while (tiling_threads.size() >= MAX_WORK_THREADS)
+      if (tiling_threads.size() >= MAX_WORK_THREADS)
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        if (!InspectTilingThreads(tiling_threads))
+        if (!WaitForTilingThreads(&tiling_threads,MAX_WORK_THREADS))
         {
           TerminateTilingThreads(tiling_threads);
           cout << "ERROR: occured in BaseZoomTiling" << endl;
           return false;
         }
       }
-             
+
       tiling_threads.push_back(
-        std::async(BundleTiler::CallRunChunk,
+        std::async(GMXThreading::GetLaunchPolicy(),
+                   BundleTiler::CallRunChunk,
                    this,
                    p_tiling_params,
                    p_tile_container,
@@ -980,34 +973,35 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
     }
 	}
 
-  while (tiling_threads.size() > 0)
+  if (!WaitForTilingThreads(&tiling_threads, 1))
   {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if (!InspectTilingThreads(tiling_threads))
-    {
-      TerminateTilingThreads(tiling_threads);
-      cout << "ERROR: occured in BaseZoomTiling" << endl;
-      return false;
-    }
+    TerminateTilingThreads(tiling_threads);
+    cout << "ERROR: occured in BaseZoomTiling" << endl;
+    return false;
   }
     
   return true;
 }
 
 
-bool BundleTiler::InspectTilingThreads(list<future<int>> &tiling_threads)
+bool BundleTiler::WaitForTilingThreads(list<future<int>> *p_tiling_threads, int nMaxThreads)
 {
-  for (list<future<int>>::iterator iter=tiling_threads.begin(); iter!=tiling_threads.end(); iter++)
+  list<future<int>>::iterator iter;
+  while (p_tiling_threads->size() >= nMaxThreads)
   {
-    if ((*iter).wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+    for (iter = p_tiling_threads->begin(); iter != p_tiling_threads->end(); iter++)
     {
-      if ((*iter).get()!=0) return false;
-      else
+      if ((*iter).wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
       {
-        tiling_threads.erase(iter);
-        break;
+        if ((*iter).get() != 0) return false;
+        else
+        {
+          p_tiling_threads->erase(iter);
+          break;
+        }
       }
     }
+    if (iter == p_tiling_threads->end()) std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   return true;
 }

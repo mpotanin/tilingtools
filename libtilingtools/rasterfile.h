@@ -164,7 +164,7 @@ protected:
 	bool			AddItemToBundle (string raster_file, string	vector_file);
   bool      AdjustCutlinesForOverlapping180Degree();
 
-  bool      InspectTilingThreads(list<future<int>> &tiling_results);
+  bool      WaitForTilingThreads(list<future<int>> *p_tiling_threads, int nMaxThreads);
   bool      TerminateTilingThreads(list<future<int>> &tiling_results);
    
 protected:

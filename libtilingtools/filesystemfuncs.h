@@ -5,8 +5,6 @@
 class GMXFileSys
 {
 public:
-  GMXFileSys();
-  ~GMXFileSys();
   static string	RemovePath	(string strFile);
   static string RemoveExtension(string strFile);
   static string	GetPath(string strFileName);
@@ -31,4 +29,10 @@ public:
   static bool		RenameFile(string strOldPath, string strNewPath);
   static FILE*	OpenFile(string	strFileName, string strMode);
 
+};
+
+class GMXThreading
+{
+public:
+  static std::launch GetLaunchPolicy();
 };

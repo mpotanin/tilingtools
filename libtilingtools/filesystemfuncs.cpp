@@ -348,3 +348,11 @@ bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 }
 
 
+std::launch GMXThreading::GetLaunchPolicy()
+{
+#ifdef WIN32
+  return std::launch::async | std::launch::deferred;
+#else
+  return std::launch::async;
+#endif
+}
