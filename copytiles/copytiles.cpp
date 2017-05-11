@@ -24,25 +24,27 @@ const string astrUsageExamples[] =
 };
 
 
-int _tmain(int nArgs, wchar_t* argvW[])
+#ifdef WIN32
+int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
-  string *pastrArgs = new string[nArgs];
+  string* pastrArgs = new string[nArgs];
   for (int i = 0; i<nArgs; i++)
   {
-    GMXString::wstrToUtf8(pastrArgs[i], argvW[i]);
+    GMXString::wstrToUtf8(pastrArgs[i], pastrArgsW[i]);
     GMXString::ReplaceAll(pastrArgs[i], "\\", "/");
   }
+#else
+int main(int nArgs, char* pastrArgs[])
+{
+#endif
 
-  if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0]))) return 1;
-  GDALAllRegister();
-  OGRRegisterAll();
+  if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0])))
+  {
+    cout << "ERROR: can't load GDAL" << endl;
+    return 1;
+  }
 
-  //debug
-  //GMXOptionParser::InitCmdLineArgsFromFile("../autotest/debug_input.txt", nArgs, pastrArgs);
-  //for (int i=0;i<nArgs;i++) GMXString::ReplaceAll(pastrArgs[i],"\\","/");
-  //end-debug
-
-  
+  cout << endl;
 
   if (nArgs == 1)
   {
