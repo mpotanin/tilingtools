@@ -2,14 +2,14 @@
 
 ## Table of Contents
   * [Download binary](#download-binary)
-  * [Using ImageTiling](#using-imagetiling)
-  * [Using CopyTiles](#using-copytiles)
+  * [Using imagetiling](#using-imagetiling)
+  * [Using copytiles](#using-copytiles)
   * [Building from Source](#building-from-source)
   
 ## Download Binary
 [Download win-x64 binary 3.0.4 version (30.03.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.0.4-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
 
-## Using ImageTiling
+## Using imagetiling
 
 ### Parameters
 * **-i** - input raster file or file name template (**obligatory parameter**)
@@ -34,10 +34,10 @@
 
 ### Examples
 ```
-ImageTiling -i image.tif -of mbtiles -o image.mbtiles -tt png
-ImageTiling -i image1.tif -i image2.tif -o image1-2_tiles -tt jpg -z 18 -minz 10
-ImageTiling -i images/\*.tif -of mbtiles -o images_tiles -tnt {z}_{x}_{y}.png
-ImageTiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
+imagetiling -i image.tif -of mbtiles -o image.mbtiles -tt png
+imagetiling -i image1.tif -i image2.tif -o image1-2_tiles -tt jpg -z 18 -minz 10
+imagetiling -i images/\*.tif -of mbtiles -o images_tiles -tnt {z}_{x}_{y}.png
+imagetiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
 ```
 
 ## Using CopyTiles
@@ -62,8 +62,16 @@ ImageTiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
 
 ## Building from Source
 ### Building on Windows
-* download TilingTools repository
+* git clone tilingtools repository or download it as zip-archive 
 * unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include)
 * open TilingTools.sln with Visual Studio 2010/2013/2015
 * compile TilingTools (set in Configuration Manager: configuration=**Release, platform=x64**)
-* after compilation exe-files are located in /x64/Release path  
+* if compilation succeed exe-files will be created in folder /x64/Release/  
+
+### Building on Linux
+* requirements:
+  * gcc 4.9.0 or newer version
+  * development version of libraries: gdal, sqlite3, gd (run yum install command)
+* git clone tilingtools repository (git clone https://github.com/scanex/tilingtools tilingtools)
+* run libtilingtools/make
+* run imagetiling/make
