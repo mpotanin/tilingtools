@@ -34,8 +34,11 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
     GMXString::ReplaceAll(pastrArgs[i], "\\", "/");
   }
 #else
-int main(int nArgs, char* pastrArgs[])
+int main(int nArgs, char* argv[])
 {
+  string* pastrArgs = new string[nArgs];
+  for (int i = 0; i<nArgs; i++)
+    pastrArgs[i] = argv[i];
 #endif
 
   if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0])))
