@@ -8,9 +8,10 @@ public:
   static bool Load (string strExecPath);
 
 protected:
-  static void SetWinEnvVars (string gdal_path);
+  static void SetWinEnvVars (string strGDALPath);
   static bool LoadWinDll (string strGDALDir, string strDllVer);
-  static string ReadPathFromConfigFile (string config_file_path);
+  static string ReadPathFromConfigFile (string strConfigFilePpath);
+
 protected:
   static string strGDALWinVer;
 };
@@ -27,17 +28,26 @@ typedef struct
 class GMXOptionParser
 {
 public:
-  static bool InitCmdLineArgsFromFile (string strFileName,int &nArgs, string *&pastrArgv, string strExeFilePath="");
+  static bool InitCmdLineArgsFromFile (string strFileName, 
+                                      int &nArgs, 
+                                      string *&pastrArgv, 
+                                      string strExeFilePath="");
 
 public:
-  static void PrintUsage(const GMXOptionDescriptor asDescriptors[],
-                        int nDescriptors, 
-                        const string astrExamples[], 
-                        int nExamples);
-  bool Init(const GMXOptionDescriptor asDescriptors[], int nDescriptors, string astrArgs[], int nArgs);
-  string GetOptionValue(string strOptionName);
-  list<string> GetValueList(string strMultipleOptionName);
-  map<string,string> GetKeyValueCollection(string strMultipleKVOptionName);
+  static void PrintUsage (const GMXOptionDescriptor asDescriptors[],
+                          int nDescriptors, 
+                          const string astrExamples[], 
+                          int nExamples);
+    
+  bool Init (const GMXOptionDescriptor asDescriptors[], 
+              int nDescriptors, 
+              string astrArgs[], 
+              int nArgs);
+    
+  string GetOptionValue (string strOptionName);
+  list<string> GetValueList (string strMultipleOptionName);
+  map<string,string> GetKeyValueCollection (string strMultipleKVOptionName);
+
 private:
   void Clear();
 

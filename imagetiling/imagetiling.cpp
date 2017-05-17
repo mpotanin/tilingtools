@@ -242,10 +242,12 @@ const string astrUsageExamples[] =
 };
 
 
+
+
 #ifdef WIN32
-int _tmain(int nArgs, wchar_t* pastrArgsW[])
+int _tmain(int nArgs, wchar_t *pastrArgsW[])
 {
-  string* pastrArgs = new string[nArgs];
+  string *pastrArgs = new string[nArgs];
   for (int i = 0; i<nArgs; i++)
   {
     GMXString::wstrToUtf8(pastrArgs[i], pastrArgsW[i]);
