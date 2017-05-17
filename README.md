@@ -70,8 +70,9 @@ imagetiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
 
 ### Building on Linux
 * requirements:
+  * x64 platform
   * gcc 4.9.0 or newer version
-  * development version of libraries: gdal, sqlite3, gd (run yum install command)
+  * development x64 version of libraries: gdal, sqlite3, gd (run yum install command)
 * git clone tilingtools repository (git clone https://github.com/scanex/tilingtools tilingtools)
 * run libtilingtools/make
 * run imagetiling/make
