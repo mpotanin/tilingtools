@@ -268,6 +268,7 @@ int main(int nArgs, char* argv[])
 
   list<pair<int, pair<int, int>>> tile_list;
   cout << "calculating number of tiles: ";
+  fflush(stdout);
   cout << poSrcTC->GetTileList(tile_list, nMinZoom, nMaxZoom, strBorderFilePath) << endl;
 
   if (tile_list.size()>0)
@@ -290,7 +291,9 @@ int main(int nArgs, char* argv[])
 
       GMXPrintTilingProgress(tile_list.size(), tilesCopied);
     }
+    cout << " done." << endl;
   }
+
   if (logFile) fclose(logFile);
   if (poDestTC) poDestTC->Close();
   delete(poSrcTC);
