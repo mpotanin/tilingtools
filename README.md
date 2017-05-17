@@ -5,9 +5,12 @@
   * [Using imagetiling](#using-imagetiling)
   * [Using copytiles](#using-copytiles)
   * [Building from Source](#building-from-source)
+   * [Building on Windows](#building-on-windows)
+   * [Building on Linux](#building-on-linux)
+    
   
-## Download Binary
-[Download win-x64 binary 3.0.4 version (30.03.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.0.4-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
+## Download Windows Binary
+[Download win-x64 binary 3.1.0 version (17.05.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.1.0-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
 
 ## Using imagetiling
 
