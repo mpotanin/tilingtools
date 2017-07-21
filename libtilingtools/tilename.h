@@ -385,6 +385,8 @@ public:
 				return "tif";
       case JP2_TILE:
         return "jp2";
+      case PSEUDO_PNG_TILE:
+        return "png";
 		}
 		return "";
 	}

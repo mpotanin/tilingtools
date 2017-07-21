@@ -208,7 +208,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 }
 
 
-int nDescriptors = 18;
+int nDescriptors = 19;
 const GMXOptionDescriptor asDescriptors[] =
 {
   { "-i", 0, 1, "input path" },
