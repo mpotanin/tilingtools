@@ -5,9 +5,12 @@
   * [Using imagetiling](#using-imagetiling)
   * [Using copytiles](#using-copytiles)
   * [Building from Source](#building-from-source)
+   * [Building on Windows](#building-on-windows)
+   * [Building on Linux](#building-on-linux)
+    
   
-## Download Binary
-[Download win-x64 binary 3.0.4 version (30.03.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.0.4-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
+## Download Windows Binary
+[Download win-x64 binary 3.1.0 version (17.05.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.1.0-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
 
 ## Using imagetiling
 
@@ -62,6 +65,9 @@ imagetiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
 
 ## Building from Source
 ### Building on Windows
+* requirements:
+  * x64 platform
+  * Visual Studio 2010/2013/2015
 * git clone tilingtools repository or download it as zip-archive 
 * unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include)
 * open TilingTools.sln with Visual Studio 2010/2013/2015
@@ -72,7 +78,6 @@ imagetiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
 * requirements:
   * x64 platform
   * gcc 4.9.0 or newer version
-  * development x64 version of libraries: gdal, sqlite3, gd (run yum install command)
-* git clone tilingtools repository (git clone https://github.com/scanex/tilingtools tilingtools)
-* run libtilingtools/make
-* run imagetiling/make
+  * development x64 version of the libraries: gdal, sqlite3, gd (if git is installed you may run: ```apt-get install git make libgdal-dev sqlite3 libgd-dev```)
+* git clone tilingtools repository (```git clone https://github.com/scanex/tilingtools tilingtools```) or download it as zip-archive  
+* open tilingtools dir and run ```make```
