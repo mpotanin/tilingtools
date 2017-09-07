@@ -42,6 +42,59 @@ string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
 }
 
 
+OGRMultiPolygon* VectorOperations::ConvertFromSRSToPixelLine(OGRGeometry *p_ogr_geom, double geotransform[6])
+{
+  double d = geotransform[1] * geotransform[5] - geotransform[2] * geotransform[4];
+  if (fabs(d)< 1e-7) return 0;
+
+  OGRMultiPolygon* p_input_geom = 0;
+  int num_geom = p_ogr_geom->getGeometryType() == wkbMultiPolygon ? ((OGRMultiPolygon*)p_ogr_geom)->getNumGeometries() :
+                  p_ogr_geom->getGeometryType() == wkbPolygon ? 1 : 0;
+  if (num_geom == 0) return 0;
+
+  OGRMultiPolygon* p_output_geom = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
+  
+  for (int j = 0; j<num_geom; j++)
+  {
+    OGRPolygon* p_poly = p_ogr_geom->getGeometryType() == wkbMultiPolygon ? 
+      (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(j) : (OGRPolygon*)p_ogr_geom;
+    int num_rings = 0;
+    p_poly->closeRings();
+    OGRLinearRing** p_rings = VectorOperations::GetLinearRingsRef(p_poly,num_rings);
+   
+    if (num_rings == 0 || p_rings == 0)
+    {
+      delete (p_output_geom);
+      return 0;
+    }
+
+    OGRPolygon* p_output_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
+
+    for (int i = 0; i < num_rings; i++)
+    {
+      OGRLinearRing* p_input_ring = (OGRLinearRing*)p_rings[i];
+      OGRLinearRing* p_output_ring = (OGRLinearRing*)p_input_ring->clone();
+
+      for (int k = 0; k< p_input_ring->getNumPoints(); k++)
+      {
+        double x = p_input_ring->getX(k) - geotransform[0];
+        double y = p_input_ring->getY(k) - geotransform[3];
+
+        double l = (geotransform[1] * y - geotransform[4] * x) / d;
+        double p = (x - l*geotransform[2]) / geotransform[1];
+
+        p_output_ring->setPoint(k, (int)(p + 0.5), (int)(l + 0.5));
+      }
+      p_output_poly->addRingDirectly(p_output_ring);
+    }
+    
+    p_output_geom->addGeometryDirectly(p_output_poly);
+  }
+    
+  return p_output_geom;
+}
+
+
 OGREnvelope	VectorOperations::MergeEnvelopes (const OGREnvelope	&envp1, const OGREnvelope	&envp2)
 {
 	OGREnvelope envp(envp1);

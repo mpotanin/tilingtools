@@ -101,6 +101,19 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
       OGRSpatialReference raster_srs;
       if (this->GetSRS(raster_srs)) //ToDo - account for defaultsrs
       {
+        OGRMultiPolygon* p_raster_srs_geom = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file, &raster_srs);
+        if (p_raster_srs_geom == 0) 
+          cout << "ERROR: unable transform vector to raster SRS: " << cutline_file << endl;
+        else
+        {
+          double geotransform[6];
+          this->p_gdal_ds_->GetGeoTransform(geotransform);
+          p_rfc->p_pixel_line_cutline_ = VectorOperations::ConvertFromSRSToPixelLine(p_raster_srs_geom,geotransform);
+          delete(p_raster_srs_geom);
+        }
+        
+
+        /*
         OGRMultiPolygon *p_pixel_line_geom = 0;
         if (!(p_pixel_line_geom = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file, &raster_srs)))
           cout << "ERROR: unable transform geometry from vector: " << cutline_file << endl;
@@ -133,6 +146,7 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
           }
           delete(p_pixel_line_geom);
         }
+        */
       }
     }
   }
@@ -1115,7 +1129,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 }
 
 
-void BundleInputData::ClearAll()
+void BundleInput::ClearAll()
 {
   bands_num_=0;
   for ( map<string,pair<string,int*>>::iterator iter = m_mapInputData.begin(); iter!=m_mapInputData.end(); iter++)
@@ -1123,12 +1137,12 @@ void BundleInputData::ClearAll()
    m_mapInputData.empty();
 }
 
-BundleInputData::~BundleInputData()
+BundleInput::~BundleInput()
 {
   ClearAll();
 }
 
-list<string> BundleInputData::GetRasterFiles()
+list<string> BundleInput::GetRasterFiles()
 {
   list<string> listRasters;
   for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
@@ -1137,7 +1151,7 @@ list<string> BundleInputData::GetRasterFiles()
 }
 
 
-map<string,string> BundleInputData::GetFiles()
+map<string,string> BundleInput::GetFiles()
 {
   map<string,string> raster_and_vector;
   for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
@@ -1145,7 +1159,7 @@ map<string,string> BundleInputData::GetFiles()
   return raster_and_vector;
 }
 
-map<string,int*> BundleInputData::GetBandMapping()
+map<string,int*> BundleInput::GetBandMapping()
 {
   map<string,int*> raster_and_bands;
   for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
@@ -1154,7 +1168,7 @@ map<string,int*> BundleInputData::GetBandMapping()
 }
 
 
-bool  BundleInputData::InitByConsoleParams (  list<string> listInputParam, 
+bool  BundleInput::InitByConsoleParams (  list<string> listInputParam, 
                                               list<string> listBorderParam, 
                                               list<string> listBandParam)
 {

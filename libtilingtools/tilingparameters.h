@@ -7,10 +7,10 @@
 namespace gmx
 {
 
-class BundleInputData
+class BundleInput
 {
 public:
-  BundleInputData()
+  BundleInput()
   {
     bands_num_=0;
   };
@@ -25,7 +25,7 @@ public:
   map<string,string> GetFiles();
   list<string> GetRasterFiles();
 
-  ~BundleInputData();
+  ~BundleInput();
 
 protected:
   void ClearAll();
@@ -95,7 +95,7 @@ public:
 	gmx::TileName		*p_tile_name_;			//имена тайлов
   int             max_work_threads_;
   int             tile_chunk_size_;
-  gmx::BundleInputData     *p_bundle_input_;
+  gmx::BundleInput     *p_bundle_input_;
   map<string,string>    options_;
 
 };

@@ -13,6 +13,7 @@ namespace gmx
 class VectorOperations
 {
 public:
+  static OGRMultiPolygon*   ConvertFromSRSToPixelLine(OGRGeometry *p_ogr_geom, double geotransform[6]);
   static VECTORDS*          OpenVectorFile(string strVectorFile, bool bReadOnly=true);
   static void               CloseVECTORDS(VECTORDS* poVecDS);
   static OGRGeometry*		    ReadAndTransformGeometry				(string vector_file, OGRSpatialReference  *p_tiling_srs);
