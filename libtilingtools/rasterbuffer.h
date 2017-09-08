@@ -51,7 +51,7 @@ public:
 	bool			InitByValue(int value = 0);	
 
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
-	bool			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int bands = 0);
+	bool			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int band_min = -1, int band_max = -1);
 	void*			ZoomOut	(GDALResampleAlg resampling_method);	
 	bool			ConvertFromIndexToRGB ();
 	bool			ConvertFromPanToRGB();
@@ -81,7 +81,7 @@ protected:
 	template <typename T>	bool		InitByValue		(T type, int value);
 	template <typename T>	void*		GetPixelDataBlock	(	T type, int left, int top, int w, int h);
 	template <typename T>	bool		SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
-																                     void *p_block_data, int bands = 0);
+																                     void *p_block_data, int band_min = -1, int band_max = -1);
 	template <typename T>	void*		ZoomOut(T type, GDALResampleAlg resampling_method);
   template <typename T> bool    StretchDataTo8Bit(T type, double *min_values, double *max_values);
 

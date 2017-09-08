@@ -1213,32 +1213,37 @@ bool	RasterBuffer::CreateAlphaBandByRGBColor(unsigned char	*pRGB, int tolerance)
 //bool	RasterBuffer::createAlphaBandByValue(int	value);
 
 
-bool	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_block_data, int bands)
+bool	RasterBuffer::SetPixelDataBlock ( int left, 
+                                        int top, 
+                                        int w, 
+                                        int h, 
+                                        void *p_block_data, 
+                                        int band_min, 
+                                        int band_max)
 {
 	if (p_pixel_data_ == NULL || x_size_ == 0 || y_size_==0) return NULL;
-	bands = (bands==0) ? num_bands_ : bands;
-
+	
 	switch (data_type_)
 	{
 		case GDT_Byte:
 		{
 			unsigned char t = 1;
-			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
+			return SetPixelDataBlock(t,left,top,w,h,p_block_data,band_min,band_max);
 		}
 		case GDT_UInt16:
 		{
 			uint16_t t = 257;
-			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
+      return SetPixelDataBlock(t, left, top, w, h, p_block_data, band_min, band_max);
 		}
 		case GDT_Int16:
 		{
 			int16_t t = -257;
-			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
+      return SetPixelDataBlock(t, left, top, w, h, p_block_data, band_min, band_max);
 		}
 		case GDT_Float32:
 		{
 			float t = 1.1;
-			return SetPixelDataBlock(t,left,top,w,h,p_block_data,bands);
+      return SetPixelDataBlock(t, left, top, w, h, p_block_data, band_min, band_max);
 		}
 		default:
 			return FALSE;
@@ -1248,9 +1253,17 @@ bool	RasterBuffer::SetPixelDataBlock (int left, int top, int w, int h, void *p_b
 
 ///*
 template <typename T>
-bool	RasterBuffer::SetPixelDataBlock (T type, int left, int top, int w, int h, void *p_block_data, int bands)
+bool	RasterBuffer::SetPixelDataBlock(T type, 
+                                      int left,
+                                      int top,
+                                      int w,
+                                      int h,
+                                      void *p_block_data,
+                                      int band_min,
+                                      int band_max)
 {
-	bands = (bands==0) ? num_bands_ : bands;
+  band_min = band_min == -1 ? 0 : band_min;
+  band_max = band_max == -1 ? num_bands_ : band_max + 1;
 
 	int n = w*h;
 	int m = x_size_*y_size_;
@@ -1258,7 +1271,7 @@ bool	RasterBuffer::SetPixelDataBlock (T type, int left, int top, int w, int h, v
 	T *p_block_data_t = (T*)p_block_data;
 
 
-	for (int k=0;k<bands;k++)
+	for (int k=band_min;k<band_max;k++)
 	{
 		for (int j=left;j<left+w;j++)
 			for (int i=top;i<top+h;i++)

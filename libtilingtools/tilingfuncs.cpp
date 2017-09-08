@@ -319,7 +319,9 @@ bool GMXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4],
 									(n/2)*tile_size/2,
 									tile_size/2,
 									tile_size/2,
-									p_zoomed_data);
+									p_zoomed_data,
+                  0,
+                  src_quarter_tile_buffers[n].get_num_bands()-1);
 			delete[]((unsigned char*)p_zoomed_data);
 		}
 	}
