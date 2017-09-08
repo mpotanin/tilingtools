@@ -11,7 +11,7 @@ namespace gmx
 class ITileMatrixSet 
 {
 public:
-  virtual OGRSpatialReference* GetTilingSRS() =0;	
+  virtual OGRSpatialReference* GetTilingSRSRef() =0;	
   virtual double CalcPixelSizeByZoom (int zoom) = 0;
   virtual OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y) =0;
   virtual OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy) =0;
@@ -63,7 +63,7 @@ public:
     return merc_type_;
   };
   
-  OGRSpatialReference* GetTilingSRS()
+  OGRSpatialReference* GetTilingSRSRef()
   {
     return &merc_srs_;
   }
@@ -146,7 +146,7 @@ public:
     void* hTransformArg = 0;
     char* pszMercWKT = NULL;
  
-    if (CE_None != GetTilingSRS()->exportToWkt(&pszMercWKT)) return false;
+    if (CE_None != GetTilingSRSRef()->exportToWkt(&pszMercWKT)) return false;
     if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds,0,0,pszMercWKT,1,0.125,0)))
     {
       OGRFree(pszMercWKT);

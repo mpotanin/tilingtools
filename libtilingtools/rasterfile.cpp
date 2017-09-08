@@ -77,7 +77,7 @@ bool RasterFile::Init(string raster_file)
 RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string cutline_file)
 {
   if (!p_tile_mset) return 0;
-  OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRS();
+  OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
   if (!p_tiling_srs) return 0;
   RasterFileCutline* p_rfc = new RasterFileCutline();
     
@@ -255,7 +255,7 @@ bool	RasterFile::GetSRS(OGRSpatialReference  &srs, ITileMatrixSet* p_tile_mset)
     if (ReadSpatialRefFromMapinfoTabFile(tabFile,srs)) return true;
   }
   
-  if (p_tile_mset) return GetDefaultSpatialRef(srs,p_tile_mset->GetTilingSRS());
+  if (p_tile_mset) return GetDefaultSpatialRef(srs,p_tile_mset->GetTilingSRSRef());
   
 
   return false;
@@ -425,7 +425,7 @@ int	BundleTiler::Init (map<string,string> raster_vector, ITileMatrixSet* p_tile_
   else
   {
     char  *p_srs_proj4;
-    if (OGRERR_NONE!=p_tile_mset->GetTilingSRS()->exportToProj4(&p_srs_proj4)) 
+    if (OGRERR_NONE!=p_tile_mset->GetTilingSRSRef()->exportToProj4(&p_srs_proj4)) 
       return 0;
     p_tile_mset_=p_tile_mset;
     OGRFree(p_srs_proj4);
@@ -696,7 +696,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	geotransform[5] = -res;
 	p_vrt_ds->SetGeoTransform(geotransform);
 	char *p_dst_wkt = 0;
-  p_tile_mset_->GetTilingSRS()->exportToWkt( &p_dst_wkt );
+  p_tile_mset_->GetTilingSRSRef()->exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
   
   if (p_background_color)
