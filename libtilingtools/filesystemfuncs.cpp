@@ -331,6 +331,20 @@ string  GMXFileSys::ReadTextFile(string strFileName)
   return strFileContent;
 }
 
+bool GMXFileSys::ReadTextFile(string strFileName, list<string> &listLines)
+{
+  std::ifstream infile(strFileName.c_str());
+  if (infile.eof()) return false;
+  
+  string strLine;
+  while (getline(infile,strLine))
+    listLines.push_back(strLine);
+  infile.close();
+  
+  return true;  
+}
+
+
 
 bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 {

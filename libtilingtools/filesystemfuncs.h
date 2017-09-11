@@ -22,6 +22,8 @@ public:
   static bool		SaveDataToFile	(string strFileName, void *pabData, int nSize);
   static bool		ReadBinaryFile(string strFileName, void *&pabData, int &nSize);
   static string ReadTextFile(string strFileName);
+  static bool ReadTextFile(string strFileName, list<string> &listLines);
+
   static string	GetAbsolutePath (string strBasePath, string strRelativePath);
   static string	GetExtension (string strPath);
   static bool		CreateDir(string strPath);
