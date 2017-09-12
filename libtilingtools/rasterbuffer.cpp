@@ -1275,7 +1275,7 @@ bool	RasterBuffer::SetPixelDataBlock(T type,
 	{
 		for (int j=left;j<left+w;j++)
 			for (int i=top;i<top+h;i++)
-				p_pixel_data_t[m*k+i*x_size_+j] = p_block_data_t[n*k+(i-top)*w + j-left];
+				p_pixel_data_t[m*k+i*x_size_+j] = p_block_data_t[n*(k-band_min)+(i-top)*w + j-left];
 	}		
 
 	return TRUE;
