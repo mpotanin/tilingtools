@@ -18,7 +18,7 @@ public:
   static int		FindFilesByExtensionRecursive (list<string> &listFiles, string strFolder, string	strExtension);
 
   static bool		WriteToTextFile(string strFileName, string strText);
-  static bool		WriteWLDFile	(string strFileName, double dblULX, double dblULY, double dblRes);
+  static bool		WriteWLDFile	(string strRasterFile, double dblULX, double dblULY, double dblRes);
   static bool		SaveDataToFile	(string strFileName, void *pabData, int nSize);
   static bool		ReadBinaryFile(string strFileName, void *&pabData, int &nSize);
   static string ReadTextFile(string strFileName);
