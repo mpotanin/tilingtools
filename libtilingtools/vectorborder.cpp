@@ -348,15 +348,27 @@ OGRMultiPolygon* VectorOperations::ReadMultiPolygonFromOGRDataSource(VECTORDS* p
 	OGRMultiPolygon *p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
 	while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
 	{
-    if (OGRERR_NONE == p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
-      OGRFeature::DestroyFeature( poFeature);
-    else
+    switch (poFeature->GetGeometryRef()->getGeometryType())
     {
-      delete(p_ogr_multipoly);
-      OGRFeature::DestroyFeature( poFeature);
-      return 0;
+      case wkbPolygon:
+        if (OGRERR_NONE!=p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
+        {
+          delete(p_ogr_multipoly);
+          p_ogr_multipoly=0;
+        }  
+        break;
+      case wkbMultiPolygon:
+        delete(p_ogr_multipoly);
+        p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
+        break;
+      default:
+        delete(p_ogr_multipoly);
+        p_ogr_multipoly = 0;
+        break;
     }
-	}
+    OGRFeature::DestroyFeature(poFeature);
+    if (!p_ogr_multipoly) return 0;
+  }
 
 	return p_ogr_multipoly;
 };
