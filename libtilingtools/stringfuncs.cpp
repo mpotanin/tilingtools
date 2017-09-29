@@ -47,47 +47,19 @@ string GMXString::ConvertIntToString(int number, bool hexadecimal, int adjust_le
   }
 }
 
-
-int			GMXString::ParseCommaSeparatedArray (string input_str, int *&p_arr, bool is_missing_vals, int nodata_val)	
+list<string> GMXString::SplitCommaSeparatedText(string input_str)
 {
-  p_arr = 0;
-  while (input_str!="")
+  int pos=0;
+  input_str += ",";
+  list<string> listSplit;
+  while ((pos=input_str.find(',', 0)) != string::npos)
   {
-    if (input_str[0] ==' ') input_str=input_str.substr(1);
-    else if (input_str[input_str.size()-1] ==' ') input_str=input_str.substr(0,input_str.size()-1);
-    else break;
+    if (pos == 0) listSplit.push_back("");
+    else listSplit.push_back(input_str.substr(0,pos));    //listSplit.push_back()
+    input_str = input_str.substr(pos+1);
   }
-  if (input_str=="") return 0;
-
-  regex reg1("([0-9]+)(\\,[0-9]+)*");
-  regex reg2("[\\d\\,]*");
-    
-  if (is_missing_vals)
-  {
-     if (!regex_match(input_str,reg2)) return 0;
-  }
-  else
-  {
-    if (!regex_match(input_str,reg1)) return 0;
-  }
-
-  int pos = -1;
-  int len = 1;
-  while ((pos=input_str.find(',',pos+1))>=0)
-    len++;
-  p_arr = new int [len];
   
-  string str;
-  input_str+=",";
-  for (int i=0;i<len;i++)
-  {
-    str = input_str.substr(0,input_str.find(','));
-    p_arr[i] = !is_missing_vals ? atoi(str.c_str()) :
-             str == "" ? nodata_val :
-                         atoi(str.c_str());
-    input_str = input_str.substr(input_str.find(',')+1);
-  }
-  return len;
+  return listSplit;
 }
 
 

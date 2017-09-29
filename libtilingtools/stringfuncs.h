@@ -15,7 +15,7 @@ public:
   static string			ConvertIntToString		(int number, bool hexadecimal = FALSE, int adjust_len=0);
   //static string    ConvertIntToHexadecimalString (int number, int adjust_len = 0);
   static int				StrLen					(const unsigned char *str);
-  static int			  ParseCommaSeparatedArray	(string input_str, int *&p_arr, bool is_missing_vals=false, int nodata_val=0);		
+  static list<string>			  SplitCommaSeparatedText(string input_str);
 
   static void			utf8toWStr				(wstring& dest, const string& input);
   static void			wstrToUtf8				(string& dest, const wstring& input);

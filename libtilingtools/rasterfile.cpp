@@ -1189,20 +1189,18 @@ bool  BundleInput::InitByConsoleParams (  list<string> listInputParam,
   }
   else if (listBandParam.size()!=0)
   {
-    if(!(bands_num_=GMXString::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0)))
+    if (!(bands_num_ = GMXString::SplitCommaSeparatedText(*listBandParam.begin()).size()))
     {
       cout<<"ERROR: not valid option \"-bnd\" value: "<<*listBandParam.begin()<<endl;
       return false;
     }
-    else delete[]panBands;
     for (iterBand=(listBandParam.begin()++);iterBand!=listBandParam.end();iterBand++)
     {
-      if (bands_num_!=GMXString::ParseCommaSeparatedArray(*listBandParam.begin(),panBands,true,0))
+      if (bands_num_ != GMXString::SplitCommaSeparatedText(*iterBand).size())
       {
         cout<<"ERROR: not valid option \"-bnd\" value: "<<*iterBand<<endl;
         return false;
       }
-      delete[]panBands;
     }
   }
   
@@ -1237,7 +1235,20 @@ bool  BundleInput::InitByConsoleParams (  list<string> listInputParam,
       }
     }
        
-    if (bands_num_>0) GMXString::ParseCommaSeparatedArray(*iterBand,panBands,1,0);
+    if (bands_num_>0)
+    {
+      list<string> listBands = GMXString::SplitCommaSeparatedText(*iterBand);
+      panBands = new int[bands_num_];
+      int i=0;
+      for (string strBand : listBands)
+      {
+        if (strBand[0] == ' ') strBand = strBand.substr(1);
+        if (strBand != "")
+          strBand = strBand[strBand.size() - 1] == ' ' ? strBand.substr(0, strBand.size()-1) : strBand;
+        panBands[i] = strBand == "" ? 0 : atoi(strBand.c_str());
+        i++;
+      }
+    }
     
     list<string>::iterator vectorFile = listVectorFiles.begin();
     for (list<string>::iterator rasterFile=listRasterFiles.begin();
