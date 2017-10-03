@@ -74,7 +74,7 @@ bool RasterFile::Init(string raster_file)
 }
 
 
-RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string cutline_file)
+RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string cutline_file, double clip_offset)
 {
   if (!p_tile_mset) return 0;
   OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
@@ -95,15 +95,27 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
       cout << "ERROR: unable to read geometry from vector: " << cutline_file<<endl;
     else
     {
+      if (clip_offset > 1e-10)
+      {
+        OGRMultiPolygon *p_geom_clip = (OGRMultiPolygon*)p_rfc->tiling_srs_cutline_->Buffer(-clip_offset);
+        delete(p_rfc->tiling_srs_cutline_);
+        p_rfc->tiling_srs_cutline_ = p_geom_clip;
+      }
+
       if (p_tile_mset->DoesOverlap180Degree(p_rfc->tiling_srs_cutline_))
         p_tile_mset->AdjustForOverlapping180Degree(p_rfc->tiling_srs_cutline_);
 
       OGRSpatialReference raster_srs;
       if (this->GetSRS(raster_srs)) //ToDo - account for defaultsrs
       {
-        OGRMultiPolygon* p_raster_srs_geom = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file, &raster_srs);
-        if (p_raster_srs_geom == 0) 
+        OGRMultiPolygon* p_raster_srs_geom = (OGRMultiPolygon*)p_rfc->tiling_srs_cutline_->clone();
+        p_raster_srs_geom->assignSpatialReference(p_tiling_srs);
+        if (OGRERR_NONE != p_raster_srs_geom->transformTo(&raster_srs))
+        {
           cout << "ERROR: unable transform vector to raster SRS: " << cutline_file << endl;
+          delete(p_raster_srs_geom);
+          p_raster_srs_geom = 0;
+        }
         else
         {
           double geotransform[6];
@@ -111,42 +123,6 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
           p_rfc->p_pixel_line_cutline_ = VectorOperations::ConvertFromSRSToPixelLine(p_raster_srs_geom,geotransform);
           delete(p_raster_srs_geom);
         }
-        
-
-        /*
-        OGRMultiPolygon *p_pixel_line_geom = 0;
-        if (!(p_pixel_line_geom = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file, &raster_srs)))
-          cout << "ERROR: unable transform geometry from vector: " << cutline_file << endl;
-        else
-        {
-          double geotransform[6];
-          this->p_gdal_ds_->GetGeoTransform(geotransform);
-          double d = geotransform[1] * geotransform[5] - geotransform[2] * geotransform[4];
-          if (fabs(d)>1e-7)
-          {
-            p_rfc->p_pixel_line_cutline_ = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
-            for (int j = 0; j<p_pixel_line_geom->getNumGeometries(); j++)
-            {
-              OGRLinearRing	*p_ogr_ring =
-                ((OGRPolygon*)p_pixel_line_geom->getGeometryRef(j))->getExteriorRing();
-              p_ogr_ring->closeRings();
-              for (int i = 0; i<p_ogr_ring->getNumPoints(); i++)
-              {
-                double x = p_ogr_ring->getX(i) - geotransform[0];
-                double y = p_ogr_ring->getY(i) - geotransform[3];
-
-                double l = (geotransform[1] * y - geotransform[4] * x) / d;
-                double p = (x - l*geotransform[2]) / geotransform[1];
-
-                p_ogr_ring->setPoint(i, (int)(p + 0.5), (int)(l + 0.5));
-              }
-              p_rfc->p_pixel_line_cutline_->addGeometryDirectly((OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon));
-              ((OGRPolygon*)p_rfc->p_pixel_line_cutline_->getGeometryRef(j))->addRing(p_ogr_ring);
-            }
-          }
-          delete(p_pixel_line_geom);
-        }
-        */
       }
     }
   }
@@ -417,7 +393,9 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 }
 
 
-int	BundleTiler::Init (map<string,string> raster_vector, ITileMatrixSet* p_tile_mset)
+int	BundleTiler::Init ( map<string,string> raster_vector, 
+                        ITileMatrixSet* p_tile_mset, 
+                        double clip_offset)
 {
 	Close();
   
@@ -436,8 +414,12 @@ int	BundleTiler::Init (map<string,string> raster_vector, ITileMatrixSet* p_tile_
  	for (map<string,string>::iterator iter = raster_vector.begin(); iter!=raster_vector.end(); iter++)
 	{
     if ((*iter).second=="")
-      AddItemToBundle((*iter).first,VectorOperations::GetVectorFileNameByRasterFileName((*iter).first));
-    else AddItemToBundle((*iter).first,(*iter).second);
+      AddItemToBundle((*iter).first,
+                      VectorOperations::GetVectorFileNameByRasterFileName((*iter).first),
+                      clip_offset);
+    else AddItemToBundle((*iter).first,
+                        (*iter).second,
+                         clip_offset);
 	}
 
   AdjustCutlinesForOverlapping180Degree();
@@ -455,7 +437,7 @@ GDALDataType BundleTiler::GetRasterFileType()
 
 }
 
-bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file)
+bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file, double clip_offset)
 {	
 	RasterFile image;
 
@@ -467,7 +449,7 @@ bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file)
 
   pair<string,RasterFileCutline*> p;
 	p.first			= raster_file;
-  p.second    = image.GetRasterFileCutline(p_tile_mset_,vector_file);
+  p.second = image.GetRasterFileCutline(p_tile_mset_, vector_file, clip_offset);
   if (!p.second) return false;
   item_list_.push_back(p);
 	return true;

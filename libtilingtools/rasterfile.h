@@ -59,7 +59,9 @@ public:
 
   bool			      Init(string raster_file); 
   bool			      Close();
-  RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string vector_file=""); 
+  RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, 
+                                           string vector_file = "", 
+                                           double clip_offset = 0);
   bool			GetPixelSize (int &width, int &height);
   bool      GetSRS(OGRSpatialReference  &srs, ITileMatrixSet *p_tile_mset = 0);
 
@@ -95,7 +97,7 @@ public:
 	void Close();
 
 public:
-  int	Init	(map<string,string> raster_vector, ITileMatrixSet* p_tile_mset);
+  int	Init	(map<string,string> raster_vector, ITileMatrixSet* p_tile_mset, double clip_offset = 0);
 
   int CalcNumberOfTiles (int zoom);
 	int	CalcAppropriateZoom();
@@ -161,7 +163,7 @@ protected:
   ITileMatrixSet* tile_matrix_set(){return p_tile_mset_;};
 
 protected:
-	bool			AddItemToBundle (string raster_file, string	vector_file);
+	bool			AddItemToBundle (string raster_file, string	vector_file, double clip_offset = 0);
   bool      AdjustCutlinesForOverlapping180Degree();
 
   bool      WaitForTilingThreads(list<future<int>> *p_tiling_threads, int nMaxThreads);

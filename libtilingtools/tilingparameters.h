@@ -65,6 +65,7 @@ public:
     tile_chunk_size_= 0;
     
     calculate_histogram_=false;
+    clip_offset_ = 0;
   };		
   ~TilingParameters ()
   {
@@ -75,6 +76,7 @@ public:
 
 
 public:
+  double clip_offset_;
 	string output_path_;		//название файла-контейнера тайлов
   TileContainerType container_type_;
   

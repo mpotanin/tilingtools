@@ -22,11 +22,13 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 	BundleTiler		raster_bundle;
   MercatorTileMatrixSet merc_grid( p_tiling_params->merc_type_);
 
-  if (!raster_bundle.Init(p_tiling_params->p_bundle_input_->GetFiles(),&merc_grid))
+  if (!raster_bundle.Init(p_tiling_params->p_bundle_input_->GetFiles(),
+                          &merc_grid,p_tiling_params->clip_offset_))
 	{
 		cout<<"ERROR: can't init raster bundle object"<<endl;
 		return FALSE;
 	}
+
 
 	int base_zoom = (p_tiling_params->base_zoom_ == 0) ? raster_bundle.CalcAppropriateZoom() : p_tiling_params->base_zoom_;
 	if (base_zoom<=0)

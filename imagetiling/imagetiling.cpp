@@ -195,6 +195,8 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-wt") != "")
     oTilingParams.max_work_threads_ = atoi(oOptionParser.GetOptionValue("-wt").c_str());
 
+  if (oOptionParser.GetOptionValue("-bmarg") != "")
+    oTilingParams.clip_offset_ = atof(oOptionParser.GetOptionValue("-bmarg").c_str());
 
   if (oOptionParser.GetKeyValueCollection("-co").size() != 0)
     oTilingParams.options_ = oOptionParser.GetKeyValueCollection("-co");
@@ -208,7 +210,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 }
 
 
-int nDescriptors = 19;
+int nDescriptors = 20;
 const GMXOptionDescriptor asDescriptors[] =
 {
   { "-i", 0, 1, "input path" },
@@ -229,7 +231,8 @@ const GMXOptionDescriptor asDescriptors[] =
   { "-bgc", 0, 0, "background color" },
   { "-bnd", 0, 1, "raster band list" },
   { "-wt", 0, 0, "work threads num." },
-  { "-pseudo_png", 1, 0, "" }
+  { "-pseudo_png", 1, 0, "" },
+  {"-bmarg", 0, 0, "border margin in tiling srs units"}
 };
 
 int nExamples = 4;
