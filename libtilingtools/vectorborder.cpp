@@ -350,21 +350,32 @@ OGRMultiPolygon* VectorOperations::ReadMultiPolygonFromOGRDataSource(VECTORDS* p
 	{
     switch (poFeature->GetGeometryRef()->getGeometryType())
     {
-      case wkbPolygon:
-        if (OGRERR_NONE!=p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
-        {
-          delete(p_ogr_multipoly);
-          p_ogr_multipoly=0;
-        }  
-        break;
-      case wkbMultiPolygon:
-        delete(p_ogr_multipoly);
-        p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
-        break;
-      default:
+    case wkbPolygon:
+      if (OGRERR_NONE != p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
+      {
         delete(p_ogr_multipoly);
         p_ogr_multipoly = 0;
-        break;
+      }
+      break;
+    case wkbPolygon25D:
+      if (OGRERR_NONE != p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
+      {
+        delete(p_ogr_multipoly);
+        p_ogr_multipoly = 0;
+      }
+      break;
+    case wkbMultiPolygon:
+      delete(p_ogr_multipoly);
+      p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
+      break;
+    case wkbMultiPolygon25D:
+      delete(p_ogr_multipoly);
+      p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
+      break;
+    default:
+      delete(p_ogr_multipoly);
+      p_ogr_multipoly = 0;
+      break;
     }
     OGRFeature::DestroyFeature(poFeature);
     if (!p_ogr_multipoly) return 0;

@@ -145,7 +145,6 @@ int GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPat
 	}
 
   if (powinFind) FindClose(powinFind);
-  return listFiles.size();
 #else
   string strBasePath = GMXFileSys::GetPath(strSearchPattern);
   string strFileNamePattern = GMXFileSys::RemovePath(strSearchPattern);
@@ -164,9 +163,10 @@ int GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPat
     closedir (dir);
   } 
   else return 0;
-
-  return listFiles.size();
 #endif
+
+  listFiles.sort();
+  return listFiles.size();
 }
 
 
