@@ -7,483 +7,483 @@ namespace gmx
 {
 
 
-VectorOperations::VectorOperations ()
-{
-	p_ogr_geometry_	= NULL;
-}
-
-VectorOperations::~VectorOperations()
-{
-	if (p_ogr_geometry_!=NULL) 
+  VectorOperations::VectorOperations()
   {
- 	  delete(p_ogr_geometry_);
-    p_ogr_geometry_	= NULL;
-  }
-}  
-
-
-
-
-string VectorOperations::GetVectorFileNameByRasterFileName (string raster_file)
-{
- 	string	vector_file_base = GMXFileSys::RemoveExtension(raster_file);
-	string	vector_file = GMXFileSys::FileExists(vector_file_base+".mif") ?	vector_file_base+".mif" :
-                        GMXFileSys::FileExists(vector_file_base+".shp") ?	vector_file_base+".shp" :
-	                      GMXFileSys::FileExists(vector_file_base+".tab") ?	vector_file_base+".tab" :"";
-	
-  if (vector_file != "")
-  {
-    VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file);
-    if (!poVecDS) vector_file = "";
-    else VectorOperations::CloseVECTORDS(poVecDS);
+    p_ogr_geometry_ = NULL;
   }
 
-  return vector_file;
-}
-
-
-OGRMultiPolygon* VectorOperations::ConvertFromSRSToPixelLine(OGRGeometry *p_ogr_geom, double geotransform[6])
-{
-  double d = geotransform[1] * geotransform[5] - geotransform[2] * geotransform[4];
-  if (fabs(d)< 1e-7) return 0;
-
-  OGRMultiPolygon* p_input_geom = 0;
-  int num_geom = p_ogr_geom->getGeometryType() == wkbMultiPolygon ? ((OGRMultiPolygon*)p_ogr_geom)->getNumGeometries() :
-                  p_ogr_geom->getGeometryType() == wkbPolygon ? 1 : 0;
-  if (num_geom == 0) return 0;
-
-  OGRMultiPolygon* p_output_geom = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
-  
-  for (int j = 0; j<num_geom; j++)
+  VectorOperations::~VectorOperations()
   {
-    OGRPolygon* p_poly = p_ogr_geom->getGeometryType() == wkbMultiPolygon ? 
-      (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(j) : (OGRPolygon*)p_ogr_geom;
+    if (p_ogr_geometry_ != NULL)
+    {
+      delete(p_ogr_geometry_);
+      p_ogr_geometry_ = NULL;
+    }
+  }
+
+
+
+
+  string VectorOperations::GetVectorFileNameByRasterFileName(string raster_file)
+  {
+    string	vector_file_base = GMXFileSys::RemoveExtension(raster_file);
+    string	vector_file = GMXFileSys::FileExists(vector_file_base + ".mif") ? vector_file_base + ".mif" :
+      GMXFileSys::FileExists(vector_file_base + ".shp") ? vector_file_base + ".shp" :
+      GMXFileSys::FileExists(vector_file_base + ".tab") ? vector_file_base + ".tab" : "";
+
+    if (vector_file != "")
+    {
+      VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file);
+      if (!poVecDS) vector_file = "";
+      else VectorOperations::CloseVECTORDS(poVecDS);
+    }
+
+    return vector_file;
+  }
+
+
+  OGRMultiPolygon* VectorOperations::ConvertFromSRSToPixelLine(OGRGeometry *p_ogr_geom, double geotransform[6])
+  {
+    double d = geotransform[1] * geotransform[5] - geotransform[2] * geotransform[4];
+    if (fabs(d)< 1e-7) return 0;
+
+    OGRMultiPolygon* p_input_geom = 0;
+
+    bool is_collection = ((p_ogr_geom->getGeometryType() == wkbPolygon) ||
+      (p_ogr_geom->getGeometryType() == wkbPolygon25D)) ? false : true;
+
+    int num_geom = is_collection ? ((OGRMultiPolygon*)p_ogr_geom)->getNumGeometries() : 1;
+
+    OGRMultiPolygon* p_output_geom = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
+
+    for (int j = 0; j<num_geom; j++)
+    {
+      OGRPolygon* p_poly = is_collection ?
+        (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(j) :
+        (OGRPolygon*)p_ogr_geom;
+      int num_rings = 0;
+      p_poly->closeRings();
+      OGRLinearRing** p_rings = VectorOperations::GetLinearRingsRef(p_poly, num_rings);
+
+      if (num_rings == 0 || p_rings == 0)
+      {
+        delete (p_output_geom);
+        return 0;
+      }
+
+      OGRPolygon* p_output_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
+
+      for (int i = 0; i < num_rings; i++)
+      {
+        OGRLinearRing* p_input_ring = (OGRLinearRing*)p_rings[i];
+        OGRLinearRing* p_output_ring = (OGRLinearRing*)p_input_ring->clone();
+
+        for (int k = 0; k< p_input_ring->getNumPoints(); k++)
+        {
+          double x = p_input_ring->getX(k) - geotransform[0];
+          double y = p_input_ring->getY(k) - geotransform[3];
+
+          double l = (geotransform[1] * y - geotransform[4] * x) / d;
+          double p = (x - l*geotransform[2]) / geotransform[1];
+
+          p_output_ring->setPoint(k, (int)(p + 0.5), (int)(l + 0.5));
+        }
+        p_output_poly->addRingDirectly(p_output_ring);
+      }
+
+      p_output_geom->addGeometryDirectly(p_output_poly);
+    }
+
+    return p_output_geom;
+  }
+
+
+  OGREnvelope	VectorOperations::MergeEnvelopes(const OGREnvelope	&envp1, const OGREnvelope	&envp2)
+  {
+    OGREnvelope envp(envp1);
+    envp.Merge(envp2);
+    return envp;
+  }
+
+  OGREnvelope	VectorOperations::InetersectEnvelopes(const OGREnvelope	&envp1, const OGREnvelope	&envp2)
+  {
+    OGREnvelope envp(envp1);
+    envp.Intersect(envp2);
+    return envp;
+  }
+
+
+
+  bool VectorOperations::IsPointInsidePixelLineGeometry(OGRPoint point, OGRGeometry *po_ogr_geom)
+  {
+    double e = 1e-6;
+    int num_points = 0;
     int num_rings = 0;
-    p_poly->closeRings();
-    OGRLinearRing** p_rings = VectorOperations::GetLinearRingsRef(p_poly,num_rings);
-   
-    if (num_rings == 0 || p_rings == 0)
+
+    if (!po_ogr_geom) return false;
+    po_ogr_geom->closeRings();
+
+    OGRLinearRing **pp_lr = GetLinearRingsRef(po_ogr_geom, num_rings);
+    if (pp_lr == NULL) return false;
+
+
+    double x1, x2, y1, y2;
+    double y_line = point.getY();
+    double x0 = point.getX();
+
+    for (int i = 0; i<num_rings; i++)
     {
-      delete (p_output_geom);
-      return 0;
-    }
-
-    OGRPolygon* p_output_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
-
-    for (int i = 0; i < num_rings; i++)
-    {
-      OGRLinearRing* p_input_ring = (OGRLinearRing*)p_rings[i];
-      OGRLinearRing* p_output_ring = (OGRLinearRing*)p_input_ring->clone();
-
-      for (int k = 0; k< p_input_ring->getNumPoints(); k++)
+      if (pp_lr[i]->getNumPoints() >= 4)
       {
-        double x = p_input_ring->getX(k) - geotransform[0];
-        double y = p_input_ring->getY(k) - geotransform[3];
-
-        double l = (geotransform[1] * y - geotransform[4] * x) / d;
-        double p = (x - l*geotransform[2]) / geotransform[1];
-
-        p_output_ring->setPoint(k, (int)(p + 0.5), (int)(l + 0.5));
-      }
-      p_output_poly->addRingDirectly(p_output_ring);
-    }
-    
-    p_output_geom->addGeometryDirectly(p_output_poly);
-  }
-    
-  return p_output_geom;
-}
-
-
-OGREnvelope	VectorOperations::MergeEnvelopes (const OGREnvelope	&envp1, const OGREnvelope	&envp2)
-{
-	OGREnvelope envp(envp1);
-  envp.Merge(envp2);
-  return envp;
-}
-
-OGREnvelope	VectorOperations::InetersectEnvelopes (const OGREnvelope	&envp1, const OGREnvelope	&envp2)
-{
-	OGREnvelope envp(envp1);
-  envp.Intersect(envp2);
-	return envp;
-}
-
-
-
-bool VectorOperations::IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeometry *po_ogr_geom)
-{
-  double e = 1e-6;
-  int num_points = 0;
-  int num_rings = 0;
-
-  if (!po_ogr_geom) return false;
-  po_ogr_geom->closeRings();
-  
-  OGRLinearRing **pp_lr = GetLinearRingsRef(po_ogr_geom,num_rings);
-  if (pp_lr == NULL) return false;
-    
-
-  double x1,x2,y1,y2;
-  double y_line = point.getY();
-  double x0 = point.getX();
-
-  for (int i=0;i<num_rings;i++)
-  {
-    if (pp_lr[i]->getNumPoints()>=4)
-    {
-      for (int j=0;j<pp_lr[i]->getNumPoints()-1;j++)
-      {
-        x1 = pp_lr[i]->getX(j);
-        x2 = pp_lr[i]->getX(j+1);
-        y1 = pp_lr[i]->getY(j);
-        y2 = pp_lr[i]->getY(j+1);
-        if ((fabs(y_line-y1)>e)&&(fabs(y_line-y2)>e))
+        for (int j = 0; j<pp_lr[i]->getNumPoints() - 1; j++)
         {
-          if ((y_line-y1)*(y_line-y2)<e)
+          x1 = pp_lr[i]->getX(j);
+          x2 = pp_lr[i]->getX(j + 1);
+          y1 = pp_lr[i]->getY(j);
+          y2 = pp_lr[i]->getY(j + 1);
+          if ((fabs(y_line - y1)>e) && (fabs(y_line - y2)>e))
           {
-            if ((x2*(y1-y_line)-x1*(y2-y_line))/(y1-y2)>x0+e)
-              num_points++;
-          }
-        }
-        else if (fabs(y_line-y1)<e) continue;
-        else if (x2>x0+e) 
-        {
-          for (int k=2;k<pp_lr[i]->getNumPoints();k++)
-          {
-            int k__ = (j+k) % pp_lr[i]->getNumPoints();
-            if (fabs(pp_lr[i]->getY(k__)-y_line)<e) continue;
-            else if ((y_line-y1)*(y_line-pp_lr[i]->getY(k__))<e)
+            if ((y_line - y1)*(y_line - y2)<e)
             {
-              num_points++;
-              break;
+              if ((x2*(y1 - y_line) - x1*(y2 - y_line)) / (y1 - y2)>x0 + e)
+                num_points++;
             }
-            else break;
+          }
+          else if (fabs(y_line - y1)<e) continue;
+          else if (x2>x0 + e)
+          {
+            for (int k = 2; k<pp_lr[i]->getNumPoints(); k++)
+            {
+              int k__ = (j + k) % pp_lr[i]->getNumPoints();
+              if (fabs(pp_lr[i]->getY(k__) - y_line)<e) continue;
+              else if ((y_line - y1)*(y_line - pp_lr[i]->getY(k__))<e)
+              {
+                num_points++;
+                break;
+              }
+              else break;
+            }
           }
         }
       }
     }
+    delete[]pp_lr;
+    return num_points % 2;
+
   }
-  delete[]pp_lr;
-  return num_points%2;
 
-}
-
-/*
-bool VectorOperations::IntersectYLineWithPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
-{
+  /*
+  bool VectorOperations::IntersectYLineWithPixelLineGeometry (int y_line, OGRGeometry *po_ogr_geom, int &num_points, int *&x)
+  {
   double e = 1e-6;
 
   num_points = 0;
   x = NULL;
   int num_rings = 0;
-  
+
   list<double> x_val_list;
-  
+
   OGRLinearRing **pp_lr = GetLinearRingsRef(po_ogr_geom,num_rings);
   if (pp_lr == NULL) return NULL;
-    
+
   double x1,x2,y1,y2;
   for (int i=0;i<num_rings;i++)
   {
-    if (pp_lr[i]->getNumPoints()>=4)
-    {
-      for (int j=0;j<pp_lr[i]->getNumPoints()-1;j++)
-      {
-        x1 = pp_lr[i]->getX(j);
-        x2 = pp_lr[i]->getX(j+1);
-        y1 = pp_lr[i]->getY(j);
-        y2 = pp_lr[i]->getY(j+1);
-        if ((fabs(y_line-y1)<e)&&(fabs(y_line-y2)<e))
-        {
-          for (double x=min(x1,x2);x<=max(x1,x2)+e;x++)
-            x_val_list.push_back(x);
-        }
-        else if ((y_line-y1)*(y_line-y2)<=e)
-        {
-          x_val_list.push_back((x2*(y1-y_line)-x1*(y2-y_line))/(y1-y2));
-        }
-      }
-    }
+  if (pp_lr[i]->getNumPoints()>=4)
+  {
+  for (int j=0;j<pp_lr[i]->getNumPoints()-1;j++)
+  {
+  x1 = pp_lr[i]->getX(j);
+  x2 = pp_lr[i]->getX(j+1);
+  y1 = pp_lr[i]->getY(j);
+  y2 = pp_lr[i]->getY(j+1);
+  if ((fabs(y_line-y1)<e)&&(fabs(y_line-y2)<e))
+  {
+  for (double x=min(x1,x2);x<=max(x1,x2)+e;x++)
+  x_val_list.push_back(x);
+  }
+  else if ((y_line-y1)*(y_line-y2)<=e)
+  {
+  x_val_list.push_back((x2*(y1-y_line)-x1*(y2-y_line))/(y1-y2));
+  }
+  }
+  }
   }
 
   if (x_val_list.size()>0)
   {
-    x_val_list.sort();
-    x = new int[x_val_list.size()];
-    for (list<double>::iterator iter = x_val_list.begin();iter!=x_val_list.end();iter++)
-    {
-      x[num_points] = (int)floor((*iter)+0.5);
-      num_points++;
-    }
+  x_val_list.sort();
+  x = new int[x_val_list.size()];
+  for (list<double>::iterator iter = x_val_list.begin();iter!=x_val_list.end();iter++)
+  {
+  x[num_points] = (int)floor((*iter)+0.5);
+  num_points++;
+  }
   }
 
   delete[]pp_lr;
   return TRUE;
-}
-*/
-
-bool VectorOperations::AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segment)
-{
-  if(!p_polygon) return false;
-  
-  p_polygon->closeRings();
-
-  OGRLinearRing*  p_ring = p_polygon->getExteriorRing();
-  int num_points = p_ring->getNumPoints();
-
-  OGRLinearRing o_new_ring;
-  
-  for (int i=0;i<num_points-1;i++)
-  {
-    double x = p_ring->getX(i);
-    double y = p_ring->getY(i);
-    double dx=(p_ring->getX(i+1)-x)/points_on_segment;
-    double dy=(p_ring->getY(i+1)-y)/points_on_segment;
-    o_new_ring.addPoint(x,y);
-    for (int j=0;j<points_on_segment-1;j++)
-      o_new_ring.addPoint(x+dx*(j+1),y+dy*(j+1));
   }
-  o_new_ring.closeRings();
-  p_ring->empty();
-  for (int i=0; i<o_new_ring.getNumPoints();i++)
+  */
+
+  bool VectorOperations::AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segment)
   {
-    p_ring->addPoint(o_new_ring.getX(i),o_new_ring.getY(i));
-  }
+    if (!p_polygon) return false;
 
-  return true;
-}
+    p_polygon->closeRings();
 
-VECTORDS* VectorOperations::OpenVectorFile(string strVectorFile, bool bReadOnly)
-{
-#ifdef GDAL_OF_VECTOR
-  return (VECTORDS*)GDALOpenEx(strVectorFile.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
-#else
-  return (VECTORDS*)OGROpen(strVectorFile.c_str(), 0, 0);
-#endif
-}
+    OGRLinearRing*  p_ring = p_polygon->getExteriorRing();
+    int num_points = p_ring->getNumPoints();
 
-void VectorOperations::CloseVECTORDS(VECTORDS* poVecDS)
-{
-#ifdef GDAL_OF_VECTOR
-  GDALClose(poVecDS);
-#else
-  OGRDataSource::DestroyDataSource(poVecDS);
-#endif
-}
+    OGRLinearRing o_new_ring;
 
-
-
-
-OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRSpatialReference *p_tiling_srs)
-{
-  if (vector_file=="") return 0;
-  
-  VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file.c_str());
-  if (!poVecDS) return 0;
-	
-	OGRMultiPolygon *p_ogr_multipoly;
-
-  if (!(p_ogr_multipoly=ReadMultiPolygonFromOGRDataSource(poVecDS)))
-  {
-    CloseVECTORDS(poVecDS);
-    cout<<"ERROR: ReadMultiPolygonFromOGRDataSource: can't read polygon from input vector"<<endl;
-    return NULL;
-  }
-  
-  p_ogr_multipoly->closeRings();
-  OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
-  OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
-  bool is_ogr_sr_valid = TRUE;
-  if (p_input_ogr_sr)
-  {
-    p_input_ogr_sr = p_input_ogr_sr->Clone();
-    char	*proj_ref = NULL;
-	  bool is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))  
-                            ? TRUE
-                            : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI()) 
-                            ? FALSE 
-                            : (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref)) 
-                            ? TRUE : FALSE;
-    if (proj_ref !=NULL) CPLFree(proj_ref);
-  }
-  else
-  {
-	  p_input_ogr_sr = new OGRSpatialReference();
-	  p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
-  }
-    
-  CloseVECTORDS(poVecDS);
-  if (!is_ogr_sr_valid)
-  {
-    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-    delete(p_ogr_multipoly);
-    return NULL;
-  }
-        
-  p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
-      
-  if (OGRERR_NONE != p_ogr_multipoly->transformTo(p_tiling_srs))
-  {
-    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-    delete(p_ogr_multipoly);
-	  return NULL;
-  }
-
-  p_ogr_multipoly->assignSpatialReference(NULL);
-  OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-  return p_ogr_multipoly;
-
-
-};
-
-OGRMultiPolygon* VectorOperations::ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS)
-{
-  OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
-	if( p_ogr_layer == 0 ) return 0;
-  if (p_ogr_layer->GetFeatureCount()==0) return 0;
-	
-  p_ogr_layer->ResetReading();
-
-	OGRMultiPolygon *p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
-	while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
-	{
-    switch (poFeature->GetGeometryRef()->getGeometryType())
+    for (int i = 0; i<num_points - 1; i++)
     {
-    case wkbPolygon:
-      if (OGRERR_NONE != p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
-      {
-        delete(p_ogr_multipoly);
-        p_ogr_multipoly = 0;
-      }
-      break;
-    case wkbPolygon25D:
-      if (OGRERR_NONE != p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
-      {
-        delete(p_ogr_multipoly);
-        p_ogr_multipoly = 0;
-      }
-      break;
-    case wkbMultiPolygon:
-      delete(p_ogr_multipoly);
-      p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
-      break;
-    case wkbMultiPolygon25D:
-      delete(p_ogr_multipoly);
-      p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
-      break;
-    default:
-      delete(p_ogr_multipoly);
-      p_ogr_multipoly = 0;
-      break;
+      double x = p_ring->getX(i);
+      double y = p_ring->getY(i);
+      double dx = (p_ring->getX(i + 1) - x) / points_on_segment;
+      double dy = (p_ring->getY(i + 1) - y) / points_on_segment;
+      o_new_ring.addPoint(x, y);
+      for (int j = 0; j<points_on_segment - 1; j++)
+        o_new_ring.addPoint(x + dx*(j + 1), y + dy*(j + 1));
     }
-    OGRFeature::DestroyFeature(poFeature);
-    if (!p_ogr_multipoly) return 0;
+    o_new_ring.closeRings();
+    p_ring->empty();
+    for (int i = 0; i<o_new_ring.getNumPoints(); i++)
+    {
+      p_ring->addPoint(o_new_ring.getX(i), o_new_ring.getY(i));
+    }
+
+    return true;
   }
 
-	return p_ogr_multipoly;
-};
+  VECTORDS* VectorOperations::OpenVectorFile(string strVectorFile, bool bReadOnly)
+  {
+#ifdef GDAL_OF_VECTOR
+    return (VECTORDS*)GDALOpenEx(strVectorFile.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+#else
+    return (VECTORDS*)OGROpen(strVectorFile.c_str(), 0, 0);
+#endif
+  }
+
+  void VectorOperations::CloseVECTORDS(VECTORDS* poVecDS)
+  {
+#ifdef GDAL_OF_VECTOR
+    GDALClose(poVecDS);
+#else
+    OGRDataSource::DestroyDataSource(poVecDS);
+#endif
+  }
 
 
 
-OGRLinearRing**		VectorOperations::GetLinearRingsRef	(OGRGeometry	*p_ogr_geom, int &num_rings)
-{
-	num_rings = 0;
-	OGRLinearRing	**pp_ogr_rings = NULL;
-	OGRPolygon		**pp_ogr_poly = NULL;
-	OGRwkbGeometryType type = p_ogr_geom->getGeometryType();
 
-	if (!(type==wkbMultiPolygon || type==wkbPolygon || 
-		    type==wkbLinearRing || type==wkbLineString)) return NULL;
+  OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRSpatialReference *p_tiling_srs)
+  {
+    if (vector_file == "") return 0;
 
-	int	numPolygons = 0;
-	bool	inputIsRing = FALSE;
-	if (type==wkbPolygon)
-	{
-		numPolygons		= 1;
-		pp_ogr_poly		= new OGRPolygon*[numPolygons];
-		pp_ogr_poly[0]	= (OGRPolygon*)p_ogr_geom;
-	}
-	else if (type==wkbMultiPolygon)
-	{
-		numPolygons		= ((OGRMultiPolygon*)p_ogr_geom)->getNumGeometries();
-		pp_ogr_poly		= new OGRPolygon*[numPolygons];
-		for (int i=0;i<numPolygons;i++)
-			pp_ogr_poly[i] = (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(i);
-	}
+    VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file.c_str());
+    if (!poVecDS) return 0;
 
-	if (numPolygons>0)
-	{
-		for (int i=0;i<numPolygons;i++)
-		{
-			num_rings++;
-			num_rings+=pp_ogr_poly[i]->getNumInteriorRings();
-		}
-		pp_ogr_rings = new OGRLinearRing*[num_rings];
-		int j=0;
-		for (int i=0;i<numPolygons;i++)
-		{
-			pp_ogr_rings[j] = pp_ogr_poly[i]->getExteriorRing();
-			j++;
-			for (int k=0;k<pp_ogr_poly[i]->getNumInteriorRings();k++)
-			{
-				pp_ogr_rings[j] = pp_ogr_poly[i]->getInteriorRing(k);
-				j++;
-			}
-		}
-	}
-	else
-	{
-		num_rings = 1;
-		pp_ogr_rings = new OGRLinearRing*[num_rings];
-		pp_ogr_rings[0] = (OGRLinearRing*)p_ogr_geom;
-	}
+    OGRMultiPolygon *p_ogr_multipoly;
 
-	delete[]pp_ogr_poly;
-	return pp_ogr_rings;
-}
+    if (!(p_ogr_multipoly = ReadMultiPolygonFromOGRDataSource(poVecDS)))
+    {
+      CloseVECTORDS(poVecDS);
+      cout << "ERROR: ReadMultiPolygonFromOGRDataSource: can't read polygon from input vector" << endl;
+      return NULL;
+    }
 
-bool	VectorOperations::Intersects(OGREnvelope &envelope)
-{
-  if (p_ogr_geometry_ == NULL) return FALSE;
-	OGRPolygon *p_poly_from_envp = CreateOGRPolygonByOGREnvelope (envelope);
+    p_ogr_multipoly->closeRings();
+    OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
+    OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
+    bool is_ogr_sr_valid = TRUE;
+    if (p_input_ogr_sr)
+    {
+      p_input_ogr_sr = p_input_ogr_sr->Clone();
+      char	*proj_ref = NULL;
+      bool is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))
+        ? TRUE
+        : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI())
+        ? FALSE
+        : (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))
+        ? TRUE : FALSE;
+      if (proj_ref != NULL) CPLFree(proj_ref);
+    }
+    else
+    {
+      p_input_ogr_sr = new OGRSpatialReference();
+      p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
+    }
 
-  bool result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
-  delete(p_poly_from_envp);
+    CloseVECTORDS(poVecDS);
+    if (!is_ogr_sr_valid)
+    {
+      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+      delete(p_ogr_multipoly);
+      return NULL;
+    }
 
-  return result;
-}
+    p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
+
+    if (OGRERR_NONE != p_ogr_multipoly->transformTo(p_tiling_srs))
+    {
+      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+      delete(p_ogr_multipoly);
+      return NULL;
+    }
+
+    p_ogr_multipoly->assignSpatialReference(NULL);
+    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
+    return p_ogr_multipoly;
 
 
-OGREnvelope VectorOperations::GetEnvelope ()
-{
-	OGREnvelope envp;
-	if (p_ogr_geometry_!=NULL) p_ogr_geometry_->getEnvelope(&envp);
-	return envp;
-};
+  };
+
+  OGRMultiPolygon* VectorOperations::ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS)
+  {
+    OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
+    if (p_ogr_layer == 0) return 0;
+    if (p_ogr_layer->GetFeatureCount() == 0) return 0;
+
+    p_ogr_layer->ResetReading();
+
+    OGRMultiPolygon *p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
+    while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
+    {
+      switch (poFeature->GetGeometryRef()->getGeometryType())
+      {
+      case wkbPolygon:
+        if (OGRERR_NONE != p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
+        {
+          delete(p_ogr_multipoly);
+          p_ogr_multipoly = 0;
+        }
+        break;
+      case wkbPolygon25D:
+        if (OGRERR_NONE != p_ogr_multipoly->addGeometry((OGRPolygon*)poFeature->GetGeometryRef()))
+        {
+          delete(p_ogr_multipoly);
+          p_ogr_multipoly = 0;
+        }
+        break;
+      case wkbMultiPolygon:
+        delete(p_ogr_multipoly);
+        p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
+        break;
+      case wkbMultiPolygon25D:
+        delete(p_ogr_multipoly);
+        p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
+        break;
+      default:
+        delete(p_ogr_multipoly);
+        p_ogr_multipoly = 0;
+        break;
+      }
+      OGRFeature::DestroyFeature(poFeature);
+      if (!p_ogr_multipoly) return 0;
+    }
+
+    return p_ogr_multipoly;
+  };
 
 
 
-OGRPolygon*		VectorOperations::CreateOGRPolygonByOGREnvelope (const OGREnvelope &envelope)
-{
-	OGRPolygon *p_ogr_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
+  OGRLinearRing**		VectorOperations::GetLinearRingsRef(OGRGeometry* p_ogr_geom, int &num_rings)
+  {
+    num_rings = 0;
+    OGRLinearRing	**pp_ogr_rings = NULL;
+    OGRPolygon		**pp_ogr_poly = NULL;
 
-	OGRLinearRing	lr;
-	lr.addPoint(envelope.MinX,envelope.MinY);
-	lr.addPoint(envelope.MinX,envelope.MaxY);
-	lr.addPoint(envelope.MaxX,envelope.MaxY);
-	lr.addPoint(envelope.MaxX,envelope.MinY);
-	lr.closeRings();
-	p_ogr_poly->addRing(&lr);
-	
-	return p_ogr_poly;
-};
+    int	numPolygons = 0;
+    bool	inputIsRing = FALSE;
+    if ((wkbPolygon == p_ogr_geom->getGeometryType()) ||
+      (wkbPolygon25D == p_ogr_geom->getGeometryType()))
+    {
+      numPolygons = 1;
+      pp_ogr_poly = new OGRPolygon*[numPolygons];
+      pp_ogr_poly[0] = (OGRPolygon*)p_ogr_geom;
+    }
+    else
+    {
+      numPolygons = ((OGRMultiPolygon*)p_ogr_geom)->getNumGeometries();
+      pp_ogr_poly = new OGRPolygon*[numPolygons];
+      for (int i = 0; i<numPolygons; i++)
+        pp_ogr_poly[i] = (OGRPolygon*)((OGRMultiPolygon*)p_ogr_geom)->getGeometryRef(i);
+    }
+
+    if (numPolygons>0)
+    {
+      for (int i = 0; i<numPolygons; i++)
+      {
+        num_rings++;
+        num_rings += pp_ogr_poly[i]->getNumInteriorRings();
+      }
+      pp_ogr_rings = new OGRLinearRing*[num_rings];
+      int j = 0;
+      for (int i = 0; i<numPolygons; i++)
+      {
+        pp_ogr_rings[j] = pp_ogr_poly[i]->getExteriorRing();
+        j++;
+        for (int k = 0; k<pp_ogr_poly[i]->getNumInteriorRings(); k++)
+        {
+          pp_ogr_rings[j] = pp_ogr_poly[i]->getInteriorRing(k);
+          j++;
+        }
+      }
+    }
+    else
+    {
+      num_rings = 1;
+      pp_ogr_rings = new OGRLinearRing*[num_rings];
+      pp_ogr_rings[0] = (OGRLinearRing*)p_ogr_geom;
+    }
+
+    delete[]pp_ogr_poly;
+    return pp_ogr_rings;
+  }
+
+  bool	VectorOperations::Intersects(OGREnvelope &envelope)
+  {
+    if (p_ogr_geometry_ == NULL) return FALSE;
+    OGRPolygon *p_poly_from_envp = CreateOGRPolygonByOGREnvelope(envelope);
+
+    bool result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);
+    delete(p_poly_from_envp);
+
+    return result;
+  }
 
 
-OGRGeometry*	VectorOperations::get_ogr_geometry_ref()
-{
-  return p_ogr_geometry_;
-}
+  OGREnvelope VectorOperations::GetEnvelope()
+  {
+    OGREnvelope envp;
+    if (p_ogr_geometry_ != NULL) p_ogr_geometry_->getEnvelope(&envp);
+    return envp;
+  };
+
+
+
+  OGRPolygon*		VectorOperations::CreateOGRPolygonByOGREnvelope(const OGREnvelope &envelope)
+  {
+    OGRPolygon *p_ogr_poly = (OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
+
+    OGRLinearRing	lr;
+    lr.addPoint(envelope.MinX, envelope.MinY);
+    lr.addPoint(envelope.MinX, envelope.MaxY);
+    lr.addPoint(envelope.MaxX, envelope.MaxY);
+    lr.addPoint(envelope.MaxX, envelope.MinY);
+    lr.closeRings();
+    p_ogr_poly->addRing(&lr);
+
+    return p_ogr_poly;
+  };
+
+
+  OGRGeometry*	VectorOperations::get_ogr_geometry_ref()
+  {
+    return p_ogr_geometry_;
+  }
 
 
 }
