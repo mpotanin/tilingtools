@@ -288,7 +288,7 @@ bool		GMXFileSys::FileDelete(string strPath)
 
 bool		GMXFileSys::CreateDir(string strPath)
 {
-#ifdef WIN32
+#ifdef GMXFSWIN32
   return (_wmkdir(GMXString::utf8toWStr(strPath).c_str()) == 0);
 #else
   return (mkdir(strPath.c_str(),0777) == 0);
@@ -350,9 +350,9 @@ bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 {
 	FILE *fp = GMXFileSys::OpenFile(strFileName,"rb");
 	if (!fp) return false;
-	fseek(fp, 0, SEEK_END);
+	GMXFileSys::Fseek64(fp, 0, SEEK_END);
 	nSize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+	GMXFileSys::Fseek64(fp, 0, SEEK_SET);
 
 	pabData = new char[nSize];
 	fread(pabData,sizeof(char),nSize,fp);
@@ -361,10 +361,20 @@ bool GMXFileSys::ReadBinaryFile(string strFileName, void *&pabData, int &nSize)
 	return true;
 }
 
+int GMXFileSys::Fseek64(FILE* poFile, uint64_t nOffset, int nOrigin)
+{
+#ifdef GMXFSWIN32
+  return _fseeki64(poFile,nOffset,nOrigin);
+#else
+  return fseeko(poFile,nOffset,nOrigin);
+#endif
+}
+
+
 
 std::launch GMXThreading::GetLaunchPolicy()
 {
-#ifdef WIN32
+#ifdef GMXFSWIN32
   return std::launch::async | std::launch::deferred;
 #else
   return std::launch::async;

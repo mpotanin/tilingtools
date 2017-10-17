@@ -30,6 +30,7 @@ public:
   static bool		FileDelete(string	strPath);
   static bool		RenameFile(string strOldPath, string strNewPath);
   static FILE*	OpenFile(string	strFileName, string strMode);
+  static int Fseek64(FILE* poFile, uint64_t nOffset, int nOrigin);
 
 };
 

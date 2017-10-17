@@ -150,13 +150,13 @@ Metadata* GMXTileContainer::GetMetadata ()
   Metadata *p_metadata = NULL;
   if (!read_only_ || !is_opened_) return NULL;
   
-  fseek(pp_container_volumes_[0],10,SEEK_SET);
+  GMXFileSys::Fseek64(pp_container_volumes_[0],10,SEEK_SET);
   char num_tags;
   if (fread(&num_tags,1,1,pp_container_volumes_[0])!=1) return NULL;
   if (num_tags==0) return NULL;
 
   p_metadata = new Metadata();
-  fseek(pp_container_volumes_[0],524 + 13*max_tiles_,SEEK_SET);
+  GMXFileSys::Fseek64(pp_container_volumes_[0],524 + 13*max_tiles_,SEEK_SET);
   char buf[5];
   buf[4]=0;
 
@@ -296,7 +296,7 @@ bool		GMXTileContainer::Close()
 	{
     if (p_tile_cache_) WriteTilesToContainerFileFromCache();
     //_fseeki64(pp_container_volumes_[0],0,0);
-    fseek(pp_container_volumes_[0], 0, 0);
+    GMXFileSys::Fseek64(pp_container_volumes_[0], 0, 0);
     unsigned char* header;
     this->WriteHeaderToByteArray(header);
     fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
@@ -508,7 +508,7 @@ int GMXTileContainer::FillUpCurrentVolume ()
 
   int volume_num = GetVolumeNum(container_byte_size_);
   //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
-  fseek(pp_container_volumes_[volume_num], 0, SEEK_END);
+  GMXFileSys::Fseek64(pp_container_volumes_[volume_num], 0, SEEK_END);
   int block_size = max_volume_size_ - (container_byte_size_ % max_volume_size_);
   unsigned char *block = new unsigned char[block_size];
   for (int i=0;i<block_size;i++)
@@ -593,7 +593,7 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
   }
 
   //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
-  fseek(pp_container_volumes_[volume_num], 0, SEEK_END);
+  GMXFileSys::Fseek64(pp_container_volumes_[volume_num], 0, SEEK_END);
   fwrite(p_data,sizeof(char),size,pp_container_volumes_[volume_num]);
   
   p_offsets_[n] = container_byte_size_;
@@ -620,7 +620,7 @@ bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, unsigned c
   }
 
   //_fseeki64(pp_container_volumes_[volume_num],GetTileOffsetInVolume(p_offsets_[n]),0);
-  fseek(pp_container_volumes_[volume_num], GetTileOffsetInVolume(p_offsets_[n]), 0);
+  GMXFileSys::Fseek64(pp_container_volumes_[volume_num], GetTileOffsetInVolume(p_offsets_[n]), 0);
   p_data			= new unsigned char[size];
 	return (size==fread(p_data,1,size,pp_container_volumes_[volume_num]));
 };
