@@ -23,7 +23,9 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
   MercatorTileMatrixSet merc_grid( p_tiling_params->merc_type_);
 
   if (!raster_bundle.Init(p_tiling_params->p_bundle_input_->GetFiles(),
-                          &merc_grid,p_tiling_params->clip_offset_))
+                          &merc_grid,
+                          p_tiling_params->input_proj4_srs_,
+                          p_tiling_params->clip_offset_))
 	{
 		cout<<"ERROR: can't init raster bundle object"<<endl;
 		return FALSE;
@@ -36,7 +38,7 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 		cout<<"ERROR: can't calculate base zoom for tiling"<<endl;
 		return FALSE;
 	}
-    
+
   TileContainerOptions tc_params;
   tc_params.path_ = p_tiling_params->output_path_;
   tc_params.p_tile_name_ = p_tiling_params->p_tile_name_;

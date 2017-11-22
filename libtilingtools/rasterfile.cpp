@@ -21,6 +21,7 @@ bool RasterFile::Close()
 	num_bands_= 0;
 	nodata_value_=0;
   nodata_value_defined_=FALSE;
+  set_proj4_srs_ = "";
   return TRUE;
 }
 
@@ -50,17 +51,20 @@ bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char ba
 }
 
 
-bool RasterFile::Init(string raster_file)
+bool RasterFile::Init(string raster_file, string set_proj4_srs)
 {
 	Close();
 	p_gdal_ds_ = (GDALDataset *) GDALOpen(raster_file.c_str(), GA_ReadOnly );
 	
+
 	if (p_gdal_ds_==0)
 	{
 		cout<<"ERROR: RasterFile::init: can't open raster image"<<endl;
     Close();
 		return FALSE;
 	}
+
+  if (set_proj4_srs != "") set_proj4_srs_=set_proj4_srs; //p_gdal_ds_->SetProjection(set_srs.c_str());
 	
 	raster_file_ = raster_file;
 
@@ -81,7 +85,7 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
   if (!p_tiling_srs) return 0;
   RasterFileCutline* p_rfc = new RasterFileCutline();
     
-  if (!p_tile_mset->GetRasterEnvelope(p_gdal_ds_,p_rfc->tiling_srs_envp_))
+  if (!p_tile_mset->GetRasterEnvelope(p_gdal_ds_,p_rfc->tiling_srs_envp_,set_proj4_srs_))
   {
     cout<<"ERROR: ITileMatrixSet::GetRasterEnvelope fail: not valid raster file georeference"<<endl;
     delete(p_rfc);
@@ -217,6 +221,9 @@ bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialRe
 
 bool	RasterFile::GetSRS(OGRSpatialReference  &srs, ITileMatrixSet* p_tile_mset)
 {
+  if (set_proj4_srs_ != "")
+    if (OGRERR_NONE == srs.SetFromUserInput(set_proj4_srs_.c_str())) return true;
+  
   const char* strProjRef      = this->p_gdal_ds_->GetProjectionRef();
 
 	if (OGRERR_NONE == srs.SetFromUserInput(strProjRef)) return true;
@@ -394,7 +401,8 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 
 
 int	BundleTiler::Init ( map<string,string> raster_vector, 
-                        ITileMatrixSet* p_tile_mset, 
+                        ITileMatrixSet* p_tile_mset,
+                        string input_proj4_srs,
                         double clip_offset)
 {
 	Close();
@@ -411,15 +419,16 @@ int	BundleTiler::Init ( map<string,string> raster_vector,
 
 	if (raster_vector.size() == 0) return 0;
 
+  clip_offset_ = clip_offset;
+  set_proj4_srs_ = input_proj4_srs;
+
  	for (map<string,string>::iterator iter = raster_vector.begin(); iter!=raster_vector.end(); iter++)
 	{
     if ((*iter).second=="")
       AddItemToBundle((*iter).first,
-                      VectorOperations::GetVectorFileNameByRasterFileName((*iter).first),
-                      clip_offset);
+                      VectorOperations::GetVectorFileNameByRasterFileName((*iter).first));
     else AddItemToBundle((*iter).first,
-                        (*iter).second,
-                         clip_offset);
+                        (*iter).second);
 	}
 
   AdjustCutlinesForOverlapping180Degree();
@@ -437,11 +446,11 @@ GDALDataType BundleTiler::GetRasterFileType()
 
 }
 
-bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file, double clip_offset)
+bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file)
 {	
 	RasterFile image;
 
-	if (!image.Init(raster_file))
+	if (!image.Init(raster_file, set_proj4_srs_))
 	{
 		cout<<"ERROR: can't init. image: "<<raster_file<<endl;
 		return 0;
@@ -449,7 +458,7 @@ bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file, doubl
 
   pair<string,RasterFileCutline*> p;
 	p.first			= raster_file;
-  p.second = image.GetRasterFileCutline(p_tile_mset_, vector_file, clip_offset);
+  p.second = image.GetRasterFileCutline(p_tile_mset_, vector_file, clip_offset_);
   if (!p.second) return false;
   item_list_.push_back(p);
 	return true;
@@ -524,9 +533,9 @@ int		BundleTiler::CalcAppropriateZoom()
 	if (item_list_.size()==0) return -1;
 
 	RasterFile rf;
-  rf.Init((*item_list_.begin()).first);
+  rf.Init((*item_list_.begin()).first, set_proj4_srs_);
   OGREnvelope envp;
-  if (!p_tile_mset_->GetRasterEnvelope(rf.get_gdal_ds_ref(), envp))
+  if (!p_tile_mset_->GetRasterEnvelope(rf.get_gdal_ds_ref(), envp, set_proj4_srs_))
   {
     cout << "ERROR: BundleTiler::CalcAppropriateZoom: not valid raster file georeference: ";
     cout<<(*item_list_.begin()).first<<endl;
@@ -636,7 +645,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 {
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
-	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
+  
+  GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
 	if (p_src_ds==0)
 	{
 		cout<<"ERROR: can't open raster file: "<<(*item_list_.begin()).first<<endl;
@@ -711,7 +721,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
 		// Open input raster and create source dataset
     RasterFile	input_rf;
-    input_rf.Init((*iter).first);
+    input_rf.Init((*iter).first,set_proj4_srs_);
     p_src_ds = input_rf.get_gdal_ds_ref();
     			
 		// Get Source coordinate system and set destination  

@@ -57,7 +57,7 @@ public:
   RasterFile();
 	~RasterFile(void);
 
-  bool			      Init(string raster_file); 
+  bool			      Init(string raster_file, string set_proj4_srs = ""); 
   bool			      Close();
   RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, 
                                            string vector_file = "", 
@@ -78,6 +78,7 @@ protected:
 
 
 protected:
+  string set_proj4_srs_;
  	char	buf[256];
 	string	raster_file_;
 	GDALDataset	*p_gdal_ds_;
@@ -97,7 +98,10 @@ public:
 	void Close();
 
 public:
-  int	Init	(map<string,string> raster_vector, ITileMatrixSet* p_tile_mset, double clip_offset = 0);
+  int	Init	(map<string,string> raster_vector, 
+            ITileMatrixSet* p_tile_mset, 
+            string input_proj4_srs = "",
+            double clip_offset = 0);
 
   int CalcNumberOfTiles (int zoom);
 	int	CalcAppropriateZoom();
@@ -163,13 +167,15 @@ protected:
   ITileMatrixSet* tile_matrix_set(){return p_tile_mset_;};
 
 protected:
-	bool			AddItemToBundle (string raster_file, string	vector_file, double clip_offset = 0);
+	bool			AddItemToBundle (string raster_file, string	vector_file);
   bool      AdjustCutlinesForOverlapping180Degree();
 
   bool      WaitForTilingThreads(list<future<int>> *p_tiling_threads, int nMaxThreads);
   bool      TerminateTilingThreads(list<future<int>> &tiling_results);
    
 protected:
+  double clip_offset_;
+  string set_proj4_srs_;
 	list<pair<string,RasterFileCutline*>>	item_list_;
   ITileMatrixSet*  p_tile_mset_;
 };

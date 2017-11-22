@@ -202,6 +202,10 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
     oTilingParams.options_ = oOptionParser.GetKeyValueCollection("-co");
 
 
+  if (oOptionParser.GetOptionValue("-isrs") != "")
+    oTilingParams.input_proj4_srs_ = oOptionParser.GetOptionValue("-isrs");
+
+
   oTilingParams.auto_stretching_ = true;
   oTilingParams.calculate_histogram_ = true;   //TODO - replace by default value in GMXTileContainer init
 
@@ -210,7 +214,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 }
 
 
-int nDescriptors = 20;
+int nDescriptors = 21;
 const GMXOptionDescriptor asDescriptors[] =
 {
   { "-i", 0, 1, "input path" },
@@ -224,6 +228,7 @@ const GMXOptionDescriptor asDescriptors[] =
   { "-q", 0, 0, "compression quality" },
   { "-of", 0, 0, "tile container format" },
   { "-co", 0, 2, "creation options" },
+  { "-isrs", 0, 0, "input files srs WKT or PROJ.4 format" },
   { "-tsrs", 0, 0, "tiling srs" },
   { "-tnt", 0, 0, "tile name template" },
   { "-nd", 0, 0, "nodata value" },
@@ -241,7 +246,8 @@ const string astrUsageExamples[] =
   "imagetiling -i image.tif -of mbtiles -o image.mbtiles -tt png",
   "imagetiling -i image1.tif -i image2.tif -o image1-2_tiles -tnt standard -tt jpg -z 18 -minz 10",
   "imagetiling -i images/*.tif -of mbtiles -o images_tiles -tnt {z}_{x}_{y}.png",
-  "imagetiling -i image.tif -b zone.shp -nd 0 -of mbtiles -o image.mbtiles -tt png"
+  "imagetiling -i image.tif -b zone.shp -nd 0 -of mbtiles -o image.mbtiles -tt png",
+  "imagetiling -i image.jpg -isrs \"+proj=longlat +datum=WGS84\""
 };
 
 
@@ -283,6 +289,7 @@ int main(int nArgs, char* argv[])
     delete[]pastrArgs;
     return 0;
   }
+
 
   GMXOptionParser oOptionParser;
   if (!oOptionParser.Init(asDescriptors, nDescriptors, pastrArgs, nArgs))

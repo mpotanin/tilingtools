@@ -16,7 +16,7 @@ public:
   virtual OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y) =0;
   virtual OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy) =0;
 	virtual bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y) =0;
-  virtual bool GetRasterEnvelope(GDALDataset* p_rf_ds, OGREnvelope &envp) =0;
+  virtual bool GetRasterEnvelope(GDALDataset* p_rf_ds, OGREnvelope &envp, string set_proj4_srs = "") =0;
     
 
   virtual bool AdjustForOverlapping180Degree(OGRGeometry *poGeometry) {return true;};
@@ -139,7 +139,7 @@ public:
     return false;
   }
 
-  bool GetRasterEnvelope(GDALDataset* p_rf_ds, OGREnvelope &envp)
+  bool GetRasterEnvelope(GDALDataset* p_rf_ds, OGREnvelope &envp, string set_proj4_srs="")
   {
     if (!p_rf_ds) return false;
     
@@ -147,21 +147,40 @@ public:
     char* pszMercWKT = NULL;
  
     if (CE_None != GetTilingSRSRef()->exportToWkt(&pszMercWKT)) return false;
-    if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds,0,0,pszMercWKT,1,0.125,0)))
+
+    char* pszSrcWKT = 0;
+    if (set_proj4_srs != "")
+    {
+      OGRSpatialReference oSR;
+      if (CE_None != oSR.importFromProj4(set_proj4_srs.c_str()))
+      {
+        OGRFree(pszMercWKT);
+        return false;
+      }
+      else oSR.exportToWkt(&pszSrcWKT);
+    }
+
+
+    if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds,pszSrcWKT,0,pszMercWKT,1,0.125,0)))
     {
       OGRFree(pszMercWKT);
+      OGRFree(pszSrcWKT);
       return false;
     }
+
+    OGRFree(pszMercWKT);
+    OGRFree(pszSrcWKT);
+
 
     double adfDstGeoTransform[6];
     int nPixels = 0, nLines = 0;
     if (CE_None != GDALSuggestedWarpOutput(p_rf_ds, GDALGenImgProjTransform, hTransformArg, adfDstGeoTransform, &nPixels, &nLines))
     {
-      OGRFree(pszMercWKT);
+      //OGRFree(pszMercWKT);
       GDALDestroyGenImgProjTransformer(hTransformArg);
       return false;
     }
-    OGRFree(pszMercWKT);
+    //OGRFree(pszMercWKT);
     GDALDestroyGenImgProjTransformer(hTransformArg);
 
     OGRSpatialReference merc_srs_shifted;
@@ -177,7 +196,7 @@ public:
     if (CE_None != merc_srs_shifted.exportToWkt(&pszMercWKT)) return false;
     if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds, 0, 0, pszMercWKT, 1, 0.125, 0)))
     {
-      OGRFree(pszMercWKT);
+      //OGRFree(pszMercWKT);
       return false;
     }
 
@@ -185,11 +204,11 @@ public:
     int nPixels2 = 0, nLines2 = 0;
     if (CE_None != GDALSuggestedWarpOutput(p_rf_ds, GDALGenImgProjTransform, hTransformArg, adfDstGeoTransform2, &nPixels2, &nLines2))
     {
-      OGRFree(pszMercWKT);
+     //OGRFree(pszMercWKT);
       GDALDestroyGenImgProjTransformer(hTransformArg);
       return false;
     }
-    OGRFree(pszMercWKT);
+    //OGRFree(pszMercWKT);
     GDALDestroyGenImgProjTransformer(hTransformArg);
 
   
