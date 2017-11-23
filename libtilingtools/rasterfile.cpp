@@ -21,7 +21,7 @@ bool RasterFile::Close()
 	num_bands_= 0;
 	nodata_value_=0;
   nodata_value_defined_=FALSE;
-  set_proj4_srs_ = "";
+  set_srs_ = "";
   return TRUE;
 }
 
@@ -51,7 +51,7 @@ bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char ba
 }
 
 
-bool RasterFile::Init(string raster_file, string set_proj4_srs)
+bool RasterFile::Init(string raster_file, string set_srs)
 {
 	Close();
 	p_gdal_ds_ = (GDALDataset *) GDALOpen(raster_file.c_str(), GA_ReadOnly );
@@ -64,7 +64,7 @@ bool RasterFile::Init(string raster_file, string set_proj4_srs)
 		return FALSE;
 	}
 
-  if (set_proj4_srs != "") set_proj4_srs_=set_proj4_srs; //p_gdal_ds_->SetProjection(set_srs.c_str());
+  if (set_srs != "") set_srs_=set_srs; //p_gdal_ds_->SetProjection(set_srs.c_str());
 	
 	raster_file_ = raster_file;
 
@@ -81,11 +81,10 @@ bool RasterFile::Init(string raster_file, string set_proj4_srs)
 RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string cutline_file, double clip_offset)
 {
   if (!p_tile_mset) return 0;
-  OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
-  if (!p_tiling_srs) return 0;
+
   RasterFileCutline* p_rfc = new RasterFileCutline();
     
-  if (!p_tile_mset->GetRasterEnvelope(p_gdal_ds_,p_rfc->tiling_srs_envp_,set_proj4_srs_))
+  if (!p_tile_mset->GetRasterEnvelope(this,p_rfc->tiling_srs_envp_))
   {
     cout<<"ERROR: ITileMatrixSet::GetRasterEnvelope fail: not valid raster file georeference"<<endl;
     delete(p_rfc);
@@ -95,6 +94,9 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
   
   if (cutline_file != "")
   {
+    OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
+    if (!p_tiling_srs) return 0;
+
     if (!(p_rfc->tiling_srs_cutline_ = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file, p_tiling_srs)))
       cout << "ERROR: unable to read geometry from vector: " << cutline_file<<endl;
     else
@@ -221,8 +223,8 @@ bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialRe
 
 bool	RasterFile::GetSRS(OGRSpatialReference  &srs, ITileMatrixSet* p_tile_mset)
 {
-  if (set_proj4_srs_ != "")
-    if (OGRERR_NONE == srs.SetFromUserInput(set_proj4_srs_.c_str())) return true;
+  if (set_srs_ != "")
+    if (OGRERR_NONE == srs.SetFromUserInput(set_srs_.c_str())) return true;
   
   const char* strProjRef      = this->p_gdal_ds_->GetProjectionRef();
 
@@ -299,12 +301,14 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
                            int nRandInd                            
                           )
 {
+ 
   gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
 
   //ToDo...
   int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
   map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
-  bool warp_result = WarpChunkToBuffer(zoom,
+
+    bool warp_result = WarpChunkToBuffer(zoom,
                                       chunk_envp,
                                       p_merc_buffer,
                                       bands_num,
@@ -340,7 +344,6 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
 			cout<<"ERROR: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
       return 1;
 	}
-
   delete(p_merc_buffer);
   return 0;
 }
@@ -402,7 +405,7 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 
 int	BundleTiler::Init ( map<string,string> raster_vector, 
                         ITileMatrixSet* p_tile_mset,
-                        string input_proj4_srs,
+                        string user_input_srs,
                         double clip_offset)
 {
 	Close();
@@ -420,7 +423,7 @@ int	BundleTiler::Init ( map<string,string> raster_vector,
 	if (raster_vector.size() == 0) return 0;
 
   clip_offset_ = clip_offset;
-  set_proj4_srs_ = input_proj4_srs;
+  set_srs_ = user_input_srs;
 
  	for (map<string,string>::iterator iter = raster_vector.begin(); iter!=raster_vector.end(); iter++)
 	{
@@ -450,7 +453,7 @@ bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file)
 {	
 	RasterFile image;
 
-	if (!image.Init(raster_file, set_proj4_srs_))
+	if (!image.Init(raster_file, set_srs_))
 	{
 		cout<<"ERROR: can't init. image: "<<raster_file<<endl;
 		return 0;
@@ -533,9 +536,10 @@ int		BundleTiler::CalcAppropriateZoom()
 	if (item_list_.size()==0) return -1;
 
 	RasterFile rf;
-  rf.Init((*item_list_.begin()).first, set_proj4_srs_);
+  rf.Init((*item_list_.begin()).first, set_srs_);
   OGREnvelope envp;
-  if (!p_tile_mset_->GetRasterEnvelope(rf.get_gdal_ds_ref(), envp, set_proj4_srs_))
+
+  if (!p_tile_mset_->GetRasterEnvelope(&rf, envp))
   {
     cout << "ERROR: BundleTiler::CalcAppropriateZoom: not valid raster file georeference: ";
     cout<<(*item_list_.begin()).first<<endl;
@@ -721,7 +725,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
 		// Open input raster and create source dataset
     RasterFile	input_rf;
-    input_rf.Init((*iter).first,set_proj4_srs_);
+    input_rf.Init((*iter).first,set_srs_);
     p_src_ds = input_rf.get_gdal_ds_ref();
     			
 		// Get Source coordinate system and set destination  
@@ -949,7 +953,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 																					curr_max_x,
 																					curr_max_y);
 			if (!Intersects(chunk_envp)) continue;
-	    
+      
       if (tiling_threads.size() >= MAX_WORK_THREADS)
       {
         if (!WaitForTilingThreads(&tiling_threads,MAX_WORK_THREADS))
@@ -1007,7 +1011,7 @@ bool BundleTiler::WaitForTilingThreads(list<future<int>> *p_tiling_threads, int 
         }
       }
     }
-    if (iter == p_tiling_threads->end()) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   return true;
 }

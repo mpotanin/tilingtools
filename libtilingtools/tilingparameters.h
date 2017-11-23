@@ -99,7 +99,7 @@ public:
   int             tile_chunk_size_;
   gmx::BundleInput     *p_bundle_input_;
   map<string,string>    options_;
-  string input_proj4_srs_;
+  string user_input_srs_;
 
 };
 

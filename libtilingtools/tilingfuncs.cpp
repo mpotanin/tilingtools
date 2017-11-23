@@ -24,7 +24,7 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 
   if (!raster_bundle.Init(p_tiling_params->p_bundle_input_->GetFiles(),
                           &merc_grid,
-                          p_tiling_params->input_proj4_srs_,
+                          p_tiling_params->user_input_srs_,
                           p_tiling_params->clip_offset_))
 	{
 		cout<<"ERROR: can't init raster bundle object"<<endl;

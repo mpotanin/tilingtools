@@ -203,7 +203,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
 
   if (oOptionParser.GetOptionValue("-isrs") != "")
-    oTilingParams.input_proj4_srs_ = oOptionParser.GetOptionValue("-isrs");
+    oTilingParams.user_input_srs_ = oOptionParser.GetOptionValue("-isrs");
 
 
   oTilingParams.auto_stretching_ = true;

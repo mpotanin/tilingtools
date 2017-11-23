@@ -57,7 +57,7 @@ public:
   RasterFile();
 	~RasterFile(void);
 
-  bool			      Init(string raster_file, string set_proj4_srs = ""); 
+  bool			      Init(string raster_file, string set_srs = ""); 
   bool			      Close();
   RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, 
                                            string vector_file = "", 
@@ -78,7 +78,7 @@ protected:
 
 
 protected:
-  string set_proj4_srs_;
+  string set_srs_;
  	char	buf[256];
 	string	raster_file_;
 	GDALDataset	*p_gdal_ds_;
@@ -100,7 +100,7 @@ public:
 public:
   int	Init	(map<string,string> raster_vector, 
             ITileMatrixSet* p_tile_mset, 
-            string input_proj4_srs = "",
+            string user_input_srs = "",
             double clip_offset = 0);
 
   int CalcNumberOfTiles (int zoom);
@@ -175,7 +175,7 @@ protected:
    
 protected:
   double clip_offset_;
-  string set_proj4_srs_;
+  string set_srs_;
 	list<pair<string,RasterFileCutline*>>	item_list_;
   ITileMatrixSet*  p_tile_mset_;
 };
