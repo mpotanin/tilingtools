@@ -10,7 +10,7 @@
     
   
 ## Download Windows Binary
-[Download win-x64 binary 3.2.0 version (16.11.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.2.0-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
+[Download win-x64 binary 3.2.1 version (23.11.2017)](http://kosmosnimki.ru/downloads/tilingtools-3.2.1-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013.
 
 ## Using imagetiling
 
@@ -26,6 +26,7 @@
 * **-q** - compression quality 1-100. Default: 85
 * **-of** - output tile container format: gmxtiles, mbtiles. Default: separate tiles 
 * **-co** - creation options specific to output tile container format
+* **-isrs** - input files SRS in WKT or PROJ4 format. Default: SRS is defined from input files themselves 
 * **-tsrs** - tiling spatial reference system. Possible values: 0 (World Mercator, EPSG:3395), 1 (Web Mercator or Spherical Mercatorv, EPSG:3857). Default value: 1 
 * **-tnt** - output tile name templete. Default value: {z}/{x}/{y}
 * **-nd** - nodata value. Default: isn't defined
@@ -41,6 +42,7 @@ imagetiling -i image.tif -of mbtiles -o image.mbtiles -tt png
 imagetiling -i image1.tif -i image2.tif -o image1-2_tiles -tt jpg -z 18 -minz 10
 imagetiling -i images/\*.tif -of mbtiles -o images_tiles -tnt {z}_{x}_{y}.png
 imagetiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
+imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
 ```
 
 ## Using CopyTiles
@@ -60,7 +62,7 @@ imagetiling -i image.tif -b clip.shp -nd 0 -of mbtiles -o image.mbtiles -tt png
 ```
  copytiles -i tiles -i_tnt standard -tt png -of MBTiles -o tiles.mbtiles -z 10-15
  copytiles -i tiles -i_tnt {z}/{x}/{y}.png -of MBTiles -o tiles.mbtiles -b zone.shp
- copytiles -i tiles -i_tnt {z}/{x}/{y}.png -o tiles_new -o_tnt {z}_{x}_{y}.png
+ copytiles -i tiles -i_tnt {z}/{x}/{y}.png -o tiles_new -o_tnt {z}_{x}_{y}.png 
 ```
 
 ## Building from Source
