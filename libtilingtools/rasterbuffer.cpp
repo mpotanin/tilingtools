@@ -335,7 +335,7 @@ bool	RasterBuffer::SaveBufferToFileAndData	(string file_name, void* &p_data_dst,
 	return true;
 }
 
-
+/*
 bool RasterBuffer::ConvertFromPanToRGB ()
 {
 	if (x_size_==0 || y_size_ == 0 || data_type_ != GDT_Byte) return false;
@@ -397,7 +397,7 @@ bool	RasterBuffer::ConvertFromIndexToRGB ()
 	}
 	return true;
 }
-
+*/
 
 bool RasterBuffer::SaveToJpegData (void* &p_data_dst, int &size, int quality)
 {
@@ -1172,39 +1172,43 @@ bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
 }
 */
 
-
-bool	RasterBuffer::CreateAlphaBandByRGBColor(unsigned char	*pRGB, int tolerance)
+bool RasterBuffer::CreateAlphaBandByNodataValues(unsigned char** p_nd_rgb, int rgb_num, int tolerance)
 {
-	if ((this->p_pixel_data_==0) || (data_type_!=GDT_Byte) || (num_bands_>3)) return false;
+  if ((this->p_pixel_data_ == 0) || (data_type_ != GDT_Byte) || (num_bands_>3)) return false;
 
-	int n = x_size_ *y_size_;
-	int num_bands_new = (num_bands_==1 || num_bands_==3) ? num_bands_+1 : num_bands_;
+  int n = x_size_ *y_size_;
+  int num_bands_new = (num_bands_ == 1 || num_bands_ == 3) ? num_bands_ + 1 : num_bands_;
   unsigned char	*p_pixel_data_new = new unsigned char[num_bands_new * n];
-  memcpy(p_pixel_data_new,p_pixel_data_,num_bands_ * n);
-	int d = (num_bands_new == 4) ? 1 : 0;
+  memcpy(p_pixel_data_new, p_pixel_data_, num_bands_ * n);
+  int d = (num_bands_new == 4) ? 1 : 0;
 
-  for (int i=0; i<y_size_; i++)
-	{
-		for (int j=0; j<x_size_; j++)
-			p_pixel_data_new[i*x_size_ + j + n + d*(n+n)] = (	abs(p_pixel_data_new[i*x_size_ + j] - pRGB[0]) + 
-														abs(p_pixel_data_new[i*x_size_ + j + d*n] - pRGB[0 +d] ) +
-														abs(p_pixel_data_new[i*x_size_ + j + d*(n+n)] - pRGB[0+d+d] ) <= tolerance)
-														? 0 : 255;
-			/*
-			pData_new[i*x_size_ + j + n + d*(n+n)] = (	(pData_new[i*x_size_ + j] == pRGB[0] ) &&
-														(pData_new[i*x_size_ + j + d*n] == pRGB[0 +d] ) &&
-														(pData_new[i*x_size_ + j + d*(n+n)] == pRGB[0+d+d] ) ) 
-														? 100 : 0;
-			*/
-	}
-	delete[]((unsigned char*)p_pixel_data_);
-	p_pixel_data_ = p_pixel_data_new;
-	num_bands_ = num_bands_new;
-	alpha_band_defined_ = true;
-	return true;
+  int t;
+  for (int i = 0; i<y_size_; i++)
+  {
+    for (int j = 0; j < x_size_; j++)
+    {
+      for (int k = 0; k < rgb_num; k++)
+      {
+        t = i*x_size_ + j;
+        if ((abs(p_pixel_data_new[t] - p_nd_rgb[k][0]) +
+          abs(p_pixel_data_new[t + d*n] - p_nd_rgb[k][0 + d]) +
+          abs(p_pixel_data_new[t + d*(n + n)] - p_nd_rgb[k][0 + d + d])) <= tolerance)
+        {
+          p_pixel_data_new[t + n + d*(n + n)] = 0;
+          break;
+        }
+        else p_pixel_data_new[t + n + d*(n + n)] = 255;
+      }
+    }
+  }
+  delete[]((unsigned char*)p_pixel_data_);
+  p_pixel_data_ = p_pixel_data_new;
+  num_bands_ = num_bands_new;
+  alpha_band_defined_ = true;
+  return true;
 }
 
-//bool	RasterBuffer::createAlphaBandByValue(int	value);
+
 
 
 bool	RasterBuffer::SetPixelDataBlock ( int left, 

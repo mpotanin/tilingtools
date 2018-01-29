@@ -53,7 +53,8 @@ public:
     jpeg_quality_ = 0;
     p_tile_name_ = NULL;
     p_background_color_	= NULL;
-    p_transparent_color_ = NULL;
+    p_nd_rgbcolors_ = NULL;
+    nd_num_ = 0;
     nodata_tolerance_ = 0;
     base_zoom_	= 0;
     min_zoom_	= 0;
@@ -70,7 +71,12 @@ public:
   ~TilingParameters ()
   {
     if (p_background_color_)  delete(p_background_color_);
-	  if (p_transparent_color_) delete(p_transparent_color_);
+    if (p_nd_rgbcolors_)
+    {
+      for (int i=0;i<nd_num_;i++)
+        delete(p_nd_rgbcolors_[i]);
+      delete(p_nd_rgbcolors_);
+    }
     if (p_tile_name_)         delete(p_tile_name_);
   };
 
@@ -86,8 +92,12 @@ public:
 	int	min_zoom_;				//минимальный зум
 	string vector_file_;			//векторная граница
 	unsigned char *p_background_color_;		//RGB-цвет для заливки фона в тайлах
-  unsigned char *p_transparent_color_;		//RGB-цвет для маски прозрачности
-	int nodata_tolerance_;     //радиус цвета для маски прозрачности
+
+  
+  unsigned char** p_nd_rgbcolors_; //массив rgb-цветов "нет данных"
+  int nd_num_; //количество значений "нет данных"
+
+  int nodata_tolerance_;     //радиус цвета для маски прозрачности
 	bool auto_stretching_;		//автоматически пересчитывать значения к 8 бит		
   GDALResampleAlg gdal_resampling_;	      //название фильтра для ресемплинга			
 

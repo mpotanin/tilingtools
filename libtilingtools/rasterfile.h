@@ -139,15 +139,18 @@ protected:
   double  GetNodataValue(bool &nodata_defined);
   GDALDataType  GetRasterFileType();
 
+
+
+
   bool			WarpChunkToBuffer (	int zoom,	
                                 OGREnvelope	chunk_envp, 
-                                RasterBuffer *p_dst_buffer,
-                                int         output_bands_num = 0,
-                                map<string,int*>*   p_band_mapping = 0,
+                                RasterBuffer* p_dst_buffer,
+                                int output_bands_num = 0,
+                                map<string,int*>* p_band_mapping = 0,
                                 GDALResampleAlg resample_alg = GRA_Cubic,
-                                unsigned char *p_nodata = NULL,
-                                unsigned char *p_background_color = NULL,
-                                int  tiffinmem_ind=0);
+                                int* p_ndval = NULL,
+                                unsigned char* p_background_color = NULL,
+                                int tiffinmem_ind=0);
 
   bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 
 						  RasterBuffer	*p_buffer,

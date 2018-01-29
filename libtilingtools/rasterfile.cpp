@@ -308,15 +308,37 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
   int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
   map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
 
-    bool warp_result = WarpChunkToBuffer(zoom,
+  int* p_ndval = 0;
+  unsigned char* p_background_color = 0;
+
+  if (p_tiling_params->p_background_color_ || p_tiling_params->p_nd_rgbcolors_)
+  {
+    p_background_color = new unsigned char[3];
+    memcpy(p_background_color, 
+      (p_tiling_params->p_background_color_ ? p_tiling_params->p_background_color_ : p_tiling_params->p_nd_rgbcolors_[0]),
+      3);
+  }
+
+  if (p_tiling_params->nd_num_)
+  {
+    p_ndval = new int;
+    p_ndval[0] = p_tiling_params->p_nd_rgbcolors_[0][0];
+  }
+
+  
+
+  bool warp_result = WarpChunkToBuffer(zoom,
                                       chunk_envp,
                                       p_merc_buffer,
                                       bands_num,
                                       bands_num == 0 ? 0 : &band_mapping,
                                       p_tiling_params->gdal_resampling_,
-                                      p_tiling_params->p_transparent_color_,
-                                      p_tiling_params->p_background_color_,
+                                      p_ndval,
+                                      p_background_color,
                                       nRandInd);
+
+  delete(p_ndval);
+  delete(p_background_color);
     
   if (!warp_result)	
   {
@@ -638,14 +660,14 @@ bool BundleTiler::CalclLinearStretchTo8BitParams (double *&p_min_values,
 //*/
 
 bool BundleTiler::WarpChunkToBuffer (int zoom,	
-                                            OGREnvelope	    chunk_envp, 
-                                            RasterBuffer    *p_dst_buffer, 
-                                            int             output_bands_num,
+                                            OGREnvelope chunk_envp, 
+                                            RasterBuffer* p_dst_buffer, 
+                                            int output_bands_num,
                                             map<string,int*>* p_band_mapping,
                                             GDALResampleAlg resample_alg, 
-                                            unsigned char            *p_nodata,
-                                            unsigned char            *p_background_color,
-                                            int  tiffinmem_ind)
+                                            int* p_ndval,
+                                            unsigned char* p_background_color,
+                                            int tiffinmem_ind)
 {
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
@@ -696,19 +718,9 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	p_vrt_ds->SetProjection(p_dst_wkt);
   
   if (p_background_color)
-  {
     RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
-  }
-  else if ((p_nodata || nodata_val_from_file_defined) && (bands_num_dst<=3) ) 
-  {
-    unsigned char rgb[3];
-    if (p_nodata) memcpy(rgb,p_nodata,3);
-    else rgb[0] = (rgb[1] = (rgb[2] = (int)nodata_val_from_file));
-    
-    RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,rgb);
-  }
-
   
+   
   int file_num = -1;
   OGRGeometry *p_chunk_geom = VectorOperations::CreateOGRPolygonByOGREnvelope(chunk_envp);
 	for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
@@ -775,38 +787,19 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
     p_warp_options->hCutline = (*iter).second->p_pixel_line_cutline_ ?
                                (*iter).second->p_pixel_line_cutline_->clone() : 0;
   
-    if (p_nodata)
-    {
-      p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
-      p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
-      if (bands_num_dst==3)
-      {
-        p_warp_options->padfSrcNoDataReal[0] = p_nodata[0];
-        p_warp_options->padfSrcNoDataReal[1] = p_nodata[1];
-        p_warp_options->padfSrcNoDataReal[2] = p_nodata[2];
-        p_warp_options->padfSrcNoDataImag[0] = (p_warp_options->padfSrcNoDataImag[1] = (p_warp_options->padfSrcNoDataImag[2] = 0));
-      }
-      else
-      {
-        for (int i=0;i<bands_num_dst;i++)
-        {
-          p_warp_options->padfSrcNoDataReal[i] = p_nodata[0];
-          p_warp_options->padfSrcNoDataImag[i] = 0;
-        }
-      }
-    }
-    else if (nodata_val_from_file_defined)
+    if (p_ndval || nodata_val_from_file_defined)
     {
       p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
       p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
       for (int i=0;i<bands_num_dst;i++)
       {
-          
-          p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file;
-          p_warp_options->padfSrcNoDataImag[i] = nodata_val_from_file;
+        p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file_defined ? 
+                                                nodata_val_from_file : (*p_ndval);
+        p_warp_options->padfSrcNoDataImag[i] = nodata_val_from_file_defined ?
+                                                nodata_val_from_file : 0;
       }
     }
-    
+        
     p_warp_options->pfnProgress = GMXPrintProgressStub;
     //p_warp_options->pfnProgress = 0;
 
@@ -910,12 +903,11 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 		{
 			need_stretching = true;
 			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
-      double nodata_val = (p_tiling_params->p_transparent_color_) ?
-                           p_tiling_params->p_transparent_color_[0] : 0;
+      double nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
       map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
       if (!CalclLinearStretchTo8BitParams(p_stretch_min_values,
                                                     p_stretch_max_values,
-                                                    (p_tiling_params->p_transparent_color_) ?
+                                                    (p_tiling_params->nd_num_) ?
                                                     &nodata_val : 0,
                                                     p_tiling_params->p_bundle_input_->GetBandsNum(),
                                                     p_tiling_params->p_bundle_input_->GetBandsNum() ?
@@ -1071,10 +1063,11 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 											p_buffer->get_color_table_ref());
       delete[]((unsigned char*)p_tile_pixel_data);
       
-      if (p_tiling_params->p_transparent_color_ != 0  && 
-          p_tiling_params->tile_type_ == PNG_TILE)
-        tile_buffer.CreateAlphaBandByRGBColor(p_tiling_params->p_transparent_color_, 
-                                              p_tiling_params->nodata_tolerance_);
+      if (p_tiling_params->nd_num_ && (p_tiling_params->tile_type_ == PNG_TILE))
+        tile_buffer.CreateAlphaBandByNodataValues(p_tiling_params->p_nd_rgbcolors_,
+                                                  p_tiling_params->nd_num_,
+                                                  p_tiling_params->nodata_tolerance_);
+
       if (p_tile_container != 0)
 			{
 				

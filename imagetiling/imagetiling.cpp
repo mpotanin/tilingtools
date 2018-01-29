@@ -132,16 +132,25 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
     oTilingParams.jpeg_quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
 
 
-  if (oOptionParser.GetOptionValue("-nd") != "")
+  if (oOptionParser.GetValueList("-nd").size() != 0)
   {
-    unsigned char pabyRGB[3];
-    if (!GMXString::ConvertStringToRGB(oOptionParser.GetOptionValue("-nd"), pabyRGB))
+    list<string> listNodataValues = oOptionParser.GetValueList("-nd");
+    oTilingParams.nd_num_ = listNodataValues.size();
+    oTilingParams.p_nd_rgbcolors_ = new unsigned char*[oTilingParams.nd_num_];
+    for (int i = 0; i<oTilingParams.nd_num_;i ++)
+      oTilingParams.p_nd_rgbcolors_[i] = 0;
+    
+    int i=0;
+    for (string strNodata : listNodataValues)
     {
-      cout << "ERROR: not valid value of \"-nd\" parameter: " << oOptionParser.GetOptionValue("-nd") << endl;
-      return FALSE;
+      oTilingParams.p_nd_rgbcolors_[i] = new unsigned char[3];
+      if (!GMXString::ConvertStringToRGB(strNodata, oTilingParams.p_nd_rgbcolors_[i]))
+      {
+        cout << "ERROR: not valid value of \"-nd\" parameter: " << strNodata << endl;
+        return FALSE;
+      }
+      i++;
     }
-    oTilingParams.p_transparent_color_ = new unsigned char[3];
-    memcpy(oTilingParams.p_transparent_color_, pabyRGB, 3);
   }
 
 
@@ -170,8 +179,9 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
       cout << "ERROR: can't open file: " << (*listRasters.begin()) << endl;
       return FALSE;
     }
-    oTilingParams.gdal_resampling_ = oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable() ? GRA_NearestNeighbour
-      : GRA_Cubic;
+    oTilingParams.gdal_resampling_ = ( oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable() ||
+                                      oOptionParser.GetValueList("-nd").size()) 
+                                      ? GRA_NearestNeighbour : GRA_Cubic;
     oRF.Close();
   }
   else
@@ -214,6 +224,9 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 }
 
 
+
+
+
 int nDescriptors = 21;
 const GMXOptionDescriptor asDescriptors[] =
 {
@@ -231,7 +244,7 @@ const GMXOptionDescriptor asDescriptors[] =
   { "-isrs", 0, 0, "input files srs WKT or PROJ.4 format" },
   { "-tsrs", 0, 0, "tiling srs" },
   { "-tnt", 0, 0, "tile name template" },
-  { "-nd", 0, 0, "nodata value" },
+  { "-nd", 0, 1, "nodata value/rgb color" },
   { "-ndt", 0, 0, "nodata tolerance" },
   { "-bgc", 0, 0, "background color" },
   { "-bnd", 0, 1, "raster band list" },

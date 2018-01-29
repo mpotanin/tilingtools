@@ -979,7 +979,6 @@ bool	MBTileContainer::AddTile(int z, int x, int y, unsigned char *p_data, unsign
 	string str_sql;
 
 	///*
-	if (z>0) y = (1<<z) - y - 1;
 	if (TileExists(z,x,y))
 	{
 		sprintf(buf,"DELETE * FROM tiles WHERE zoom_level = %d AND tile_column = %d AND tile_row = %d",z,x,y);
@@ -992,7 +991,8 @@ bool	MBTileContainer::AddTile(int z, int x, int y, unsigned char *p_data, unsign
 		}
 	}
 	//*/
-	sprintf(buf,"INSERT INTO tiles VALUES(%d,%d,%d,?)",z,x,y);
+  if (z>0) y = (1 << z) - y - 1;
+  sprintf(buf,"INSERT INTO tiles VALUES(%d,%d,%d,?)",z,x,y);
 	str_sql = buf;
 	const char *tail	=	NULL;
 	sqlite3_stmt *stmt	=	NULL;

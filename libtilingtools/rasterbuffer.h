@@ -53,9 +53,12 @@ public:
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
 	bool			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int band_min = -1, int band_max = -1);
 	void*			ZoomOut	(GDALResampleAlg resampling_method);	
-	bool			ConvertFromIndexToRGB ();
-	bool			ConvertFromPanToRGB();
-	bool			CreateAlphaBandByRGBColor(unsigned char	*p_rgb, int tolerance = 0);
+	//bool			ConvertFromIndexToRGB ();
+	//bool			ConvertFromPanToRGB();
+
+  //ToDo
+  bool			CreateAlphaBandByNodataValues(unsigned char	**p_nd_rgbcolors, int nd_num, int tolerance = 0);
+
 
 	//bool      CreateAlphaBandByPixelLinePolygon(VectorOperations *p_vb);
 
