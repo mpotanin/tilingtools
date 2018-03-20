@@ -686,6 +686,9 @@ bool	RasterBuffer::SaveToTiffData	(void* &p_data_dst, int &size)
 		NULL
 		);
 	p_ds->RasterIO(GF_Write,0,0,x_size_,y_size_,p_pixel_data_,x_size_,y_size_,data_type_,num_bands_,NULL,0,0,0);
+	if (p_color_table_ && num_bands_ <3)
+		p_ds->GetRasterBand(1)->SetColorTable(p_color_table_);
+
 	GDALFlushCache(p_ds);
 	GDALClose(p_ds);
 	vsi_l_offset length; 
