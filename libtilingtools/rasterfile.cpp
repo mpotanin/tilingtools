@@ -1042,17 +1042,17 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 		for (int y = min_y; y <= max_y; y += 1)
 		{
 			OGREnvelope tile_envelope = p_tile_mset_->CalcEnvelopeByTile(zoom,x,y);
-	    if (!Intersects(tile_envelope)) continue;
+			if (!Intersects(tile_envelope)) continue;
              
-      int x_offset = (int)(((tile_envelope.MinX-buffer_envelope.MinX)/
-                            p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
-      int y_offset = (int)(((buffer_envelope.MaxY-tile_envelope.MaxY)/
-                            p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
-      int tile_size_x = (int)(((tile_envelope.MaxX-tile_envelope.MinX)/
-                          p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
-      int tile_size_y = (int)(((tile_envelope.MaxY-tile_envelope.MinY)/
-                          p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
-      RasterBuffer tile_buffer;
+			int x_offset = (int)(((tile_envelope.MinX-buffer_envelope.MinX)/
+								p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
+			int y_offset = (int)(((buffer_envelope.MaxY-tile_envelope.MaxY)/
+								p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
+			int tile_size_x = (int)(((tile_envelope.MaxX-tile_envelope.MinX)/
+								p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
+			int tile_size_y = (int)(((tile_envelope.MaxY-tile_envelope.MinY)/
+								p_tile_mset_->CalcPixelSizeByZoom(zoom))+0.5);
+			RasterBuffer tile_buffer;
 			void *p_tile_pixel_data = p_buffer->GetPixelDataBlock(x_offset, y_offset,tile_size_x,tile_size_y);
 			tile_buffer.CreateBuffer(	p_buffer->get_num_bands(),
 											tile_size_x,
@@ -1061,53 +1061,30 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 											p_buffer->get_data_type(),
 											FALSE,
 											p_buffer->get_color_table_ref());
-      delete[]((unsigned char*)p_tile_pixel_data);
+			delete[]((unsigned char*)p_tile_pixel_data);
       
-      if (p_tiling_params->nd_num_ && (p_tiling_params->tile_type_ == PNG_TILE))
-        tile_buffer.CreateAlphaBandByNodataValues(p_tiling_params->p_nd_rgbcolors_,
-                                                  p_tiling_params->nd_num_,
-                                                  p_tiling_params->nodata_tolerance_);
+			if (p_tiling_params->nd_num_ && (p_tiling_params->tile_type_ == PNG_TILE))
+				  tile_buffer.CreateAlphaBandByNodataValues(p_tiling_params->p_nd_rgbcolors_,
+														  p_tiling_params->nd_num_,
+														  p_tiling_params->nodata_tolerance_);
 
-      if (p_tile_container != 0)
+			if (p_tile_container != 0)
 			{
-				
 				void *p_data=0;
 				int size = 0;
-				switch (p_tiling_params->tile_type_)
+				tile_buffer.SerializeToInMemoryData(p_data, size, 
+													p_tiling_params->tile_type_, 
+													p_tiling_params->jpeg_quality_);
+			
+        		if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
 				{
-					case JPEG_TILE:
-						{
-              tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
-              break;
-						}
-					case PNG_TILE:
-						{
-							tile_buffer.SaveToPngData(p_data,size);
-							break;
-						}
-          case PSEUDO_PNG_TILE:
-					{
-						tile_buffer.SaveToPseudoPngData(p_data,size);
-						break;
-					}
-          case JP2_TILE:
-            {
-              tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
-              break;
-            }
-					default:
-						tile_buffer.SaveToTiffData(p_data,size);
+				  if (p_data) delete[]((unsigned char*)p_data);
+				  cout<<"ERROR: AddTile: writing tile to container"<<endl;
+				  return FALSE;
 				}
         
-        if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
-        {
-          if (p_data) delete[]((unsigned char*)p_data);
-          cout<<"ERROR: AddTile: writing tile to container"<<endl;
-          return FALSE;
-        }
-        
-				delete[]((unsigned char*)p_data);
-				(*p_tiles_generated)++;
+					delete[]((unsigned char*)p_data);
+					(*p_tiles_generated)++;
 			}
 			
 			GMXPrintTilingProgress(tiles_expected,(*p_tiles_generated));

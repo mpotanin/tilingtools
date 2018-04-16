@@ -5,6 +5,7 @@
 #include "vectorborder.h"
 #include "histogram.h"
 #include "tilingparameters.h"
+#include "rasterbuffer.h"
 
 namespace gmx
 {
@@ -53,8 +54,7 @@ public:
   virtual Metadata* GetMetadata () {return NULL;}; 
   virtual bool ExtractAndStoreMetadata (TilingParameters* p_params) {return true;}; 
   
-
-	virtual int64_t		TileID( int z, int x, int y)
+ 	virtual int64_t		TileID( int z, int x, int y)
 	{
 		int64_t n = ((((int64_t)1)<<(2*z))-1)/3;
 		n = n<<1;
@@ -77,6 +77,8 @@ public:
 
 		return TRUE;
 	};
+
+	
 };
 
 
@@ -126,7 +128,10 @@ public:
 	bool				TileXYZ			(int64_t n, int &z, int &x, int &y);
 	TileType			GetTileType	();
 	MercatorProjType	GetProjType();
-	int					GetMaxZoom		();
+	int					GetMaxZoom();
+
+	//static RasterBuffer* CreateWebMercatorTileFromWorldMercatorTiles(GMXTileContainer *poSrcContainer,
+	//																int nZ, int nX, int nY);
 
 protected:
   static const unsigned int DEFAULT_MAX_VOLUME_SIZE = 0xffffffff;

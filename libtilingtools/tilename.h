@@ -3,6 +3,7 @@
 #include "stringfuncs.h"
 #include "filesystemfuncs.h"
 #include "vectorborder.h"
+#include "rasterbuffer.h"
 
 namespace gmx
 {
@@ -63,6 +64,7 @@ public:
 		
   bool			AdjustForOverlapping180Degree (OGRGeometry	*p_ogr_geom_merc);
 
+  
   static double DegToRad(double ang);
   static double RadToDeg(double rad);
 
@@ -85,14 +87,7 @@ protected:
 };
 
 
-typedef enum { 
-  NDEF_TILE_TYPE=-1,
-	JPEG_TILE=0,
-	PNG_TILE=1,
-	TIFF_TILE=4,
-  JP2_TILE=16,
-  PSEUDO_PNG_TILE=32
-} TileType;
+
 
 
 class TileName

@@ -159,17 +159,33 @@ bool	RasterBuffer::CreateBufferFromTiffData	(void *p_data_src, int size)
 	return true;
 }
 
+bool	RasterBuffer::CreateBufferFromInMemoryData(void* p_data_src, int size, TileType oRasterFormat)
+{
+	ClearBuffer();
+	switch (oRasterFormat)
+	{
+		case JPEG_TILE:
+			return CreateBufferFromJpegData(p_data_src, size);
+		case PSEUDO_PNG_TILE:
+			return CreateBufferFromPseudoPngData(p_data_src, size);
+		case PNG_TILE:
+			return CreateBufferFromPngData(p_data_src, size);
+		case JP2_TILE:
+			return CreateFromJP2Data(p_data_src, size);
+		default:
+			return CreateBufferFromTiffData(p_data_src, size);
+	}
+	return true;
+}
+
 
 bool	RasterBuffer::CreateBufferFromJpegData (void *p_data_src, int size)
 {
-
-	ClearBuffer();
 	gdImagePtr im;
 	if (!  (im =	gdImageCreateFromJpegPtr(size, p_data_src))) return false;
 	
 	CreateBuffer(3,im->sx,im->sy,NULL,GDT_Byte);
-	//gdImageDestroy(im);
-	//return true;
+
 	unsigned char	*p_pixel_data_byte	= (unsigned char*)p_pixel_data_;
 
 	
@@ -335,69 +351,6 @@ bool	RasterBuffer::SaveBufferToFileAndData	(string file_name, void* &p_data_dst,
 	return true;
 }
 
-/*
-bool RasterBuffer::ConvertFromPanToRGB ()
-{
-	if (x_size_==0 || y_size_ == 0 || data_type_ != GDT_Byte) return false;
-	if (num_bands_!=1)		return false;
-	if (this->p_pixel_data_==NULL)	return false;
-  int num_bands_new = IsAlphaBand() ? 4 : 3;
-	
-	unsigned char *p_pixel_data_new = new unsigned char[num_bands_new*x_size_*y_size_];
-	int n = x_size_*y_size_;
-  int m;
-	for (int j=0;j<y_size_;j++)
-	{
-		for (int i=0;i<x_size_;i++)
-		{
-      m = j*x_size_+i;
-			p_pixel_data_new[m + n + n] =
-				(p_pixel_data_new[m +n] = (p_pixel_data_new[m] = ((unsigned char*)p_pixel_data_)[m]));
-      if (IsAlphaBand())
-        p_pixel_data_new[m + n + n + n] = ((unsigned char*)p_pixel_data_)[m + n];
-		}
-	}
-	
-	num_bands_ = num_bands_new;
-	delete[]((unsigned char*)p_pixel_data_);
-	p_pixel_data_ = p_pixel_data_new;
-	return true;
-}
-
-
-
-bool	RasterBuffer::ConvertFromIndexToRGB ()
-{
-	if (p_color_table_!=NULL)
-	{
-		int n = x_size_*y_size_;
-		int num_bands_new = IsAlphaBand() ? 4 : 3;
-    
-    unsigned char *p_pixel_data_new = new unsigned char[num_bands_new*n];
-		int m;
-		const GDALColorEntry *p_color_entry;
-		for (int i=0;i<x_size_;i++)
-		{
-			for (int j=0;j<y_size_;j++)
-			{
-				m = j*x_size_+i;
-				p_color_entry = p_color_table_->GetColorEntry(((unsigned char*)p_pixel_data_)[m]);
-				p_pixel_data_new[m] = p_color_entry->c1;
-				p_pixel_data_new[m+n] = p_color_entry->c2;
-				p_pixel_data_new[m+n+n] = p_color_entry->c3;
-        if (IsAlphaBand())
-         	p_pixel_data_new[m+n+n+n]=((unsigned char*)p_pixel_data_)[n+m];
- 			}
-		}
-		delete[]((unsigned char*)p_pixel_data_);
-		p_pixel_data_ = p_pixel_data_new;
-		num_bands_ = num_bands_new;
-		GDALDestroyColorTable(p_color_table_);
-		p_color_table_ = NULL;
-	}
-	return true;
-}
-*/
 
 bool RasterBuffer::SaveToJpegData (void* &p_data_dst, int &size, int quality)
 {
@@ -617,6 +570,25 @@ bool RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 	gdImageDestroy(im);
 	return true;
 }
+
+bool RasterBuffer::SerializeToInMemoryData(void* &p_data_src, int &size, TileType oRasterFormat, int nQuality)
+{
+	switch (oRasterFormat)
+	{
+		case JPEG_TILE:
+			return SaveToJpegData(p_data_src, size, nQuality);
+		case PNG_TILE:
+			return SaveToPngData(p_data_src, size);
+		case PSEUDO_PNG_TILE:
+			return SaveToPseudoPngData(p_data_src, size);
+		case JP2_TILE:
+			return SaveToJP2Data(p_data_src, size,nQuality);
+		default:
+			return SaveToTiffData(p_data_src, size);
+	}
+	return true;
+}
+
 	
 bool RasterBuffer::SaveToPngData (void* &p_data_dst, int &size)
 {
@@ -735,6 +707,7 @@ bool RasterBuffer::InitByValue(int value)
 	return true;	
 }
 
+/*
 void* RasterBuffer::GetPixelDataOrder2()
 {
   if (this->get_pixel_data_ref()==NULL) return NULL;
@@ -790,6 +763,7 @@ void* RasterBuffer::GetPixelDataOrder2(T type)
 
 	return p_data_order2;
 }
+*/
 
 template <typename T>
 bool RasterBuffer::InitByValue(T type, int value)

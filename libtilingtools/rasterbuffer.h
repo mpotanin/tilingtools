@@ -6,6 +6,15 @@
 namespace gmx
 {
 
+typedef enum {
+	NDEF_TILE_TYPE = -1,
+	JPEG_TILE = 0,
+	PNG_TILE = 1,
+	TIFF_TILE = 4,
+	JP2_TILE = 16,
+	PSEUDO_PNG_TILE = 32
+} TileType;
+
 
 class RasterBuffer
 {
@@ -25,36 +34,21 @@ public:
 									 );
 
 	bool			CreateBuffer				(RasterBuffer *p_src_buffer);
-	bool			CreateBufferFromJpegData	(void *p_data_src, int size);
-	bool			CreateBufferFromPngData		(void *p_data_src, int size);
- 	bool			CreateBufferFromPseudoPngData	(void *p_data_src, int size);
-  bool			CreateFromJP2Data			(void *pabData, int nSize);
-	bool			CreateBufferFromTiffData	(void *p_data_src, int size);
 
-	bool			SaveToPngData	(void* &p_data_dst, int &size);
-  bool			SaveToPng24Data	(void* &p_data_dst, int &size);
-	bool			SaveToPseudoPngData	(void* &p_data_dst, int &size);
-  bool			SaveToJpegData	(void* &p_data_dst, int &size, int quality = 0);
-	bool			SaveToTiffData	(void* &p_data_dst, int &size);
-	bool			SaveToJP2Data	(void* &pabData, int &nSize, int nRate = 0);
+	bool			CreateBufferFromInMemoryData(void* p_data_src, int size, TileType oRasterFormat);
 
-	//bool			IsAnyNoDataPixel			();
+	bool			SerializeToInMemoryData(void* &p_data_src, int &size, TileType oRasterFormat, int nQuality = 0);
 
+	
 	bool			SaveBufferToFile		(string filename, int quality = 0);
 	bool			SaveBufferToFileAndData	(string filename, void* &p_data_dst, int &size, int quality = 0);
 
-	//bool			ResizeAndConvertToRGB	(int nNewWidth, int nNewHeight);
-	//bool			MergeUsingBlack (RasterBuffer oBackGround, RasterBuffer &oMerged);
-
-	//bool			makeZero(LONG nLeft, LONG nTop, LONG nWidth, LONG nHeight, LONG nNoDataValue = 0);
 	bool			InitByRGBColor	 (unsigned char rgb[3]);
 	bool			InitByValue(int value = 0);	
 
 	void*			GetPixelDataBlock	(	int left, int top, int w, int h);
 	bool			SetPixelDataBlock	(int left, int top, int w, int h, void *p_pixel_data_block, int band_min = -1, int band_max = -1);
 	void*			ZoomOut	(GDALResampleAlg resampling_method);	
-	//bool			ConvertFromIndexToRGB ();
-	//bool			ConvertFromPanToRGB();
 
   //ToDo
   bool			CreateAlphaBandByNodataValues(unsigned char	**p_nd_rgbcolors, int nd_num, int tolerance = 0);
@@ -77,17 +71,28 @@ public:
 	bool			set_color_table (GDALColorTable *p_color_table);
 
 protected:
-	//void									initAlphaBand();
-  void*                         GetPixelDataOrder2();
-  template <typename T>void*    GetPixelDataOrder2(T type);
- //template <typename T>	bool		IsAnyNoDataPixel(T type);
-	template <typename T>	bool		InitByValue		(T type, int value);
+	bool			SaveToPngData(void* &p_data_dst, int &size);
+	bool			SaveToPng24Data(void* &p_data_dst, int &size);
+	bool			SaveToPseudoPngData(void* &p_data_dst, int &size);
+	bool			SaveToJpegData(void* &p_data_dst, int &size, int quality = 0);
+	bool			SaveToTiffData(void* &p_data_dst, int &size);
+	bool			SaveToJP2Data(void* &pabData, int &nSize, int nRate = 0);
+
+	bool			CreateBufferFromJpegData(void *p_data_src, int size);
+	bool			CreateBufferFromPngData(void *p_data_src, int size);
+	bool			CreateBufferFromPseudoPngData(void *p_data_src, int size);
+	bool			CreateFromJP2Data(void *pabData, int nSize);
+	bool			CreateBufferFromTiffData(void *p_data_src, int size);
+
+ 	template <typename T>	bool		InitByValue		(T type, int value);
 	template <typename T>	void*		GetPixelDataBlock	(	T type, int left, int top, int w, int h);
 	template <typename T>	bool		SetPixelDataBlock	(	T type, int left, int top, int w, int h, 
 																                     void *p_block_data, int band_min = -1, int band_max = -1);
 	template <typename T>	void*		ZoomOut(T type, GDALResampleAlg resampling_method);
-  template <typename T> bool    StretchDataTo8Bit(T type, double *min_values, double *max_values);
+	template <typename T> bool    StretchDataTo8Bit(T type, double *min_values, double *max_values);
 
+	//void*                         GetPixelDataOrder2();
+	//template <typename T>void*    GetPixelDataOrder2(T type);
 
 protected:
 	bool			alpha_band_defined_;

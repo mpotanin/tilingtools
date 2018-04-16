@@ -168,37 +168,13 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		p_itile_pyramid->GetTile(zoom,nX,nY,p_data,size);
 		if (size ==0) return FALSE;
 
-   	switch (p_tiling_params->tile_type_)
+		if (!tile_buffer.CreateBufferFromInMemoryData(p_data, size, p_tiling_params->tile_type_))
 		{
-			case JPEG_TILE:
-				{
-					if(!tile_buffer.CreateBufferFromJpegData(p_data,size))
-					{
-						cout<<"ERROR: reading jpeg-data"<<endl;
-						return FALSE;
-					}
-					break;
-				}
-      case PSEUDO_PNG_TILE:
-				{
-          tile_buffer.CreateBufferFromPseudoPngData(p_data,size);
-					break;
-				}
-			case PNG_TILE:
-				{
-					tile_buffer.CreateBufferFromPngData(p_data,size);
-					break;
-				}
-      case JP2_TILE:
-        {
-          tile_buffer.CreateFromJP2Data(p_data,size);
-          break;
-        }
-			default:
-				tile_buffer.CreateBufferFromTiffData(p_data,size);
+			cout << "ERROR: reading tile data" << endl;
+			return FALSE;
 		}
-		delete[]((unsigned char*)p_data);
-	
+
+   		delete[]((unsigned char*)p_data);
 		return TRUE;
 	}
 	else
@@ -241,44 +217,19 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 			return TRUE;
 		}
 
-    if (!GMXZoomOutFourIntoOne(quarter_tile_buffer,
+		if (!GMXZoomOutFourIntoOne(quarter_tile_buffer,
                               src_quarter_tile_buffers_def, 
                               tile_buffer,
                               p_tiling_params->gdal_resampling_,
                               p_tiling_params->p_background_color_)) return FALSE;
 		void *p_data=NULL;
 		int size = 0;
-		switch (p_tiling_params->tile_type_)
-		{
-      case JPEG_TILE:
-				{
-          tile_buffer.SaveToJpegData(p_data,size,p_tiling_params->jpeg_quality_);
-          break;
-        }
-			case PNG_TILE:
-				{
-				  tile_buffer.SaveToPngData(p_data,size);
-					break;
-				}
-      case PSEUDO_PNG_TILE:
-				{
-				  tile_buffer.SaveToPseudoPngData(p_data,size);
-					break;
-				}
-      case JP2_TILE:
-        {
-          tile_buffer.SaveToJP2Data(p_data,size,p_tiling_params->jpeg_quality_);
-          break;
-        }
-			default:
-			  tile_buffer.SaveToTiffData(p_data,size);
-    }
-
-
+		tile_buffer.SerializeToInMemoryData(p_data, size, p_tiling_params->tile_type_, p_tiling_params->jpeg_quality_);
+		
 		(*p_was_error) =  (!p_itile_pyramid->AddTile(zoom,nX,nY,(unsigned char*)p_data,size));
-    delete[]((unsigned char*)p_data);
+		delete[]((unsigned char*)p_data);
 		if (*p_was_error) return FALSE;
-    tiles_generated++;
+		tiles_generated++;
 		GMXPrintTilingProgress(tiles_expected,tiles_generated);
 	}
 
