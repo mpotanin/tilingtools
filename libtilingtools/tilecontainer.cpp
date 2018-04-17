@@ -859,19 +859,19 @@ RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 //*/
 
 
-MBTileContainer::MBTileContainer ()
+MBTilesContainer::MBTilesContainer ()
 {
   read_only_=true;
 	p_sql3_db_ = NULL;
 };
 
-MBTileContainer::~MBTileContainer ()
+MBTilesContainer::~MBTilesContainer ()
 {
 	Close();
 }
 
 /*
-MBTileContainer (string file_name)
+MBTilesContainer (string file_name)
 {
 	if (! OpenForReading(file_name))
 	{
@@ -880,7 +880,7 @@ MBTileContainer (string file_name)
 }
 */
 
-int		MBTileContainer::GetMinZoom()
+int		MBTilesContainer::GetMinZoom()
 {
 	if (p_sql3_db_ == NULL) return -1;
 	string str_sql = "SELECT MIN(zoom_level) FROM tiles";
@@ -894,7 +894,7 @@ int		MBTileContainer::GetMinZoom()
 	return min_zoom;
 };
 	
-int		MBTileContainer::GetMaxZoom()
+int		MBTilesContainer::GetMaxZoom()
 {
 	if (p_sql3_db_ == NULL) return -1;
 	string str_sql = "SELECT MAX(zoom_level) FROM tiles";
@@ -908,7 +908,7 @@ int		MBTileContainer::GetMaxZoom()
 	return max_zoom;
 };
 	
-bool MBTileContainer::OpenForReading  (string file_name)
+bool MBTilesContainer::OpenForReading  (string file_name)
 {
   if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_))
 	{
@@ -950,7 +950,7 @@ bool MBTileContainer::OpenForReading  (string file_name)
 	return TRUE;
 }
 
-MBTileContainer* MBTileContainer::OpenForWriting (TileContainerOptions *p_params)
+MBTilesContainer* MBTilesContainer::OpenForWriting (TileContainerOptions *p_params)
 {
   if (!p_params) return 0;
   if (p_params->path_=="") return 0;
@@ -958,14 +958,14 @@ MBTileContainer* MBTileContainer::OpenForWriting (TileContainerOptions *p_params
   if (p_params->tiling_srs_envp_.MaxX<p_params->tiling_srs_envp_.MinX) return 0;
   if (p_params->tile_type_==TileType::NDEF_TILE_TYPE) return 0;
   
-  return new MBTileContainer(p_params->path_,
+  return new MBTilesContainer(p_params->path_,
     p_params->tile_type_,
     ((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type(),
     p_params->tiling_srs_envp_);
 }
 
 
-MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp)
+MBTilesContainer::MBTilesContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp)
 {
 	p_sql3_db_ = NULL;
 	if (GMXFileSys::FileExists(file_name)) GMXFileSys::FileDelete(file_name.c_str());
@@ -1029,7 +1029,7 @@ MBTileContainer::MBTileContainer (string file_name, TileType tile_type,MercatorP
 
 
 
-bool	MBTileContainer::AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size)
+bool	MBTilesContainer::AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size)
 {
 	if ((!p_sql3_db_) || read_only_) return FALSE;
 
@@ -1068,7 +1068,7 @@ bool	MBTileContainer::AddTile(int z, int x, int y, unsigned char *p_data, unsign
 	return TRUE;
 }
 
-bool		MBTileContainer::TileExists(int z, int x, int y)
+bool		MBTilesContainer::TileExists(int z, int x, int y)
 {
 	if (p_sql3_db_ == NULL) return FALSE;
 		
@@ -1089,7 +1089,7 @@ bool		MBTileContainer::TileExists(int z, int x, int y)
 	return result;	
 }
 
-bool		MBTileContainer::GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size)
+bool		MBTilesContainer::GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size)
 {
 	if (p_sql3_db_ == NULL) return FALSE;
 	char buf[256];
@@ -1117,7 +1117,7 @@ bool		MBTileContainer::GetTile(int z, int x, int y, unsigned char *&p_data, unsi
 	return TRUE;
 }
 
-int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file)
+int 		MBTilesContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file)
 {
 	if (p_sql3_db_ == NULL) return 0;
 	OGRGeometry *p_border = NULL;
@@ -1177,7 +1177,7 @@ int 		MBTileContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int
 };
 	
 
-bool		MBTileContainer::GetTileBounds (int tile_bounds[128])
+bool		MBTilesContainer::GetTileBounds (int tile_bounds[128])
 {
 	for (int z=0; z<32; z++)
 		tile_bounds[4*z]		= 	(tile_bounds[4*z+1] = (tile_bounds[4*z + 2]	= 	(tile_bounds[4*z+3] =	-1)));
@@ -1209,17 +1209,17 @@ bool		MBTileContainer::GetTileBounds (int tile_bounds[128])
 	return TRUE;
 };
 
-TileType	MBTileContainer::GetTileType()
+TileType	MBTilesContainer::GetTileType()
 {
 	return tile_type_;
 };
 
-MercatorProjType	MBTileContainer::GetProjType()
+MercatorProjType	MBTilesContainer::GetProjType()
 {
 	return merc_type_;
 };
 
-bool MBTileContainer::Close ()
+bool MBTilesContainer::Close ()
 {
   if (!p_sql3_db_) return false;
   else if (! read_only_)
@@ -1439,7 +1439,7 @@ ITileContainer* TileContainerFactory::OpenForWriting(TileContainerType container
     case TileContainerType::GMXTILES:
       return GMXTileContainer::OpenForWriting(p_params);
     case TileContainerType::MBTILES:
-      return MBTileContainer::OpenForWriting(p_params);
+      return MBTilesContainer::OpenForWriting(p_params);
     case TileContainerType::TILEFOLDER:
       return TileFolder::OpenForWriting(p_params);
     return 0;
@@ -1468,7 +1468,7 @@ ITileContainer* TileContainerFactory::OpenForReading (string file_name)
 
   if (GMXString::MakeLower(GMXFileSys::GetExtension(file_name)) == "mbtiles")
   {
-    MBTileContainer* p_mbtiles = new MBTileContainer();
+    MBTilesContainer* p_mbtiles = new MBTilesContainer();
     if (!p_mbtiles->OpenForReading(file_name)) 
     {
       delete p_mbtiles;

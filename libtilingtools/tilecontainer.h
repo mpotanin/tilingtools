@@ -182,18 +182,18 @@ protected:
 
 
 
-class MBTileContainer  : public ITileContainer
+class MBTilesContainer  : public ITileContainer
 {	
 
 public:
-  static MBTileContainer* OpenForWriting (TileContainerOptions *p_params);
-	MBTileContainer ();
-	~MBTileContainer ();
+  static MBTilesContainer* OpenForWriting (TileContainerOptions *p_params);
+	MBTilesContainer ();
+	~MBTilesContainer ();
 		
 	int			GetMaxZoom();
   int			GetMinZoom();
 	bool OpenForReading  (string file_name);
-	MBTileContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp);
+	MBTilesContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp);
 	
 	bool		AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
 	bool		TileExists(int z, int x, int y);
