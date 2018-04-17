@@ -800,21 +800,23 @@ void GMXTileContainer::MakeEmpty ()
   p_metadata_=0;
 };
 
-/*
+///*
 RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 										GMXTileContainer *poSrcContainer,
 										int nZ, int nX, int nY)
 {
 	MercatorTileMatrixSet oWebMercGrid(WEB_MERCATOR);
 	double dblRes = oWebMercGrid.CalcPixelSizeByZoom(nZ);
-	OGREnvelope oEnvp = oWebMercGrid.CalcEnvelopeByTile(nZ, nX, nY);
-	OGREnvelope oWorldMercEnvp = oEnvp;
+	OGREnvelope oWebMercEnvp = oWebMercGrid.CalcEnvelopeByTile(nZ, nX, nY);
+	OGREnvelope oWorldMercEnvp;
+	oWorldMercEnvp.MinX = oWebMercEnvp.MinX;
+	oWorldMercEnvp.MaxX = oWebMercEnvp.MaxX;
 
 	oWorldMercEnvp.MaxY = MercatorTileMatrixSet::MercY(
-						MercatorTileMatrixSet::MercToLat(oEnvp.MaxY, WEB_MERCATOR),
+		MercatorTileMatrixSet::MercToLat(oWebMercEnvp.MaxY, WEB_MERCATOR),
 						WORLD_MERCATOR);
 	oWorldMercEnvp.MinY = MercatorTileMatrixSet::MercY(
-						MercatorTileMatrixSet::MercToLat(oEnvp.MinY, WEB_MERCATOR),
+		MercatorTileMatrixSet::MercToLat(oWebMercEnvp.MinY, WEB_MERCATOR),
 						WORLD_MERCATOR);
 
 	MercatorTileMatrixSet oWorldMercGrid(WORLD_MERCATOR);
@@ -823,47 +825,38 @@ RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 	oWorldMercEnvp.MaxY -= 1e-05;
 	oWorldMercEnvp.MinY += 1e-05;
 
-	int nWorldMercMaxYTile, nWorldMercMinYTile;
-	oWorldMercGrid.CalcTileRange(oWorldMercEnvp, nZ, nX, nWorldMercMinYTile, nX, nWorldMercMaxYTile);
+	int nWorldMercUpperTileY, nWorldMercLowerTileY;
+	oWorldMercGrid.CalcTileRange(oWorldMercEnvp, nZ, nX, nWorldMercLowerTileY, nX, nWorldMercUpperTileY);
 
 	unsigned int nSize;
 	unsigned char* pabData;
 
-	if (!poSrcContainer->GetTile(nZ, nX, nWorldMercMaxYTile, pabData, nSize)) return 0;
-	RasterBuffer oInputMaxYTileBuffer;
-	oInputMaxYTileBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
+	if (!poSrcContainer->GetTile(nZ, nX, nWorldMercUpperTileY, pabData, nSize)) return 0;
+	RasterBuffer oInputupperTileBuffer;
+	oInputupperTileBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
 	delete[]pabData;
 		
-	if (!poSrcContainer->GetTile(nZ, nX, nWorldMercMinYTile, pabData, nSize)) return 0;
-	RasterBuffer oInputMinYBuffer;
-	oInputMinYBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
+	if (!poSrcContainer->GetTile(nZ, nX, nWorldMercLowerTileY, pabData, nSize)) return 0;
+	RasterBuffer oInputLowerTileBuffer;
+	oInputLowerTileBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
 	delete[]pabData;
 
-	RasterBuffer oOutputTileBuffer;
-	oOutputTileBuffer.CreateBuffer(&oInputMaxYTileBuffer);
-	oOutputTileBuffer.InitByValue(0);
+	RasterBuffer* poOutputTileBuffer;
+	poOutputTileBuffer->CreateBuffer(&oInputupperTileBuffer);
+	poOutputTileBuffer->InitByValue(0);
 
-	//oWorldMercEnvp,nWorldMercMaxYTile,nWorldMercMinYTile
-	//oInputMinYBuffer,oInputMaxYBuffer
-	int nUpperBlockOffTop, nLowerBlockHeight;
+	MercatorTileMatrixSet oWorldMercGrid(WEB_MERCATOR);
+	OGREnvelope oWorldMercEnvpUpper = oWorldMercGrid.CalcEnvelopeByTile(nZ, nX, nWorldMercUpperTileY);
+	int nUpperBlockOffTop = int(((oWorldMercEnvpUpper.MaxY - oWorldMercEnvp.MaxY) / 
+		oWorldMercGrid.CalcPixelSizeByZoom(nZ)) + 0.5);
 
-	OGREnvelope oWorldMercEnvpUpper
-	//nUpperBlockOffTop = oWorldMercEnvp nWorldMercMaxYTile * 256 * oWorldMercGrid.CalcPixelSizeByZoom(nZ)
-
-	//poSrcContainer->GetTileType()
-	//oMaxYBuffer.Crea
-
-	//CreateBuffer 256 X 512
-	//Read two tiles into Buffer
-	//Read 256 X 256 Block from the 256 X 512 Buffer
-
-	//MercatorTileMatrixSet::C
-
-	//MercatorTileMatrixSet::
-	//calculate nY1, nY2 in WorldMercator
-	return 0;
+	poOutputTileBuffer->SetPixelDataBlock(0, 0, 256, 256 - nUpperBlockOffTop,
+		oInputupperTileBuffer.GetPixelDataBlock(0, nUpperBlockOffTop, 256, 256 - nUpperBlockOffTop));
+	poOutputTileBuffer->SetPixelDataBlock(0, 256 - nUpperBlockOffTop, 256, nUpperBlockOffTop,
+		oInputLowerTileBuffer.GetPixelDataBlock(0, 0, 256, nUpperBlockOffTop));
+	return poOutputTileBuffer;
 }
-*/
+//*/
 
 
 MBTileContainer::MBTileContainer ()

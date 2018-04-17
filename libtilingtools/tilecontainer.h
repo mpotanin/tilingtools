@@ -130,8 +130,8 @@ public:
 	MercatorProjType	GetProjType();
 	int					GetMaxZoom();
 
-	//static RasterBuffer* CreateWebMercatorTileFromWorldMercatorTiles(GMXTileContainer *poSrcContainer,
-	//																int nZ, int nX, int nY);
+	static RasterBuffer* CreateWebMercatorTileFromWorldMercatorTiles(GMXTileContainer *poSrcContainer,
+																	int nZ, int nX, int nY);
 
 protected:
   static const unsigned int DEFAULT_MAX_VOLUME_SIZE = 0xffffffff;
