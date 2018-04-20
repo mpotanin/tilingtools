@@ -110,8 +110,9 @@ public:
 	~GMXTileContainer				();
 
 	bool				OpenForReading			(string container_file_name);
-	bool				AddTile			(int z, int x, int y, unsigned char *p_data, unsigned int size);
-	bool				GetTile			(int z, int x, int y, unsigned char *&p_data, unsigned int &size);
+	bool				AddTile			(int z, int x, int y, unsigned char* p_data, unsigned int size);
+	bool				GetWebMercTile (int z, int x, int y, unsigned char* &p_data, unsigned int &size);
+	bool				GetTile			(int z, int x, int y, unsigned char* &p_data, unsigned int &size);
 	bool				TileExists		(int z, int x, int y);
 	bool				Close			();
 	int 				GetTileList		( list<pair<int, pair<int,int>>> &tile_list, 
@@ -131,15 +132,15 @@ public:
 	int					GetMaxZoom();
 
 	static RasterBuffer* CreateWebMercatorTileFromWorldMercatorTiles(GMXTileContainer *poSrcContainer,
-																	int nZ, int nX, int nY);
+		int nZ, int nX, int nY);
 
 protected:
   static const unsigned int DEFAULT_MAX_VOLUME_SIZE = 0xffffffff;
 	
 
 protected:
-  bool	AddTileToContainerFile(int z, int x, int y, unsigned char *p_data, unsigned int size);
-	bool	GetTileFromContainerFile (int z, int x, int y, unsigned char *&p_data, unsigned int &size);
+  bool	AddTileToContainerFile(int z, int x, int y, unsigned char* p_data, unsigned int size);
+	bool	GetTileFromContainerFile (int z, int x, int y, unsigned char* &p_data, unsigned int &size);
 	bool	WriteTilesToContainerFileFromCache();
 	
 	bool	WriteHeaderToByteArray(unsigned char*	&p_data);
@@ -198,6 +199,7 @@ public:
 	bool		AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
 	bool		TileExists(int z, int x, int y);
 
+	//bool		GetTile
 	bool		GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size);
 	int 		GetTileList(list<pair<int, pair<int,int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "");
 	

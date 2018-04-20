@@ -16,6 +16,12 @@ RasterBuffer::RasterBuffer(void)
 	alpha_band_defined_	= false;
 }
 
+/*
+RasterBuffer::RasterBuffer(RasterBuffer &oSrcBuffer)
+{
+	CreateBuffer(&oSrcBuffer);
+}
+*/
 
 RasterBuffer::~RasterBuffer(void)
 {
@@ -103,15 +109,15 @@ bool RasterBuffer::CreateBuffer	(int			num_bands,
 }
 
 
-bool RasterBuffer::CreateBuffer		(RasterBuffer *pSrcBuffer)
+bool RasterBuffer::CreateBuffer		(RasterBuffer *poSrcBuffer)
 {
-	if (!CreateBuffer(	pSrcBuffer->get_num_bands(),
-						pSrcBuffer->get_x_size(),
-						pSrcBuffer->get_y_size(),
-						pSrcBuffer->get_pixel_data_ref(),
-						pSrcBuffer->get_data_type(),
-						pSrcBuffer->alpha_band_defined_,
-						pSrcBuffer->p_color_table_
+	if (!CreateBuffer(	poSrcBuffer->get_num_bands(),
+						poSrcBuffer->get_x_size(),
+						poSrcBuffer->get_y_size(),
+						poSrcBuffer->get_pixel_data_ref(),
+						poSrcBuffer->get_data_type(),
+						poSrcBuffer->alpha_band_defined_,
+						poSrcBuffer->p_color_table_
 						)) return false;
 	return true;	
 }

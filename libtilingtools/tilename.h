@@ -39,7 +39,7 @@ typedef enum {
 class MercatorTileMatrixSet : public ITileMatrixSet
 {
 public:
-  MercatorTileMatrixSet(MercatorProjType merc_type);
+  MercatorTileMatrixSet(MercatorProjType merc_type = WEB_MERCATOR);
 
 private:
   MercatorProjType merc_type_;

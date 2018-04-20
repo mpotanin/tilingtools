@@ -800,14 +800,30 @@ void GMXTileContainer::MakeEmpty ()
   p_metadata_=0;
 };
 
+bool GMXTileContainer::GetWebMercTile(int z, int x, int y, unsigned char* &p_data, unsigned int &size)
+{
+	if (merc_type_ == WEB_MERCATOR) return GetTile(z,x,y,p_data,size);
+	RasterBuffer* poWebMercTileBuffer = GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
+		this, z, x, y);
+
+	bool bResult = poWebMercTileBuffer->SerializeToInMemoryData((void*&)p_data, (int&)size, tile_type_);
+
+	delete(poWebMercTileBuffer);
+
+	return bResult;
+}
+
+
 ///*
 RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 										GMXTileContainer *poSrcContainer,
 										int nZ, int nX, int nY)
 {
-	MercatorTileMatrixSet oWebMercGrid(WEB_MERCATOR);
-	double dblRes = oWebMercGrid.CalcPixelSizeByZoom(nZ);
-	OGREnvelope oWebMercEnvp = oWebMercGrid.CalcEnvelopeByTile(nZ, nX, nY);
+	MercatorTileMatrixSet oMercatorGrid;
+	
+
+	double dblRes = oMercatorGrid.CalcPixelSizeByZoom(nZ);
+	OGREnvelope oWebMercEnvp = oMercatorGrid.CalcEnvelopeByTile(nZ, nX, nY);
 	OGREnvelope oWorldMercEnvp;
 	oWorldMercEnvp.MinX = oWebMercEnvp.MinX;
 	oWorldMercEnvp.MaxX = oWebMercEnvp.MaxX;
@@ -819,21 +835,20 @@ RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 		MercatorTileMatrixSet::MercToLat(oWebMercEnvp.MinY, WEB_MERCATOR),
 						WORLD_MERCATOR);
 
-	MercatorTileMatrixSet oWorldMercGrid(WORLD_MERCATOR);
 	oWorldMercEnvp.MinX += 1e-05;
 	oWorldMercEnvp.MaxX -= 1e-05;
 	oWorldMercEnvp.MaxY -= 1e-05;
 	oWorldMercEnvp.MinY += 1e-05;
 
 	int nWorldMercUpperTileY, nWorldMercLowerTileY;
-	oWorldMercGrid.CalcTileRange(oWorldMercEnvp, nZ, nX, nWorldMercLowerTileY, nX, nWorldMercUpperTileY);
+	oMercatorGrid.CalcTileRange(oWorldMercEnvp, nZ, nX, nWorldMercUpperTileY, nX, nWorldMercLowerTileY);
 
 	unsigned int nSize;
 	unsigned char* pabData;
 
 	if (!poSrcContainer->GetTile(nZ, nX, nWorldMercUpperTileY, pabData, nSize)) return 0;
-	RasterBuffer oInputupperTileBuffer;
-	oInputupperTileBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
+	RasterBuffer oInputUpperTileBuffer;
+	oInputUpperTileBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
 	delete[]pabData;
 		
 	if (!poSrcContainer->GetTile(nZ, nX, nWorldMercLowerTileY, pabData, nSize)) return 0;
@@ -841,17 +856,17 @@ RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 	oInputLowerTileBuffer.CreateBufferFromInMemoryData(pabData, nSize, poSrcContainer->GetTileType());
 	delete[]pabData;
 
-	RasterBuffer* poOutputTileBuffer;
-	poOutputTileBuffer->CreateBuffer(&oInputupperTileBuffer);
+
+	RasterBuffer* poOutputTileBuffer = new RasterBuffer();
+	poOutputTileBuffer->CreateBuffer(&oInputUpperTileBuffer);
 	poOutputTileBuffer->InitByValue(0);
 
-	MercatorTileMatrixSet oWorldMercGrid(WEB_MERCATOR);
-	OGREnvelope oWorldMercEnvpUpper = oWorldMercGrid.CalcEnvelopeByTile(nZ, nX, nWorldMercUpperTileY);
+	OGREnvelope oWorldMercEnvpUpper = oMercatorGrid.CalcEnvelopeByTile(nZ, nX, nWorldMercUpperTileY);
 	int nUpperBlockOffTop = int(((oWorldMercEnvpUpper.MaxY - oWorldMercEnvp.MaxY) / 
-		oWorldMercGrid.CalcPixelSizeByZoom(nZ)) + 0.5);
+		oMercatorGrid.CalcPixelSizeByZoom(nZ)) + 0.5);
 
 	poOutputTileBuffer->SetPixelDataBlock(0, 0, 256, 256 - nUpperBlockOffTop,
-		oInputupperTileBuffer.GetPixelDataBlock(0, nUpperBlockOffTop, 256, 256 - nUpperBlockOffTop));
+		oInputUpperTileBuffer.GetPixelDataBlock(0, nUpperBlockOffTop, 256, 256 - nUpperBlockOffTop));
 	poOutputTileBuffer->SetPixelDataBlock(0, 256 - nUpperBlockOffTop, 256, nUpperBlockOffTop,
 		oInputLowerTileBuffer.GetPixelDataBlock(0, 0, 256, nUpperBlockOffTop));
 	return poOutputTileBuffer;
