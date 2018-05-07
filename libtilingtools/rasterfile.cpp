@@ -280,12 +280,11 @@ int BundleTiler::CallRunChunk( BundleTiler* p_bundle,
                                 int* p_tiles_generated,
                                 bool bStretchingNeeded,
                                 double* p_stretch_min_values,
-                                double* p_stretch_max_values,
-                                int nRandInd
+                                double* p_stretch_max_values
                               )
 {
   return p_bundle->RunChunk(p_tiling_params,p_tile_container,zoom,chunk_envp,tiles_expected,
-    p_tiles_generated,bStretchingNeeded,p_stretch_min_values,p_stretch_max_values,nRandInd);
+    p_tiles_generated,bStretchingNeeded,p_stretch_min_values,p_stretch_max_values);
 }
 
 
@@ -297,8 +296,7 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
                            int* p_tiles_generated,
                            bool bStretchingNeeded,
                            double* p_stretch_min_values,
-                           double* p_stretch_max_values,
-                           int nRandInd                            
+                           double* p_stretch_max_values            
                           )
 {
  
@@ -334,8 +332,7 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
                                       bands_num == 0 ? 0 : &band_mapping,
                                       p_tiling_params->gdal_resampling_,
                                       p_ndval,
-                                      p_background_color,
-                                      nRandInd);
+                                      p_background_color);
 
   delete(p_ndval);
   delete(p_background_color);
@@ -666,8 +663,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
                                             map<string,int*>* p_band_mapping,
                                             GDALResampleAlg resample_alg, 
                                             int* p_ndval,
-                                            unsigned char* p_background_color,
-                                            int tiffinmem_ind)
+                                            unsigned char* p_background_color)
 {
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
@@ -690,7 +686,9 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	int				buf_height	= int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
 
 	
-  string			tiff_in_mem = ("/vsimem/tiffinmem_" + GMXString::ConvertIntToString(tiffinmem_ind));
+  string			tiff_in_mem = ("/vsimem/tiffinmem_" + 
+	  GMXString::ConvertIntToString((int)chunk_envp.MinX) + "_" +
+	  GMXString::ConvertIntToString((int)chunk_envp.MaxY));
   
   GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
@@ -928,7 +926,6 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
   list<future<int>> tiling_threads;
   
   //ToDo shoud refactor this cycle - thread creation and control 
-  int chunk_num=0;
   for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=TILE_CHUNK_WIDTH)
 	{
 		int curr_max_x =	(curr_min_x + TILE_CHUNK_WIDTH - 1 > maxx) ? 
@@ -968,8 +965,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
                    &tiles_generated,
                    need_stretching,
                    p_stretch_min_values,
-                   p_stretch_max_values,
-                   (chunk_num++)
+                   p_stretch_max_values
                    ));
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

@@ -7,20 +7,6 @@ namespace gmx
 {
 
 
-  VectorOperations::VectorOperations()
-  {
-    p_ogr_geometry_ = NULL;
-  }
-
-  VectorOperations::~VectorOperations()
-  {
-    if (p_ogr_geometry_ != NULL)
-    {
-      delete(p_ogr_geometry_);
-      p_ogr_geometry_ = NULL;
-    }
-  }
-
 
 
 
@@ -96,6 +82,20 @@ namespace gmx
 
     return p_output_geom;
   }
+
+  /*
+  GDALDataset* VectorOperations::CreateVirtualVectorLayer(string strLayerName,
+	  OGRSpatialReference* poSRS, OGRwkbGeometryType eType)
+  {
+	  GDALDriver* poSHPDriver = GetGDALDriverManager()->GetDriverByName("ESRI Shapefile");
+	  string	strInMemName = ("/vsimem/shpinmem_" + GMXString::ConvertIntToString(rand()));
+	  GDALDataset* poInMemSHP = poSHPDriver->Create(strInMemName.c_str(), 0, 0, 0, GDT_Unknown, NULL);
+	  
+	  OGRLayer* poLayer = poInMemSHP->CreateLayer(strLayerName.c_str(), poSRS, wkbPolygon, NULL);
+
+	  return poInMemSHP;
+  }
+  */
 
 
   OGREnvelope	VectorOperations::MergeEnvelopes(const OGREnvelope	&envp1, const OGREnvelope	&envp2)
@@ -443,6 +443,7 @@ namespace gmx
     return pp_ogr_rings;
   }
 
+  /*
   bool	VectorOperations::Intersects(OGREnvelope &envelope)
   {
     if (p_ogr_geometry_ == NULL) return FALSE;
@@ -453,7 +454,7 @@ namespace gmx
 
     return result;
   }
-
+  
 
   OGREnvelope VectorOperations::GetEnvelope()
   {
@@ -461,7 +462,7 @@ namespace gmx
     if (p_ogr_geometry_ != NULL) p_ogr_geometry_->getEnvelope(&envp);
     return envp;
   };
-
+  */
 
 
   OGRPolygon*		VectorOperations::CreateOGRPolygonByOGREnvelope(const OGREnvelope &envelope)
@@ -479,11 +480,11 @@ namespace gmx
     return p_ogr_poly;
   };
 
-
+  /*
   OGRGeometry*	VectorOperations::get_ogr_geometry_ref()
   {
     return p_ogr_geometry_;
   }
-
+  */
 
 }

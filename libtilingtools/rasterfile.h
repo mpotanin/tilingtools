@@ -118,8 +118,7 @@ public:
                 int* p_tiles_generated,
                 bool bStretchingNeeded,
                 double* p_stretch_min_values,
-                double* p_stretch_max_values,
-                int nRandInd
+                double* p_stretch_max_values
               );
   static int CallRunChunk(BundleTiler* p_bundle,
                           gmx::TilingParameters* p_tiling_params,
@@ -130,8 +129,7 @@ public:
                           int* p_tiles_generated,
                           bool bStretchingNeeded,
                           double* p_stretch_min_values,
-                          double* p_stretch_max_values,
-                          int nRandInd
+                          double* p_stretch_max_values
                           );
     
 protected:
@@ -149,8 +147,7 @@ protected:
                                 map<string,int*>* p_band_mapping = 0,
                                 GDALResampleAlg resample_alg = GRA_Cubic,
                                 int* p_ndval = NULL,
-                                unsigned char* p_background_color = NULL,
-                                int tiffinmem_ind=0);
+                                unsigned char* p_background_color = NULL);
 
   bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 
 						  RasterBuffer	*p_buffer,
