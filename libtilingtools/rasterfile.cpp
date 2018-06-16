@@ -1091,46 +1091,46 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 }
 
 
-void BundleInput::ClearAll()
+void BundleConsoleInput::ClearAll()
 {
   bands_num_=0;
-  for ( map<string,pair<string,int*>>::iterator iter = m_mapInputData.begin(); iter!=m_mapInputData.end(); iter++)
-    delete[](*iter).second.second;
+  for ( auto iter : m_mapInputData)
+    delete[]iter.second.second;
    m_mapInputData.empty();
 }
 
-BundleInput::~BundleInput()
+BundleConsoleInput::~BundleConsoleInput()
 {
   ClearAll();
 }
 
-list<string> BundleInput::GetRasterFiles()
+list<string> BundleConsoleInput::GetRasterFiles()
 {
   list<string> listRasters;
-  for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
-    listRasters.push_back((*iter).first);
+  for (auto iter : m_mapInputData)
+    listRasters.push_back(iter.first);
   return listRasters;
 }
 
 
-map<string,string> BundleInput::GetFiles()
+map<string,string> BundleConsoleInput::GetFiles()
 {
   map<string,string> raster_and_vector;
-  for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
-    raster_and_vector[(*iter).first]=(*iter).second.first;
+  for (auto iter : m_mapInputData)
+    raster_and_vector[iter.first]=iter.second.first;
   return raster_and_vector;
 }
 
-map<string,int*> BundleInput::GetBandMapping()
+map<string,int*> BundleConsoleInput::GetBandMapping()
 {
   map<string,int*> raster_and_bands;
-  for (map<string,pair<string,int*>>::iterator iter=m_mapInputData.begin();iter!=m_mapInputData.end();iter++)
-    raster_and_bands[(*iter).first] = (bands_num_ == 0) ? 0 : (*iter).second.second;
+  for (auto iter : m_mapInputData)
+    raster_and_bands[iter.first] = (bands_num_ == 0) ? 0 : iter.second.second;
   return raster_and_bands;
 }
 
 
-bool  BundleInput::InitByConsoleParams (  list<string> listInputParam, 
+bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam, 
                                               list<string> listBorderParam, 
                                               list<string> listBandParam)
 {

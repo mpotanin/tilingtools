@@ -29,13 +29,13 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
     return 1;
   }
 
-  gmx::BundleInput oBundleInput;
-  if (!oBundleInput.InitByConsoleParams(oOptionParser.GetValueList("-i"),
+  gmx::BundleConsoleInput oBundleConsoleInput;
+  if (!oBundleConsoleInput.InitByConsoleParams(oOptionParser.GetValueList("-i"),
     oOptionParser.GetValueList("-b"),
     oOptionParser.GetValueList("-bnd")))
     return 1;
 
-  oTilingParams.p_bundle_input_ = &oBundleInput;
+  oTilingParams.p_bundle_input_ = &oBundleConsoleInput;
 
 
   if (!gmx::TileContainerFactory::GetTileContainerType(oOptionParser.GetOptionValue("-of"), oTilingParams.container_type_))
@@ -49,7 +49,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   oTilingParams.merc_type_ = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ?
     gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
 
-  list<string> listRasters = oBundleInput.GetRasterFiles();
+  list<string> listRasters = oBundleConsoleInput.GetRasterFiles();
 
   if (oOptionParser.GetOptionValue("-pseudo_png") != "")
     oTilingParams.tile_type_ = gmx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
@@ -319,8 +319,8 @@ int main(int nArgs, char* argv[])
     if (oOptionParser.GetOptionValue("-ap") != "") //ToDo - file_list.size>1;
     {
       /*
-      gmx::BundleInput oBundleInput;
-      if (!oBundleInput.InitByConsoleParams(mapConsoleParams.at("-file"),
+      gmx::BundleConsoleInput oBundleConsoleInput;
+      if (!oBundleConsoleInput.InitByConsoleParams(mapConsoleParams.at("-file"),
       mapConsoleParams.at("-bands")))
       {
       //ToDo -
@@ -328,7 +328,7 @@ int main(int nArgs, char* argv[])
       return 1;
       }
 
-      std::list<string> lstInputFiles = oBundleInput.GetFileList();
+      std::list<string> lstInputFiles = oBundleConsoleInput.GetFileList();
 
       bool bUseContainer = (mapConsoleParams.at("-gmxtiles")!="" || mapConsoleParams.at("-mbtiles")!="");
 
@@ -340,7 +340,7 @@ int main(int nArgs, char* argv[])
 
       int nBands = 0;
       int *panBands = 0;
-      if (!oBundleInput.GetBands(*iter,nBands,panBands))
+      if (!oBundleConsoleInput.GetBands(*iter,nBands,panBands))
       {
       //ToDo - Error
       }
