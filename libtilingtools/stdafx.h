@@ -35,3 +35,8 @@ using namespace std;
 #include "gdalwarper.h"
 #include "gd.h"
 #include "sqlite3.h"
+
+
+#ifdef WIN32
+#include "../openjpeg-2.3.0/openjpeg.h"
+#endif

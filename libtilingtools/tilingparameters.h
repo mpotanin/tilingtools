@@ -58,8 +58,7 @@ public:
     nodata_tolerance_ = 0;
     base_zoom_	= 0;
     min_zoom_	= 0;
-    auto_stretching_ = FALSE;
-
+ 
     p_bundle_input_ = 0;
 
     max_work_threads_= 0;
@@ -98,7 +97,7 @@ public:
   int nd_num_; //количество значений "нет данных"
 
   int nodata_tolerance_;     //радиус цвета для маски прозрачности
-	bool auto_stretching_;		//автоматически пересчитывать значения к 8 бит		
+
   GDALResampleAlg gdal_resampling_;	      //название фильтра для ресемплинга			
 
   bool            calculate_histogram_;    //рассчитывать гистограмму

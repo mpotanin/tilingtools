@@ -278,13 +278,13 @@ int BundleTiler::CallRunChunk( BundleTiler* p_bundle,
                                 OGREnvelope chunk_envp,
                                 int tiles_expected,
                                 int* p_tiles_generated,
-                                bool bStretchingNeeded,
-                                double* p_stretch_min_values,
-                                double* p_stretch_max_values
+                                bool is_scalinig_needed,
+                                double* p_scale_values,
+                                double* p_offset_values
                               )
 {
   return p_bundle->RunChunk(p_tiling_params,p_tile_container,zoom,chunk_envp,tiles_expected,
-    p_tiles_generated,bStretchingNeeded,p_stretch_min_values,p_stretch_max_values);
+    p_tiles_generated,is_scalinig_needed,p_scale_values,p_offset_values);
 }
 
 
@@ -294,9 +294,9 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
                            OGREnvelope chunk_envp,
                            int tiles_expected,
                            int* p_tiles_generated,
-                           bool bStretchingNeeded,
-                           double* p_stretch_min_values,
-                           double* p_stretch_max_values            
+                           bool is_scalinig_needed,
+                           double* p_scale_values,
+                           double* p_offset_values
                           )
 {
  
@@ -343,9 +343,9 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
     return 1;
 	}
 
-  if (bStretchingNeeded)
+  if (is_scalinig_needed)
   {
-    if (! p_merc_buffer->StretchDataTo8Bit (p_stretch_min_values,p_stretch_max_values))
+    if (! p_merc_buffer->ScaleDataTo8Bit (p_scale_values,p_offset_values))
     {
       cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
     	return 1;
@@ -588,43 +588,55 @@ bool	BundleTiler::Intersects(OGREnvelope envp)
 }
 
 ///*ToDo!!!!!!!
-bool BundleTiler::CalclLinearStretchTo8BitParams (double *&p_min_values,
-                                                  double *&p_max_values,
-                                                  double *p_nodata_val,
+bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
+                                                  double* &p_offsets,
+                                                  int* p_nodata_val,
                                                   int      output_bands_num,
                                                   map<string,int*>*  p_band_mapping)
 {
   if (this->item_list_.size()==0) return FALSE;
-  p_min_values = (p_max_values = 0);
+  p_scales = (p_offsets = 0);
   double min,max,mean,std;
+  double nodata_val = (p_nodata_val) ? (*p_nodata_val) : 0;
    
   if (output_bands_num==0)
   {
     RasterFile rf;
     if (!rf.Init(*GetFileList().begin())) return FALSE;
     int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
-    p_min_values = new double[bands_num];
-    p_max_values = new double[bands_num]; 
+    p_scales = new double[bands_num];
+    p_offsets = new double[bands_num]; 
+
+
     for (int b=0;b<bands_num;b++)
     {
-      if (!rf.CalcBandStatistics(b+1,min,max,mean,std,p_nodata_val))
+      if (!rf.CalcBandStatistics(b + 1, min, max, mean, std, (p_nodata_val) ? &nodata_val : 0))
       {
-        delete[]p_min_values;delete[]p_max_values;
-        p_min_values=0;p_max_values=0;
+        delete[]p_scales;delete[]p_offsets;
+        p_scales = (p_offsets = 0);
         return FALSE;
       }
-     	p_min_values[b] = mean - 2*std;
-  		p_max_values[b] = mean + 2*std;
+
+      if (((min>=0) && (max <= 255)) || (max==min))
+      {
+        p_scales[b] = 1.;
+        p_offsets[b] = 0.;
+      }
+      else
+      {
+        p_scales[b] = 255. / (4 * std);
+        p_offsets[b] = -255.*(mean-(2*std)) / (4 * std);
+      }
+    
     }
   }
   else
   {
-    p_min_values = new double[output_bands_num];
-    p_max_values = new double[output_bands_num]; 
+    p_scales = new double[output_bands_num];
+    p_offsets = new double[output_bands_num]; 
     
     for (int b=0;b<output_bands_num;b++)
-      p_min_values[b]=(p_max_values[b]=0);
-
+      p_scales[b]=(p_offsets[b]=0);
 
     for (int b=0;b<output_bands_num;b++)
     {
@@ -635,17 +647,25 @@ bool BundleTiler::CalclLinearStretchTo8BitParams (double *&p_min_values,
           RasterFile rf;
           bool error= rf.Init((*iter).first) ? false : true;
           if (!error)
-            error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,p_nodata_val) ? false : true;
+            error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,&nodata_val) ? false : true;
           if (error)
           {
-            delete[]p_min_values;delete[]p_max_values;
+            delete[]p_scales; delete[]p_offsets;
+            p_scales = (p_offsets = 0);
             return FALSE;
           }
           else
           {
-            p_min_values[b] = mean - 2*std;
-  		      p_max_values[b] = mean + 2*std;
-            break;
+            if (((min >= 0) && (max <= 255)) || (max == min))
+            {
+              p_scales[b] = 1.;
+              p_offsets[b] = 0.;
+            }
+            else
+            {
+              p_scales[b] = 255. / (4*std);
+              p_offsets[b] = -255.*(mean - (2 * std)) / (4 * std);
+            }
           }
         }  
       }
@@ -655,6 +675,78 @@ bool BundleTiler::CalclLinearStretchTo8BitParams (double *&p_min_values,
   return TRUE;
 }
 //*/
+
+
+/*//legacy version
+
+bool BundleTiler::CalclScalingTo8BitParams (double *&p_min_values,
+double *&p_max_values,
+double *p_nodata_val,
+int      output_bands_num,
+map<string,int*>*  p_band_mapping)
+{
+if (this->item_list_.size()==0) return FALSE;
+p_min_values = (p_max_values = 0);
+double min,max,mean,std;
+
+if (output_bands_num==0)
+{
+RasterFile rf;
+if (!rf.Init(*GetFileList().begin())) return FALSE;
+int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
+p_min_values = new double[bands_num];
+p_max_values = new double[bands_num];
+for (int b=0;b<bands_num;b++)
+{
+if (!rf.CalcBandStatistics(b+1,min,max,mean,std,p_nodata_val))
+{
+delete[]p_min_values;delete[]p_max_values;
+p_min_values=0;p_max_values=0;
+return FALSE;
+}
+p_min_values[b] = mean - 2*std;
+p_max_values[b] = mean + 2*std;
+}
+}
+else
+{
+p_min_values = new double[output_bands_num];
+p_max_values = new double[output_bands_num];
+
+for (int b=0;b<output_bands_num;b++)
+p_min_values[b]=(p_max_values[b]=0);
+
+
+for (int b=0;b<output_bands_num;b++)
+{
+for (map<string,int*>::iterator iter=p_band_mapping->begin();iter!=p_band_mapping->end();iter++)
+{
+if ((*iter).second[b]>0)
+{
+RasterFile rf;
+bool error= rf.Init((*iter).first) ? false : true;
+if (!error)
+error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,p_nodata_val) ? false : true;
+if (error)
+{
+delete[]p_min_values;delete[]p_max_values;
+return FALSE;
+}
+else
+{
+p_min_values[b] = mean - 2*std;
+p_max_values[b] = mean + 2*std;
+break;
+}
+}
+}
+}
+}
+
+return TRUE;
+}
+*/
+
 
 bool BundleTiler::WarpChunkToBuffer (int zoom,	
                                             OGREnvelope chunk_envp, 
@@ -886,36 +978,33 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 	cout<<tiles_expected<<endl;
   if (tiles_expected == 0) return FALSE;
  
-  bool		need_stretching = false;
-	double		*p_stretch_min_values = 0, *p_stretch_max_values = 0;
+  bool		is_scaling_needed = false;
+	double		*p_scale_values = 0, *p_offset_values = 0;
 
   const int MAX_WORK_THREADS = p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : 2;
   const int TILE_CHUNK_WIDTH = p_tiling_params->tile_chunk_size_ != 0 ? p_tiling_params->tile_chunk_size_ :
                                                                        (p_tiling_params->max_work_threads_ > 1) ? 8 : 16;
     
-  if (p_tiling_params->auto_stretching_)
+  if (  (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
+          (GetRasterFileType()!= GDT_Byte)  )
 	{
-    if (  (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
-          (GetRasterFileType()!= GDT_Byte)  
-       )
-		{
-			need_stretching = true;
-			cout<<"WARNING: input raster doesn't match 8 bit/band. Auto stretching to 8 bit will be performed"<<endl;
-      double nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
-      map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
-      if (!CalclLinearStretchTo8BitParams(p_stretch_min_values,
-                                                    p_stretch_max_values,
-                                                    (p_tiling_params->nd_num_) ?
-                                                    &nodata_val : 0,
-                                                    p_tiling_params->p_bundle_input_->GetBandsNum(),
-                                                    p_tiling_params->p_bundle_input_->GetBandsNum() ?
-                                                    &band_mapping : 0))
-      {
-        cout<<"ERROR: can't calculate parameters of auto stretching to 8 bit"<<endl;
-			  return FALSE;
-      }
+		is_scaling_needed = true;
+		cout<<"WARNING: input raster doesn't match 8 bit/band. Auto scaling to 8 bit will be performed"<<endl;
+
+    int nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
+    map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
+    if (!CalclScalingTo8BitParams(p_scale_values,
+                                                  p_offset_values,
+                                                  (p_tiling_params->nd_num_) ?
+                                                  &nodata_val : 0,
+                                                  p_tiling_params->p_bundle_input_->GetBandsNum(),
+                                                  p_tiling_params->p_bundle_input_->GetBandsNum() ?
+                                                  &band_mapping : 0))
+    {
+      cout<<"ERROR: can't calculate parameters of auto scaling to 8 bit"<<endl;
+			return FALSE;
     }
-	}
+  }
   
 	cout<<"0% ";
 	fflush(stdout);
@@ -963,9 +1052,9 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
                    chunk_envp,
                    tiles_expected,
                    &tiles_generated,
-                   need_stretching,
-                   p_stretch_min_values,
-                   p_stretch_max_values
+                   is_scaling_needed,
+                   p_scale_values,
+                   p_offset_values
                    ));
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -1071,8 +1160,8 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 				tile_buffer.SerializeToInMemoryData(p_data, size, 
 													p_tiling_params->tile_type_, 
 													p_tiling_params->jpeg_quality_);
-			
-        		if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
+
+       	if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
 				{
 				  if (p_data) delete[]((unsigned char*)p_data);
 				  cout<<"ERROR: AddTile: writing tile to container"<<endl;

@@ -116,9 +116,9 @@ public:
                 OGREnvelope chunk_envp,
                 int tiles_expected,
                 int* p_tiles_generated,
-                bool bStretchingNeeded,
-                double* p_stretch_min_values,
-                double* p_stretch_max_values
+                bool is_scalinig_needed,
+                double* p_scale_values,
+                double* p_offset_values
               );
   static int CallRunChunk(BundleTiler* p_bundle,
                           gmx::TilingParameters* p_tiling_params,
@@ -127,9 +127,9 @@ public:
                           OGREnvelope chunk_envp,
                           int tiles_expected,
                           int* p_tiles_generated,
-                          bool bStretchingNeeded,
-                          double* p_stretch_min_values,
-                          double* p_stretch_max_values
+                          bool is_scalinig_needed,
+                          double* p_scale_values,
+                          double* p_offset_values
                           );
     
 protected:
@@ -157,9 +157,9 @@ protected:
 						  int *p_tiles_generated,
 						  ITileContainer *p_tile_container);
 
-  bool          CalclLinearStretchTo8BitParams (  double* &p_min_values,
-                                                 double*  &p_max_values,
-                                                 double*  p_nodata_val=0,
+  bool          CalclScalingTo8BitParams   (  double* &scales,
+                                                 double*  &offsets,
+                                                 int*  p_nodata_val=0,
                                                  int      output_bands_num = 0,
                                                  map<string,int*>*  p_band_mapping=0);
   list<string>	GetFileList();

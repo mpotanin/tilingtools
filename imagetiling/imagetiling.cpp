@@ -215,8 +215,6 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-isrs") != "")
     oTilingParams.user_input_srs_ = oOptionParser.GetOptionValue("-isrs");
 
-
-  oTilingParams.auto_stretching_ = true;
   oTilingParams.calculate_histogram_ = true;   //TODO - replace by default value in GMXTileContainer init
 
 
