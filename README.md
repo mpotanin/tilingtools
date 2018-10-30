@@ -68,7 +68,7 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
 ## Building from Source
 ### Building on Windows
 * requirements:
-  * x64 platform
+  * **x64 platform**
   * Visual Studio 2010/2013/2015
 * git clone tilingtools repository or download it as zip-archive 
 * unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include/gdal.h)
