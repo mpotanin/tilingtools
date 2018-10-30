@@ -38,5 +38,7 @@ using namespace std;
 
 
 #ifdef WIN32
-#include "../openjpeg-2.3.0/openjpeg.h"
+//debug
+//#include "../openjpeg-2.3.0/openjpeg.h"
+//end-debug
 #endif

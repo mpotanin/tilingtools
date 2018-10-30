@@ -1119,14 +1119,13 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
   int min_x,max_x,min_y,max_y;
   if (!p_tile_mset_->CalcTileRange(buffer_envelope,zoom,min_x,min_y,max_x,max_y))
     return false;
-  
-  
+    
 
 	for (int x = min_x; x <= max_x; x += 1)
 	{
 		for (int y = min_y; y <= max_y; y += 1)
 		{
-			OGREnvelope tile_envelope = p_tile_mset_->CalcEnvelopeByTile(zoom,x,y);
+      OGREnvelope tile_envelope = p_tile_mset_->CalcEnvelopeByTile(zoom,x,y);
 			if (!Intersects(tile_envelope)) continue;
              
 			int x_offset = (int)(((tile_envelope.MinX-buffer_envelope.MinX)/
@@ -1160,6 +1159,8 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 				tile_buffer.SerializeToInMemoryData(p_data, size, 
 													p_tiling_params->tile_type_, 
 													p_tiling_params->jpeg_quality_);
+        
+      
 
        	if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
 				{

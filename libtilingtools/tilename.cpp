@@ -431,7 +431,7 @@ bool MercatorTileMatrixSet::GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &env
   }
 
   OGRFree(pszMercWKT);
-  OGRFree(pszSrcWKT);
+  //OGRFree(pszSrcWKT);
 
 
   double adfDstGeoTransform[6];
@@ -455,9 +455,14 @@ bool MercatorTileMatrixSet::GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &env
     merc_srs_shifted.importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=90.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
   }
   if (CE_None != merc_srs_shifted.exportToWkt(&pszMercWKT)) return false;
+  
+  //debug
   if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds, 0, 0, pszMercWKT, 1, 0.125, 0)))
     return false;
-  
+  //end-debug  
+
+  OGRFree(pszMercWKT);
+  OGRFree(pszSrcWKT);
 
   double adfDstGeoTransform2[6];
   int nPixels2 = 0, nLines2 = 0;

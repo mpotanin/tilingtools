@@ -258,6 +258,7 @@ int main(int nArgs, char* argv[])
         panTileBounds[4 * z + 2],
         panTileBounds[4 * z + 3]);
     }
+    oTCOptions.p_tile_bounds_=panTileBounds;
 
     if (!(poDestTC = gmx::TileContainerFactory::OpenForWriting(eDestTCType, &oTCOptions)))
     {

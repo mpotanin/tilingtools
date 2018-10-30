@@ -24,6 +24,7 @@ public:
     tiling_srs_envp_.MaxY=-1;
     tiling_srs_envp_.MinY=1;
     tile_type_=TileType::NDEF_TILE_TYPE;
+    p_tile_bounds_ = 0;
   };
 
 public:
@@ -35,6 +36,7 @@ public:
   ITileMatrixSet* p_matrix_set_;
   OGREnvelope tiling_srs_envp_;
   TileType  tile_type_;
+  int* p_tile_bounds_;
 };
 
 class ITileContainer

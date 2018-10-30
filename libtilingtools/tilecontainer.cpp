@@ -21,18 +21,27 @@ GMXTileContainer* GMXTileContainer::OpenForWriting (TileContainerOptions *p_para
                      atoi(p_params->extra_options_["volume_size"].c_str()) :
                       GMXTileContainer::DEFAULT_MAX_VOLUME_SIZE;
   MercatorProjType merc_type = ((MercatorTileMatrixSet*)p_params->p_matrix_set_)->merc_type();
+
   
-  if (!p_gmx_tc->OpenForWriting(p_params->path_,
-                                p_params->tile_type_,
-                                merc_type,
-                                p_params->tiling_srs_envp_,
-                                p_params->max_zoom_,
-                                cache_size,
-                                max_volume_size))
+  bool result = p_params->p_tile_bounds_ ? p_gmx_tc->OpenForWriting(p_params->path_,
+                                              p_params->tile_type_,
+                                              merc_type,p_params->p_tile_bounds_,
+                                              cache_size,
+                                              max_volume_size) :
+                                          p_gmx_tc->OpenForWriting(p_params->path_,
+                                              p_params->tile_type_,
+                                              merc_type,
+                                              p_params->tiling_srs_envp_,
+                                              p_params->max_zoom_,
+                                              cache_size,
+                                              max_volume_size);
+  
+  if (!result)
   {
     delete(p_gmx_tc);
     return 0;
   }
+
   return p_gmx_tc;
 };
 
@@ -247,8 +256,13 @@ bool		GMXTileContainer::AddTile(int z, int x, int y, unsigned char *p_data, unsi
 {
   if (read_only_ || !is_opened_) return FALSE;
   int64_t n	= TileID(z,x,y);
-  if ((n>= max_tiles_)||(n<0)) return FALSE;
-  
+  if ((n>= max_tiles_)||(n<0))
+  { 
+    //debug
+    cout << "ERROR: n>= max_tiles_: " << n << " " << max_tiles_ << endl;
+    //end-debug
+    return FALSE;
+  }
   addtile_mutex_.lock(); 
 
 	if (p_tile_cache_)
@@ -388,7 +402,15 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
 int64_t		GMXTileContainer::TileID( int z, int x, int y)
 {
   if (!is_opened_) return -1;
-  if ((x<minx_[z]) || (x>=maxx_[z]) || (y<miny_[z]) || (y>=maxy_[z])) return -1;
+  if ((x<minx_[z]) || (x>=maxx_[z]) || (y<miny_[z]) || (y>=maxy_[z]))
+  {
+    //debug
+    cout << z << " " << x << " "<<y<<endl;
+    cout << minx_[z] << " " << maxx_[z] << " " << miny_[z] << " " << maxy_[z]<<endl;
+
+    //end-debug
+     return -1;
+  }
 
 	unsigned int num = 0;
 	for (int s=0;s<z;s++)
@@ -567,12 +589,19 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
   if (this->read_only_) return FALSE;
   
   unsigned int n	= TileID(z,x,y);
-	if (n>= max_tiles_) return FALSE;
+	if (n>= max_tiles_) 
+  {
+    //debug
+    cout << "ERROR: n>= max_tiles_: "<<n<<" "<<max_tiles_<<endl;
+    //end-debug
+    return false;
+  }
+
 
   if (container_byte_size_ == 0)        //first tile
   {
     unsigned char* header = new unsigned char[HeaderSize()];
-    if (!header) return NULL;
+    if (!header) return false;
     for (int i=0;i<HeaderSize();i++)
       header[i] = 0;
     fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
@@ -589,8 +618,14 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
   int volume_num = GetVolumeNum(container_byte_size_);
   if (pp_container_volumes_[volume_num] == NULL)
   {
-    if (!(pp_container_volumes_[volume_num] = GMXFileSys::OpenFile(GetVolumeName(volume_num).c_str(),"wb+")))
-      return FALSE;
+    if (!(pp_container_volumes_[volume_num] = GMXFileSys::OpenFile(GetVolumeName(volume_num).c_str(), "wb+")))
+    {
+      //debug
+      cout << "ERROR: can't open file: " << GetVolumeName(volume_num).c_str()<< endl;
+      //end-debug
+      return false;
+    }
+     
   }
 
   //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
@@ -601,7 +636,7 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
   p_sizes_[n]		= size;
   container_byte_size_ +=size;
   
-  return TRUE;
+  return true;
 };
 	
 bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, unsigned char *&p_data, unsigned int &size)
