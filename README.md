@@ -71,7 +71,8 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
   * x64 platform
   * Visual Studio 2010/2013/2015
 * git clone tilingtools repository or download it as zip-archive 
-* unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include)
+* unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include/gdal.h)
+* unzip openjpeg-2.3.0.zip archive (after unzip there must be a path: TilinTools-master/openjpeg-2.3.0/openjpeg.h)
 * open TilingTools.sln with Visual Studio 2010/2013/2015
 * compile TilingTools (set in Configuration Manager: configuration=**Release, platform=x64**)
 * if compilation succeed exe-files will be created in folder /x64/Release/  
