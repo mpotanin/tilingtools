@@ -456,10 +456,9 @@ bool MercatorTileMatrixSet::GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &env
   }
   if (CE_None != merc_srs_shifted.exportToWkt(&pszMercWKT)) return false;
   
-  //debug
-  if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds, 0, 0, pszMercWKT, 1, 0.125, 0)))
+  if (!(hTransformArg = GDALCreateGenImgProjTransformer(p_rf_ds, pszSrcWKT, 0, pszMercWKT, 1, 0.125, 0)))
     return false;
-  //end-debug  
+
 
   OGRFree(pszMercWKT);
   OGRFree(pszSrcWKT);
