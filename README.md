@@ -10,7 +10,7 @@
     
   
 ## Download Windows Binary
-[Download win-x64 binary 3.2.2 version (29.01.2018)](http://kosmosnimki.ru/downloads/tilingtools-3.2.2-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013. **NEW: GUI dialog** application is included into the package.
+[Download win-x64 binary 3.2.3 version (30.10.2018)](http://kosmosnimki.ru/downloads/tilingtools-3.2.3-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013. **NEW: GUI dialog** application is included into the package.
 
 ## Using imagetiling
 
