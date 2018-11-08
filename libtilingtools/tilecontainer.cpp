@@ -1229,8 +1229,8 @@ int 		MBTilesContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, in
 
 bool		MBTilesContainer::GetTileBounds (int tile_bounds[128])
 {
-	for (int z=0; z<32; z++)
-		tile_bounds[4*z]		= 	(tile_bounds[4*z+1] = (tile_bounds[4*z + 2]	= 	(tile_bounds[4*z+3] =	-1)));
+  for (int i = 0; i<128; i++)
+    tile_bounds[i] = -1;
 
 	if (p_sql3_db_ == NULL) return FALSE;
 	char buf[256];
@@ -1400,6 +1400,12 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 	list<string> file_list;
 	GMXFileSys::FindFilesByExtensionRecursive(file_list,p_tile_name_->GetBaseFolder(),TileName::ExtensionByTileType(p_tile_name_->tile_type_));
   
+  //debug
+//  cout << "FindFilesByExtensionRecursive done " << file_list.size()<<endl;
+//  int l;
+ // cin>>l;
+  //end-debug
+
   pair<int,pair<int,int>> p;
 	for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
 	{
@@ -1431,14 +1437,14 @@ bool		TileFolder::GetTileBounds (int tile_bounds[128])
 {
 	list<pair<int,pair<int,int>>> tile_list;
 	if (!GetTileList(tile_list,-1,-1,"")) return FALSE;
-	for (int z=0; z<32;z++)
-		tile_bounds[4*z]		= 	(tile_bounds[4*z+1] = (tile_bounds[4*z + 2]	= 	(tile_bounds[4*z+3] =	-1)));
+	for (int i=0; i<128;i++)
+		tile_bounds[i]		= -1;
 
-	for (list<pair<int,pair<int,int>>>::const_iterator iter = tile_list.begin(); iter!=tile_list.end();iter++)
+	for (auto iter : tile_list)
 	{
-		int z = (*iter).first;
-    int x = (*iter).second.first;
-    int y = (*iter).second.second;
+		int z = iter.first;
+    int x = iter.second.first;
+    int y = iter.second.second;
     tile_bounds[4*z]		= (tile_bounds[4*z] == -1   || tile_bounds[4*z] > x) ? x : tile_bounds[4*z];
 		tile_bounds[4*z+1]	= (tile_bounds[4*z+1] == -1 || tile_bounds[4*z+1] > y) ? y : tile_bounds[4*z+1];
 		tile_bounds[4*z+2]	= (tile_bounds[4*z+2] == -1 || tile_bounds[4*z+2] < x) ? x : tile_bounds[4*z+2];

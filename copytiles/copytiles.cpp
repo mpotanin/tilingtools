@@ -27,6 +27,7 @@ const string astrUsageExamples[] =
 #ifdef WIN32
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
+
   string* pastrArgs = new string[nArgs];
   for (int i = 0; i<nArgs; i++)
   {
@@ -208,6 +209,15 @@ int main(int nArgs, char* argv[])
   gmx::TileName           *poDestTileName = NULL;
   gmx::ITileContainer     *poDestTC = NULL;
   gmx::TileContainerType eDestTCType;
+
+  list<pair<int, pair<int, int>>> tile_list;
+  cout << "calculating number of tiles: ";
+  fflush(stdout);
+  cout << poSrcTC->GetTileList(tile_list, nMinZoom, nMaxZoom, strBorderFilePath) << endl;
+
+  if (tile_list.size()==0) return 0;
+
+ 
   if (!gmx::TileContainerFactory::GetTileContainerType(strOutputFormat, eDestTCType))
   {
     cout << "ERROR: not valid value of \"-of\" parameter: " << strOutputFormat << endl;
@@ -243,22 +253,26 @@ int main(int nArgs, char* argv[])
   {
     gmx::TileContainerOptions oTCOptions;
     oTCOptions.path_ = strDestPath;
-    oTCOptions.max_zoom_ = nMaxZoom != -1 ? nMaxZoom : poSrcTC->GetMaxZoom();
     oTCOptions.extra_options_ = strCreationOptions;
     oTCOptions.tile_type_ = poSrcTC->GetTileType();
     gmx::MercatorTileMatrixSet oMercTMS(eMercType);
     oTCOptions.p_matrix_set_ = &oMercTMS;
-    int panTileBounds[128];
-    poSrcTC->GetTileBounds(panTileBounds);
+    int *panTileBounds = gmx::ITileContainer::GetTileBounds(&tile_list);
+    int nSrcTilesMaxZoom = 0;
     for (int z = 0; z<32; z++)
     {
       if (panTileBounds[4 * z] != -1)
+      {
         oTCOptions.tiling_srs_envp_ = oMercTMS.CalcEnvelopeByTileRange(z, panTileBounds[4 * z],
         panTileBounds[4 * z + 1],
         panTileBounds[4 * z + 2],
         panTileBounds[4 * z + 3]);
+        nSrcTilesMaxZoom = z;
+      }
     }
     oTCOptions.p_tile_bounds_=panTileBounds;
+
+    oTCOptions.max_zoom_ = nMaxZoom != -1 ? nMaxZoom : nSrcTilesMaxZoom;
 
     if (!(poDestTC = gmx::TileContainerFactory::OpenForWriting(eDestTCType, &oTCOptions)))
     {
@@ -267,33 +281,26 @@ int main(int nArgs, char* argv[])
     }
   }
 
-  list<pair<int, pair<int, int>>> tile_list;
-  cout << "calculating number of tiles: ";
-  fflush(stdout);
-  cout << poSrcTC->GetTileList(tile_list, nMinZoom, nMaxZoom, strBorderFilePath) << endl;
 
-  if (tile_list.size()>0)
+  cout << "coping tiles: 0% ";
+  int tilesCopied = 0;
+  for (auto iter : tile_list)
   {
-    cout << "coping tiles: 0% ";
-    int tilesCopied = 0;
-    for (list<pair<int, pair<int, int>>>::iterator iter = tile_list.begin(); iter != tile_list.end(); iter++)
+    int z = iter.first;
+    int x = iter.second.first;
+    int y = iter.second.second;
+
+    unsigned char* tileData = 0;
+    unsigned int            tileSize = 0;
+    if (poSrcTC->GetTile(z, x, y, tileData, tileSize))
     {
-      int z = (*iter).first;
-      int x = (*iter).second.first;
-      int y = (*iter).second.second;
-
-      unsigned char* tileData = 0;
-      unsigned int            tileSize = 0;
-      if (poSrcTC->GetTile(z, x, y, tileData, tileSize))
-      {
-        if (poDestTC->AddTile(z, x, y, tileData, tileSize)) tilesCopied++;
-      }
-      delete[]tileData;
-
-      GMXPrintTilingProgress(tile_list.size(), tilesCopied);
+      if (poDestTC->AddTile(z, x, y, tileData, tileSize)) tilesCopied++;
     }
-    cout << " done." << endl;
+    delete[]tileData;
+
+    GMXPrintTilingProgress(tile_list.size(), tilesCopied);
   }
+  cout << " done." << endl;
 
   if (logFile) fclose(logFile);
   if (poDestTC) poDestTC->Close();

@@ -53,8 +53,29 @@ public:
   virtual bool		          OpenForReading (string path) = 0;
 	virtual TileType				  GetTileType() = 0;
 	virtual MercatorProjType	GetProjType() = 0;
+  
   virtual Metadata* GetMetadata () {return NULL;}; 
   virtual bool ExtractAndStoreMetadata (TilingParameters* p_params) {return true;}; 
+
+  static int*		GetTileBounds(list<pair<int, pair<int, int>>> *p_tile_list)
+  {
+    int *p_tile_bounds = new int[128];
+    for (int i = 0; i<128; i++)
+      p_tile_bounds[i] = -1;
+
+    for (auto iter : *p_tile_list)
+    {
+      int z = iter.first;
+      int x = iter.second.first;
+      int y = iter.second.second;
+      p_tile_bounds[4 * z] = (p_tile_bounds[4 * z] == -1 || p_tile_bounds[4 * z] > x) ? x : p_tile_bounds[4 * z];
+      p_tile_bounds[4 * z + 1] = (p_tile_bounds[4 * z + 1] == -1 || p_tile_bounds[4 * z + 1] > y) ? y : p_tile_bounds[4 * z + 1];
+      p_tile_bounds[4 * z + 2] = (p_tile_bounds[4 * z + 2] == -1 || p_tile_bounds[4 * z + 2] < x) ? x : p_tile_bounds[4 * z + 2];
+      p_tile_bounds[4 * z + 3] = (p_tile_bounds[4 * z + 3] == -1 || p_tile_bounds[4 * z + 3] < y) ? y : p_tile_bounds[4 * z + 3];
+    }
+
+    return p_tile_bounds;
+  };
   
  	virtual int64_t		TileID( int z, int x, int y)
 	{
