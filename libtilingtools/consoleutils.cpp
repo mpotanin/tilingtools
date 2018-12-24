@@ -28,6 +28,9 @@ bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
 }
 #endif
 
+
+
+
 bool GMXGDALLoader::Load (string strExecPath)
 {
 #ifdef _WIN32

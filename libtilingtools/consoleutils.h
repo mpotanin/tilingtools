@@ -5,12 +5,13 @@
 class GMXGDALLoader
 {
 public:
+  static string ReadPathFromConfigFile(string strConfigFilePpath);
   static bool Load (string strExecPath);
 
 protected:
   static void SetWinEnvVars (string strGDALPath);
   static bool LoadWinDll (string strGDALDir, string strDllVer);
-  static string ReadPathFromConfigFile (string strConfigFilePpath);
+  
 
 protected:
   static string strGDALWinVer;

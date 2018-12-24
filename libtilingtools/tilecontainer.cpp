@@ -1482,6 +1482,8 @@ bool TileContainerFactory::GetTileContainerType (string strName, TileContainerTy
     eType = TileContainerType::GMXTILES;
   else if (strName=="mbtiles")
     eType = gmx::TileContainerType::MBTILES;
+  else if (strName == "gtiff")
+    eType = gmx::TileContainerType::GTIFF;
   else return false;
 
   return true;
@@ -1498,6 +1500,8 @@ ITileContainer* TileContainerFactory::OpenForWriting(TileContainerType container
       return MBTilesContainer::OpenForWriting(p_params);
     case TileContainerType::TILEFOLDER:
       return TileFolder::OpenForWriting(p_params);
+    case TileContainerType::GTIFF:
+      return GTiffRasterFile::OpenForWriting(p_params);
     return 0;
   }
 };
@@ -1512,6 +1516,8 @@ string TileContainerFactory::GetExtensionByTileContainerType (TileContainerType 
       return "mbtiles";
     case TileContainerType::TILEFOLDER:
       return "";
+    case TileContainerType::GTIFF:
+      return "tif";
     return "";
   }
 };
@@ -1545,5 +1551,110 @@ ITileContainer* TileContainerFactory::OpenForReading (string file_name)
 	}
 };
 
+
+GTiffRasterFile* GTiffRasterFile::OpenForWriting(TileContainerOptions* poTCOptions)
+{
+  //TODO
+  if (!poTCOptions) return 0;
+
+  GTiffRasterFile* poGTiff = new GTiffRasterFile();
+
+    
+  if (poGTiff->OpenForWriting(poTCOptions->path_,
+    poTCOptions->tile_type_,
+    ((MercatorTileMatrixSet*)poTCOptions->p_matrix_set_)->merc_type(),
+    poTCOptions->p_tile_bounds_))
+  {
+    return poGTiff;
+  }
+  else
+  {
+    delete(poGTiff);
+    return 0;
+  }
+}
+
+bool GTiffRasterFile::InitByFirstAddedTile(unsigned char *p_data, unsigned int size)
+{
+  RasterBuffer oTileBuffer;
+  oTileBuffer.CreateBufferFromInMemoryData(p_data, size, m_eTileType);
+  int nWidth = oTileBuffer.get_x_size();
+  int nHeight = oTileBuffer.get_y_size();
+  
+  m_poDS = (GDALDataset*)GDALCreate(GDALGetDriverByName("GTiff"), m_strFileName.c_str(),
+    (m_nMaxX - m_nMinX + 1)*nWidth, (m_nMaxY - m_nMinY + 1)*nHeight, oTileBuffer.get_num_bands(),
+    oTileBuffer.get_data_type(),0);
+
+  if (!m_poDS) return false;
+  MercatorTileMatrixSet oMercTMS(m_eMercType);
+  double dblRes = oMercTMS.CalcPixelSizeByZoom(m_nZoom);
+  
+  double			geotransform[6];
+  OGREnvelope oEnvp = oMercTMS.CalcEnvelopeByTile(m_nZoom,m_nMinX,m_nMinY);
+  geotransform[0] = oEnvp.MinX;
+  geotransform[1] = dblRes;
+  geotransform[2] = 0;
+  geotransform[3] =  oEnvp.MaxY;
+  geotransform[4] = 0;
+  geotransform[5] = -dblRes;
+  m_poDS->SetGeoTransform(geotransform);
+
+  char *pachWKT = 0;
+  oMercTMS.GetTilingSRSRef()->exportToWkt(&pachWKT);
+  m_poDS->SetProjection(pachWKT);
+  OGRFree(pachWKT);
+
+  return true;
+}
+
+bool GTiffRasterFile::AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size)
+{
+  if (z!=this->m_nZoom) return true;
+
+  if (m_poDS == 0)
+  {
+    if (!InitByFirstAddedTile(p_data,size)) return false;
+  }
+
+  RasterBuffer oTileBuffer;
+  oTileBuffer.CreateBufferFromInMemoryData(p_data,size,m_eTileType);
+  
+  int nWidth = oTileBuffer.get_x_size();
+  int nHeight = oTileBuffer.get_y_size();
+  m_poDS->RasterIO(GF_Write, (x - m_nMinX)*nWidth, (y - m_nMinY)*nHeight, nWidth, nHeight,
+                  oTileBuffer.get_pixel_data_ref(), nWidth, nHeight, oTileBuffer.get_data_type(),
+                  m_poDS->GetRasterCount(),0,0,0,0);
+  return true;
+};
+
+bool GTiffRasterFile::Close()
+{
+  GDALClose(m_poDS);
+  return true;
+};
+
+bool GTiffRasterFile::OpenForWriting(string strFileName, 
+                                    TileType eTileType, 
+                                    MercatorProjType	eMercType,
+                                    int panTileBounds[128])
+{
+    m_poDS = 0;
+    m_strFileName = strFileName;
+    m_eTileType = eTileType;
+    m_eMercType = eMercType;
+    m_nZoom = -1;
+    for (int z = 0; z < 32; z++)
+    {
+      if (panTileBounds[4 * z] != -1)
+        m_nZoom = z;
+    }
+    if (m_nZoom == -1) return false;
+    m_nMinX = panTileBounds[4 * m_nZoom];
+    m_nMaxX = panTileBounds[4 * m_nZoom + 2];
+    m_nMinY = panTileBounds[4 * m_nZoom + 1];
+    m_nMaxY = panTileBounds[4 * m_nZoom + 3];
+ 
+    return true;
+};
 
 }

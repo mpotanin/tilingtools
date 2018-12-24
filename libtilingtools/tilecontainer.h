@@ -105,8 +105,6 @@ public:
 };
 
 
-
-
 class GMXTileContainer : public ITileContainer
 {
 public:
@@ -270,6 +268,48 @@ protected:
   std::mutex addtile_mutex_;
   MercatorProjType		merc_type_;
 
+};
+
+
+
+
+class GTiffRasterFile : public ITileContainer
+{
+public:
+  GTiffRasterFile(){m_poDS=0;};
+  bool GetTile(int z, int x, int y, unsigned char *&p_data, unsigned int &size) {return true;};
+  bool TileExists(int z, int x, int y) { return true; };
+  int GetTileList(list<pair<int, pair<int, int>>> &tile_list, int min_zoom, int max_zoom, string vector_file = "")
+  {return 0;};
+
+  int	GetMaxZoom() {return 0;};
+
+  bool GetTileBounds(int tile_bounds[128]) { return true; };
+  bool OpenForReading(string path) { return true; };
+  TileType GetTileType() {return TileType::JPEG_TILE;};
+  MercatorProjType	GetProjType() {return MercatorProjType::WEB_MERCATOR;};
+
+public:
+  static GTiffRasterFile* OpenForWriting(TileContainerOptions *poTCOptions);
+  
+  bool GTiffRasterFile::AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
+  bool GTiffRasterFile::Close();
+
+protected:
+  bool InitByFirstAddedTile(unsigned char *p_data, unsigned int size);
+  bool OpenForWriting(string strFileName, 
+                      TileType eTileType, 
+                      MercatorProjType	eMercType, 
+                      int panTileBounds[128]);
+
+protected:
+  GDALDataset* m_poDS;
+  string m_strFileName;
+  int m_nZoom;
+  TileType m_eTileType;
+  MercatorProjType m_eMercType;
+  int m_nMinX, m_nMaxX, m_nMaxY, m_nMinY;
+  
 };
 
 class TileContainerFactory

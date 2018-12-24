@@ -41,7 +41,8 @@ typedef enum {
   NDEF_CONTAINER_TYPE=-1,
 	GMXTILES=0,
 	MBTILES=1,
-	TILEFOLDER=2
+	TILEFOLDER=2,
+  GTIFF=3
 } TileContainerType;
 
 
