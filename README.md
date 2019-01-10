@@ -1,7 +1,7 @@
 # Command line tools for tiling georeferenced raster data
 
 ## Table of Contents
-  * [Download binary](#download-binary)
+  * [Download binary](#download-windows-binary)
   * [Using imagetiling](#using-imagetiling)
   * [Using copytiles](#using-copytiles)
   * [Building from Source](#building-from-source)
