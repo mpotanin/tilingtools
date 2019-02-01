@@ -422,7 +422,7 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 }
 
 
-int	BundleTiler::Init ( map<string,string> raster_vector, 
+int	BundleTiler::Init ( list<pair<string,string>> raster_vector, 
                         ITileMatrixSet* p_tile_mset,
                         string user_input_srs,
                         double clip_offset)
@@ -444,13 +444,12 @@ int	BundleTiler::Init ( map<string,string> raster_vector,
   clip_offset_ = clip_offset;
   set_srs_ = user_input_srs;
 
- 	for (map<string,string>::iterator iter = raster_vector.begin(); iter!=raster_vector.end(); iter++)
+ 	for (auto iter : raster_vector)
 	{
-    if ((*iter).second=="")
-      AddItemToBundle((*iter).first,
-                      VectorOperations::GetVectorFileNameByRasterFileName((*iter).first));
-    else AddItemToBundle((*iter).first,
-                        (*iter).second);
+    if (iter.second=="")
+      AddItemToBundle(iter.first,
+                      VectorOperations::GetVectorFileNameByRasterFileName(iter.first));
+    else AddItemToBundle(iter.first,iter.second);
 	}
 
   AdjustCutlinesForOverlapping180Degree();
@@ -1161,7 +1160,6 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 													p_tiling_params->jpeg_quality_);
         
       
-
        	if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))
 				{
 				  if (p_data) delete[]((unsigned char*)p_data);
@@ -1184,9 +1182,9 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 void BundleConsoleInput::ClearAll()
 {
   bands_num_=0;
-  for ( auto iter : m_mapInputData)
+  for ( auto iter : m_listInputData)
     delete[]iter.second.second;
-   m_mapInputData.empty();
+   m_listInputData.empty();
 }
 
 BundleConsoleInput::~BundleConsoleInput()
@@ -1197,24 +1195,30 @@ BundleConsoleInput::~BundleConsoleInput()
 list<string> BundleConsoleInput::GetRasterFiles()
 {
   list<string> listRasters;
-  for (auto iter : m_mapInputData)
+  for (auto iter : m_listInputData)
     listRasters.push_back(iter.first);
   return listRasters;
 }
 
 
-map<string,string> BundleConsoleInput::GetFiles()
+list<pair<string,string>> BundleConsoleInput::GetFiles()
 {
-  map<string,string> raster_and_vector;
-  for (auto iter : m_mapInputData)
-    raster_and_vector[iter.first]=iter.second.first;
-  return raster_and_vector;
+  list<pair<string,string>> raster_vector;
+  for (auto iter : m_listInputData)
+  {
+    pair<string,string> pairRasterVector;
+    pairRasterVector.first = iter.first;
+    pairRasterVector.second = iter.second.first;
+    raster_vector.push_back(pairRasterVector);
+  }
+
+  return raster_vector;
 }
 
 map<string,int*> BundleConsoleInput::GetBandMapping()
 {
   map<string,int*> raster_and_bands;
-  for (auto iter : m_mapInputData)
+  for (auto iter : m_listInputData)
     raster_and_bands[iter.first] = (bands_num_ == 0) ? 0 : iter.second.second;
   return raster_and_bands;
 }
@@ -1269,7 +1273,7 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
       cout<<"ERROR: can't find files by path: "<<*iterInput<<endl;
       return false;
     }
-    
+        
     list<string> listVectorFiles;
     if (listBorderParam.size()>0 && (*iterBorder)!="")
     {
@@ -1303,12 +1307,15 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
     }
     
     list<string>::iterator vectorFile = listVectorFiles.begin();
-    for (list<string>::iterator rasterFile=listRasterFiles.begin();
-         rasterFile!=listRasterFiles.end();rasterFile++)
+
+    for (auto rasterFile : listRasterFiles)
     {
-      m_mapInputData[*rasterFile].first = listBorderParam.size()==0 ? "" : *vectorFile;
+      pair<string, pair<string, int*>> pairNewElem;
+      pairNewElem.first = rasterFile;
+      pairNewElem.second.first = listBorderParam.size()==0 ? "" : *vectorFile;
       if (listVectorFiles.size()>1) vectorFile++;
-      m_mapInputData[*rasterFile].second = (bands_num_>0) ? panBands : 0;
+      pairNewElem.second.second = (bands_num_>0) ? panBands : 0;
+      m_listInputData.push_back(pairNewElem);
     }
 
     if (bands_num_!=0) iterBand++;

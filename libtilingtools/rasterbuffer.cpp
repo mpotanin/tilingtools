@@ -501,10 +501,11 @@ bool RasterBuffer::SaveToPng24Data (void* &p_data_dst, int &size)
 		  for (int j=0;j<y_size_;j++)
 		  {
 			  for (int i=0;i<x_size_;i++){
+              
           im->tpixels[j][i] = gdTrueColorAlpha(p_pixel_data_byte[j*x_size_+i],
 									                             p_pixel_data_byte[j*x_size_ + i + m],
 									                             p_pixel_data_byte[j*x_size_+ i + m + m],
-									                             (p_pixel_data_byte[j*x_size_+ i + m + m + n] >0) ? 0 : 127);
+									                             (p_pixel_data_byte[j*x_size_+ i + m + m + n] >1) ? 0 : 127);
         }
 		  }
     }

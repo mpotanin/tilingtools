@@ -98,7 +98,7 @@ public:
 	void Close();
 
 public:
-  int	Init	(map<string,string> raster_vector, 
+  int	Init	(list<pair<string,string>> raster_vector, 
             ITileMatrixSet* p_tile_mset, 
             string user_input_srs = "",
             double clip_offset = 0);

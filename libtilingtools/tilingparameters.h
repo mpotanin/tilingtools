@@ -22,7 +22,7 @@ public:
   int   GetBandsNum   () {return bands_num_;};
  
   map<string,int*> GetBandMapping();
-  map<string,string> GetFiles();
+  list<pair<string,string>> GetFiles();
   list<string> GetRasterFiles();
 
   ~BundleConsoleInput();
@@ -33,7 +33,7 @@ protected:
 
 protected:
   int bands_num_;
-  map<string,pair<string,int*>> m_mapInputData;
+  list<pair<string,pair<string,int*>>> m_listInputData;
 };
 
 
