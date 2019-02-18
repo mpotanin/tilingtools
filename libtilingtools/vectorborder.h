@@ -29,6 +29,7 @@ public:
 
 	static bool               AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segmet=10);
 	static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS);
+  static bool               RemovePolygonFromMultiPolygon(OGRMultiPolygon* poMultiPoly, OGRPolygon* poPoly);
 
 };
 

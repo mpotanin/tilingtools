@@ -385,8 +385,22 @@ namespace gmx
     }
 
     return p_ogr_multipoly;
-  };
+  }
 
+  bool VectorOperations::RemovePolygonFromMultiPolygon(OGRMultiPolygon* poMultiPoly, OGRPolygon* poPoly)
+  {
+    
+    for (int i = 0; i < poMultiPoly->getNumGeometries(); i++)
+    {
+      if (poMultiPoly->getGeometryRef(i) == poPoly)
+      {
+        poMultiPoly->removeGeometry(i);
+        return true;
+      }
+    }
+    
+    return false;
+  }
 
 
   OGRLinearRing**		VectorOperations::GetLinearRingsRef(OGRGeometry* p_ogr_geom, int &num_rings)
