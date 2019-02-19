@@ -19,9 +19,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 {
   gmx::TilingParameters oTilingParams;
 
-  //debug
-  //end-debug
-
+  
 
   if (oOptionParser.GetValueList("-i").size() == 0)
   {

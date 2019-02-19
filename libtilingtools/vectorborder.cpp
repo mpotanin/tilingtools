@@ -294,6 +294,8 @@ namespace gmx
       return NULL;
     }
 
+
+
     p_ogr_multipoly->closeRings();
     OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
     OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
@@ -348,43 +350,51 @@ namespace gmx
 
     p_ogr_layer->ResetReading();
 
-    OGRMultiPolygon *p_ogr_multipoly = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
+    OGRGeometry *poUnion = 0; 
+
     while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
     {
-      switch (poFeature->GetGeometryRef()->getGeometryType())
+      if (!poUnion) poUnion = poFeature->GetGeometryRef()->clone();
+      else
       {
-      case wkbPolygon:
-        if (OGRERR_NONE != p_ogr_multipoly->addGeometry(poFeature->GetGeometryRef()))
-        {
-          delete(p_ogr_multipoly);
-          p_ogr_multipoly = 0;
-        }
-        break;
-      case wkbPolygon25D:
-        if (OGRERR_NONE != p_ogr_multipoly->addGeometry((OGRPolygon*)poFeature->GetGeometryRef()))
-        {
-          delete(p_ogr_multipoly);
-          p_ogr_multipoly = 0;
-        }
-        break;
-      case wkbMultiPolygon:
-        delete(p_ogr_multipoly);
-        p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
-        break;
-      case wkbMultiPolygon25D:
-        delete(p_ogr_multipoly);
-        p_ogr_multipoly = (OGRMultiPolygon*)poFeature->GetGeometryRef()->clone();
-        break;
-      default:
-        delete(p_ogr_multipoly);
-        p_ogr_multipoly = 0;
-        break;
+        OGRGeometry* poNewGeom = poUnion->Union(poFeature->GetGeometryRef());
+        delete(poUnion);
+        poUnion = poNewGeom;
       }
       OGRFeature::DestroyFeature(poFeature);
-      if (!p_ogr_multipoly) return 0;
+      if (poUnion == 0)
+      {
+        cout << "ERROR: OGRGeometry::Union fail"<<endl;
+        return 0;
+      }
     }
 
-    return p_ogr_multipoly;
+  
+    OGRMultiPolygon *poMultiPolygon = 0;
+    switch (poUnion->getGeometryType())
+    {
+      case wkbMultiPolygon:
+        poMultiPolygon = (OGRMultiPolygon*)poUnion;
+        break;
+      case wkbPolygon:
+        poMultiPolygon = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
+        poMultiPolygon->addGeometryDirectly(poUnion);
+        //delete(poUnion);
+        break;
+      case wkbPolygon25D:
+        poMultiPolygon = (OGRMultiPolygon*)OGRGeometryFactory::createGeometry(wkbMultiPolygon);
+        poMultiPolygon->addGeometryDirectly((OGRPolygon*)poUnion);
+        break;
+      case wkbMultiPolygon25D:
+        poMultiPolygon = (OGRMultiPolygon*)poUnion;
+        break;
+      default:
+        delete(poUnion);
+        break;
+    }
+    
+       
+    return poMultiPolygon;
   }
 
   bool VectorOperations::RemovePolygonFromMultiPolygon(OGRMultiPolygon* poMultiPoly, OGRPolygon* poPoly)
