@@ -108,6 +108,19 @@ bool RasterBuffer::CreateBuffer	(int			num_bands,
 	return true;
 }
 
+/*
+RasterBuffer* RasterBuffer::Clone()
+{
+  RasterBuffer* poNew = new RasterBuffer();
+  if (!poNew->CreateBuffer(this))
+  {
+    delete(poNew);
+    return 0;
+  }
+  else return poNew;
+}
+*/
+
 
 bool RasterBuffer::CreateBuffer		(RasterBuffer *poSrcBuffer)
 {

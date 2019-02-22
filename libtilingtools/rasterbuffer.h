@@ -23,8 +23,8 @@ public:
 	~RasterBuffer(void);
 
 	void	ClearBuffer();
-
-	bool			CreateBuffer	(int			num_bands,
+  
+  bool			CreateBuffer	(int			num_bands,
 									 int			x_size,
 									 int			y_size,
 									 void			*p_data_src				= NULL,
@@ -32,6 +32,7 @@ public:
 									 bool			is_alpha_band			= FALSE,
 									 GDALColorTable *p_color_table			= NULL
 									 );
+  //RasterBuffer* Clone();
 
 	bool			CreateBuffer				(RasterBuffer *p_src_buffer);
 

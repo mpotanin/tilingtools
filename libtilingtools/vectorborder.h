@@ -15,11 +15,14 @@ class VectorOperations
 public:
 	//static GDALDataset* CreateVirtualVectorLayer(string strLayerName, 
 	//	OGRSpatialReference* poSRS=0, OGRwkbGeometryType eType=wkbPolygon);
-	
+
+  	
 	static OGRMultiPolygon*   ConvertFromSRSToPixelLine(OGRGeometry *p_ogr_geom, double geotransform[6]);
 	static VECTORDS*          OpenVectorFile(string strVectorFile, bool bReadOnly=true);
 	static void               CloseVECTORDS(VECTORDS* poVecDS);
-	static OGRGeometry*		    ReadAndTransformGeometry				(string vector_file, OGRSpatialReference  *p_tiling_srs);
+  static int                ReadAllFeatures(string strVectorFile, OGRFeature** &paoFeautures, OGRSpatialReference  *poSRS = 0);
+  static OGRGeometry*		    ReadAllIntoSingleMultiPolygon				(string vector_file, OGRSpatialReference  *p_tiling_srs);
+  static OGRMultiPolygon*		CombineAllGeometryIntoSingleMultiPolygon(OGRFeature** paoFeautures, int nFeatures);
 	static string				      GetVectorFileNameByRasterFileName	(string raster_file);
 	static OGRPolygon*			  CreateOGRPolygonByOGREnvelope		(const OGREnvelope &envelope);
 	static OGREnvelope			  MergeEnvelopes					(const OGREnvelope	&envp1, const OGREnvelope	&envp2);
@@ -28,7 +31,7 @@ public:
 	static bool               IsPointInsidePixelLineGeometry (OGRPoint point, OGRGeometry *po_ogr_geom);
 
 	static bool               AddIntermediatePoints(OGRPolygon *p_polygon, int points_on_segmet=10);
-	static OGRMultiPolygon*		ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS);
+  //static int                Read
   static bool               RemovePolygonFromMultiPolygon(OGRMultiPolygon* poMultiPoly, OGRPolygon* poPoly);
 
 };

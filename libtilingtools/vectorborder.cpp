@@ -275,93 +275,113 @@ namespace gmx
 #endif
   }
 
-
-
-
-  OGRGeometry*	VectorOperations::ReadAndTransformGeometry(string vector_file, OGRSpatialReference *p_tiling_srs)
+  int VectorOperations::ReadAllFeatures(string strVectorFile, OGRFeature** &paoFeatures, OGRSpatialReference  *poSRS)
   {
-    if (vector_file == "") return 0;
+    int nCount = 0;
+    if (strVectorFile == "") return 0;
 
-    VECTORDS* poVecDS = VectorOperations::OpenVectorFile(vector_file.c_str());
+    VECTORDS* poVecDS = VectorOperations::OpenVectorFile(strVectorFile.c_str());
     if (!poVecDS) return 0;
+   
+    OGRLayer* poLayer = poVecDS->GetLayer(0);
+    if (poLayer == 0) return 0;
+    
+    if ((nCount = poLayer->GetFeatureCount()) == 0) return 0;
+
+    OGRSpatialReference* poInputSRS = 0;
+    if (poSRS)
+    {
+      poInputSRS = poLayer->GetSpatialRef();
+      bool is_ogr_sr_valid = true;
+      if (poInputSRS)
+      {
+        poInputSRS = poInputSRS->Clone();
+        char	*proj_ref = NULL;
+        bool is_ogr_sr_valid = (OGRERR_NONE == poInputSRS->exportToProj4(&proj_ref))
+          ? TRUE
+          : (OGRERR_NONE != poInputSRS->morphFromESRI())
+          ? FALSE
+          : (OGRERR_NONE == poInputSRS->exportToProj4(&proj_ref))
+          ? TRUE : FALSE;
+        if (proj_ref != NULL) CPLFree(proj_ref);
+      }
+      else
+      {
+        poInputSRS = new OGRSpatialReference();
+        poInputSRS->SetWellKnownGeogCS("WGS84");
+      }
+      
+      if (!is_ogr_sr_valid)
+      {
+        OGRSpatialReference::DestroySpatialReference(poInputSRS);
+        CloseVECTORDS(poVecDS);
+        return 0;
+      }
+    }
+      
+    paoFeatures = new OGRFeature*[nCount];
+    poLayer->ResetReading();
+    for (int i=0;i<nCount;i++)
+    {
+      paoFeatures[i] = poLayer->GetNextFeature();
+      if (poSRS)
+      {
+        OGRGeometry *poGeom = paoFeatures[i]->GetGeometryRef();
+        poGeom->assignSpatialReference(poInputSRS);
+        if (OGRERR_NONE != poGeom->transformTo(poSRS))
+        {
+          OGRSpatialReference::DestroySpatialReference(poInputSRS);
+          CloseVECTORDS(poVecDS);
+          for (int j=0;j<=i;j++)
+            OGRFeature::DestroyFeature(paoFeatures[j]);
+          delete[]paoFeatures;
+          return 0;
+        }
+        poGeom->assignSpatialReference(0);
+      }
+    }
+   
+    if (poInputSRS)
+      OGRSpatialReference::DestroySpatialReference(poInputSRS);
+       
+    CloseVECTORDS(poVecDS);
+    return nCount;
+  }
+
+
+  OGRGeometry*	VectorOperations::ReadAllIntoSingleMultiPolygon(string vector_file, OGRSpatialReference *p_tiling_srs)
+  {
+    OGRFeature** paoFeatures = 0;
+    int nFeatures = ReadAllFeatures(vector_file, paoFeatures, p_tiling_srs);
+    if (nFeatures == 0) return 0;
 
     OGRMultiPolygon *p_ogr_multipoly;
 
-    if (!(p_ogr_multipoly = ReadMultiPolygonFromOGRDataSource(poVecDS)))
+    if (!(p_ogr_multipoly = CombineAllGeometryIntoSingleMultiPolygon(paoFeatures,nFeatures)))
     {
-      CloseVECTORDS(poVecDS);
-      cout << "ERROR: ReadMultiPolygonFromOGRDataSource: can't read polygon from input vector" << endl;
-      return NULL;
+      cout << "ERROR: VectorOperations::ReadAllIntoSingleMultiPolygon(OGRFeatures**,int) fail" << endl;
     }
 
+    for (int i=0;i<nFeatures;i++)
+      OGRFeature::DestroyFeature(paoFeatures[i]);
+    delete[]paoFeatures;
 
-
-    p_ogr_multipoly->closeRings();
-    OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
-    OGRSpatialReference *p_input_ogr_sr = p_ogr_layer->GetSpatialRef();
-    bool is_ogr_sr_valid = TRUE;
-    if (p_input_ogr_sr)
-    {
-      p_input_ogr_sr = p_input_ogr_sr->Clone();
-      char	*proj_ref = NULL;
-      bool is_ogr_sr_valid = (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))
-        ? TRUE
-        : (OGRERR_NONE != p_input_ogr_sr->morphFromESRI())
-        ? FALSE
-        : (OGRERR_NONE == p_input_ogr_sr->exportToProj4(&proj_ref))
-        ? TRUE : FALSE;
-      if (proj_ref != NULL) CPLFree(proj_ref);
-    }
-    else
-    {
-      p_input_ogr_sr = new OGRSpatialReference();
-      p_input_ogr_sr->SetWellKnownGeogCS("WGS84");
-    }
-
-    CloseVECTORDS(poVecDS);
-    if (!is_ogr_sr_valid)
-    {
-      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-      delete(p_ogr_multipoly);
-      return NULL;
-    }
-
-    p_ogr_multipoly->assignSpatialReference(p_input_ogr_sr);
-
-    if (OGRERR_NONE != p_ogr_multipoly->transformTo(p_tiling_srs))
-    {
-      OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
-      delete(p_ogr_multipoly);
-      return NULL;
-    }
-
-    p_ogr_multipoly->assignSpatialReference(NULL);
-    OGRSpatialReference::DestroySpatialReference(p_input_ogr_sr);
     return p_ogr_multipoly;
-
-
   };
 
-  OGRMultiPolygon* VectorOperations::ReadMultiPolygonFromOGRDataSource(VECTORDS* poVecDS)
+
+  OGRMultiPolygon* VectorOperations::CombineAllGeometryIntoSingleMultiPolygon(OGRFeature** paoFeautures, int nFeatures)
   {
-    OGRLayer *p_ogr_layer = poVecDS->GetLayer(0);
-    if (p_ogr_layer == 0) return 0;
-    if (p_ogr_layer->GetFeatureCount() == 0) return 0;
-
-    p_ogr_layer->ResetReading();
-
     OGRGeometry *poUnion = 0; 
-
-    while (OGRFeature *poFeature = p_ogr_layer->GetNextFeature())
+    for (int i=0;i<nFeatures; i++)
     {
-      if (!poUnion) poUnion = poFeature->GetGeometryRef()->clone();
+      if (!poUnion) poUnion = paoFeautures[i]->GetGeometryRef()->clone();
       else
       {
-        OGRGeometry* poNewGeom = poUnion->Union(poFeature->GetGeometryRef());
+        OGRGeometry* poNewGeom = poUnion->Union(paoFeautures[i]->GetGeometryRef());
         delete(poUnion);
         poUnion = poNewGeom;
       }
-      OGRFeature::DestroyFeature(poFeature);
       if (poUnion == 0)
       {
         cout << "ERROR: OGRGeometry::Union fail"<<endl;

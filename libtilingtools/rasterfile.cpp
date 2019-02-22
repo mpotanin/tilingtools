@@ -97,7 +97,7 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
     OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
     if (!p_tiling_srs) return 0;
 
-    if (!(p_rfc->tiling_srs_cutline_ = (OGRMultiPolygon*)VectorOperations::ReadAndTransformGeometry(cutline_file, p_tiling_srs)))
+    if (!(p_rfc->tiling_srs_cutline_ = (OGRMultiPolygon*)VectorOperations::ReadAllIntoSingleMultiPolygon(cutline_file, p_tiling_srs)))
       cout << "ERROR: unable to read geometry from vector: " << cutline_file<<endl;
     else
     {

@@ -355,7 +355,7 @@ int 		GMXTileContainer::GetTileList(list<pair<int, pair<int,int>>> &tile_list,
   MercatorTileMatrixSet merc_grid(this->merc_type_);
   if (vector_file!="") 
 	{
-    if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRSRef()))) 
+    if( !(p_border = VectorOperations::ReadAllIntoSingleMultiPolygon(vector_file,merc_grid.GetTilingSRSRef()))) 
 		{
 			cout<<"ERROR: can't open vector file: "<<vector_file<<endl;
 			return 0;
@@ -1174,7 +1174,7 @@ int 		MBTilesContainer::GetTileList(list<pair<int,pair<int,int>>> &tile_list, in
   MercatorTileMatrixSet merc_grid(merc_type_);
   if (vector_file!="") 
 	{
-    if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRSRef()))) 
+    if( !(p_border = VectorOperations::ReadAllIntoSingleMultiPolygon(vector_file,merc_grid.GetTilingSRSRef()))) 
 		{
 			cout<<"ERROR: can't open vector file: "<<vector_file<<endl;
 			return 0;
@@ -1384,7 +1384,7 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
   OGRGeometry *p_border = NULL;
 	if (vector_file!="") 
 	{
-    if( !(p_border = VectorOperations::ReadAndTransformGeometry(vector_file,merc_grid.GetTilingSRSRef()))) 
+    if( !(p_border = VectorOperations::ReadAllIntoSingleMultiPolygon(vector_file,merc_grid.GetTilingSRSRef()))) 
 		{
 			cout<<"ERROR: can't open vector file: "<<vector_file<<endl;
 			return 0;
