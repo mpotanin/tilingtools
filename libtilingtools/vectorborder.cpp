@@ -349,17 +349,44 @@ namespace gmx
   }
 
 
-  OGRGeometry*	VectorOperations::ReadAllIntoSingleMultiPolygon(string vector_file, OGRSpatialReference *p_tiling_srs)
+  OGRGeometry*	VectorOperations::ReadIntoSingleMultiPolygon(string vector_file, 
+                                                                OGRSpatialReference *p_tiling_srs,
+                                                                int* panFIDs,
+                                                                int nFIDCount)
   {
     OGRFeature** paoFeatures = 0;
     int nFeatures = ReadAllFeatures(vector_file, paoFeatures, p_tiling_srs);
+
+    if (panFIDs)
+    {
+      OGRFeature** paoFeaturesAll = paoFeatures;
+      int nFeaturesAll = nFeatures;
+      paoFeatures = new OGRFeature*[nFIDCount];
+      nFeatures = 0;
+      for (int i = 0; i < nFeaturesAll; i++)
+      {
+        int j;
+        for ( j= 0; j < nFIDCount; j++)
+        {
+          if (panFIDs[j] == i + 1)
+          {
+            paoFeatures[nFeatures] = paoFeaturesAll[i];
+            nFeatures++;
+            break;
+          }
+        }
+        if (j == nFIDCount) OGRFeature::DestroyFeature(paoFeaturesAll[i]);
+      }
+      delete[]paoFeaturesAll;
+    }
+
     if (nFeatures == 0) return 0;
 
     OGRMultiPolygon *p_ogr_multipoly;
 
     if (!(p_ogr_multipoly = CombineAllGeometryIntoSingleMultiPolygon(paoFeatures,nFeatures)))
     {
-      cout << "ERROR: VectorOperations::ReadAllIntoSingleMultiPolygon(OGRFeatures**,int) fail" << endl;
+      cout << "ERROR: VectorOperations::ReadIntoSingleMultiPolygon(OGRFeatures**,int) fail" << endl;
     }
 
     for (int i=0;i<nFeatures;i++)

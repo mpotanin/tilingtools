@@ -59,8 +59,9 @@ public:
 
   bool			IsAlphaBand();
 	//BOOL			createAlphaBandByValue(int	value);
-	bool			ScaleDataTo8Bit(double* p_scales, double* p_offsets);
-    
+  bool			ScaleDataTo8Bit(double* p_scales, double* p_offsets);
+
+  int*      GetAllPixelsAsInt();
 
 public:
 	void*			get_pixel_data_ref();
@@ -91,6 +92,7 @@ protected:
 																                     void *p_block_data, int band_min = -1, int band_max = -1);
 	template <typename T>	void*		ZoomOut(T type, GDALResampleAlg resampling_method);
   template <typename T> bool    ScaleDataTo8Bit(T type, double* p_scales, double* p_offsets);
+  template <typename T> int*    GetAllPixelsAsInt(T type);
 
 	//void*                         GetPixelDataOrder2();
 	//template <typename T>void*    GetPixelDataOrder2(T type);

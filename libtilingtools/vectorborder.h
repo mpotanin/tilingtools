@@ -21,7 +21,10 @@ public:
 	static VECTORDS*          OpenVectorFile(string strVectorFile, bool bReadOnly=true);
 	static void               CloseVECTORDS(VECTORDS* poVecDS);
   static int                ReadAllFeatures(string strVectorFile, OGRFeature** &paoFeautures, OGRSpatialReference  *poSRS = 0);
-  static OGRGeometry*		    ReadAllIntoSingleMultiPolygon				(string vector_file, OGRSpatialReference  *p_tiling_srs);
+  static OGRGeometry*		    ReadIntoSingleMultiPolygon				(string vector_file, 
+                                                                OGRSpatialReference  *p_tiling_srs,
+                                                                int* panFIDs = 0,
+                                                                int nFIDCount = 0);
   static OGRMultiPolygon*		CombineAllGeometryIntoSingleMultiPolygon(OGRFeature** paoFeautures, int nFeatures);
 	static string				      GetVectorFileNameByRasterFileName	(string raster_file);
 	static OGRPolygon*			  CreateOGRPolygonByOGREnvelope		(const OGREnvelope &envelope);

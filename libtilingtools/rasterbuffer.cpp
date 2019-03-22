@@ -831,6 +831,38 @@ bool	RasterBuffer::ScaleDataTo8Bit(T type, double *p_min_values, double *p_max_v
   return true;
 }
 */
+int* RasterBuffer::GetAllPixelsAsInt()
+{
+  if (p_pixel_data_ == 0 || x_size_ == 0 || y_size_ == 0) return 0;
+
+  switch (data_type_)
+  {
+    case GDT_Byte:
+    {
+      unsigned char t = 1;
+      return GetAllPixelsAsInt(t);
+    }
+    case GDT_UInt16:
+    {
+      uint16_t t = 257;
+      return GetAllPixelsAsInt(t);
+    }
+    case GDT_Int16:
+    {
+      int16_t t = -257;
+      return GetAllPixelsAsInt(t);
+    }
+    case GDT_Float32:
+    {
+      float t = 1.1;
+      return GetAllPixelsAsInt(t);
+    }
+    default:
+      return 0;
+  }
+  return 0;
+
+}
 
 void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 {
@@ -859,9 +891,20 @@ void*	RasterBuffer::GetPixelDataBlock (int left, int top, int w, int h)
 			return GetPixelDataBlock(t,left,top,w,h);
 		}
 		default:
-			return NULL;
+			return 0;
 	}
-	return NULL;
+	return 0;
+}
+
+template <typename T> 
+int* RasterBuffer::GetAllPixelsAsInt(T type)
+{
+  int	n = x_size_*y_size_*num_bands_;
+  int* panOutput = new int[n];
+  T *p_pixel_data_t = (T*)p_pixel_data_;
+  for (int i=0;i<n;i++)
+    panOutput[i] = p_pixel_data_t[i];
+  return panOutput;
 }
 
 
