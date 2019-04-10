@@ -19,7 +19,8 @@ public:
   virtual OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy) =0;
 	virtual bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y) =0;
   virtual bool GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &envp) =0;
-    
+  virtual double	ULX() = 0; 
+  virtual double	ULY() = 0;
 
   virtual bool AdjustForOverlapping180Degree(OGRGeometry *poGeometry) {return true;};
   virtual bool DoesOverlap180Degree (OGRGeometry *poGeometry) {return false;};
@@ -79,8 +80,6 @@ public:
 	  //	Converts from y coordinate to latitude 
   static	double MercToLat (double MercY, MercatorProjType merc_type);
 
-	
-protected:
   double	ULX();
 	double	ULY();
 

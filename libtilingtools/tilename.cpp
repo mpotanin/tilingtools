@@ -377,26 +377,24 @@ bool MercatorTileMatrixSet::CalcTileRange(OGREnvelope envp, int z, int &min_x, i
 bool MercatorTileMatrixSet::DoesOverlap180Degree(OGRGeometry	*p_ogr_geom_merc)
 {
   if (!p_ogr_geom_merc) return false;
-  OGRLinearRing	**pp_ogr_rings;
-  int num_rings = 0;
+  double* padblX = 0;
+  double* padblY = 0;
+  int nPointsCount = VectorOperations::ExtractAllPoints(p_ogr_geom_merc,padblX,padblY);
+  bool bResult = false;
 
-  if (!(pp_ogr_rings = VectorOperations::GetLinearRingsRef(p_ogr_geom_merc, num_rings))) return false;
-
-  int n = 0;
-  for (int i = 0; i<num_rings; i++)
+  for (int i = 0; i < nPointsCount - 1; i++)
   {
-    for (int k = 0; k<pp_ogr_rings[i]->getNumPoints() - 1; k++)
+    if (fabs(padblX[i] - padblX[i + 1])>-ULX())
     {
-      if (fabs(pp_ogr_rings[i]->getX(k) - pp_ogr_rings[i]->getX(k + 1))>-ULX())
-      {
-        delete[]pp_ogr_rings;
-        return true;
-      }
+      bResult = true;
+      break;
     }
   }
 
-  delete[]pp_ogr_rings;
-  return false;
+  delete[]padblX;
+  delete[]padblY;
+
+  return bResult;
 }
 
 bool MercatorTileMatrixSet::GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &envp)

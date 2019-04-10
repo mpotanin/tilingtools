@@ -370,6 +370,7 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
 
 BundleTiler::BundleTiler(void)
 {
+  m_bUseWarpClipHack = false;
   p_tile_mset_=0;
 }
 
@@ -393,6 +394,8 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
   OGREnvelope bundle_envp = CalcEnvelope();
   int min_x,min_y,max_x,max_y;
   p_tile_mset_->CalcTileRange(bundle_envp,4,min_x,min_y,max_x,max_y);
+  
+
   if ((bundle_envp.MaxX>0 && bundle_envp.MinX<0)&&(max_x-min_x>1<<3))
   {
     int min_x0,min_y0,max_x0,max_y0;
@@ -418,6 +421,7 @@ bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
         p_tile_mset_->AdjustForOverlapping180Degree((*iter).second->tiling_srs_cutline_);
     }
   }
+
   return true;
 }
 
@@ -453,6 +457,14 @@ int	BundleTiler::Init ( list<pair<string,string>> raster_vector,
 	}
 
   AdjustCutlinesForOverlapping180Degree();
+
+  OGREnvelope oBundleEnvp = CalcEnvelope();
+  if ((oBundleEnvp.MaxX > -p_tile_mset_->ULX()) && 
+    (raster_vector.size()>1) && (raster_vector.begin()->second!="") &&
+    (raster_vector.begin()->second == (raster_vector.begin()++)->second))
+  {
+    m_bUseWarpClipHack = true;
+  }
   
   return item_list_.size();
 }
@@ -873,9 +885,15 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
         p_warp_options->panSrcBands[i] = (p_warp_options->panDstBands[i] = i+1);
     }
     
-    p_warp_options->hCutline = (*iter).second->p_pixel_line_cutline_ ?
+    //debug
+    //p_warp_options->hCutline = 0;
+    if (m_bUseWarpClipHack)
+      p_warp_options->hCutline = 0;
+    else
+      p_warp_options->hCutline = (*iter).second->p_pixel_line_cutline_ ?
                                (*iter).second->p_pixel_line_cutline_->clone() : 0;
-  
+    //end-debug
+
     if (p_ndval || nodata_val_from_file_defined)
     {
       p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];

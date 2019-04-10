@@ -459,6 +459,33 @@ namespace gmx
     return false;
   }
 
+  int VectorOperations::ExtractAllPoints(OGRGeometry* poGeometry, double* &padblX, double* &padblY)
+  {
+    int nPointsCount = 0;
+    int nRingsCount;
+    OGRLinearRing** papoRings = GetLinearRingsRef(poGeometry,nRingsCount);
+
+    for (int i = 0; i < nRingsCount; i++)
+      nPointsCount += papoRings[i]->getNumPoints();
+    
+    padblX = new double[nPointsCount];
+    padblY = new double[nPointsCount];
+
+    int n = 0;    
+    for (int i = 0; i < nRingsCount; i++)
+    {
+      for (int j = 0; j < papoRings[i]->getNumPoints(); j++)
+      {
+        padblX[n] = papoRings[i]->getX(j);
+        padblY[n] = papoRings[i]->getY(j);
+        n++;
+      }
+    }
+    
+    
+    return nPointsCount;  
+  }
+
 
   OGRLinearRing**		VectorOperations::GetLinearRingsRef(OGRGeometry* p_ogr_geom, int &num_rings)
   {

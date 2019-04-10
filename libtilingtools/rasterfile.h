@@ -174,6 +174,7 @@ protected:
   bool      TerminateTilingThreads(list<future<int>> &tiling_results);
    
 protected:
+  bool m_bUseWarpClipHack;
   double clip_offset_;
   string set_srs_;
 	list<pair<string,RasterFileCutline*>>	item_list_;

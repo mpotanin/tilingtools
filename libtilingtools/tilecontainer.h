@@ -292,8 +292,8 @@ public:
 public:
   static GTiffRasterFile* OpenForWriting(TileContainerOptions *poTCOptions);
   
-  bool GTiffRasterFile::AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
-  bool GTiffRasterFile::Close();
+  bool AddTile(int z, int x, int y, unsigned char *p_data, unsigned int size);
+  bool Close();
 
 protected:
   bool InitByFirstAddedTile(unsigned char *p_data, unsigned int size);

@@ -16,7 +16,8 @@ public:
 	//static GDALDataset* CreateVirtualVectorLayer(string strLayerName, 
 	//	OGRSpatialReference* poSRS=0, OGRwkbGeometryType eType=wkbPolygon);
 
-  	
+  
+  static int                ExtractAllPoints(OGRGeometry* poGeometry, double* &padblX, double* &padblY);
 	static OGRMultiPolygon*   ConvertFromSRSToPixelLine(OGRGeometry *p_ogr_geom, double geotransform[6]);
 	static VECTORDS*          OpenVectorFile(string strVectorFile, bool bReadOnly=true);
 	static void               CloseVECTORDS(VECTORDS* poVecDS);
