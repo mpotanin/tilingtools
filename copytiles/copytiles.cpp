@@ -1,8 +1,6 @@
 #include "stdafx.h"
 
-int nDescriptors = 10;
-const GMXOptionDescriptor asDescriptors[] =
-{
+const list<GMXOptionDescriptor> listDescriptors = {
   { "-i", 0, 0, "input folder or file" },
   { "-o", 0, 0, "output folder or file" },
   { "-of", 0, 0, "output tile container type" },
@@ -15,9 +13,7 @@ const GMXOptionDescriptor asDescriptors[] =
   { "-o_tnt", 0, 0, "output tile name template" }
 };
 
-int nExamples = 3;
-const string astrUsageExamples[] =
-{
+const list<string> listUsageExamples = {
   "copytiles -i tiles -i_tnt standard -tt png -of MBTiles -o tiles.mbtiles -z 10-15",
   "copytiles -i tiles -i_tnt {z}/{x}/{y}.png -of MBTiles -o tiles.mbtiles -b zone.shp",
   "copytiles -i tiles -i_tnt {z}/{x}/{y}.png -o tiles_new -o_tnt {z}_{x}_{y}.png"
@@ -57,13 +53,13 @@ int main(int nArgs, char* argv[])
       "version.txt")
       ) << endl;
     cout << "build date: " << __DATE__ << endl;
-    GMXOptionParser::PrintUsage(asDescriptors, nDescriptors, astrUsageExamples, nExamples);
+    GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
     delete[]pastrArgs;
     return 0;
   }
 
   GMXOptionParser oOptionParser;
-  if (!oOptionParser.Init(asDescriptors, nDescriptors, pastrArgs, nArgs))
+  if (!oOptionParser.Init(listDescriptors, pastrArgs, nArgs))
   {
     cout << "ERROR: input cmd line is not valid" << endl;
     delete[]pastrArgs;
