@@ -221,11 +221,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
 
 
-
-
-int nDescriptors = 21;
-const GMXOptionDescriptor asDescriptors[] =
-{
+const list<GMXOptionDescriptor> listDescriptors = {
   { "-i", 0, 1, "input path" },
   { "-ap", 1, 0, "tiling input files apart" },
   { "-o", 0, 0, "output path" },
@@ -249,9 +245,8 @@ const GMXOptionDescriptor asDescriptors[] =
   {"-bmarg", 0, 0, "border margin in tiling srs units"}
 };
 
-int nExamples = 4;
-const string astrUsageExamples[] =
-{
+
+const list<string> listUsageExamples = {
   "imagetiling -i image.tif -of mbtiles -o image.mbtiles -tt png",
   "imagetiling -i image1.tif -i image2.tif -o image1-2_tiles -tnt standard -tt jpg -z 18 -minz 10",
   "imagetiling -i images/*.tif -of mbtiles -o images_tiles -tnt {z}_{x}_{y}.png",
@@ -297,14 +292,14 @@ int main(int nArgs, char* argv[])
       "version.txt")
       ) << endl;
     cout << "build date: " << __DATE__ << endl;
-    GMXOptionParser::PrintUsage(asDescriptors, nDescriptors, astrUsageExamples, nExamples);
+    GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
     delete[]pastrArgs;
     return 0;
   }
 
 
   GMXOptionParser oOptionParser;
-  if (!oOptionParser.Init(asDescriptors, nDescriptors, pastrArgs, nArgs))
+  if (!oOptionParser.Init(listDescriptors, pastrArgs, nArgs))
   {
     cout << "ERROR: input cmd line is not valid" << endl;
     delete[]pastrArgs;
