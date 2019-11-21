@@ -35,15 +35,11 @@ public:
                                       string strExeFilePath="");
 
 public:
-  static void PrintUsage (const GMXOptionDescriptor asDescriptors[],
-                          int nDescriptors, 
-                          const string astrExamples[], 
-                          int nExamples);
+  static void PrintUsage (const list<GMXOptionDescriptor> listDescriptors,
+                          const list<string> listExamples);
     
-  bool Init (const GMXOptionDescriptor asDescriptors[], 
-              int nDescriptors, 
-              string astrArgs[], 
-              int nArgs);
+  bool Init (const list<GMXOptionDescriptor> listDescriptors, 
+              string astrArgs[], int nArgs);
     
   string GetOptionValue (string strOptionName);
   list<string> GetValueList (string strMultipleOptionName);
@@ -54,7 +50,7 @@ private:
 
 private:
   map<string,GMXOptionDescriptor> m_mapDescriptors;
-  map<string,string> m_mapOptions;
+  map<string,string> m_mapSingleOptions;
   map<string,map<string,string>> m_mapMultipleKVOptions;
   map<string,list<string>> m_mapMultipleOptions;
 };

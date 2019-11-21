@@ -2,14 +2,13 @@
 #include "stringfuncs.h"
 #include "filesystemfuncs.h"
 
-string GMXGDALLoader::strGDALWinVer = "201";
-
 #ifdef _WIN32
+string GMXGDALLoader::strGDALWinVer = "202";
 void GMXGDALLoader::SetWinEnvVars (string strGDALPath)
 {
   wstring wstrPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
-	wstring strGDALPathW = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bins"));
-  wstring wstrGDALDataPath = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bins\\gdal-data"));
+	wstring strGDALPathW = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bin"));
+  wstring wstrGDALDataPath = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bin\\gdal-data"));
   wstring wstrGDALDriverPath = L"";
   
 	_wputenv((L"PATH=" + strGDALPathW + L";" + wstrPATH).c_str());
@@ -19,7 +18,7 @@ void GMXGDALLoader::SetWinEnvVars (string strGDALPath)
 
 bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
 {
-  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir, "bins/gdal" + strDllVer + ".dll");
+  string strGDALDLL = GMXFileSys::GetAbsolutePath(strGDALDir, "bin/gdal" + strDllVer + ".dll");
   HMODULE b = LoadLibraryW(GMXString::utf8toWStr(strGDALDLL).c_str());
   if (b == NULL)
     cout << "ERROR: can't load GDAL by path: " << strGDALDLL << endl;
@@ -119,97 +118,93 @@ bool GMXOptionParser::InitCmdLineArgsFromFile (string strFileName,
 }
 
 
-void GMXOptionParser::PrintUsage (const GMXOptionDescriptor asDescriptors[], 
-                                  int nDescriptors, 
-                                  const string astrExamples[],
-                                  int nExamples)
+void GMXOptionParser::PrintUsage(const list<GMXOptionDescriptor> listDescriptors,
+								const list<string> listExamples)
 {
   //TODO
   int nMaxCol = 50;
   int nLineWidth=0;
   cout<<"Usage:"<<endl;
-  for ( int i = 0; i < nDescriptors; i++ )
+  for ( auto oDesc : listDescriptors )
   {
-      if (nLineWidth+asDescriptors[i].strUsage.size() <= nMaxCol)
+      if (nLineWidth+oDesc.strUsage.size() <= nMaxCol)
       {
-          cout<<"["+asDescriptors[i].strOptionName+" "+asDescriptors[i].strUsage+"]";
-          nLineWidth += nLineWidth+asDescriptors[i].strUsage.size();
+          cout<<"["+oDesc.strOptionName+" "+oDesc.strUsage+"]";
+          nLineWidth += nLineWidth+oDesc.strUsage.size();
       }
       else
       {
-          cout<<endl<<"["+asDescriptors[i].strOptionName+" "+asDescriptors[i].strUsage+"]";
-          nLineWidth = asDescriptors[i].strUsage.size();
+          cout<<endl<<"["+oDesc.strOptionName+" "+oDesc.strUsage+"]";
+          nLineWidth = oDesc.strUsage.size();
       }
   }
   cout<<endl<<endl<<"Usage examples:"<<endl;
-  for (int i = 0; i < nExamples; i++)
-      cout<<astrExamples[i]<<endl;
+  for (auto str :listExamples)
+      cout<<str<<endl;
 }
 
 
 void GMXOptionParser::Clear()
 {
   m_mapMultipleKVOptions.clear();
-  m_mapOptions.clear();
+  m_mapSingleOptions.clear();
   m_mapDescriptors.clear();
 }
 
 
 
-bool GMXOptionParser::Init(const GMXOptionDescriptor asDescriptors[], 
-                            int nDescriptors, 
-                            string astrArgs[], 
-                            int nArgs)
+bool GMXOptionParser::Init(const list<GMXOptionDescriptor> listDescriptors,
+                            string astrArgs[], int nArgs)
 {
-  Clear();
-    for (int i = 0; i < nDescriptors; i++)
-        m_mapDescriptors[asDescriptors[i].strOptionName]=asDescriptors[i];
+	Clear();
+    for (auto oDesc : listDescriptors)
+        m_mapDescriptors[oDesc.strOptionName]=oDesc;
 
-   for (int i=0; i < nArgs; i++)
-    {
+	for (int i=0; i < nArgs; i++)
+	{
         if (astrArgs[i][0] == '-')
         {
             if (m_mapDescriptors.find(astrArgs[i])!=m_mapDescriptors.end())
             {
                 if (m_mapDescriptors[astrArgs[i]].bIsBoolean)
-                    this->m_mapOptions[astrArgs[i]]=astrArgs[i];
+                    this->m_mapSingleOptions[astrArgs[i]]=astrArgs[i];
                 else if (i!=nArgs-1)
                 {
                     if (m_mapDescriptors[astrArgs[i]].nOptionValueType==0)
-                        this->m_mapOptions[astrArgs[i]]=astrArgs[i+1];
+                        this->m_mapSingleOptions[astrArgs[i]]=astrArgs[i+1];
                     else if (m_mapDescriptors[astrArgs[i]].nOptionValueType==1)
                         this->m_mapMultipleOptions[astrArgs[i]].push_back(astrArgs[i+1]);
                     else
                     {
                         if (astrArgs[i+1].find('=') == string::npos
                             || astrArgs[i+1].find('=') == astrArgs[i+1].size()-1)
-                    {
-                        cout<<"ERROR: can't parse key=value format from \""<<astrArgs[i+1]<<"\""<<endl;
-                        return false;
-                    }
-                    else
-                        m_mapMultipleKVOptions[astrArgs[i]][astrArgs[i+1].substr(0,astrArgs[i+1].find('='))]=
+						{
+							cout<<"ERROR: can't parse key=value format from \""<<astrArgs[i+1]<<"\""<<endl;
+							return false;
+						}
+						else
+							m_mapMultipleKVOptions[astrArgs[i]][astrArgs[i+1].substr(0,astrArgs[i+1].find('='))]=
                                         astrArgs[i+1].substr(astrArgs[i+1].find('=')+1);
                     }
-          i++;
-        }
-      }
-      else
-      {
-        cout<<"ERROR: Unknown option name \""<<astrArgs[i]<<"\""<<endl;
-        return false;
-      }
-    }
-  }
+					i++;
+				}
+			}
+			else
+			{
+				cout<<"ERROR: Unknown option name \""<<astrArgs[i]<<"\""<<endl;
+				return false;
+			}
+		}
+	}
   
-  return true;
+	return true;
 }
 
 
 string GMXOptionParser::GetOptionValue(string strOptionName)
 {
-  return m_mapOptions.find(strOptionName) == m_mapOptions.end() 
-        ? "" : m_mapOptions[strOptionName];
+  return m_mapSingleOptions.find(strOptionName) == m_mapSingleOptions.end() 
+        ? "" : m_mapSingleOptions[strOptionName];
 }
 
 
