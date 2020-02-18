@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+
+
 void Exit()
 {
   cout << "Tiling finished - press any key" << endl;
@@ -263,6 +265,8 @@ const list<string> listUsageExamples = {
 #ifdef WIN32
 int _tmain(int nArgs, wchar_t *pastrArgsW[])
 {
+
+
   string *pastrArgs = new string[nArgs];
   for (int i = 0; i<nArgs; i++)
   {

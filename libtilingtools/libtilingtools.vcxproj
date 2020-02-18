@@ -100,7 +100,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy "..\tilingtools_win_x64.config" "..\x64\debug\tilingtools.config"
+      <Command>copy "..\tilingtools_win_debug_x64.config" "..\x64\debug\tilingtools.config"
 copy "..\version.txt" "..\x64\debug\version.txt"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -132,7 +132,7 @@ copy "..\version.txt" "..\x64\debug\version.txt"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../gdal223/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../gdal302/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,7 +141,7 @@ copy "..\version.txt" "..\x64\debug\version.txt"</Command>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>copy "..\tilingtools_win_x64.config" "..\x64\release\tilingtools.config"
+      <Command>copy "..\tilingtools_win_release_x64.config" "..\x64\release\tilingtools.config"
 copy "..\version.txt" "..\x64\release\version.txt"
 </Command>
     </PostBuildEvent>

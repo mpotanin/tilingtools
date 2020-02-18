@@ -26,3 +26,7 @@ ConsoleApplication1/
 .vs/
 
 libtilingtools/x64/
+
+distrib/
+
+gdal302/

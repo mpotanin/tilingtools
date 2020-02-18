@@ -130,7 +130,7 @@ int GMXFileSys::FindFilesByPattern (list<string> &listFiles, string strSearchPat
     
   if (powinFind == INVALID_HANDLE_VALUE)
   {
-    if (powinFind) FindClose(FindClose);
+    if (powinFind) FindClose(powinFind);
     return 0;
   }
 	

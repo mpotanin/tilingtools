@@ -3,17 +3,19 @@
 #include "filesystemfuncs.h"
 
 #ifdef _WIN32
-string GMXGDALLoader::strGDALWinVer = "202";
+string GMXGDALLoader::strGDALWinVer = "300";
 void GMXGDALLoader::SetWinEnvVars (string strGDALPath)
 {
-  wstring wstrPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
+	wstring wstrPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";
 	wstring strGDALPathW = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bin"));
-  wstring wstrGDALDataPath = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bin\\gdal-data"));
-  wstring wstrGDALDriverPath = L"";
+	wstring wstrGDALDataPath = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath,"bin\\gdal-data"));
+	wstring wstrGDALDriverPath = L"";
+	wstring wstrPROJLIBPath = GMXString::utf8toWStr(GMXFileSys::GetAbsolutePath(strGDALPath, "bin\\proj_lib"));
   
 	_wputenv((L"PATH=" + strGDALPathW + L";" + wstrPATH).c_str());
-  _wputenv((L"GDAL_DATA=" + wstrGDALDataPath).c_str());
-  _wputenv((L"GDAL_DRIVER_PATH=" + wstrGDALDriverPath).c_str());
+	_wputenv((L"GDAL_DATA=" + wstrGDALDataPath).c_str());
+	_wputenv((L"GDAL_DRIVER_PATH=" + wstrGDALDriverPath).c_str());
+	_wputenv((L"PROJ_LIB=" + wstrPROJLIBPath).c_str());
 }
 
 bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
