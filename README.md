@@ -71,7 +71,7 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
   * **x64 platform**
   * Visual Studio 2017
 * git clone tilingtools repository or download it as zip-archive 
-* [download gdal303.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal302.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal302/include/gdal.h)
+* [download gdal302.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal302.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal302/include/gdal.h)
 * [download gdal223.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal223.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal223/include/gdal.h)
 * open TilingTools.sln with Visual Studio 2017
 * compile TilingTools (set in Configuration Manager: configuration=**Release, platform=x64**)
