@@ -10,7 +10,7 @@
     
   
 ## Download Windows Binary
-[Download win-x64 binary 3.2.3 version (01.02.2019)](http://kosmosnimki.ru/downloads/tilingtools-3.2.3-win-x64.zip) ready for use package compiled with Microsoft Visual C++ 2013. **NEW: GUI dialog** application is included into the package.
+[Download win-x64 binary 3.3.0 version (21.11.2019)](https://github.com/mpotanin/binaries/blob/master/tilingtools_win-x64_3.3.0.zip) ready for use package compiled with Microsoft Visual C++ 2017.
 
 ## Using imagetiling
 
@@ -69,13 +69,12 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
 ### Building on Windows
 * requirements:
   * **x64 platform**
-  * Visual Studio 2010/2013/2015
+  * Visual Studio 2017
 * git clone tilingtools repository or download it as zip-archive 
-* unzip gdal210.zip archive (after unzip there must be a path: TilinTools-master/gdal210/include/gdal.h)
-* unzip openjpeg-2.3.0.zip archive (after unzip there must be a path: TilinTools-master/openjpeg-2.3.0/openjpeg.h)
-* open TilingTools.sln with Visual Studio 2010/2013/2015
+* [download gdal223.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal223.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal223/include/gdal.h)
+* open TilingTools.sln with Visual Studio 2017
 * compile TilingTools (set in Configuration Manager: configuration=**Release, platform=x64**)
-* if compilation succeed exe-files will be created in folder /x64/Release/  
+* if compilation succeed exe-files will be created by path /x64/Release/
 
 ### Building on Linux
 * requirements:
