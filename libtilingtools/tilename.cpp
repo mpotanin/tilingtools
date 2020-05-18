@@ -4,6 +4,7 @@
 namespace gmx
 {
 
+int MercatorTileMatrixSet::TILE_PX_SIZE_ = 256;
 
 StandardTileName::StandardTileName (string base_folder, string str_template)
 {
@@ -305,16 +306,16 @@ bool KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
 
 MercatorTileMatrixSet::MercatorTileMatrixSet(MercatorProjType merc_type)
 {
-  merc_type_ = merc_type;
-  if (merc_type_ == WORLD_MERCATOR)
-  {
-    merc_srs_.SetWellKnownGeogCS("WGS84");
-    merc_srs_.SetMercator(0, 0, 1, 0, 0);
-  }
-  else
-  {
-    merc_srs_.importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
-  }
+	merc_type_ = merc_type;
+	if (merc_type_ == WORLD_MERCATOR)
+	{
+		merc_srs_.SetWellKnownGeogCS("WGS84");
+		merc_srs_.SetMercator(0, 0, 1, 0, 0);
+	}
+	else
+	{
+		merc_srs_.importFromProj4("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 til+units=m +nadgrids=@null +wktext +no_defs");
+	}
 };
 
 
@@ -335,7 +336,7 @@ double MercatorTileMatrixSet::CalcPixelSizeByZoom(int zoom)
 
 OGREnvelope MercatorTileMatrixSet::CalcEnvelopeByTile(int zoom, int x, int y)
 {
-  double size = CalcPixelSizeByZoom(zoom) * 256;
+  double size = CalcPixelSizeByZoom(zoom) * TILE_PX_SIZE_;
   OGREnvelope envp;
 
   envp.MinX = ULX() + x*size;
@@ -348,7 +349,7 @@ OGREnvelope MercatorTileMatrixSet::CalcEnvelopeByTile(int zoom, int x, int y)
 
 OGREnvelope MercatorTileMatrixSet::CalcEnvelopeByTileRange(int zoom, int minx, int miny, int maxx, int maxy)
 {
-  double size = CalcPixelSizeByZoom(zoom) * 256;
+  double size = CalcPixelSizeByZoom(zoom) * TILE_PX_SIZE_;
   OGREnvelope envp;
 
   envp.MinX = ULX() + minx*size;
@@ -362,8 +363,8 @@ OGREnvelope MercatorTileMatrixSet::CalcEnvelopeByTileRange(int zoom, int minx, i
 void MercatorTileMatrixSet::CalcTileByPoint(double merc_x, double merc_y, int z, int &x, int &y)
 {
   //double E = 1e-4;
-  x = (int)floor((merc_x - ULX()) / (256 * CalcPixelSizeByZoom(z)));
-  y = (int)floor((ULY() - merc_y) / (256 * CalcPixelSizeByZoom(z)));
+  x = (int)floor((merc_x - ULX()) / (TILE_PX_SIZE_ * CalcPixelSizeByZoom(z)));
+  y = (int)floor((ULY() - merc_y) / (TILE_PX_SIZE_ * CalcPixelSizeByZoom(z)));
 }
 
 bool MercatorTileMatrixSet::CalcTileRange(OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y)

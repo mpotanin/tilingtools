@@ -129,7 +129,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
 
   if (oOptionParser.GetOptionValue("-q") != "")
-    oTilingParams.jpeg_quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
+    oTilingParams.quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
 
 
   if (oOptionParser.GetValueList("-nd").size() != 0)
@@ -201,6 +201,8 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
       oTilingParams.gdal_resampling_ = GRA_Cubic;
   }
 
+  if (oOptionParser.GetOptionValue("-tsz") != "")
+	  oTilingParams.tile_px_size_ = atoi(oOptionParser.GetOptionValue("-tsz").c_str());
 
   if (oOptionParser.GetOptionValue("-wt") != "")
     oTilingParams.max_work_threads_ = atoi(oOptionParser.GetOptionValue("-wt").c_str());
@@ -217,6 +219,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
   oTilingParams.calculate_histogram_ = true;   //TODO - replace by default value in GMXTileContainer init
 
+ 
 
   return GMXMakeTiling(&oTilingParams) ? 0 : 2;
 }
@@ -243,6 +246,7 @@ const list<GMXOptionDescriptor> listDescriptors = {
   { "-bgc", 0, 0, "background color" },
   { "-bnd", 0, 1, "raster band list" },
   { "-wt", 0, 0, "work threads num." },
+  { "-tsz", 0, 0, "tile seize (default 256)" },
   { "-pseudo_png", 1, 0, "" },
   {"-bmarg", 0, 0, "border margin in tiling srs units"}
 };

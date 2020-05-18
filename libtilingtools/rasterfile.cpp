@@ -220,6 +220,21 @@ bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialRe
 	return TRUE;
 }
 
+int RasterFile::GetBandsCount()
+{
+	return p_gdal_ds_->GetRasterCount();
+}
+
+GDALDataType RasterFile::GetDataType()
+{
+	return p_gdal_ds_->GetRasterBand(1)->GetRasterDataType();
+}
+
+bool RasterFile::GetGeoTransform(double* padblGeoTransform)
+{
+	if (!p_gdal_ds_) return 0;
+	return (OGRERR_NONE == p_gdal_ds_->GetGeoTransform(padblGeoTransform));
+}
 
 bool	RasterFile::GetSRS(OGRSpatialReference  &srs, ITileMatrixSet* p_tile_mset)
 {
@@ -300,78 +315,78 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
                           )
 {
  
-  gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
+	gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
 
-  //ToDo...
-  int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
-  map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
+	//ToDo...
+	int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
+	map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
 
-  int* p_ndval = 0;
-  unsigned char* p_background_color = 0;
+	int* p_ndval = 0;
+	unsigned char* p_background_color = 0;
 
-  if (p_tiling_params->p_background_color_ || p_tiling_params->p_nd_rgbcolors_)
-  {
-    p_background_color = new unsigned char[3];
-    memcpy(p_background_color, 
-      (p_tiling_params->p_background_color_ ? p_tiling_params->p_background_color_ : p_tiling_params->p_nd_rgbcolors_[0]),
-      3);
-  }
+	if (p_tiling_params->p_background_color_ || p_tiling_params->p_nd_rgbcolors_)
+	{
+		p_background_color = new unsigned char[3];
+		memcpy(p_background_color, 
+			(p_tiling_params->p_background_color_ ? p_tiling_params->p_background_color_ : p_tiling_params->p_nd_rgbcolors_[0]),
+			3);
+	}
 
-  if (p_tiling_params->nd_num_)
-  {
-    p_ndval = new int;
-    p_ndval[0] = p_tiling_params->p_nd_rgbcolors_[0][0];
-  }
+	if (p_tiling_params->nd_num_)
+	{
+		p_ndval = new int;
+		p_ndval[0] = p_tiling_params->p_nd_rgbcolors_[0][0];
+	}
 
   
 
-  bool warp_result = WarpChunkToBuffer(zoom,
-                                      chunk_envp,
-                                      p_merc_buffer,
-                                      bands_num,
-                                      bands_num == 0 ? 0 : &band_mapping,
-                                      p_tiling_params->gdal_resampling_,
-                                      p_ndval,
-                                      p_background_color);
+	bool warp_result = WarpChunkToBuffer(zoom,
+										chunk_envp,
+										p_merc_buffer,
+										bands_num,
+										bands_num == 0 ? 0 : &band_mapping,
+										p_tiling_params->gdal_resampling_,
+										p_ndval,
+										p_background_color);
 
-  delete(p_ndval);
-  delete(p_background_color);
+	delete(p_ndval);
+	delete(p_background_color);
     
-  if (!warp_result)	
-  {
-	  cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
-    return 1;
+	if (!warp_result)	
+	{
+		cout<<"ERROR: BaseZoomTiling: warping to merc fail"<<endl;
+		return 1;
 	}
 
-  if (is_scalinig_needed)
-  {
-    if (! p_merc_buffer->ScaleDataTo8Bit (p_scale_values,p_offset_values))
-    {
-      cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
-    	return 1;
+	if (is_scalinig_needed)
+	{
+		if (! p_merc_buffer->ScaleDataTo8Bit (p_scale_values,p_offset_values))
+		{
+			cout<<"ERROR: can't stretch raster values to 8 bit"<<endl;
+    		return 1;
 		}
 	}
   
-  if (!RunTilingFromBuffer(p_tiling_params,
-										p_merc_buffer,
-										chunk_envp,
-                    zoom,
-										tiles_expected,
-										p_tiles_generated,
-										p_tile_container))
+	if (!RunTilingFromBuffer(p_tiling_params,
+							p_merc_buffer,
+							chunk_envp,
+							zoom,
+							tiles_expected,
+							p_tiles_generated,
+							p_tile_container))
 	{
-			cout<<"ERROR: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
-      return 1;
+		cout<<"ERROR: BaseZoomTiling: GMXRunTilingFromBuffer fail"<<endl;
+		return 1;
 	}
-  delete(p_merc_buffer);
-  return 0;
+	delete(p_merc_buffer);
+	return 0;
 }
 
 
 BundleTiler::BundleTiler(void)
 {
-  m_bUseWarpClipHack = false;
-  p_tile_mset_=0;
+	m_bUseWarpClipHack = false;
+	p_tile_mset_=0;
 }
 
 void BundleTiler::Close(void)
@@ -472,10 +487,14 @@ int	BundleTiler::Init ( list<pair<string,string>> raster_vector,
 
 GDALDataType BundleTiler::GetRasterFileType()
 {
-  RasterFile rf;
-  if (item_list_.size()==0) return GDT_Byte;
-  else if (!rf.Init(*GetFileList().begin())) return GDT_Byte;
-  else return rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType();
+	RasterFile rf;
+	rf.Init(*GetFileList().begin());
+	return rf.GetDataType();
+	/*
+	  if (item_list_.size()==0) return GDT_Byte;
+	  else if (!rf.Init(*GetFileList().begin())) return GDT_Byte;
+	  else return rf.get_gdal_ds_ref()->GetRasterBand(1)->GetRasterDataType();
+	*/
 
 }
 
@@ -771,29 +790,28 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
   
-  GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
+	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
 	if (p_src_ds==0)
 	{
 		cout<<"ERROR: can't open raster file: "<<(*item_list_.begin()).first<<endl;
 		return FALSE;
 	}
-  GDALDataType	dt		= GetRasterFileType();
-  int       bands_num_src   = p_src_ds->GetRasterCount();
-  int				bands_num_dst	= (output_bands_num==0) ? bands_num_src : output_bands_num;
+	GDALDataType	dt		= GetRasterFileType();
+	int       bands_num_src   = p_src_ds->GetRasterCount();
+	int				bands_num_dst	= (output_bands_num==0) ? bands_num_src : output_bands_num;
  
-  bool nodata_val_from_file_defined;
-  double			nodata_val_from_file = GetNodataValue(nodata_val_from_file_defined);
+	bool nodata_val_from_file_defined;
+	double			nodata_val_from_file = GetNodataValue(nodata_val_from_file_defined);
 
 	double		res			=  p_tile_mset_->CalcPixelSizeByZoom(zoom);
 	int				buf_width	= int(((chunk_envp.MaxX - chunk_envp.MinX)/res)+0.5);
 	int				buf_height	= int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
 
 	
-  string			tiff_in_mem = ("/vsimem/tiffinmem_" + 
-	  GMXString::ConvertIntToString((int)chunk_envp.MinX) + "_" +
-	  GMXString::ConvertIntToString((int)chunk_envp.MaxY));
+	string			tiff_in_mem = ("/vsimem/tiffinmem_" + 
+	GMXString::ConvertIntToString((int)chunk_envp.MinX) + "_" + GMXString::ConvertIntToString((int)chunk_envp.MaxY));
   
-  GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
+	GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
 								GDALGetDriverByName("GTiff"),
 								tiff_in_mem.c_str(),
 								buf_width,
@@ -983,64 +1001,64 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 }
 
 bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
-								                      ITileContainer			*p_tile_container)
+								        ITileContainer			*p_tile_container)
 {
-  srand(0);
+	srand(0);
 	int	tiles_generated = 0;
 	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcAppropriateZoom() : p_tiling_params->base_zoom_;
 	double res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
 
-  cout<<"calculating number of tiles: ";
+	cout<<"calculating number of tiles: ";
 	int tiles_expected	= CalcNumberOfTiles(zoom);	
 	cout<<tiles_expected<<endl;
-  if (tiles_expected == 0) return FALSE;
+	if (tiles_expected == 0) return FALSE;
  
-  bool		is_scaling_needed = false;
+	bool		is_scaling_needed = false;
 	double		*p_scale_values = 0, *p_offset_values = 0;
 
-  const int MAX_WORK_THREADS = p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : 2;
-  const int TILE_CHUNK_WIDTH = p_tiling_params->tile_chunk_size_ != 0 ? p_tiling_params->tile_chunk_size_ :
+	const int MAX_WORK_THREADS = p_tiling_params->max_work_threads_ > 0 ? p_tiling_params->max_work_threads_ : 2;
+	const int TILES_CHUNK_WIDTH = p_tiling_params->tile_chunk_size_ != 0 ? p_tiling_params->tile_chunk_size_ :
                                                                        (p_tiling_params->max_work_threads_ > 1) ? 8 : 16;
     
-  if (  (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
+	if (  (p_tiling_params->tile_type_ == JPEG_TILE || p_tiling_params->tile_type_ == PNG_TILE) && 
           (GetRasterFileType()!= GDT_Byte)  )
 	{
 		is_scaling_needed = true;
 		cout<<"WARNING: input raster doesn't match 8 bit/band. Auto scaling to 8 bit will be performed"<<endl;
 
-    int nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
-    map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
-    if (!CalclScalingTo8BitParams(p_scale_values,
-                                                  p_offset_values,
-                                                  (p_tiling_params->nd_num_) ?
-                                                  &nodata_val : 0,
-                                                  p_tiling_params->p_bundle_input_->GetBandsNum(),
-                                                  p_tiling_params->p_bundle_input_->GetBandsNum() ?
-                                                  &band_mapping : 0))
-    {
-      cout<<"ERROR: can't calculate parameters of auto scaling to 8 bit"<<endl;
+		int nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
+		map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
+		if (!CalclScalingTo8BitParams(p_scale_values,
+                                      p_offset_values,
+                                      (p_tiling_params->nd_num_) ?
+                                       &nodata_val : 0,
+										p_tiling_params->p_bundle_input_->GetBandsNum(),
+										p_tiling_params->p_bundle_input_->GetBandsNum() ?
+										&band_mapping : 0))
+		{
+			cout<<"ERROR: can't calculate parameters of auto scaling to 8 bit"<<endl;
 			return FALSE;
-    }
-  }
+		}
+	}
   
 	cout<<"0% ";
 	fflush(stdout);
 
 	int minx,maxx,miny,maxy;
-  p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
+	p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
 
-  list<future<int>> tiling_threads;
+	list<future<int>> tiling_threads;
   
-  //ToDo shoud refactor this cycle - thread creation and control 
-  for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=TILE_CHUNK_WIDTH)
+	//ToDo shoud refactor this cycle - thread creation and control 
+	for (int curr_min_x = minx; curr_min_x<=maxx; curr_min_x+=TILES_CHUNK_WIDTH)
 	{
-		int curr_max_x =	(curr_min_x + TILE_CHUNK_WIDTH - 1 > maxx) ? 
-							maxx : curr_min_x + TILE_CHUNK_WIDTH - 1;
+		int curr_max_x =	(curr_min_x + TILES_CHUNK_WIDTH - 1 > maxx) ? 
+							maxx : curr_min_x + TILES_CHUNK_WIDTH - 1;
 		
-		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=TILE_CHUNK_WIDTH)
+		for (int curr_min_y = miny; curr_min_y<=maxy; curr_min_y+=TILES_CHUNK_WIDTH)
 		{
-			int curr_max_y =	(curr_min_y + TILE_CHUNK_WIDTH - 1 > maxy) ? 
-								maxy : curr_min_y + TILE_CHUNK_WIDTH - 1;
+			int curr_max_y =	(curr_min_y + TILES_CHUNK_WIDTH - 1 > maxy) ? 
+								maxy : curr_min_y + TILES_CHUNK_WIDTH - 1;
 			
 			OGREnvelope chunk_envp = p_tile_mset_->CalcEnvelopeByTileRange(	zoom,
 																					curr_min_x,
@@ -1049,42 +1067,42 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 																					curr_max_y);
 			if (!Intersects(chunk_envp)) continue;
       
-      if (tiling_threads.size() >= MAX_WORK_THREADS)
-      {
-        if (!WaitForTilingThreads(&tiling_threads,MAX_WORK_THREADS))
-        {
-          TerminateTilingThreads(tiling_threads);
-          cout << "ERROR: occured in BaseZoomTiling" << endl;
-          return false;
-        }
-      }
+			if (tiling_threads.size() >= MAX_WORK_THREADS)
+			{
+				if (!WaitForTilingThreads(&tiling_threads,MAX_WORK_THREADS))
+				{
+					TerminateTilingThreads(tiling_threads);
+					cout << "ERROR: occured in BaseZoomTiling" << endl;
+					return false;
+				}
+			}
 
-      tiling_threads.push_back(
-        std::async(GMXThreading::GetLaunchPolicy(),
-                   BundleTiler::CallRunChunk,
-                   this,
-                   p_tiling_params,
-                   p_tile_container,
-                   zoom,
-                   chunk_envp,
-                   tiles_expected,
-                   &tiles_generated,
-                   is_scaling_needed,
-                   p_scale_values,
-                   p_offset_values
-                   ));
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
+			tiling_threads.push_back(
+				std::async(GMXThreading::GetLaunchPolicy(),
+							BundleTiler::CallRunChunk,
+							this,
+							p_tiling_params,
+							p_tile_container,
+							zoom,
+							chunk_envp,
+							tiles_expected,
+							&tiles_generated,
+							is_scaling_needed,
+							p_scale_values,
+							p_offset_values
+							));
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
 	}
 
-  if (!WaitForTilingThreads(&tiling_threads, 1))
-  {
-    TerminateTilingThreads(tiling_threads);
-    cout << "ERROR: occured in BaseZoomTiling" << endl;
-    return false;
-  }
+	if (!WaitForTilingThreads(&tiling_threads, 1))
+	{
+		TerminateTilingThreads(tiling_threads);
+		cout << "ERROR: occured in BaseZoomTiling" << endl;
+		return false;
+	}
     
-  return true;
+	return true;
 }
 
 
@@ -1175,7 +1193,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 				int size = 0;
 				tile_buffer.SerializeToInMemoryData(p_data, size, 
 													p_tiling_params->tile_type_, 
-													p_tiling_params->jpeg_quality_);
+													p_tiling_params->quality_);
         
       
        	if (!p_tile_container->AddTile(zoom,x,y,(unsigned char*)p_data,size))

@@ -54,37 +54,41 @@ class RasterFile
 
 public:
 	
-  RasterFile();
+	RasterFile();
 	~RasterFile(void);
 
-  bool			      Init(string raster_file, string set_srs = ""); 
-  bool			      Close();
-  RasterFileCutline*  GetRasterFileCutline(ITileMatrixSet *p_tile_mset, 
+	bool Init(string raster_file, string set_srs = ""); 
+	bool Close();
+	RasterFileCutline* GetRasterFileCutline(ITileMatrixSet *p_tile_mset, 
                                            string vector_file = "", 
                                            double clip_offset = 0);
-  bool			GetPixelSize (int &width, int &height);
-  bool      GetSRS(OGRSpatialReference  &srs, ITileMatrixSet *p_tile_mset = 0);
+	bool GetPixelSize (int &width, int &height);
+	bool GetSRS(OGRSpatialReference  &srs, ITileMatrixSet *p_tile_mset = 0);
+	bool GetGeoTransform(double* padblGeoTransform);
+	GDALDataType GetDataType();
+	int GetBandsCount();
 
 	GDALDataset*	get_gdal_ds_ref();
 
-  bool			CalcBandStatistics	(int band_num, double &min, double &max, double &mean, double &std, double *p_nodata_val =0);
-	double		get_nodata_value		(bool &nodata_defined);
+	bool CalcBandStatistics	(int band_num, double &min, double &max, 
+							double &mean, double &std, double *p_nodata_val =0);
+	double get_nodata_value	(bool &nodata_defined);
 
-	static			bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs);
-  static      bool SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3]); 
-
-protected:
-  bool			GetDefaultSpatialRef(OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
-
+	static bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs);
+	static bool SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3]); 
 
 protected:
-  string set_srs_;
- 	char	buf[256];
-	string	raster_file_;
+	bool GetDefaultSpatialRef(OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
+
+
+protected:
+	string set_srs_;
+ 	char buf[256];
+	string raster_file_;
 	GDALDataset	*p_gdal_ds_;
-	double		nodata_value_;
-	bool	nodata_value_defined_;
-	int		num_bands_;
+	double nodata_value_;
+	bool nodata_value_defined_;
+	int num_bands_;
 	GDALDataType gdal_data_type_;
 };
 
@@ -131,11 +135,12 @@ public:
                           double* p_scale_values,
                           double* p_offset_values
                           );
+
+	double  GetNodataValue(bool &nodata_defined);
     
 protected:
   //ToDo bool      GetRasterProfile(bool &nodata_defined); GDALDataType, nodata_val, colortable
-  double  GetNodataValue(bool &nodata_defined);
-  GDALDataType  GetRasterFileType();
+	GDALDataType  GetRasterFileType();
 
 
 

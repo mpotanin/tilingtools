@@ -3,7 +3,11 @@
 #include "filesystemfuncs.h"
 
 #ifdef _WIN32
+#ifdef _DEBUG
+string GMXGDALLoader::strGDALWinVer = "202";
+#else
 string GMXGDALLoader::strGDALWinVer = "300";
+#endif
 void GMXGDALLoader::SetWinEnvVars (string strGDALPath)
 {
 	wstring wstrPATH = (_wgetenv(L"PATH")) ? _wgetenv(L"PATH") : L"";

@@ -828,6 +828,7 @@ void GMXTileContainer::MakeEmpty ()
   p_metadata_=0;
 };
 
+/*
 bool GMXTileContainer::GetWebMercTile(int z, int x, int y, unsigned char* &p_data, unsigned int &size)
 {
 	if (merc_type_ == WEB_MERCATOR) return GetTile(z,x,y,p_data,size);
@@ -840,9 +841,10 @@ bool GMXTileContainer::GetWebMercTile(int z, int x, int y, unsigned char* &p_dat
 
 	return bResult;
 }
+*/
 
 
-///*
+/*
 RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 										GMXTileContainer *poSrcContainer,
 										int nZ, int nX, int nY)
@@ -899,7 +901,7 @@ RasterBuffer* GMXTileContainer::CreateWebMercatorTileFromWorldMercatorTiles(
 		oInputLowerTileBuffer.GetPixelDataBlock(0, 0, 256, nUpperBlockOffTop));
 	return poOutputTileBuffer;
 }
-//*/
+*/
 
 
 MBTilesContainer::MBTilesContainer ()

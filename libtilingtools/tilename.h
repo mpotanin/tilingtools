@@ -1,4 +1,7 @@
 #pragma once
+#ifndef TILENAME_H
+#define TILENAME_H
+
 #include "stdafx.h"
 #include "stringfuncs.h"
 #include "filesystemfuncs.h"
@@ -37,50 +40,55 @@ typedef enum {
 	WEB_MERCATOR=1
 } MercatorProjType;
 
+
+
 class MercatorTileMatrixSet : public ITileMatrixSet
 {
 public:
-  MercatorTileMatrixSet(MercatorProjType merc_type = WEB_MERCATOR);
-
-private:
-  MercatorProjType merc_type_;
-  OGRSpatialReference merc_srs_;
+	MercatorTileMatrixSet(MercatorProjType merc_type = WEB_MERCATOR);
 
 public:
-  MercatorProjType merc_type ();
+	static int TILE_PX_SIZE_;
+
+private:
+	MercatorProjType merc_type_;
+	OGRSpatialReference merc_srs_;
+
+public:
+	MercatorProjType merc_type ();
   
-  OGRSpatialReference* GetTilingSRSRef();
+	OGRSpatialReference* GetTilingSRSRef();
 	double CalcPixelSizeByZoom (int zoom);
 
 	OGREnvelope CalcEnvelopeByTile (int zoom, int x, int y);
 
 	OGREnvelope CalcEnvelopeByTileRange (int zoom, int minx, int miny, int maxx, int maxy);
 
-  void CalcTileByPoint (double merc_x, double merc_y, int z, int &x, int &y);
+	void CalcTileByPoint (double merc_x, double merc_y, int z, int &x, int &y);
 	bool CalcTileRange (OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y);
-  bool DoesOverlap180Degree (OGRGeometry	*p_ogr_geom_merc);
+	bool DoesOverlap180Degree (OGRGeometry	*p_ogr_geom_merc);
 
-  bool GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &envp);
+	bool GetRasterEnvelope(RasterFile* p_rf, OGREnvelope &envp);
 
 		
-  bool			AdjustForOverlapping180Degree (OGRGeometry	*p_ogr_geom_merc);
+	bool			AdjustForOverlapping180Degree (OGRGeometry	*p_ogr_geom_merc);
 
   
-  static double DegToRad(double ang);
-  static double RadToDeg(double rad);
+	static double DegToRad(double ang);
+	static double RadToDeg(double rad);
 
 	  //	Converts from longitude to x coordinate 
-  static	double MercX(double lon, MercatorProjType merc_type);
+	static	double MercX(double lon, MercatorProjType merc_type);
 
 
 	  //	Converts from x coordinate to longitude 
-  static 	double MecrToLong(double MercX, MercatorProjType merc_type);
+	static 	double MecrToLong(double MercX, MercatorProjType merc_type);
 	  //	Converts from latitude to y coordinate 
-  static 	double MercY(double lat, MercatorProjType merc_type);
+	static 	double MercY(double lat, MercatorProjType merc_type);
 	  //	Converts from y coordinate to latitude 
-  static	double MercToLat (double MercY, MercatorProjType merc_type);
+	static	double MercToLat (double MercY, MercatorProjType merc_type);
 
-  double	ULX();
+	double	ULX();
 	double	ULY();
 
 };
@@ -219,3 +227,4 @@ protected:
 
 
 }
+#endif
