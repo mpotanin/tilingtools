@@ -10,7 +10,7 @@
     
   
 ## Download Windows Binary
-[Download win-x64 binary 3.3.0 version (21.11.2019)](https://github.com/mpotanin/binaries/blob/master/tilingtools_win-x64_3.3.0.zip) ready for use package compiled with Microsoft Visual C++ 2017.
+[Download win-x64 binary 3.3.0 version (21.11.2019)](https://github.com/mpotanin/binaries/blob/master/tilingtools_win_x64_3.3.0.zip) ready for use package compiled with Microsoft Visual C++ 2017.
 
 ## Using imagetiling
 
@@ -71,6 +71,7 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
   * **x64 platform**
   * Visual Studio 2017
 * git clone tilingtools repository or download it as zip-archive 
+* [download gdal302.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal302.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal302/include/gdal.h)
 * [download gdal223.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal223.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal223/include/gdal.h)
 * open TilingTools.sln with Visual Studio 2017
 * compile TilingTools (set in Configuration Manager: configuration=**Release, platform=x64**)
