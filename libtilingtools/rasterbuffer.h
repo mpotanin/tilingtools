@@ -40,8 +40,16 @@ namespace gmx
 
 			bool	SerializeToInMemoryData(void* &p_data_src, int &size, TileType oRasterFormat, int nQuality = 0);
 
-			bool	SaveBufferToFile(string filename, int quality = 0);
-			bool	SaveBufferToFileAndData(string filename, void* &p_data_dst, int &size, int quality = 0);
+			bool	SaveBufferToFile(string filename, 
+									int quality = 0, 
+									OGRSpatialReference* poSRS = 0,
+									double*	padblGeoTransform = 0);
+			bool	SaveBufferToFileAndData(string filename, 
+											void* &p_data_dst, 
+											int &size, 
+											int quality = 0,
+											OGRSpatialReference* poSRS = 0,
+											double*	padblGeoTransform = 0);
 
 			bool	InitByRGBColor(unsigned char rgb[3]);
 			bool	InitByValue(int value = 0);
@@ -78,7 +86,8 @@ namespace gmx
 		bool			SaveToPng24Data(void* &p_data_dst, int &size);
 		bool			SaveToPseudoPngData(void* &p_data_dst, int &size);
 		bool			SaveToJpegData(void* &p_data_dst, int &size, int quality = 0);
-		bool			SaveToTiffData(void* &p_data_dst, int &size);
+		bool			SaveToTiffData(void* &p_data_dst, int &size, 
+										OGRSpatialReference* poSRS = 0, double*	padblGeoTransform = 0);
 		bool			SaveToJP2Data(void* &pabData, int &nSize, int nQuality = 0);
 
 		bool			CreateBufferFromJpegData(void *p_data_src, int size);

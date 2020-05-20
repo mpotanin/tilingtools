@@ -334,39 +334,60 @@ namespace gmx
 	}
 
 
-	bool RasterBuffer::SaveBufferToFile(string file_name, int quality)
+	bool RasterBuffer::SaveBufferToFile(string file_name, 
+										int quality, 
+										OGRSpatialReference* poSRS, 
+										double*	padblGeoTransform)
 	{
 		void *p_data_dst = NULL;
 		int size = 0;
-		bool result = SaveBufferToFileAndData(file_name, p_data_dst, size, quality);
+		bool result = SaveBufferToFileAndData(file_name, p_data_dst, size, quality, poSRS, padblGeoTransform);
 		delete[]((unsigned char*)p_data_dst);
 		return result;
 	}
 
 
-	bool	RasterBuffer::SaveBufferToFileAndData(string file_name, void* &p_data_dst, int &size, int quality)
+	bool	RasterBuffer::SaveBufferToFileAndData(string file_name, 
+													void* &p_data_dst, 
+													int &size, 
+													int quality,
+													OGRSpatialReference* poSRS,
+													double*	padblGeoTransform)
 	{
-		if (GMXFileSys::GetExtension(file_name) == "jpg")
+		string strExt = GMXFileSys::GetExtension(file_name);
+
+		if (strExt == "jpg")
 		{
 			if (!SaveToJpegData(p_data_dst, size, quality)) return false;
 		}
-		else if (GMXFileSys::GetExtension(file_name) == "png")
+		else if (strExt == "png")
 		{
 			if (!SaveToPngData(p_data_dst, size)) return false;
 		}
-		else if (GMXFileSys::GetExtension(file_name) == "jp2")
+		else if (strExt == "jp2")
 		{
 			if (!SaveToJP2Data(p_data_dst, size, quality)) return false;
 		}
-		else if (GMXFileSys::GetExtension(file_name) == "tif")
+		else if (strExt== "tif")
 		{
-			if (!SaveToTiffData(p_data_dst, size)) return false;
+			if (!SaveToTiffData(p_data_dst, size, poSRS, padblGeoTransform)) return false;
 		}
-
 		else return false;
 
 
 		if (!GMXFileSys::SaveDataToFile(file_name, p_data_dst, size)) return false;
+
+		if ((padblGeoTransform) && ((strExt == "png") || (strExt == "jpg")))
+		{
+			GMXFileSys::WriteWLDFile(file_name, 
+									padblGeoTransform[0], 
+									padblGeoTransform[3], 
+									padblGeoTransform[1]
+									);
+		}
+
+
+
 		return true;
 	}
 
@@ -619,7 +640,10 @@ namespace gmx
 	}
 
 
-	bool	RasterBuffer::SaveToTiffData(void* &p_data_dst, int &size)
+	bool	RasterBuffer::SaveToTiffData(void* &p_data_dst, 
+										int &size, 
+										OGRSpatialReference* poSRS, 
+										double*	padblGeoTransform)
 	{
 		srand(999);
 		string	tiff_in_mem = ("/vsimem/tiffinmem" + GMXString::ConvertIntToString(rand()));
@@ -639,6 +663,19 @@ namespace gmx
 					data_type_, num_bands, NULL, 0, 0, 0);
 		if (p_color_table_ && num_bands < 3)
 			p_ds->GetRasterBand(1)->SetColorTable(p_color_table_);
+
+		if (poSRS)
+		{
+			char* pachWKT;
+			poSRS->exportToWkt(&pachWKT);
+			p_ds->SetProjection(pachWKT);
+			OGRFree(pachWKT);
+		}
+
+		if (padblGeoTransform)
+		{
+			p_ds->SetGeoTransform(padblGeoTransform);
+		}
 
 		GDALFlushCache(p_ds);
 		GDALClose(p_ds);

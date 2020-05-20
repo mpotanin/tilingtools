@@ -1,0 +1,16 @@
+<PAMDataset>
+  <Metadata>
+    <MDI key="COLORSPACE">MULTIBAND</MDI>
+    <MDI key="COMPRESSION_RATE_TARGET">2</MDI>
+  </Metadata>
+  <PAMRasterBand band="1">
+    <Description>Band #1</Description>
+    <Metadata>
+      <MDI key="STATISTICS_MAXIMUM">1764</MDI>
+      <MDI key="STATISTICS_MEAN">106.00805664063</MDI>
+      <MDI key="STATISTICS_MINIMUM">0</MDI>
+      <MDI key="STATISTICS_STDDEV">302.75591969068</MDI>
+      <MDI key="STATISTICS_VALID_PERCENT">100</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>
