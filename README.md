@@ -84,3 +84,12 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
   * development x64 version of the libraries: gdal, sqlite3, gd (if git is installed you may run: ```apt-get install git make libgdal-dev sqlite3 libgd-dev```)
 * git clone tilingtools repository (```git clone https://github.com/scanex/tilingtools tilingtools```) or download it as zip-archive  
 * open tilingtools dir and run ```make```
+
+## Update gdal version on Windows
+* download from https://www.gisinternals.com/
+* unpack into all into folders: gdalvvv/include, gdalvvv/x64/lib, gdalvvv/x64/bin
+* set version num - vvv - in consoleutils.cpp
+* compile list of all dlls from bin-folder and put it into "delay load" field in VS
+* compile list of all libs from lib-folder (exclude: **libprotobuf, libprotobuf-lite, libprotoc**) and put it into Linker input field in VS
+
+
