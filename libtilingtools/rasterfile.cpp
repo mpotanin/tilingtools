@@ -1,6 +1,6 @@
 #include "rasterfile.h"
-#include "stringfuncs.h"
-#include "filesystemfuncs.h"
+//#include "stringfuncs.h"
+//#include "filesystemfuncs.h"
 
 
 int TTXPrintProgressStub(double dfComplete, const char *pszMessage, void * pProgressArg)
@@ -202,7 +202,7 @@ GDALDataset*	RasterFile::get_gdal_ds_ref()
 
 bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs)
 {
-	FILE *fp = GMXFileSys::OpenFile(tab_file,"r");
+	FILE *fp = MPLFileSys::OpenFile(tab_file,"r");
 	if (!fp) return FALSE;
 	fseek(fp, 0, SEEK_END);
 	long size = ftell(fp);
@@ -247,14 +247,14 @@ bool	RasterFile::GetSRS(OGRSpatialReference  &srs, ITileMatrixSet* p_tile_mset)
 	const char* strProjRef      = this->p_gdal_ds_->GetProjectionRef();
 
 	if (OGRERR_NONE == srs.SetFromUserInput(strProjRef)) return true;
-	else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".prj"))
+	else if (MPLFileSys::FileExists(MPLFileSys::RemoveExtension(this->raster_file_)+".prj"))
 	{
-		string prjFile		= GMXFileSys::RemoveExtension(this->raster_file_)+".prj";
+		string prjFile		= MPLFileSys::RemoveExtension(this->raster_file_)+".prj";
 		if (OGRERR_NONE==srs.SetFromUserInput(prjFile.c_str())) return true;	
 	}
-	else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".tab"))
+	else if (MPLFileSys::FileExists(MPLFileSys::RemoveExtension(this->raster_file_)+".tab"))
 	{
-		string tabFile = GMXFileSys::RemoveExtension(this->raster_file_)+".tab";
+		string tabFile = MPLFileSys::RemoveExtension(this->raster_file_)+".tab";
 		if (ReadSpatialRefFromMapinfoTabFile(tabFile,srs)) return true;
 	}
   
@@ -813,8 +813,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
 	
 	string tiff_in_mem = ("/vsimem/tiffinmem_" + 
-						GMXString::ConvertIntToString((int)chunk_envp.MinX) + 
-						"_" + GMXString::ConvertIntToString((int)chunk_envp.MaxY));
+						MPLString::ConvertIntToString((int)chunk_envp.MinX) + 
+						"_" + MPLString::ConvertIntToString((int)chunk_envp.MaxY));
   
 	GDALDataset* p_vrt_ds = (GDALDataset*)GDALCreate(
 													GDALGetDriverByName("GTiff"),
@@ -1286,14 +1286,14 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
   }
   else if (listBandParam.size()!=0)
   {
-    if (!(bands_num_ = GMXString::SplitCommaSeparatedText(*listBandParam.begin()).size()))
+    if (!(bands_num_ = MPLString::SplitCommaSeparatedText(*listBandParam.begin()).size()))
     {
       cout<<"ERROR: not valid option \"-bnd\" value: "<<*listBandParam.begin()<<endl;
       return false;
     }
     for (iterBand=(listBandParam.begin()++);iterBand!=listBandParam.end();iterBand++)
     {
-      if (bands_num_ != GMXString::SplitCommaSeparatedText(*iterBand).size())
+      if (bands_num_ != MPLString::SplitCommaSeparatedText(*iterBand).size())
       {
         cout<<"ERROR: not valid option \"-bnd\" value: "<<*iterBand<<endl;
         return false;
@@ -1308,7 +1308,7 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
   for (list<string>::iterator iterInput=listInputParam.begin();iterInput!=listInputParam.end();iterInput++)
   {
     list<string> listRasterFiles;
-    if (!GMXFileSys::FindFilesByPattern(listRasterFiles,(*iterInput)))
+    if (!MPLFileSys::FindFilesByPattern(listRasterFiles,(*iterInput)))
     {
       ClearAll();
       cout<<"ERROR: can't find files by path: "<<*iterInput<<endl;
@@ -1318,7 +1318,7 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
     list<string> listVectorFiles;
     if (listBorderParam.size()>0 && (*iterBorder)!="")
     {
-      if (!GMXFileSys::FindFilesByPattern(listVectorFiles,(*iterBorder)))
+      if (!MPLFileSys::FindFilesByPattern(listVectorFiles,(*iterBorder)))
       {
         ClearAll();
         cout<<"ERROR: can't find files by path: "<<*iterBorder<<endl;
@@ -1334,7 +1334,7 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
        
     if (bands_num_>0)
     {
-      list<string> listBands = GMXString::SplitCommaSeparatedText(*iterBand);
+      list<string> listBands = MPLString::SplitCommaSeparatedText(*iterBand);
       panBands = new int[bands_num_];
       int i=0;
       for (string strBand : listBands)

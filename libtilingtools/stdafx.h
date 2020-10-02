@@ -12,6 +12,9 @@
 #include <dirent.h>
 #endif
 
+#include "../../cpp_common_utils/filesystemfuncs.h"
+#include "../../cpp_common_utils/stringfuncs.h"
+
 #include <stdint.h>
 #include <thread>
 #include <mutex>

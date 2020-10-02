@@ -3,8 +3,8 @@
 #define TILENAME_H
 
 #include "stdafx.h"
-#include "stringfuncs.h"
-#include "filesystemfuncs.h"
+//#include "stringfuncs.h"
+//#include "filesystemfuncs.h"
 #include "vectorborder.h"
 #include "rasterbuffer.h"
 
@@ -138,7 +138,7 @@ public:
 
   static bool TileTypeByExtension (string tile_extension, TileType &tile_type)
 	{
-    tile_extension = GMXString::MakeLower(tile_extension);
+    tile_extension = MPLString::MakeLower(tile_extension);
 		if ((tile_extension == "jpg") || (tile_extension == "jpeg") || (tile_extension == ".jpg"))
       tile_type = JPEG_TILE;
     else if ((tile_extension == "png") || (tile_extension == ".png"))

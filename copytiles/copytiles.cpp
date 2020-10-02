@@ -28,8 +28,8 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 	for (int i = 0; i < nArgs; i++)
 	{
 		string strBuff;
-		GMXString::wstrToUtf8(strBuff, pastrArgsW[i]);
-		vecArgs.push_back(GMXString::ReplaceAll(strBuff, "\\", "/"));
+		MPLString::wstrToUtf8(strBuff, pastrArgsW[i]);
+		vecArgs.push_back(MPLString::ReplaceAll(strBuff, "\\", "/"));
 	}
 #else
 int main(int nArgs, char* argv[])
@@ -39,7 +39,7 @@ int main(int nArgs, char* argv[])
 		vecArgs.push_back(argv[i]);
 #endif
 
-	if (!GMXGDALLoader::Load(GMXFileSys::GetPath(vecArgs[0])))
+	if (!MPLGDALLoader::Load(MPLFileSys::GetPath(vecArgs[0])))
 	{
 		cout << "ERROR: can't load GDAL" << endl;
 		return 1;
@@ -49,17 +49,17 @@ int main(int nArgs, char* argv[])
 
 	if (nArgs == 1)
 	{
-		cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
-			GMXFileSys::GetPath(vecArgs[0]),
+		cout << "version: " << MPLFileSys::ReadTextFile(MPLFileSys::GetAbsolutePath(
+			MPLFileSys::GetPath(vecArgs[0]),
 			"version.txt")
 		) << endl;
 		cout << "build date: " << __DATE__ << endl;
-		GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
+		MPLOptionParser::PrintUsage(listDescriptors, listUsageExamples);
 		return 0;
 	}
 
 
-	GMXOptionParser oOptionParser;
+	MPLOptionParser oOptionParser;
 	if (!oOptionParser.Init(listDescriptors, vecArgs))
 	{
 		cout << "ERROR: input cmd line is not valid" << endl;
@@ -93,17 +93,17 @@ int main(int nArgs, char* argv[])
     return 1;
   }
 
-  if (!GMXFileSys::FileExists(strSrcPath))
+  if (!MPLFileSys::FileExists(strSrcPath))
   {
     cout << "ERROR: can't find input path: " << strSrcPath << endl;
     return 1;
   }
 
-  if (GMXFileSys::FileExists(strDestPath))
+  if (MPLFileSys::FileExists(strDestPath))
   {
-    if (!GMXFileSys::IsDirectory(strDestPath))
+    if (!MPLFileSys::IsDirectory(strDestPath))
     {
-      if (!GMXFileSys::FileDelete(strDestPath))
+      if (!MPLFileSys::FileDelete(strDestPath))
       {
         cout << "ERROR: can't delete file: " << strDestPath << endl;
         return 1;
@@ -111,7 +111,7 @@ int main(int nArgs, char* argv[])
     }
   }
 
-  if ((strBorderFilePath != "") && !GMXFileSys::FileExists(strBorderFilePath))
+  if ((strBorderFilePath != "") && !MPLFileSys::FileExists(strBorderFilePath))
   {
     cout << "ERROR: can't open file: " << strBorderFilePath << endl;
     return 1;
@@ -142,7 +142,7 @@ int main(int nArgs, char* argv[])
   ttx::MercatorProjType eMercType;
   ttx::Metadata *p_metadata = NULL;
   ttx::TileName         *poSrcTileName = NULL;
-  if (!GMXFileSys::IsDirectory(strSrcPath))
+  if (!MPLFileSys::IsDirectory(strSrcPath))
   {
     poSrcTC = ttx::TileContainerFactory::OpenForReading(strSrcPath);
 
@@ -220,9 +220,9 @@ int main(int nArgs, char* argv[])
   }
   if (eDestTCType == ttx::TileContainerType::TILEFOLDER) //TODO: should refactor
   {
-    if (!GMXFileSys::FileExists(strDestPath))
+    if (!MPLFileSys::FileExists(strDestPath))
     {
-      if (!GMXFileSys::CreateDir(strDestPath.c_str()))
+      if (!MPLFileSys::CreateDir(strDestPath.c_str()))
       {
         cout << "ERROR: can't create folder: " << strDestPath << endl;
         return 1;

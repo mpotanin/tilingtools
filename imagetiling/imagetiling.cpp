@@ -17,7 +17,7 @@ void Exit()
 //3. single vector defined by name for each raster - BundleTiler.Init (raster_file_list, vector_file_list)
 
 
-int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
+int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
 {
   ttx::TilingParameters oTilingParams;
 
@@ -62,18 +62,18 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
       return 1;
     }
   }
-  else if (GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) != "")
+  else if (MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) != "")
   {
-    if (!ttx::TileName::TileTypeByExtension(GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
+    if (!ttx::TileName::TileTypeByExtension(MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
       oTilingParams.tile_type_))
     {
-      cout << "ERROR: not valid value of \"-tnt\" parameter: " << GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
+      cout << "ERROR: not valid value of \"-tnt\" parameter: " << MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
       return 1;
     }
   }
   else
   {
-    oTilingParams.tile_type_ = GMXString::MakeLower(GMXFileSys::GetExtension(*listRasters.begin())) == "png" ?
+    oTilingParams.tile_type_ = MPLString::MakeLower(MPLFileSys::GetExtension(*listRasters.begin())) == "png" ?
       ttx::TileType::PNG_TILE : ttx::TileType::JPEG_TILE;
   }
 
@@ -83,13 +83,13 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
     oTilingParams.output_path_ = oOptionParser.GetOptionValue("-o");
   else
     oTilingParams.output_path_ = oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER ?
-    GMXFileSys::RemoveExtension(*listRasters.begin()) + "_tiles" :
-    oTilingParams.output_path_ = GMXFileSys::RemoveExtension(*listRasters.begin()) + "." +
+    MPLFileSys::RemoveExtension(*listRasters.begin()) + "_tiles" :
+    oTilingParams.output_path_ = MPLFileSys::RemoveExtension(*listRasters.begin()) + "." +
     ttx::TileContainerFactory::GetExtensionByTileContainerType(oTilingParams.container_type_);
   if ((oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER) &&
-    (!GMXFileSys::FileExists(oTilingParams.output_path_)))
+    (!MPLFileSys::FileExists(oTilingParams.output_path_)))
   {
-    if (!GMXFileSys::CreateDir(oTilingParams.output_path_))
+    if (!MPLFileSys::CreateDir(oTilingParams.output_path_))
     {
       cout << "ERROR: can't create folder: " << oTilingParams.output_path_ << endl;
       return 1;
@@ -144,7 +144,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
     for (string strNodata : listNodataValues)
     {
       oTilingParams.p_nd_rgbcolors_[i] = new unsigned char[3];
-      if (!GMXString::ConvertStringToRGB(strNodata, oTilingParams.p_nd_rgbcolors_[i]))
+      if (!MPLString::ConvertStringToRGB(strNodata, oTilingParams.p_nd_rgbcolors_[i]))
       {
         cout << "ERROR: not valid value of \"-nd\" parameter: " << strNodata << endl;
         return FALSE;
@@ -161,7 +161,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-bgc") != "")
   {
     unsigned char        pabyRGB[3];
-    if (!GMXString::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"), pabyRGB))
+    if (!MPLString::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"), pabyRGB))
     {
       cout << "ERROR: not valid value of \"-bgc\" parameter: " << oOptionParser.GetOptionValue("-bgc") << endl;
       return FALSE;
@@ -277,8 +277,8 @@ int _tmain(int nArgs, wchar_t *pastrArgsW[])
 	for (int i = 0; i<nArgs; i++)
 	{
 		string strBuff;
-		GMXString::wstrToUtf8(strBuff, pastrArgsW[i]);
-		vecArgs.push_back(GMXString::ReplaceAll(strBuff, "\\", "/"));
+		MPLString::wstrToUtf8(strBuff, pastrArgsW[i]);
+		vecArgs.push_back(MPLString::ReplaceAll(strBuff, "\\", "/"));
 	}
 #else
 int main(int nArgs, char* argv[])
@@ -288,7 +288,7 @@ int main(int nArgs, char* argv[])
     vecArgs.push_back(argv[i]);
 #endif
 
-	if (!GMXGDALLoader::Load(GMXFileSys::GetPath(vecArgs[0])))
+	if (!MPLGDALLoader::Load(MPLFileSys::GetPath(vecArgs[0])))
 	{
 		cout << "ERROR: can't load GDAL" << endl;
 		return 1;
@@ -298,17 +298,17 @@ int main(int nArgs, char* argv[])
 
 	if (nArgs == 1)
 	{
-		cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
-			GMXFileSys::GetPath(vecArgs[0]),
+		cout << "version: " << MPLFileSys::ReadTextFile(MPLFileSys::GetAbsolutePath(
+			MPLFileSys::GetPath(vecArgs[0]),
 			"version.txt")
 			) << endl;
 		cout << "build date: " << __DATE__ << endl;
-		GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
+		MPLOptionParser::PrintUsage(listDescriptors, listUsageExamples);
 		return 0;
 	}
 
 
-	GMXOptionParser oOptionParser;
+	MPLOptionParser oOptionParser;
 	if (!oOptionParser.Init(listDescriptors, vecArgs))
 	{
 		cout << "ERROR: input cmd line is not valid" << endl;
@@ -364,9 +364,9 @@ int main(int nArgs, char* argv[])
 
       if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
       {
-      if (!ttx::GMXFileSys::FileExists(mapConsoleParams.at("-tiles")))
+      if (!ttx::MPLFileSys::FileExists(mapConsoleParams.at("-tiles")))
       {
-      if (!ttx::GMXFileSys::CreateDir(mapConsoleParams.at("-tiles").c_str()))
+      if (!ttx::MPLFileSys::CreateDir(mapConsoleParams.at("-tiles").c_str()))
       {
       cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
       return 1;
@@ -376,12 +376,12 @@ int main(int nArgs, char* argv[])
       if (bUseContainer)
       {
       mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ?
-      ttx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(ttx::GMXFileSys::RemoveExtension(*iter)) +".mbtiles" :
-      ttx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(ttx::GMXFileSys::RemoveExtension(*iter)) +".tiles";
+      ttx::MPLFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + MPLFileSys::RemovePath(ttx::MPLFileSys::RemoveExtension(*iter)) +".mbtiles" :
+      ttx::MPLFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + MPLFileSys::RemovePath(ttx::MPLFileSys::RemoveExtension(*iter)) +".tiles";
       }
       else
       {
-      mapConsoleParamsFix.at("-tiles") = ttx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(ttx::GMXFileSys::RemoveExtension(*iter)) +"_tiles";
+      mapConsoleParamsFix.at("-tiles") = ttx::MPLFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + MPLFileSys::RemovePath(ttx::MPLFileSys::RemoveExtension(*iter)) +"_tiles";
       }
       }
 

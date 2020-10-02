@@ -193,7 +193,7 @@ protected:
 bool TTXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
 
-struct GMXAsyncWarpMultiParams
+struct TTXAsyncWarpMultiParams
 {
   //gdal_warp_operation.ChunkAndWarpMulti( 0,0,buf_width,buf_height) :
   GDALWarpOperation *p_warp_operation_;

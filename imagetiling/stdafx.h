@@ -4,7 +4,8 @@
 
 //Test commit
 
-#include "../libtilingtools/filesystemfuncs.h"
+#include "../../cpp_common_utils/filesystemfuncs.h"
+#include "../../cpp_common_utils/consoleutils.h"
+
 #include "../libtilingtools/tilingfuncs.h"
 #include "../libtilingtools/tilingparameters.h"
-#include "../libtilingtools/consoleutils.h"

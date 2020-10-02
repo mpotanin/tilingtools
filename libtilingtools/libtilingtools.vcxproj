@@ -151,13 +151,10 @@ copy "..\version.txt" "..\x64\release\version.txt"
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="consoleutils.h" />
-    <ClInclude Include="filesystemfuncs.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="rasterbuffer.h" />
     <ClInclude Include="rasterfile.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="stringfuncs.h" />
     <ClInclude Include="tilecache.h" />
     <ClInclude Include="tilecontainer.h" />
     <ClInclude Include="tilename.h" />
@@ -166,12 +163,9 @@ copy "..\version.txt" "..\x64\release\version.txt"
     <ClInclude Include="vectorborder.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="consoleutils.cpp" />
-    <ClCompile Include="filesystemfuncs.cpp" />
     <ClCompile Include="histogram.cpp" />
     <ClCompile Include="rasterbuffer.cpp" />
     <ClCompile Include="rasterfile.cpp" />
-    <ClCompile Include="stringfuncs.cpp" />
     <ClCompile Include="tilecache.cpp" />
     <ClCompile Include="tilecontainer.cpp" />
     <ClCompile Include="tilename.cpp" />

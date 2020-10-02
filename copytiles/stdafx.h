@@ -2,6 +2,7 @@
 #include <tchar.h>
 #endif
 
-#include "../libtilingtools/filesystemfuncs.h"
+#include "../../cpp_common_utils/filesystemfuncs.h"
+#include "../../cpp_common_utils/consoleutils.h"
+
 #include "../libtilingtools/tilingfuncs.h"
-#include "../libtilingtools/consoleutils.h"

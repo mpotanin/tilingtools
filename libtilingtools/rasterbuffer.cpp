@@ -1,6 +1,6 @@
 #include "rasterbuffer.h"
-#include "filesystemfuncs.h"
-#include "stringfuncs.h"
+//#include "filesystemfuncs.h"
+//#include "stringfuncs.h"
 using namespace ttx;
 
 
@@ -354,7 +354,7 @@ namespace ttx
 													OGRSpatialReference* poSRS,
 													double*	padblGeoTransform)
 	{
-		string strExt = GMXFileSys::GetExtension(file_name);
+		string strExt = MPLFileSys::GetExtension(file_name);
 
 		if (strExt == "jpg")
 		{
@@ -375,11 +375,11 @@ namespace ttx
 		else return false;
 
 
-		if (!GMXFileSys::SaveDataToFile(file_name, p_data_dst, size)) return false;
+		if (!MPLFileSys::SaveDataToFile(file_name, p_data_dst, size)) return false;
 
 		if ((padblGeoTransform) && ((strExt == "png") || (strExt == "jpg")))
 		{
-			GMXFileSys::WriteWLDFile(file_name, 
+			MPLFileSys::WriteWLDFile(file_name, 
 									padblGeoTransform[0], 
 									padblGeoTransform[3], 
 									padblGeoTransform[1]
@@ -646,7 +646,7 @@ namespace ttx
 										double*	padblGeoTransform)
 	{
 		srand(999);
-		string	tiff_in_mem = ("/vsimem/tiffinmem" + GMXString::ConvertIntToString(rand()));
+		string	tiff_in_mem = ("/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand()));
 
 		int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
 
@@ -1464,7 +1464,7 @@ namespace ttx
 
 	bool RasterBuffer::SaveToJP2Data(void* &pabData, int &nSize, int nQuality)
 	{
-		string	strTiffInMem = ("/vsimem/tiffinmem" + GMXString::ConvertIntToString(rand()));
+		string	strTiffInMem = ("/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand()));
 
 		int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
 
@@ -1482,7 +1482,7 @@ namespace ttx
 		GDALFlushCache(poTiffDS);
 
 		string strJP2DriverName = JP2000DriverFactory::GetDriverName();
-		string strJP2InMem = ("/vsimem/jp2inmem" + GMXString::ConvertIntToString(rand()));
+		string strJP2InMem = ("/vsimem/jp2inmem" + MPLString::ConvertIntToString(rand()));
 		char **papszOptions = NULL;
 		string strQuality = to_string(nQuality == 0 ? 40 : nQuality);
 

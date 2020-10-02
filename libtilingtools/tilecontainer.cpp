@@ -92,7 +92,7 @@ bool GMXTileContainer::OpenForReading (string container_file_name)
     pp_container_volumes_[i]=NULL;
 
 
-  if (!(pp_container_volumes_[0] = GMXFileSys::OpenFile(container_file_name,"rb"))) return FALSE;
+  if (!(pp_container_volumes_[0] = MPLFileSys::OpenFile(container_file_name,"rb"))) return FALSE;
   container_file_name_ = container_file_name;
 	char	head[12];
 	fread(head,1,12,pp_container_volumes_[0]);
@@ -159,13 +159,13 @@ Metadata* GMXTileContainer::GetMetadata ()
   Metadata *p_metadata = NULL;
   if (!read_only_ || !is_opened_) return NULL;
   
-  GMXFileSys::Fseek64(pp_container_volumes_[0],10,SEEK_SET);
+  MPLFileSys::Fseek64(pp_container_volumes_[0],10,SEEK_SET);
   char num_tags;
   if (fread(&num_tags,1,1,pp_container_volumes_[0])!=1) return NULL;
   if (num_tags==0) return NULL;
 
   p_metadata = new Metadata();
-  GMXFileSys::Fseek64(pp_container_volumes_[0],524 + 13*max_tiles_,SEEK_SET);
+  MPLFileSys::Fseek64(pp_container_volumes_[0],524 + 13*max_tiles_,SEEK_SET);
   char buf[5];
   buf[4]=0;
 
@@ -311,7 +311,7 @@ bool		GMXTileContainer::Close()
 	{
     if (p_tile_cache_) WriteTilesToContainerFileFromCache();
     //_fseeki64(pp_container_volumes_[0],0,0);
-    GMXFileSys::Fseek64(pp_container_volumes_[0], 0, 0);
+    MPLFileSys::Fseek64(pp_container_volumes_[0], 0, 0);
     unsigned char* header;
     this->WriteHeaderToByteArray(header);
     fwrite(header,1,HeaderSize(),pp_container_volumes_[0]);
@@ -473,7 +473,7 @@ bool 	GMXTileContainer::OpenForWriting	(	string				container_file_name,
 
   if (!DeleteVolumes()) return FALSE;
     
-  if (! (pp_container_volumes_[0] = GMXFileSys::OpenFile(container_file_name_.c_str(),"wb+")))
+  if (! (pp_container_volumes_[0] = MPLFileSys::OpenFile(container_file_name_.c_str(),"wb+")))
   {
     MakeEmpty();
     return FALSE;
@@ -524,7 +524,7 @@ int GMXTileContainer::FillUpCurrentVolume ()
 
   int volume_num = GetVolumeNum(container_byte_size_);
   //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
-  GMXFileSys::Fseek64(pp_container_volumes_[volume_num], 0, SEEK_END);
+  MPLFileSys::Fseek64(pp_container_volumes_[volume_num], 0, SEEK_END);
   int block_size = max_volume_size_ - (container_byte_size_ % max_volume_size_);
   unsigned char *block = new unsigned char[block_size];
   for (int i=0;i<block_size;i++)
@@ -538,7 +538,7 @@ bool   GMXTileContainer::DeleteVolumes()
 {
   list<string> file_list;
 
-  GMXFileSys::FindFilesByPattern(file_list,container_file_name_ +"*");
+  MPLFileSys::FindFilesByPattern(file_list,container_file_name_ +"*");
     
   regex pattern("\\.{0,1}[0-9]{0,3}");
   for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end(); iter++)
@@ -547,7 +547,7 @@ bool   GMXTileContainer::DeleteVolumes()
     {
       if (regex_match((*iter).substr(container_file_name_.length(),(*iter).length()-container_file_name_.length()),pattern))
       {      
-        if (! GMXFileSys::FileDelete(*iter))
+        if (! MPLFileSys::FileDelete(*iter))
         {
           cout<<"ERROR: can't delete file: "<<*iter<<endl;
           return FALSE;
@@ -572,7 +572,7 @@ uint64_t  GMXTileContainer::GetTileOffsetInVolume (uint64_t tile_container_offse
 
 string GMXTileContainer::GetVolumeName (int num)
 {
-  return (num == 0) ? container_file_name_ : container_file_name_ + "." + GMXString::ConvertIntToString(num+1);
+  return (num == 0) ? container_file_name_ : container_file_name_ + "." + MPLString::ConvertIntToString(num+1);
 }
 
 
@@ -611,7 +611,7 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
   int volume_num = GetVolumeNum(container_byte_size_);
   if (pp_container_volumes_[volume_num] == NULL)
   {
-    if (!(pp_container_volumes_[volume_num] = GMXFileSys::OpenFile(GetVolumeName(volume_num).c_str(), "wb+")))
+    if (!(pp_container_volumes_[volume_num] = MPLFileSys::OpenFile(GetVolumeName(volume_num).c_str(), "wb+")))
     {
       //debug
       cout << "ERROR: can't open file: " << GetVolumeName(volume_num).c_str()<< endl;
@@ -622,7 +622,7 @@ bool	GMXTileContainer::AddTileToContainerFile(int z, int x, int y, unsigned char
   }
 
   //_fseeki64(pp_container_volumes_[volume_num],0,SEEK_END);
-  GMXFileSys::Fseek64(pp_container_volumes_[volume_num], 0, SEEK_END);
+  MPLFileSys::Fseek64(pp_container_volumes_[volume_num], 0, SEEK_END);
   fwrite(p_data,sizeof(char),size,pp_container_volumes_[volume_num]);
   
   p_offsets_[n] = container_byte_size_;
@@ -641,7 +641,7 @@ bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, unsigned c
   int volume_num = GetVolumeNum(p_offsets_[n]);
   if (!pp_container_volumes_[volume_num])
   {
-    if (!(pp_container_volumes_[volume_num] = GMXFileSys::OpenFile(GetVolumeName(volume_num).c_str(),"rb")))
+    if (!(pp_container_volumes_[volume_num] = MPLFileSys::OpenFile(GetVolumeName(volume_num).c_str(),"rb")))
     {
       cout<<"ERROR: can't open file: "<<GetVolumeName(volume_num).c_str()<<endl;
       return FALSE;
@@ -649,7 +649,7 @@ bool	GMXTileContainer::GetTileFromContainerFile (int z, int x, int y, unsigned c
   }
 
   //_fseeki64(pp_container_volumes_[volume_num],GetTileOffsetInVolume(p_offsets_[n]),0);
-  GMXFileSys::Fseek64(pp_container_volumes_[volume_num], GetTileOffsetInVolume(p_offsets_[n]), 0);
+  MPLFileSys::Fseek64(pp_container_volumes_[volume_num], GetTileOffsetInVolume(p_offsets_[n]), 0);
   p_data			= new unsigned char[size];
 	return (size==fread(p_data,1,size,pp_container_volumes_[volume_num]));
 };
@@ -967,7 +967,7 @@ bool MBTilesContainer::OpenForReading  (string file_name)
 	
 	if (SQLITE_ROW == sqlite3_step (stmt))
 	{
-    string format(reinterpret_cast<const char *>(sqlite3_column_text(stmt,1)), GMXString::StrLen(sqlite3_column_text(stmt,1)));
+    string format(reinterpret_cast<const char *>(sqlite3_column_text(stmt,1)), MPLString::StrLen(sqlite3_column_text(stmt,1)));
 		tile_type_ = (format == "jpg") ? JPEG_TILE : PNG_TILE;
 		sqlite3_finalize(stmt);
 	}
@@ -982,7 +982,7 @@ bool MBTilesContainer::OpenForReading  (string file_name)
 	if (SQLITE_ROW == sqlite3_step (stmt))
 	{
 
-		string proj(reinterpret_cast<const char *>(sqlite3_column_text(stmt,1)), GMXString::StrLen(sqlite3_column_text(stmt,1)));
+		string proj(reinterpret_cast<const char *>(sqlite3_column_text(stmt,1)), MPLString::StrLen(sqlite3_column_text(stmt,1)));
 		merc_type_	=	(proj	== "0" || proj	== "WORLD_MERCATOR" || proj	== "EPSG:3395") ? WORLD_MERCATOR : WEB_MERCATOR;
 		sqlite3_finalize(stmt);
 	}
@@ -1013,7 +1013,7 @@ MBTilesContainer* MBTilesContainer::OpenForWriting (TileContainerOptions *p_para
 MBTilesContainer::MBTilesContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp)
 {
 	p_sql3_db_ = NULL;
-	if (GMXFileSys::FileExists(file_name)) GMXFileSys::FileDelete(file_name.c_str());
+	if (MPLFileSys::FileExists(file_name)) MPLFileSys::FileDelete(file_name.c_str());
 	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_)) return;
 
 	char	*p_err_msg = NULL;
@@ -1270,9 +1270,9 @@ bool MBTilesContainer::Close ()
   else if (! read_only_)
   {
     char	*p_err_msg = NULL;
-    string str_sql = "INSERT INTO metadata VALUES ('maxzoom','" + GMXString::ConvertIntToString(GetMaxZoom())+"')";
+    string str_sql = "INSERT INTO metadata VALUES ('maxzoom','" + MPLString::ConvertIntToString(GetMaxZoom())+"')";
     sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
-    str_sql = "INSERT INTO metadata VALUES ('minzoom','" + GMXString::ConvertIntToString(GetMinZoom())+"')";
+    str_sql = "INSERT INTO metadata VALUES ('minzoom','" + MPLString::ConvertIntToString(GetMinZoom())+"')";
     sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
   }
   
@@ -1317,7 +1317,7 @@ bool TileFolder::Close()
 
 bool	TileFolder::OpenForReading (string folder_name)
 {
-  return GMXFileSys::FileExists(folder_name);
+  return MPLFileSys::FileExists(folder_name);
 };
 
 TileType	TileFolder::GetTileType()
@@ -1358,7 +1358,7 @@ bool		TileFolder::GetTile(int z, int x, int y, unsigned char *&p_data, unsigned 
 
 bool		TileFolder::TileExists(int z, int x, int y)
 {
-	return GMXFileSys::FileExists(p_tile_name_->GetFullTileName(z,x,y));
+	return MPLFileSys::FileExists(p_tile_name_->GetFullTileName(z,x,y));
 };
 
 
@@ -1393,7 +1393,7 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
   }
   
 	list<string> file_list;
-	GMXFileSys::FindFilesByExtensionRecursive(file_list,p_tile_name_->GetBaseFolder(),TileName::ExtensionByTileType(p_tile_name_->tile_type_));
+	MPLFileSys::FindFilesByExtensionRecursive(file_list,p_tile_name_->GetBaseFolder(),TileName::ExtensionByTileType(p_tile_name_->tile_type_));
   
   //debug
 //  cout << "FindFilesByExtensionRecursive done " << file_list.size()<<endl;
@@ -1454,7 +1454,7 @@ bool	TileFolder::writeTileToFile (int z, int x, int y, unsigned char *p_data, un
 {
 	if (p_tile_name_==NULL) return FALSE;
 	p_tile_name_->CreateFolder(z,x,y);
-	return GMXFileSys::SaveDataToFile(p_tile_name_->GetFullTileName(z,x,y), p_data,size);
+	return MPLFileSys::SaveDataToFile(p_tile_name_->GetFullTileName(z,x,y), p_data,size);
 };
 
 	
@@ -1462,7 +1462,7 @@ bool	TileFolder::ReadTileFromFile (int z,int x, int y, unsigned char *&p_data, u
 {
   void *_p_data;
   int _size;
-  bool result = GMXFileSys::ReadBinaryFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
+  bool result = MPLFileSys::ReadBinaryFile (p_tile_name_->GetFullTileName(z,x,y),_p_data,_size);
   size = _size;
   p_data = (unsigned char*)_p_data;
 	return result;
@@ -1470,7 +1470,7 @@ bool	TileFolder::ReadTileFromFile (int z,int x, int y, unsigned char *&p_data, u
 
 bool TileContainerFactory::GetTileContainerType (string strName, TileContainerType &eType)
 {
-  strName = GMXString::MakeLower(strName);
+  strName = MPLString::MakeLower(strName);
   if (strName=="")
     eType = TileContainerType::TILEFOLDER;
   else if (strName=="gmxtiles")
@@ -1520,10 +1520,10 @@ string TileContainerFactory::GetExtensionByTileContainerType (TileContainerType 
 ITileContainer* TileContainerFactory::OpenForReading (string file_name)
 {
 	ITileContainer *p_tc = NULL;
-  if (!GMXFileSys::FileExists(file_name)) return 0;
-  if (GMXFileSys::IsDirectory(file_name)) return 0;
+  if (!MPLFileSys::FileExists(file_name)) return 0;
+  if (MPLFileSys::IsDirectory(file_name)) return 0;
 
-  if (GMXString::MakeLower(GMXFileSys::GetExtension(file_name)) == "mbtiles")
+  if (MPLString::MakeLower(MPLFileSys::GetExtension(file_name)) == "mbtiles")
   {
     MBTilesContainer* p_mbtiles = new MBTilesContainer();
     if (!p_mbtiles->OpenForReading(file_name)) 
@@ -1533,8 +1533,8 @@ ITileContainer* TileContainerFactory::OpenForReading (string file_name)
     }
     else return p_mbtiles;
   }
-  else if ((GMXString::MakeLower(GMXFileSys::GetExtension(file_name)) == "tiles")||
-           (GMXString::MakeLower(GMXFileSys::GetExtension(file_name)) == "gmxtiles")) 
+  else if ((MPLString::MakeLower(MPLFileSys::GetExtension(file_name)) == "tiles")||
+           (MPLString::MakeLower(MPLFileSys::GetExtension(file_name)) == "gmxtiles")) 
 	{
     GMXTileContainer* p_gmx_tc = new GMXTileContainer();
     if (!p_gmx_tc->OpenForReading(file_name))

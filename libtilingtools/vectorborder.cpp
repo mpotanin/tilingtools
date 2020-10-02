@@ -1,6 +1,6 @@
 #include "vectorborder.h"
-#include "filesystemfuncs.h"
-#include "stringfuncs.h"
+//#include "filesystemfuncs.h"
+//#include "stringfuncs.h"
 
 
 namespace ttx
@@ -12,10 +12,10 @@ namespace ttx
 
   string VectorOperations::GetVectorFileNameByRasterFileName(string raster_file)
   {
-    string	vector_file_base = GMXFileSys::RemoveExtension(raster_file);
-    string	vector_file = GMXFileSys::FileExists(vector_file_base + ".mif") ? vector_file_base + ".mif" :
-      GMXFileSys::FileExists(vector_file_base + ".shp") ? vector_file_base + ".shp" :
-      GMXFileSys::FileExists(vector_file_base + ".tab") ? vector_file_base + ".tab" : "";
+    string	vector_file_base = MPLFileSys::RemoveExtension(raster_file);
+    string	vector_file = MPLFileSys::FileExists(vector_file_base + ".mif") ? vector_file_base + ".mif" :
+      MPLFileSys::FileExists(vector_file_base + ".shp") ? vector_file_base + ".shp" :
+      MPLFileSys::FileExists(vector_file_base + ".tab") ? vector_file_base + ".tab" : "";
 
     if (vector_file != "")
     {
@@ -88,7 +88,7 @@ namespace ttx
 	  OGRSpatialReference* poSRS, OGRwkbGeometryType eType)
   {
 	  GDALDriver* poSHPDriver = GetGDALDriverManager()->GetDriverByName("ESRI Shapefile");
-	  string	strInMemName = ("/vsimem/shpinmem_" + GMXString::ConvertIntToString(rand()));
+	  string	strInMemName = ("/vsimem/shpinmem_" + MPLString::ConvertIntToString(rand()));
 	  GDALDataset* poInMemSHP = poSHPDriver->Create(strInMemName.c_str(), 0, 0, 0, GDT_Unknown, NULL);
 	  
 	  OGRLayer* poLayer = poInMemSHP->CreateLayer(strLayerName.c_str(), poSRS, wkbPolygon, NULL);
