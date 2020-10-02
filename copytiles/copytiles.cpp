@@ -137,14 +137,14 @@ int main(int nArgs, char* argv[])
 
 
 
-  gmx::ITileContainer *poSrcTC = 0;
-  gmx::TileType tile_type;
-  gmx::MercatorProjType eMercType;
-  gmx::Metadata *p_metadata = NULL;
-  gmx::TileName         *poSrcTileName = NULL;
+  ttx::ITileContainer *poSrcTC = 0;
+  ttx::TileType tile_type;
+  ttx::MercatorProjType eMercType;
+  ttx::Metadata *p_metadata = NULL;
+  ttx::TileName         *poSrcTileName = NULL;
   if (!GMXFileSys::IsDirectory(strSrcPath))
   {
-    poSrcTC = gmx::TileContainerFactory::OpenForReading(strSrcPath);
+    poSrcTC = ttx::TileContainerFactory::OpenForReading(strSrcPath);
 
     if (!poSrcTC)
     {
@@ -156,8 +156,8 @@ int main(int nArgs, char* argv[])
     eMercType = poSrcTC->GetProjType();
     p_metadata = poSrcTC->GetMetadata();
 
-    cout << "Input container info: tile type=" << gmx::TileName::TileInfoByTileType(poSrcTC->GetTileType());
-    cout << ", tiling srs=" << (poSrcTC->GetProjType() == gmx::WEB_MERCATOR) << endl;
+    cout << "Input container info: tile type=" << ttx::TileName::TileInfoByTileType(poSrcTC->GetTileType());
+    cout << ", tiling srs=" << (poSrcTC->GetProjType() == ttx::WEB_MERCATOR) << endl;
   }
   else
   {
@@ -172,38 +172,38 @@ int main(int nArgs, char* argv[])
       cout << "ERROR: missing parameter \"-tt\"" << endl;
       return 1;
     }
-    else if (!gmx::TileName::TileTypeByExtension(strTileType, tile_type))
+    else if (!ttx::TileName::TileTypeByExtension(strTileType, tile_type))
     {
       cout << "ERROR: not valid tile type: " << strTileType << endl;
       return 1;
     }
 
     eMercType = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ?
-      gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
+      ttx::WORLD_MERCATOR : ttx::WEB_MERCATOR;
 
 
     if (strSrcTemplate == "kosmosnimki")
-      poSrcTileName = new gmx::KosmosnimkiTileName(strSrcPath, tile_type);
+      poSrcTileName = new ttx::KosmosnimkiTileName(strSrcPath, tile_type);
     else if ((strSrcTemplate == "standard") || (strSrcTemplate == ""))
-      poSrcTileName = new gmx::StandardTileName(strSrcPath, ("{z}/{x}/{y}." + gmx::TileName::ExtensionByTileType(tile_type)));
-    else if (gmx::ESRITileName::ValidateTemplate(strSrcTemplate))
-      poSrcTileName = new gmx::ESRITileName(strSrcPath, strSrcTemplate);
-    else if (gmx::StandardTileName::ValidateTemplate(strSrcTemplate))
-      poSrcTileName = new gmx::StandardTileName(strSrcPath, strSrcTemplate);
+      poSrcTileName = new ttx::StandardTileName(strSrcPath, ("{z}/{x}/{y}." + ttx::TileName::ExtensionByTileType(tile_type)));
+    else if (ttx::ESRITileName::ValidateTemplate(strSrcTemplate))
+      poSrcTileName = new ttx::ESRITileName(strSrcPath, strSrcTemplate);
+    else if (ttx::StandardTileName::ValidateTemplate(strSrcTemplate))
+      poSrcTileName = new ttx::StandardTileName(strSrcPath, strSrcTemplate);
     else
     {
       cout << "ERROR: not valid value of \"-i_tnt\" parameter: " << strSrcTemplate << endl;
       return 1;
     }
-    poSrcTC = new gmx::TileFolder(poSrcTileName, eMercType, FALSE);
+    poSrcTC = new ttx::TileFolder(poSrcTileName, eMercType, FALSE);
 
   }
 
 
 
-  gmx::TileName           *poDestTileName = NULL;
-  gmx::ITileContainer     *poDestTC = NULL;
-  gmx::TileContainerType eDestTCType;
+  ttx::TileName           *poDestTileName = NULL;
+  ttx::ITileContainer     *poDestTC = NULL;
+  ttx::TileContainerType eDestTCType;
 
   list<pair<int, pair<int, int>>> tile_list;
   cout << "calculating number of tiles: ";
@@ -213,12 +213,12 @@ int main(int nArgs, char* argv[])
   if (tile_list.size()==0) return 0;
 
  
-  if (!gmx::TileContainerFactory::GetTileContainerType(strOutputFormat, eDestTCType))
+  if (!ttx::TileContainerFactory::GetTileContainerType(strOutputFormat, eDestTCType))
   {
     cout << "ERROR: not valid value of \"-of\" parameter: " << strOutputFormat << endl;
     return 1;
   }
-  if (eDestTCType == gmx::TileContainerType::TILEFOLDER) //TODO: should refactor
+  if (eDestTCType == ttx::TileContainerType::TILEFOLDER) //TODO: should refactor
   {
     if (!GMXFileSys::FileExists(strDestPath))
     {
@@ -230,29 +230,29 @@ int main(int nArgs, char* argv[])
     }
 
     if (strDestTemplate == "kosmosnimki")
-      poDestTileName = new gmx::KosmosnimkiTileName(strDestPath, tile_type);
-    else if (gmx::ESRITileName::ValidateTemplate(strDestTemplate))
-      poDestTileName = new gmx::ESRITileName(strDestPath, strDestTemplate);
+      poDestTileName = new ttx::KosmosnimkiTileName(strDestPath, tile_type);
+    else if (ttx::ESRITileName::ValidateTemplate(strDestTemplate))
+      poDestTileName = new ttx::ESRITileName(strDestPath, strDestTemplate);
     else if ((strDestTemplate == "standard") || ((strDestTemplate == "")))
-      poDestTileName = new gmx::StandardTileName(strDestPath, ("{z}/{x}/{y}." + gmx::TileName::ExtensionByTileType(tile_type)));
-    else if (gmx::StandardTileName::ValidateTemplate(strDestTemplate))
-      poDestTileName = new gmx::StandardTileName(strDestPath, strDestTemplate);
+      poDestTileName = new ttx::StandardTileName(strDestPath, ("{z}/{x}/{y}." + ttx::TileName::ExtensionByTileType(tile_type)));
+    else if (ttx::StandardTileName::ValidateTemplate(strDestTemplate))
+      poDestTileName = new ttx::StandardTileName(strDestPath, strDestTemplate);
     else
     {
       cout << "ERROR: not valid value of \"-o_tnt\" parameter: " << strDestTemplate << endl;
       return 1;
     }
-    poDestTC = new gmx::TileFolder(poDestTileName, eMercType, FALSE);
+    poDestTC = new ttx::TileFolder(poDestTileName, eMercType, FALSE);
   }
   else
   {
-    gmx::TileContainerOptions oTCOptions;
+    ttx::TileContainerOptions oTCOptions;
     oTCOptions.path_ = strDestPath;
     oTCOptions.extra_options_ = strCreationOptions;
     oTCOptions.tile_type_ = poSrcTC->GetTileType();
-    gmx::MercatorTileMatrixSet oMercTMS(eMercType);
+    ttx::MercatorTileMatrixSet oMercTMS(eMercType);
     oTCOptions.p_matrix_set_ = &oMercTMS;
-    int *panTileBounds = gmx::ITileContainer::GetTileBounds(&tile_list);
+    int *panTileBounds = ttx::ITileContainer::GetTileBounds(&tile_list);
     int nSrcTilesMaxZoom = 0;
     for (int z = 0; z<32; z++)
     {
@@ -269,7 +269,7 @@ int main(int nArgs, char* argv[])
 
     oTCOptions.max_zoom_ = nMaxZoom != -1 ? nMaxZoom : nSrcTilesMaxZoom;
 
-    if (!(poDestTC = gmx::TileContainerFactory::OpenForWriting(eDestTCType, &oTCOptions)))
+    if (!(poDestTC = ttx::TileContainerFactory::OpenForWriting(eDestTCType, &oTCOptions)))
     {
       cout << "ERROR: can't create output tile container: " << strDestPath << endl;
       return 2;
@@ -293,7 +293,7 @@ int main(int nArgs, char* argv[])
     }
     delete[]tileData;
 
-    GMXPrintTilingProgress(tile_list.size(), tilesCopied);
+    TTXPrintTilingProgress(tile_list.size(), tilesCopied);
   }
   cout << " done." << endl;
 

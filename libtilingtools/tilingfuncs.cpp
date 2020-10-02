@@ -1,8 +1,8 @@
 #include "tilingfuncs.h"
 
-using namespace gmx;
+using namespace ttx;
 
-bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
+bool TTXPrintTilingProgress (int tiles_expected, int tiles_generated)
 {
 	//cout<<tiles_generated<<" "<<endl;
 	if (tiles_generated - (int)ceil((tiles_expected/10.0)*(tiles_generated*10/tiles_expected))  ==0)
@@ -15,7 +15,7 @@ bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated)
 
 
 
-bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
+bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 {
 	long t_ = time(0);
 	srand(t_%10000);
@@ -77,7 +77,7 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 			int ndv_val = raster_bundle.GetNodataValue(ndv_from_input_defined);
 
 
-			GMXMakePyramidFromBaseZoom(raster_bundle.CalcEnvelope(),
+			TTXMakePyramidFromBaseZoom(raster_bundle.CalcEnvelope(),
 								    base_zoom,
 								    min_zoom,
 								   	&merc_grid,
@@ -93,7 +93,7 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 			if (tiles_expected > 0) 
 			{
 				cout<<"0% ";
-				if ((no_run_tiling_error *= GMXMakePyramidFromBaseZoom(	raster_bundle.CalcEnvelope(),
+				if ((no_run_tiling_error *= TTXMakePyramidFromBaseZoom(	raster_bundle.CalcEnvelope(),
 											base_zoom,
 											min_zoom,
 											&merc_grid,
@@ -126,10 +126,10 @@ bool GMXMakeTiling		(TilingParameters		*p_tiling_params)
 //  - add nodata val defined from input rasters
 //  - add resampling algorithm
 
-bool GMXMakePyramidFromBaseZoom (OGREnvelope tiles_envp, 
+bool TTXMakePyramidFromBaseZoom (OGREnvelope tiles_envp, 
 								int	base_zoom, 
 								int min_zoom, 
-								gmx::ITileMatrixSet* p_tile_mset,
+								ttx::ITileMatrixSet* p_tile_mset,
 								int	&tiles_expected, 
 								int	&tiles_generated, 
 								bool only_calculate, 
@@ -149,7 +149,7 @@ bool GMXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 	for (int x=min_x;x<=max_x;x++)
 	{
 		for (int y=min_y;y<=max_y;y++)
-			GMXMakePyramidTileRecursively(tiles_envp,min_zoom,x,y,base_zoom,
+			TTXMakePyramidTileRecursively(tiles_envp,min_zoom,x,y,base_zoom,
 											p_tile_mset,oBuffer,tiles_expected,tiles_generated,
 											only_calculate,p_itile_pyramid,&was_error,
 											nearest_resampling,p_ndv,quality,p_background_color);
@@ -157,19 +157,19 @@ bool GMXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 
 	if (was_error)
 	{
-		cout<<"ERROR: GMXMakePyramidTileRecursively"<<endl;
+		cout<<"ERROR: TTXMakePyramidTileRecursively"<<endl;
 		return FALSE;
 	}
 	else return TRUE;
 }
 
 
-bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp, 
+bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp, 
 									int	zoom, 
 									int	nX, 
 									int	nY, 
 									int	base_zoom, 
-									gmx::ITileMatrixSet* p_tile_mset,
+									ttx::ITileMatrixSet* p_tile_mset,
 									RasterBuffer &tile_buffer,  
 									int	&tiles_expected, 
 									int	&tiles_generated, 
@@ -219,7 +219,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 			{
 				if (tiles_envp.Intersects(p_tile_mset->CalcEnvelopeByTile(zoom+1,2*nX+j,2*nY+i)))
 				{
-					src_quarter_tile_buffers_def[i*2+j] = GMXMakePyramidTileRecursively(tiles_envp,
+					src_quarter_tile_buffers_def[i*2+j] = TTXMakePyramidTileRecursively(tiles_envp,
 															zoom+1,
 															2*nX+j,
 															2*nY+i,
@@ -251,7 +251,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 			return TRUE;
 		}
 
-		if (!GMXZoomOutFourIntoOne(quarter_tile_buffer,
+		if (!TTXZoomOutFourIntoOne(quarter_tile_buffer,
                               src_quarter_tile_buffers_def, 
                               tile_buffer,
                               use_nearest_resampling,
@@ -265,7 +265,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		delete[]((unsigned char*)p_data);
 		if (*p_was_error) return FALSE;
 		tiles_generated++;
-		GMXPrintTilingProgress(tiles_expected,tiles_generated);
+		TTXPrintTilingProgress(tiles_expected,tiles_generated);
 	}
 
 	return TRUE;
@@ -275,7 +275,7 @@ bool GMXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 
 
 
-bool GMXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4], 
+bool TTXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4], 
                             bool src_quarter_tile_buffers_def[4], 
                             RasterBuffer& zoomed_out_tile_buffer, 
 							bool use_nearest_resampling, 

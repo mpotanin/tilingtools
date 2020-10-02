@@ -4,7 +4,7 @@
 #include "tilename.h"
 
 
-namespace gmx
+namespace ttx
 {
 
 class BundleConsoleInput
@@ -87,8 +87,8 @@ public:
 	string output_path_;		//название файла-контейнера тайлов
 	TileContainerType container_type_;
   
-	gmx::MercatorProjType	merc_type_;				//тип Меркатора
-	gmx::TileType tile_type_;				//формат тайлов
+	ttx::MercatorProjType	merc_type_;				//тип Меркатора
+	ttx::TileType tile_type_;				//формат тайлов
 	int	base_zoom_;				//максимальный зум (базовый зум)
 	int	min_zoom_;				//минимальный зум
 	string vector_file_;			//векторная граница
@@ -105,10 +105,10 @@ public:
 	bool calculate_histogram_;    //рассчитывать гистограмму
 
 	int	quality_;  //уровень сжатия (jpeg, jpeg2000)
-	gmx::TileName* p_tile_name_;			//имена тайлов
+	ttx::TileName* p_tile_name_;			//имена тайлов
 	int max_work_threads_;
 	int tile_chunk_size_;
-	gmx::BundleConsoleInput* p_bundle_input_;
+	ttx::BundleConsoleInput* p_bundle_input_;
 	map<string,string> options_;
 	string user_input_srs_;
 

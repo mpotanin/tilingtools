@@ -8,10 +8,10 @@
 
 using namespace std;
 
-int GMXPrintProgressStub(double, const char*, void*);
+int TTXPrintProgressStub(double, const char*, void*);
 
 
-namespace gmx
+namespace ttx
 {
 
 class RasterFileCutline
@@ -114,8 +114,8 @@ public:
   bool RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
 								            ITileContainer			*p_tile_container);
   
-  int RunChunk (gmx::TilingParameters* p_tiling_params,
-                gmx::ITileContainer* p_tile_container,
+  int RunChunk (ttx::TilingParameters* p_tiling_params,
+                ttx::ITileContainer* p_tile_container,
                 int zoom,
                 OGREnvelope chunk_envp,
                 int tiles_expected,
@@ -125,8 +125,8 @@ public:
                 double* p_offset_values
               );
   static int CallRunChunk(BundleTiler* p_bundle,
-                          gmx::TilingParameters* p_tiling_params,
-                          gmx::ITileContainer* p_tile_container,
+                          ttx::TilingParameters* p_tiling_params,
+                          ttx::ITileContainer* p_tile_container,
                           int zoom,
                           OGREnvelope chunk_envp,
                           int tiles_expected,
@@ -190,7 +190,7 @@ protected:
 
 
 
-bool GMXPrintTilingProgress (int tiles_expected, int tiles_generated);
+bool TTXPrintTilingProgress (int tiles_expected, int tiles_generated);
 
 
 struct GMXAsyncWarpMultiParams

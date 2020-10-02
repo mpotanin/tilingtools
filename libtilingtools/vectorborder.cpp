@@ -3,7 +3,7 @@
 #include "stringfuncs.h"
 
 
-namespace gmx
+namespace ttx
 {
 
 

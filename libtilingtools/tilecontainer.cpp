@@ -1,6 +1,6 @@
 #include "tilecontainer.h"
 
-namespace gmx
+namespace ttx
 {
 
 GMXTileContainer* GMXTileContainer::OpenForWriting (TileContainerOptions *p_params)
@@ -192,7 +192,7 @@ bool GMXTileContainer::ExtractAndStoreMetadata (TilingParameters* p_params)
 {
   //ToDo
   /*
-  //from GMXMakeTiling
+  //from TTXMakeTiling
    Metadata metadata;
   MetaHistogram histogram;
   MetaNodataValue nodata_value;
@@ -214,7 +214,7 @@ bool GMXTileContainer::ExtractAndStoreMetadata (TilingParameters* p_params)
 
   //from GMXAsyncWarpChunkAndMakeTiling
   /*
-  gmx::MetaHistogram        *p_histogram = p_chunk_tiling_params->p_histogram_;
+  ttx::MetaHistogram        *p_histogram = p_chunk_tiling_params->p_histogram_;
   if (p_histogram) 
   {
     if (!p_histogram->IsInitiated())
@@ -1476,9 +1476,9 @@ bool TileContainerFactory::GetTileContainerType (string strName, TileContainerTy
   else if (strName=="gmxtiles")
     eType = TileContainerType::GMXTILES;
   else if (strName=="mbtiles")
-    eType = gmx::TileContainerType::MBTILES;
+    eType = ttx::TileContainerType::MBTILES;
   else if (strName == "gtiff")
-    eType = gmx::TileContainerType::GTIFF;
+    eType = ttx::TileContainerType::GTIFF;
   else return false;
 
   return true;

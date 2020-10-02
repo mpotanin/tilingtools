@@ -1,7 +1,7 @@
 #include "tilename.h"
 #include "rasterfile.h"
 
-namespace gmx
+namespace ttx
 {
 
 int MercatorTileMatrixSet::TILE_PX_SIZE_ = 256;

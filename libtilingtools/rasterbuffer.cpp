@@ -1,10 +1,10 @@
 #include "rasterbuffer.h"
 #include "filesystemfuncs.h"
 #include "stringfuncs.h"
-using namespace gmx;
+using namespace ttx;
 
 
-namespace gmx
+namespace ttx
 {
 
 

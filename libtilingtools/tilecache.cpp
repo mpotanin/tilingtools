@@ -2,7 +2,7 @@
 #include "stringfuncs.h"
 
 
-namespace gmx
+namespace ttx
 {
 
 TileCache::TileCache(int64_t cache_max_size)

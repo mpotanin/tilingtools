@@ -19,7 +19,7 @@ void Exit()
 
 int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 {
-  gmx::TilingParameters oTilingParams;
+  ttx::TilingParameters oTilingParams;
 
   
 
@@ -29,7 +29,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
     return 1;
   }
 
-  gmx::BundleConsoleInput oBundleConsoleInput;
+  ttx::BundleConsoleInput oBundleConsoleInput;
   if (!oBundleConsoleInput.InitByConsoleParams(oOptionParser.GetValueList("-i"),
     oOptionParser.GetValueList("-b"),
     oOptionParser.GetValueList("-bnd")))
@@ -38,7 +38,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   oTilingParams.p_bundle_input_ = &oBundleConsoleInput;
 
 
-  if (!gmx::TileContainerFactory::GetTileContainerType(oOptionParser.GetOptionValue("-of"), oTilingParams.container_type_))
+  if (!ttx::TileContainerFactory::GetTileContainerType(oOptionParser.GetOptionValue("-of"), oTilingParams.container_type_))
   {
     cout << "ERROR: not valid value of \"-of\" parameter: " << oOptionParser.GetOptionValue("-of") << endl;
     return 1;
@@ -47,15 +47,15 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
   string strProjType = oOptionParser.GetOptionValue("-tsrs");
   oTilingParams.merc_type_ = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ?
-    gmx::WORLD_MERCATOR : gmx::WEB_MERCATOR;
+    ttx::WORLD_MERCATOR : ttx::WEB_MERCATOR;
 
   list<string> listRasters = oBundleConsoleInput.GetRasterFiles();
 
   if (oOptionParser.GetOptionValue("-pseudo_png") != "")
-    oTilingParams.tile_type_ = gmx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
+    oTilingParams.tile_type_ = ttx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
   else if (oOptionParser.GetOptionValue("-tt") != "")
   {
-    if (!gmx::TileName::TileTypeByExtension(oOptionParser.GetOptionValue("-tt"),
+    if (!ttx::TileName::TileTypeByExtension(oOptionParser.GetOptionValue("-tt"),
       oTilingParams.tile_type_))
     {
       cout << "ERROR: not valid value of \"-tt\" parameter: " << oOptionParser.GetOptionValue("-tt") << endl;
@@ -64,7 +64,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   }
   else if (GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) != "")
   {
-    if (!gmx::TileName::TileTypeByExtension(GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
+    if (!ttx::TileName::TileTypeByExtension(GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
       oTilingParams.tile_type_))
     {
       cout << "ERROR: not valid value of \"-tnt\" parameter: " << GMXFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
@@ -74,7 +74,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   else
   {
     oTilingParams.tile_type_ = GMXString::MakeLower(GMXFileSys::GetExtension(*listRasters.begin())) == "png" ?
-      gmx::TileType::PNG_TILE : gmx::TileType::JPEG_TILE;
+      ttx::TileType::PNG_TILE : ttx::TileType::JPEG_TILE;
   }
 
 
@@ -82,11 +82,11 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-o") != "")
     oTilingParams.output_path_ = oOptionParser.GetOptionValue("-o");
   else
-    oTilingParams.output_path_ = oTilingParams.container_type_ == gmx::TileContainerType::TILEFOLDER ?
+    oTilingParams.output_path_ = oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER ?
     GMXFileSys::RemoveExtension(*listRasters.begin()) + "_tiles" :
     oTilingParams.output_path_ = GMXFileSys::RemoveExtension(*listRasters.begin()) + "." +
-    gmx::TileContainerFactory::GetExtensionByTileContainerType(oTilingParams.container_type_);
-  if ((oTilingParams.container_type_ == gmx::TileContainerType::TILEFOLDER) &&
+    ttx::TileContainerFactory::GetExtensionByTileContainerType(oTilingParams.container_type_);
+  if ((oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER) &&
     (!GMXFileSys::FileExists(oTilingParams.output_path_)))
   {
     if (!GMXFileSys::CreateDir(oTilingParams.output_path_))
@@ -97,21 +97,21 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   }
 
   //ToDo - should refactor move to this logic inside ITileContainer::TileFolder subclasses
-  if (oTilingParams.container_type_ == gmx::TileContainerType::TILEFOLDER)
+  if (oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER)
   {
     if ((oOptionParser.GetOptionValue("-tnt") == "standard") ||
       (oOptionParser.GetOptionValue("-tnt") == ""))
     {
-      oTilingParams.p_tile_name_ = new gmx::StandardTileName(oTilingParams.output_path_,
-        "{z}/{x}/{y}." + gmx::TileName::ExtensionByTileType(oTilingParams.tile_type_));
+      oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
+        "{z}/{x}/{y}." + ttx::TileName::ExtensionByTileType(oTilingParams.tile_type_));
     }
     else if (oOptionParser.GetOptionValue("-tnt") == "kosmosnimki")
     {
-      oTilingParams.p_tile_name_ = new gmx::KosmosnimkiTileName(oTilingParams.output_path_,
+      oTilingParams.p_tile_name_ = new ttx::KosmosnimkiTileName(oTilingParams.output_path_,
         oTilingParams.tile_type_);
     }
     else
-      oTilingParams.p_tile_name_ = new gmx::StandardTileName(oTilingParams.output_path_,
+      oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
       oOptionParser.GetOptionValue("-tnt"));
   }
 
@@ -173,7 +173,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
   if (oOptionParser.GetOptionValue("-r") == "")
   {
-    gmx::RasterFile oRF;
+    ttx::RasterFile oRF;
     if (!oRF.Init(*listRasters.begin()))
     {
       cout << "ERROR: can't open file: " << (*listRasters.begin()) << endl;
@@ -224,7 +224,7 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
 
  
 
-  return GMXMakeTiling(&oTilingParams) ? 0 : 2;
+  return TTXMakeTiling(&oTilingParams) ? 0 : 2;
 }
 
 
@@ -322,7 +322,7 @@ int main(int nArgs, char* argv[])
 		if (oOptionParser.GetOptionValue("-ap") != "") //ToDo - file_list.size>1;
 		{
       /*
-      gmx::BundleConsoleInput oBundleConsoleInput;
+      ttx::BundleConsoleInput oBundleConsoleInput;
       if (!oBundleConsoleInput.InitByConsoleParams(mapConsoleParams.at("-file"),
       mapConsoleParams.at("-bands")))
       {
@@ -349,24 +349,24 @@ int main(int nArgs, char* argv[])
       }
       else if (panBands!=0)
       {
-      string strBands = gmx::ConvertIntToString(panBands[0]);
+      string strBands = ttx::ConvertIntToString(panBands[0]);
       for (int i=1;i<nBands;i++)
       {
       strBands+=",";
-      strBands+=gmx::ConvertIntToString(panBands[i]);
+      strBands+=ttx::ConvertIntToString(panBands[i]);
       }
       mapConsoleParamsFix.at("-bands") = strBands;
       delete[]panBands;
       }
 
       if ((lstInputFiles.size()>1) && (mapConsoleParams.at("-border")==""))
-      mapConsoleParamsFix.at("-border") = gmx::VectorOperations::GetVectorFileNameByRasterFileName(*iter);
+      mapConsoleParamsFix.at("-border") = ttx::VectorOperations::GetVectorFileNameByRasterFileName(*iter);
 
       if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
       {
-      if (!gmx::GMXFileSys::FileExists(mapConsoleParams.at("-tiles")))
+      if (!ttx::GMXFileSys::FileExists(mapConsoleParams.at("-tiles")))
       {
-      if (!gmx::GMXFileSys::CreateDir(mapConsoleParams.at("-tiles").c_str()))
+      if (!ttx::GMXFileSys::CreateDir(mapConsoleParams.at("-tiles").c_str()))
       {
       cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
       return 1;
@@ -376,12 +376,12 @@ int main(int nArgs, char* argv[])
       if (bUseContainer)
       {
       mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ?
-      gmx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(gmx::GMXFileSys::RemoveExtension(*iter)) +".mbtiles" :
-      gmx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(gmx::GMXFileSys::RemoveExtension(*iter)) +".tiles";
+      ttx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(ttx::GMXFileSys::RemoveExtension(*iter)) +".mbtiles" :
+      ttx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(ttx::GMXFileSys::RemoveExtension(*iter)) +".tiles";
       }
       else
       {
-      mapConsoleParamsFix.at("-tiles") = gmx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(gmx::GMXFileSys::RemoveExtension(*iter)) +"_tiles";
+      mapConsoleParamsFix.at("-tiles") = ttx::GMXFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + GMXFileSys::RemovePath(ttx::GMXFileSys::RemoveExtension(*iter)) +"_tiles";
       }
       }
 

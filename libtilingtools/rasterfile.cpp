@@ -3,13 +3,13 @@
 #include "filesystemfuncs.h"
 
 
-int GMXPrintProgressStub(double dfComplete, const char *pszMessage, void * pProgressArg)
+int TTXPrintProgressStub(double dfComplete, const char *pszMessage, void * pProgressArg)
 {
 	return 1;
 }
 
 
-namespace gmx
+namespace ttx
 {
 
 bool RasterFile::Close()
@@ -290,8 +290,8 @@ bool	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialRefer
 
 
 int BundleTiler::CallRunChunk( BundleTiler* p_bundle,
-                                gmx::TilingParameters* p_tiling_params,
-                                gmx::ITileContainer* p_tile_container,
+                                ttx::TilingParameters* p_tiling_params,
+                                ttx::ITileContainer* p_tile_container,
                                 int zoom,
                                 OGREnvelope chunk_envp,
                                 int tiles_expected,
@@ -306,8 +306,8 @@ int BundleTiler::CallRunChunk( BundleTiler* p_bundle,
 }
 
 
-int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
-                           gmx::ITileContainer* p_tile_container,
+int BundleTiler::RunChunk (ttx::TilingParameters* p_tiling_params,
+                           ttx::ITileContainer* p_tile_container,
                            int zoom,
                            OGREnvelope chunk_envp,
                            int tiles_expected,
@@ -318,7 +318,7 @@ int BundleTiler::RunChunk (gmx::TilingParameters* p_tiling_params,
                           )
 {
  
-	gmx::RasterBuffer *p_merc_buffer = new gmx::RasterBuffer();
+	ttx::RasterBuffer *p_merc_buffer = new ttx::RasterBuffer();
 
 	//ToDo...
 	int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
@@ -930,7 +930,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
       }
     }
         
-    p_warp_options->pfnProgress = GMXPrintProgressStub;
+    p_warp_options->pfnProgress = TTXPrintProgressStub;
     //p_warp_options->pfnProgress = 0;
 
     p_warp_options->pTransformerArg = p_src_wkt ?
@@ -1212,7 +1212,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 					(*p_tiles_generated)++;
 			}
 			
-			GMXPrintTilingProgress(tiles_expected,(*p_tiles_generated));
+			TTXPrintTilingProgress(tiles_expected,(*p_tiles_generated));
 		}
 	}
 	

@@ -1,6 +1,6 @@
 #include "histogram.h"
 
-using namespace gmx;
+using namespace ttx;
 
 
 Metatag* Metadata::DeserializeTag(string name, int size, void *data)

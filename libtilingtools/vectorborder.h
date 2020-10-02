@@ -1,7 +1,7 @@
 #pragma once
 #include "stdafx.h"
 
-namespace gmx
+namespace ttx
 {
 
 #ifdef GDAL_OF_VECTOR

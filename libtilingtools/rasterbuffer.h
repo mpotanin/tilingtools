@@ -3,7 +3,7 @@
 #include "vectorborder.h"
 
 
-namespace gmx
+namespace ttx
 {
 
 	typedef enum {

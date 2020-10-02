@@ -8,7 +8,7 @@
 #include "vectorborder.h"
 #include "rasterbuffer.h"
 
-namespace gmx
+namespace ttx
 {
 
 class RasterFile;
@@ -142,11 +142,11 @@ public:
 		if ((tile_extension == "jpg") || (tile_extension == "jpeg") || (tile_extension == ".jpg"))
       tile_type = JPEG_TILE;
     else if ((tile_extension == "png") || (tile_extension == ".png"))
-      tile_type = gmx::PNG_TILE;
+      tile_type = ttx::PNG_TILE;
     else if ((tile_extension == "jp2") || (tile_extension == ".jp2")||(tile_extension == "jpeg2000"))
-      tile_type = gmx::JP2_TILE;
+      tile_type = ttx::JP2_TILE;
     else if ((tile_extension == "tif") || (tile_extension == ".tif")||(tile_extension == "tiff"))
-      tile_type = gmx::TIFF_TILE;
+      tile_type = ttx::TIFF_TILE;
     else return false;
 
     return true;

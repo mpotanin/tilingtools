@@ -7,7 +7,7 @@
 #include "tilingparameters.h"
 #include "rasterbuffer.h"
 
-namespace gmx
+namespace ttx
 {
 
 class TileContainerOptions

@@ -2,7 +2,7 @@
 #include	"stdafx.h"
 
 
-namespace gmx
+namespace ttx
 {
 
 class TileCache
