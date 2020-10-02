@@ -10,7 +10,7 @@ class GMXString
 public:
 
   static string			MakeLower				(string str);
-  static void			  ReplaceAll				(string	&strInput, string	from, string to);
+  static string			  ReplaceAll				(const string	&strInput, string from, string to);
   static bool			  ConvertStringToRGB		(string str_color, unsigned char rgb[3]);			
   static string			ConvertIntToString		(int number, bool hexadecimal = FALSE, int adjust_len=0);
   //static string    ConvertIntToHexadecimalString (int number, int adjust_len = 0);

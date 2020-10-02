@@ -21,7 +21,7 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 	zxy_pos_[0] = (zxy_pos_[1] = (zxy_pos_[2] = 0));
 
 	if (str_template[0] == L'/' || str_template[0] == L'\\') 	str_template = str_template.substr(1,str_template.length()-1);
-	GMXString::ReplaceAll(str_template,"\\","/");
+	str_template = GMXString::ReplaceAll(str_template,"\\","/");
 	str_template_ = str_template;
 		
 	//ReplaceAll(strTemplate,"\\","\\\\");
@@ -41,9 +41,9 @@ StandardTileName::StandardTileName (string base_folder, string str_template)
 		n = str_template.find(L'}',n) + 1;
 	}
 
-	GMXString::ReplaceAll(str_template,"{z}","(\\d+)");
-	GMXString::ReplaceAll(str_template,"{x}","(\\d+)");
-	GMXString::ReplaceAll(str_template,"{y}","(\\d+)");
+	str_template = GMXString::ReplaceAll(str_template,"{z}","(\\d+)");
+	str_template = GMXString::ReplaceAll(str_template,"{x}","(\\d+)");
+	str_template = GMXString::ReplaceAll(str_template,"{y}","(\\d+)");
 	rx_template_ = ("(.*[\\/])" + str_template) + "(.*)";
   //rx_template_ = str_template;
 }
@@ -85,9 +85,9 @@ bool	StandardTileName::ValidateTemplate	(string str_template)
 string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	GMXString::ReplaceAll(tile_name,"{z}",GMXString::ConvertIntToString(zoom));
-	GMXString::ReplaceAll(tile_name,"{x}",GMXString::ConvertIntToString(nX));
-	GMXString::ReplaceAll(tile_name,"{y}",GMXString::ConvertIntToString(nY));
+	tile_name = GMXString::ReplaceAll(tile_name,"{z}",GMXString::ConvertIntToString(zoom));
+	tile_name = GMXString::ReplaceAll(tile_name,"{x}",GMXString::ConvertIntToString(nX));
+	tile_name = GMXString::ReplaceAll(tile_name,"{y}",GMXString::ConvertIntToString(nY));
 	return tile_name;
 }
 
@@ -176,10 +176,10 @@ bool	ESRITileName::ValidateTemplate	(string str_template)
 
 ESRITileName::ESRITileName (string base_folder, string str_template)
 {
-  GMXString::ReplaceAll(str_template,"\\","/");
-  GMXString::ReplaceAll(str_template,"{l}","{L}");
-  GMXString::ReplaceAll(str_template,"{r}","{R}");
-  GMXString::ReplaceAll(str_template,"{c}","{C}");
+	str_template = GMXString::ReplaceAll(str_template,"\\","/");
+	str_template = GMXString::ReplaceAll(str_template,"{l}","{L}");
+	str_template = GMXString::ReplaceAll(str_template,"{r}","{R}");
+	str_template = GMXString::ReplaceAll(str_template,"{c}","{C}");
 
 	if (!ValidateTemplate(str_template)) return;
 	if (!GMXFileSys::FileExists(base_folder)) return;
@@ -195,9 +195,9 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 	if (str_template[0] == L'/') 	str_template = str_template.substr(1,str_template.length()-1);
   str_template_ = str_template;
 		
-  GMXString::ReplaceAll(str_template,"{L}","(L\\d{2})");
-  GMXString::ReplaceAll(str_template,"{C}","(C[A-Fa-f0-9]{8,8})");
-  GMXString::ReplaceAll(str_template,"{R}","(R[A-Fa-f0-9]{8,8})");
+	str_template = GMXString::ReplaceAll(str_template,"{L}","(L\\d{2})");
+	str_template = GMXString::ReplaceAll(str_template,"{C}","(C[A-Fa-f0-9]{8,8})");
+	str_template = GMXString::ReplaceAll(str_template,"{R}","(R[A-Fa-f0-9]{8,8})");
 	rx_template_ = ("(.*)" + str_template) + "(.*)";
 }
 
@@ -205,11 +205,11 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	GMXString::ReplaceAll(tile_name,"{L}","L"+GMXString::ConvertIntToString(zoom,FALSE,2));
-	GMXString::ReplaceAll(tile_name,"{C}","C"+GMXString::ConvertIntToString(nX,TRUE,8));
-	GMXString::ReplaceAll(tile_name,"{R}","R"+GMXString::ConvertIntToString(nY,TRUE,8));
+	tile_name = GMXString::ReplaceAll(tile_name,"{L}","L"+GMXString::ConvertIntToString(zoom,FALSE,2));
+	tile_name = GMXString::ReplaceAll(tile_name,"{C}","C"+GMXString::ConvertIntToString(nX,TRUE,8));
+	tile_name = GMXString::ReplaceAll(tile_name,"{R}","R"+GMXString::ConvertIntToString(nY,TRUE,8));
 
-  return tile_name;
+	return tile_name;
 }
 
 

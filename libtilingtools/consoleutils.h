@@ -30,16 +30,14 @@ class GMXOptionParser
 {
 public:
   static bool InitCmdLineArgsFromFile (string strFileName, 
-                                      int &nArgs, 
-                                      string *&pastrArgv, 
+                                      vector<string> &vecArgs, 
                                       string strExeFilePath="");
 
 public:
   static void PrintUsage (const list<GMXOptionDescriptor> listDescriptors,
                           const list<string> listExamples);
     
-  bool Init (const list<GMXOptionDescriptor> listDescriptors, 
-              string astrArgs[], int nArgs);
+  bool Init (const list<GMXOptionDescriptor> listDescriptors, vector<string> &vecArgs);
     
   string GetOptionValue (string strOptionName);
   list<string> GetValueList (string strMultipleOptionName);

@@ -29,6 +29,29 @@ bool GMXGDALLoader::LoadWinDll(string strGDALDir, string strDllVer)
 
   return (b != NULL);
 }
+
+string GMXGDALLoader::ReadPathFromConfigFile(string strConfigFilePath)
+{
+	string	strConfigFile = (strConfigFilePath == "") ? "TilingTools.config" : GMXFileSys::GetAbsolutePath(strConfigFilePath, "TilingTools.config");
+	string  strConfigText = GMXFileSys::ReadTextFile(strConfigFile) + ' ';
+
+	std::regex rgxPathInput("^GdalPath=(.*[^\\s$])");
+	match_results<string::const_iterator> oMatch;
+	regex_search(strConfigText, oMatch, rgxPathInput);
+	if (oMatch.size() < 2)
+	{
+		cout << "ERROR: can't read GDAL path from file: " << strConfigFile << endl;
+		return "";
+	}
+	else
+	{
+		if (GMXFileSys::FileExists(oMatch[1]))
+			return oMatch[1];
+		else
+			return GMXFileSys::GetAbsolutePath(strConfigFilePath, oMatch[1]);
+	}
+}
+
 #endif
 
 
@@ -65,26 +88,9 @@ bool GMXGDALLoader::Load (string strExecPath)
 
 
 
-string GMXGDALLoader::ReadPathFromConfigFile (string strConfigFilePath)
-{
-  string	strConfigFile = (strConfigFilePath=="") ? "TilingTools.config" : GMXFileSys::GetAbsolutePath (strConfigFilePath,"TilingTools.config");
-  string  strConfigText = GMXFileSys::ReadTextFile(strConfigFile) + ' ';
-
-  std::regex rgxPathInput("^GdalPath=(.*[^\\s$])");
-  match_results<string::const_iterator> oMatch;
-  regex_search(strConfigText,oMatch,rgxPathInput);
-  if (oMatch.size()<2)
-	{
-		cout<<"ERROR: can't read GDAL path from file: "<<strConfigFile<<endl;
-		return "";
-	}
-  else return GMXFileSys::GetAbsolutePath(strConfigFilePath, oMatch[1]);
-}
-
 
 bool GMXOptionParser::InitCmdLineArgsFromFile (string strFileName, 
-                                                int &nArgs,
-                                                string *&pastrArgv,
+                                               std::vector<string> &vecArgs,
                                                 string strExeFilePath)
 {
   string strFileContent = GMXFileSys::ReadTextFile(strFileName);
@@ -95,29 +101,19 @@ bool GMXOptionParser::InitCmdLineArgsFromFile (string strFileName,
   std::regex rgxCmdPattern( "\\s+\"([^\"]+)\"\\s|\\s+([^\\s\"]+)\\s");
   match_results<string::const_iterator> oMatch;
 
-  string astrBuffer[1000];
-  if (strExeFilePath=="") nArgs=0;
-  else
-  {
-    astrBuffer[0]=strExeFilePath;
-    nArgs = 1;
-  }
+  if (strExeFilePath!="") 
+	vecArgs.push_back(strExeFilePath);
+  
 
   while (regex_search(strFileContent, oMatch, rgxCmdPattern, std::regex_constants::match_not_null))
   {
-    astrBuffer[nArgs] = oMatch.size() == 2 ? oMatch[1].str() 
-                                           : oMatch[1].str() == "" ? oMatch[2] : oMatch[1];
-    nArgs++;
+    vecArgs.push_back( oMatch.size() == 2 ? oMatch[1].str() 
+                                           : oMatch[1].str() == "" ? oMatch[2] : oMatch[1]);
     strFileContent = strFileContent.substr(oMatch[0].str().size() - 1);
   }
 
-  if (nArgs == 0) return false;
+  if (vecArgs.size() == 0) return false;
   
-  if (pastrArgv) delete[]pastrArgv;
-    pastrArgv = new string[nArgs];
-  for (int i = 0; i < nArgs; i++)
-    pastrArgv[i] = astrBuffer[i];
-
   return true;
 }
 
@@ -158,44 +154,44 @@ void GMXOptionParser::Clear()
 
 
 bool GMXOptionParser::Init(const list<GMXOptionDescriptor> listDescriptors,
-                            string astrArgs[], int nArgs)
+                            vector<string> &vecArgs)
 {
 	Clear();
     for (auto oDesc : listDescriptors)
         m_mapDescriptors[oDesc.strOptionName]=oDesc;
 
-	for (int i=0; i < nArgs; i++)
+	for (int i=0; i<vecArgs.size();i++)
 	{
-        if (astrArgs[i][0] == '-')
+        if (vecArgs[i][0] == '-')
         {
-            if (m_mapDescriptors.find(astrArgs[i])!=m_mapDescriptors.end())
+            if (m_mapDescriptors.find(vecArgs[i])!=m_mapDescriptors.end())
             {
-                if (m_mapDescriptors[astrArgs[i]].bIsBoolean)
-                    this->m_mapSingleOptions[astrArgs[i]]=astrArgs[i];
-                else if (i!=nArgs-1)
+                if (m_mapDescriptors[vecArgs[i]].bIsBoolean)
+                    this->m_mapSingleOptions[vecArgs[i]]= vecArgs[i];
+                else if (i!=vecArgs.size()-1)
                 {
-                    if (m_mapDescriptors[astrArgs[i]].nOptionValueType==0)
-                        this->m_mapSingleOptions[astrArgs[i]]=astrArgs[i+1];
-                    else if (m_mapDescriptors[astrArgs[i]].nOptionValueType==1)
-                        this->m_mapMultipleOptions[astrArgs[i]].push_back(astrArgs[i+1]);
+                    if (m_mapDescriptors[vecArgs[i]].nOptionValueType==0)
+                        this->m_mapSingleOptions[vecArgs[i]]= vecArgs[i+1];
+                    else if (m_mapDescriptors[vecArgs[i]].nOptionValueType==1)
+                        this->m_mapMultipleOptions[vecArgs[i]].push_back(vecArgs[i+1]);
                     else
                     {
-                        if (astrArgs[i+1].find('=') == string::npos
-                            || astrArgs[i+1].find('=') == astrArgs[i+1].size()-1)
+                        if (vecArgs[i+1].find('=') == string::npos
+                            || vecArgs[i+1].find('=') == vecArgs[i+1].size()-1)
 						{
-							cout<<"ERROR: can't parse key=value format from \""<<astrArgs[i+1]<<"\""<<endl;
+							cout<<"ERROR: can't parse key=value format from \""<< vecArgs[i+1]<<"\""<<endl;
 							return false;
 						}
 						else
-							m_mapMultipleKVOptions[astrArgs[i]][astrArgs[i+1].substr(0,astrArgs[i+1].find('='))]=
-                                        astrArgs[i+1].substr(astrArgs[i+1].find('=')+1);
+							m_mapMultipleKVOptions[vecArgs[i]][vecArgs[i+1].substr(0, vecArgs[i+1].find('='))]=
+							vecArgs[i+1].substr(vecArgs[i+1].find('=')+1);
                     }
 					i++;
 				}
 			}
 			else
 			{
-				cout<<"ERROR: Unknown option name \""<<astrArgs[i]<<"\""<<endl;
+				cout<<"ERROR: Unknown option name \""<< vecArgs[i]<<"\""<<endl;
 				return false;
 			}
 		}

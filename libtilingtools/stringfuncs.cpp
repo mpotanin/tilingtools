@@ -20,13 +20,17 @@ int	GMXString::StrLen	(const unsigned char *str)
 	return (len<max_len) ? len : -1;
 }
 
-void GMXString::ReplaceAll(string	&strInput, string	from, string	to)
+string GMXString::ReplaceAll(const string	&strInput, string	from, string	to)
 {
-  size_t start_pos = 0;
-  while((start_pos = strInput.find(from, start_pos)) != std::string::npos) {
-		strInput = strInput.replace(start_pos, from.length(), to);
-    start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-  }
+	string strOutput = strInput;
+	size_t start_pos = 0;
+	while((start_pos = strOutput.find(from, start_pos)) != std::string::npos) 
+	{
+		strOutput = strOutput.replace(start_pos, from.length(), to);
+		start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+	}
+
+	return strOutput;
 }
 
 

@@ -24,48 +24,47 @@ const list<string> listUsageExamples = {
 int _tmain(int nArgs, wchar_t* pastrArgsW[])
 {
 
-  string* pastrArgs = new string[nArgs];
-  for (int i = 0; i<nArgs; i++)
-  {
-    GMXString::wstrToUtf8(pastrArgs[i], pastrArgsW[i]);
-    GMXString::ReplaceAll(pastrArgs[i], "\\", "/");
-  }
+	std::vector<string> vecArgs;
+	for (int i = 0; i < nArgs; i++)
+	{
+		string strBuff;
+		GMXString::wstrToUtf8(strBuff, pastrArgsW[i]);
+		vecArgs.push_back(GMXString::ReplaceAll(strBuff, "\\", "/"));
+	}
 #else
 int main(int nArgs, char* argv[])
 {
-  string* pastrArgs = new string[nArgs];
-  for (int i = 0; i<nArgs; i++)
-    pastrArgs[i] = argv[i];
+	std::vector<string> vecArgs;
+	for (int i = 0; i < nArgs; i++)
+		vecArgs.push_back(argv[i]);
 #endif
 
-  if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0])))
-  {
-    cout << "ERROR: can't load GDAL" << endl;
-    return 1;
-  }
+	if (!GMXGDALLoader::Load(GMXFileSys::GetPath(vecArgs[0])))
+	{
+		cout << "ERROR: can't load GDAL" << endl;
+		return 1;
+	}
 
-  cout << endl;
+	cout << endl;
 
-  if (nArgs == 1)
-  {
-    cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
-      GMXFileSys::GetPath(pastrArgs[0]),
-      "version.txt")
-      ) << endl;
-    cout << "build date: " << __DATE__ << endl;
-    GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
-    delete[]pastrArgs;
-    return 0;
-  }
+	if (nArgs == 1)
+	{
+		cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
+			GMXFileSys::GetPath(vecArgs[0]),
+			"version.txt")
+		) << endl;
+		cout << "build date: " << __DATE__ << endl;
+		GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
+		return 0;
+	}
 
-  GMXOptionParser oOptionParser;
-  if (!oOptionParser.Init(listDescriptors, pastrArgs, nArgs))
-  {
-    cout << "ERROR: input cmd line is not valid" << endl;
-    delete[]pastrArgs;
-    return 1;
-  }
-  delete[]pastrArgs;
+
+	GMXOptionParser oOptionParser;
+	if (!oOptionParser.Init(listDescriptors, vecArgs))
+	{
+		cout << "ERROR: input cmd line is not valid" << endl;
+		return 1;
+	}
 
   int             nMinZoom = 0;
   int             nMaxZoom;

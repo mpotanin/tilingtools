@@ -217,6 +217,9 @@ int ParseCmdLineAndCallTiling(GMXOptionParser &oOptionParser)
   if (oOptionParser.GetOptionValue("-isrs") != "")
     oTilingParams.user_input_srs_ = oOptionParser.GetOptionValue("-isrs");
 
+  if (oOptionParser.GetOptionValue("-wc") != "")
+	  oTilingParams.tile_chunk_size_ = atoi(oOptionParser.GetOptionValue("-wc").c_str());
+
   oTilingParams.calculate_histogram_ = true;   //TODO - replace by default value in GMXTileContainer init
 
  
@@ -248,7 +251,8 @@ const list<GMXOptionDescriptor> listDescriptors = {
   { "-wt", 0, 0, "work threads num." },
   { "-tsz", 0, 0, "tile seize (default 256)" },
   { "-pseudo_png", 1, 0, "" },
-  {"-bmarg", 0, 0, "border margin in tiling srs units"}
+  {"-bmarg", 0, 0, "border margin in tiling srs units"},
+  {"-wc",0,0, "warp chunk size in tiles"}
 };
 
 
@@ -269,57 +273,54 @@ const list<string> listUsageExamples = {
 #ifdef WIN32
 int _tmain(int nArgs, wchar_t *pastrArgsW[])
 {
-
-
-  string *pastrArgs = new string[nArgs];
-  for (int i = 0; i<nArgs; i++)
-  {
-    GMXString::wstrToUtf8(pastrArgs[i], pastrArgsW[i]);
-    GMXString::ReplaceAll(pastrArgs[i], "\\", "/");
-  }
+	std::vector<string> vecArgs;
+	for (int i = 0; i<nArgs; i++)
+	{
+		string strBuff;
+		GMXString::wstrToUtf8(strBuff, pastrArgsW[i]);
+		vecArgs.push_back(GMXString::ReplaceAll(strBuff, "\\", "/"));
+	}
 #else
 int main(int nArgs, char* argv[])
 {
-  string* pastrArgs = new string[nArgs];
+  std::vector<string> vecArgs;
   for (int i = 0; i<nArgs; i++)
-    pastrArgs[i] = argv[i];
+    vecArgs.push_back(argv[i]);
 #endif
 
-  if (!GMXGDALLoader::Load(GMXFileSys::GetPath(pastrArgs[0])))
-  {
-    cout << "ERROR: can't load GDAL" << endl;
-    return 1;
-  }
+	if (!GMXGDALLoader::Load(GMXFileSys::GetPath(vecArgs[0])))
+	{
+		cout << "ERROR: can't load GDAL" << endl;
+		return 1;
+	}
 
-  cout << endl;
+	cout << endl;
 
-  if (nArgs == 1)
-  {
-    cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
-      GMXFileSys::GetPath(pastrArgs[0]),
-      "version.txt")
-      ) << endl;
-    cout << "build date: " << __DATE__ << endl;
-    GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
-    delete[]pastrArgs;
-    return 0;
-  }
+	if (nArgs == 1)
+	{
+		cout << "version: " << GMXFileSys::ReadTextFile(GMXFileSys::GetAbsolutePath(
+			GMXFileSys::GetPath(vecArgs[0]),
+			"version.txt")
+			) << endl;
+		cout << "build date: " << __DATE__ << endl;
+		GMXOptionParser::PrintUsage(listDescriptors, listUsageExamples);
+		return 0;
+	}
 
 
-  GMXOptionParser oOptionParser;
-  if (!oOptionParser.Init(listDescriptors, pastrArgs, nArgs))
-  {
-    cout << "ERROR: input cmd line is not valid" << endl;
-    delete[]pastrArgs;
-    return 1;
-  }
-  delete[]pastrArgs;
+	GMXOptionParser oOptionParser;
+	if (!oOptionParser.Init(listDescriptors, vecArgs))
+	{
+		cout << "ERROR: input cmd line is not valid" << endl;
+		return 1;
+	}
+  
 
-  try
-  {
-    wcout << endl;
-    if (oOptionParser.GetOptionValue("-ap") != "") //ToDo - file_list.size>1;
-    {
+	try
+	{
+		wcout << endl;
+		if (oOptionParser.GetOptionValue("-ap") != "") //ToDo - file_list.size>1;
+		{
       /*
       gmx::BundleConsoleInput oBundleConsoleInput;
       if (!oBundleConsoleInput.InitByConsoleParams(mapConsoleParams.at("-file"),
@@ -389,14 +390,14 @@ int main(int nArgs, char* argv[])
       wcout<<endl;
       }
       */
-    }
-    else return ParseCmdLineAndCallTiling(oOptionParser);
-  }
-  catch (...)
-  {
-    cout << "ERROR: unknown error occured" << endl;
-    return 101;
-  }
+		}
+		else return ParseCmdLineAndCallTiling(oOptionParser);
+	}
+	catch (...)
+	 {
+		cout << "ERROR: unknown error occured" << endl;
+		return 101;
+	 }
 
 }
 

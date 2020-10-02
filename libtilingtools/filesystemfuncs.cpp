@@ -68,7 +68,7 @@ string GMXFileSys::GetRuntimeModulePath()
   wchar_t exe_filename_w[_MAX_PATH + 1];
   GetModuleFileNameW(NULL, exe_filename_w, _MAX_PATH);
   string exe_filename = GMXString::wstrToUtf8(exe_filename_w);
-  GMXString::ReplaceAll(exe_filename,"\\","/");
+  exe_filename = GMXString::ReplaceAll(exe_filename,"\\","/");
   return GMXFileSys::GetPath(exe_filename);
 #else
   return "";
@@ -78,16 +78,16 @@ string GMXFileSys::GetRuntimeModulePath()
 
 
 string	GMXFileSys::RemoveEndingSlash(string	strFolderName)
-{		
+{
 	return	(strFolderName == "") ? "" :
 			(strFolderName[strFolderName.length()-1]== '/') ? strFolderName.substr(0,strFolderName.length()-1) : strFolderName;
 }
 
 
-string		GMXFileSys::GetAbsolutePath (string strBasePath, string strRelativePath)
+string	GMXFileSys::GetAbsolutePath (string strBasePath, string strRelativePath)
 {
 	strBasePath = GMXFileSys::RemoveEndingSlash(strBasePath);
-  regex regUpLevel("^(\\.| )*\\/.+");
+	regex regUpLevel("^(\\.| )*\\/.+");
   
 	while (regex_match(strRelativePath,regUpLevel))
 	{

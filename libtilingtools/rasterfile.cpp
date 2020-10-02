@@ -5,7 +5,7 @@
 
 int GMXPrintProgressStub(double dfComplete, const char *pszMessage, void * pProgressArg)
 {
-  return 1;
+	return 1;
 }
 
 
@@ -14,15 +14,16 @@ namespace gmx
 
 bool RasterFile::Close()
 {
-  if (p_gdal_ds_) delete(p_gdal_ds_);
-  p_gdal_ds_ = 0;
+	if (p_gdal_ds_) delete(p_gdal_ds_);
+	p_gdal_ds_ = 0;
 	
 	raster_file_="";
 	num_bands_= 0;
 	nodata_value_=0;
-  nodata_value_defined_=FALSE;
-  set_srs_ = "";
-  return TRUE;
+	nodata_value_defined_=FALSE;
+	set_srs_ = "";
+
+	return TRUE;
 }
 
 
@@ -32,22 +33,23 @@ bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char ba
   //p_ds->GetRasterBand(1)->GetHistogram(
   ////
 
-  if (!p_ds) return FALSE;
-  if (p_ds->GetRasterCount() == 0 || p_ds->GetRasterXSize() == 0 || p_ds->GetRasterYSize()==0 || 
-    p_ds->GetRasterBand(1) == 0 || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return 0;
+	if (!p_ds) return FALSE;
+	if (p_ds->GetRasterCount() == 0 || p_ds->GetRasterXSize() == 0 || p_ds->GetRasterYSize()==0 || 
+		p_ds->GetRasterBand(1) == 0 || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return 0;
 
-  RasterBuffer rb;
-  if (!rb.CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),0,p_ds->GetRasterBand(1)->GetRasterDataType(),0,0))
+	RasterBuffer rb;
+	if (!rb.CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),
+		p_ds->GetRasterYSize(),0,p_ds->GetRasterBand(1)->GetRasterDataType(),0,0))
     return FALSE;
 
-  rb.InitByRGBColor(background);
+	rb.InitByRGBColor(background);
 
-  if (!p_ds->RasterIO(GF_Write,0,0,p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
+	if (!p_ds->RasterIO(GF_Write,0,0,p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
                       rb.get_pixel_data_ref(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
                       rb.get_data_type(),rb.get_num_bands(),0,0,0,0)) 
                       return FALSE;
   
-  return TRUE;
+	return TRUE;
 }
 
 
@@ -64,76 +66,77 @@ bool RasterFile::Init(string raster_file, string set_srs)
 		return FALSE;
 	}
 
-  if (set_srs != "") set_srs_=set_srs; //p_gdal_ds_->SetProjection(set_srs.c_str());
+	if (set_srs != "") set_srs_=set_srs; //p_gdal_ds_->SetProjection(set_srs.c_str());
 	
 	raster_file_ = raster_file;
 
 	num_bands_	= p_gdal_ds_->GetRasterCount();
-  int nodata_value_defined;
+	int nodata_value_defined;
 	nodata_value_ = p_gdal_ds_->GetRasterBand(1)->GetNoDataValue(&nodata_value_defined);
-  this->nodata_value_defined_ = nodata_value_defined;
+	this->nodata_value_defined_ = nodata_value_defined;
 	gdal_data_type_	= p_gdal_ds_->GetRasterBand(1)->GetRasterDataType();
   
-  return TRUE;
+	return TRUE;
 }
 
 
 RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset, string cutline_file, double clip_offset)
 {
-  if (!p_tile_mset) return 0;
+	if (!p_tile_mset) return 0;
 
-  RasterFileCutline* p_rfc = new RasterFileCutline();
+	RasterFileCutline* p_rfc = new RasterFileCutline();
     
-  if (!p_tile_mset->GetRasterEnvelope(this,p_rfc->tiling_srs_envp_))
-  {
-    cout<<"ERROR: ITileMatrixSet::GetRasterEnvelope fail: not valid raster file georeference"<<endl;
-    delete(p_rfc);
-    return 0;
-  }
+	if (!p_tile_mset->GetRasterEnvelope(this,p_rfc->tiling_srs_envp_))
+	{
+		cout<<"ERROR: ITileMatrixSet::GetRasterEnvelope fail: not valid raster file georeference"<<endl;
+		delete(p_rfc);
+		return 0;
+	}
 
   
-  if (cutline_file != "")
-  {
-    OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
-    if (!p_tiling_srs) return 0;
+	if (cutline_file != "")
+	{
+		OGRSpatialReference *p_tiling_srs = p_tile_mset->GetTilingSRSRef();
+		if (!p_tiling_srs) return 0;
 
-    if (!(p_rfc->tiling_srs_cutline_ = (OGRMultiPolygon*)VectorOperations::ReadIntoSingleMultiPolygon(cutline_file, p_tiling_srs)))
-      cout << "ERROR: unable to read geometry from vector: " << cutline_file<<endl;
-    else
-    {
-      if (clip_offset > 1e-10)
-      {
-        OGRMultiPolygon *p_geom_clip = (OGRMultiPolygon*)p_rfc->tiling_srs_cutline_->Buffer(-clip_offset);
-        delete(p_rfc->tiling_srs_cutline_);
-        p_rfc->tiling_srs_cutline_ = p_geom_clip;
-      }
+		if (!(p_rfc->tiling_srs_cutline_ = 
+				(OGRMultiPolygon*)VectorOperations::ReadIntoSingleMultiPolygon(cutline_file, p_tiling_srs)))
+			cout << "ERROR: unable to read geometry from vector: " << cutline_file<<endl;
+		else
+		{
+			if (clip_offset > 1e-10)
+			{
+				OGRMultiPolygon *p_geom_clip = (OGRMultiPolygon*)p_rfc->tiling_srs_cutline_->Buffer(-clip_offset);
+				delete(p_rfc->tiling_srs_cutline_);
+				p_rfc->tiling_srs_cutline_ = p_geom_clip;
+			}
 
-      if (p_tile_mset->DoesOverlap180Degree(p_rfc->tiling_srs_cutline_))
-        p_tile_mset->AdjustForOverlapping180Degree(p_rfc->tiling_srs_cutline_);
+			if (p_tile_mset->DoesOverlap180Degree(p_rfc->tiling_srs_cutline_))
+				p_tile_mset->AdjustForOverlapping180Degree(p_rfc->tiling_srs_cutline_);
 
-      OGRSpatialReference raster_srs;
-      if (this->GetSRS(raster_srs)) //ToDo - account for defaultsrs
-      {
-        OGRMultiPolygon* p_raster_srs_geom = (OGRMultiPolygon*)p_rfc->tiling_srs_cutline_->clone();
-        p_raster_srs_geom->assignSpatialReference(p_tiling_srs);
-        if (OGRERR_NONE != p_raster_srs_geom->transformTo(&raster_srs))
-        {
-          cout << "ERROR: unable transform vector to raster SRS: " << cutline_file << endl;
-          delete(p_raster_srs_geom);
-          p_raster_srs_geom = 0;
-        }
-        else
-        {
-          double geotransform[6];
-          this->p_gdal_ds_->GetGeoTransform(geotransform);
-          p_rfc->p_pixel_line_cutline_ = VectorOperations::ConvertFromSRSToPixelLine(p_raster_srs_geom,geotransform);
-          delete(p_raster_srs_geom);
-        }
-      }
-    }
-  }
+			OGRSpatialReference raster_srs;
+			if (this->GetSRS(raster_srs)) //ToDo - account for defaultsrs
+			{
+				OGRMultiPolygon* p_raster_srs_geom = (OGRMultiPolygon*)p_rfc->tiling_srs_cutline_->clone();
+				p_raster_srs_geom->assignSpatialReference(p_tiling_srs);
+				if (OGRERR_NONE != p_raster_srs_geom->transformTo(&raster_srs))
+				{
+					cout << "ERROR: unable transform vector to raster SRS: " << cutline_file << endl;
+					delete(p_raster_srs_geom);
+					p_raster_srs_geom = 0;
+				}
+				else
+				{
+					double geotransform[6];
+					this->p_gdal_ds_->GetGeoTransform(geotransform);
+					p_rfc->p_pixel_line_cutline_ = VectorOperations::ConvertFromSRSToPixelLine(p_raster_srs_geom,geotransform);
+					delete(p_raster_srs_geom);
+				}
+			}
+		}
+	}
 
-  return p_rfc;
+	return p_rfc;
 }
 
 
@@ -142,16 +145,16 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
 bool	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
 {
 	if (this->p_gdal_ds_ == 0) return FALSE;
-  if (this->p_gdal_ds_->GetRasterCount()<band_num) return FALSE;
-  if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(band_num)->SetNoDataValue(*p_nodata_val);
-  return (CE_None==p_gdal_ds_->GetRasterBand(band_num)->ComputeStatistics(0,&min,&max,&mean,&std,0,0));
+	if (this->p_gdal_ds_->GetRasterCount()<band_num) return FALSE;
+	if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(band_num)->SetNoDataValue(*p_nodata_val);
+	return (CE_None==p_gdal_ds_->GetRasterBand(band_num)->ComputeStatistics(0,&min,&max,&mean,&std,0,0));
 }
 
 
 double RasterFile::get_nodata_value (bool &nodata_defined)
 {
-  nodata_defined = nodata_value_defined_;
-  return nodata_value_;
+	nodata_defined = nodata_value_defined_;
+	return nodata_value_;
 }
 
 
@@ -161,7 +164,7 @@ RasterFile::RasterFile()
 	raster_file_="";
 	num_bands_= 0;
 	nodata_value_=0;
-  nodata_value_defined_=FALSE;
+	nodata_value_defined_=FALSE;
 }
 
 
@@ -175,17 +178,17 @@ RasterFile::~RasterFile(void)
 bool RasterFile::GetPixelSize (int &width, int &height)
 {  
 	if (this->p_gdal_ds_ == 0)
-  {	
-    width=0;
-    height=0;
-    return false;
-  }
+	{	
+		width=0;
+		height=0;
+		return false;
+	}
 	else
-  {
-    width = this->p_gdal_ds_->GetRasterXSize();
+	{
+		width = this->p_gdal_ds_->GetRasterXSize();
 		height = this->p_gdal_ds_->GetRasterYSize();
-    return true;
-  }
+		return true;
+	}
 }
 
 
@@ -238,48 +241,48 @@ bool RasterFile::GetGeoTransform(double* padblGeoTransform)
 
 bool	RasterFile::GetSRS(OGRSpatialReference  &srs, ITileMatrixSet* p_tile_mset)
 {
-  if (set_srs_ != "")
+	if (set_srs_ != "")
     if (OGRERR_NONE == srs.SetFromUserInput(set_srs_.c_str())) return true;
   
-  const char* strProjRef      = this->p_gdal_ds_->GetProjectionRef();
+	const char* strProjRef      = this->p_gdal_ds_->GetProjectionRef();
 
 	if (OGRERR_NONE == srs.SetFromUserInput(strProjRef)) return true;
-  else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".prj"))
+	else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".prj"))
 	{
 		string prjFile		= GMXFileSys::RemoveExtension(this->raster_file_)+".prj";
 		if (OGRERR_NONE==srs.SetFromUserInput(prjFile.c_str())) return true;	
 	}
 	else if (GMXFileSys::FileExists(GMXFileSys::RemoveExtension(this->raster_file_)+".tab"))
-  {
-    string tabFile = GMXFileSys::RemoveExtension(this->raster_file_)+".tab";
-    if (ReadSpatialRefFromMapinfoTabFile(tabFile,srs)) return true;
-  }
+	{
+		string tabFile = GMXFileSys::RemoveExtension(this->raster_file_)+".tab";
+		if (ReadSpatialRefFromMapinfoTabFile(tabFile,srs)) return true;
+	}
   
-  if (p_tile_mset) return GetDefaultSpatialRef(srs,p_tile_mset->GetTilingSRSRef());
+	if (p_tile_mset) return GetDefaultSpatialRef(srs,p_tile_mset->GetTilingSRSRef());
   
 
-  return false;
+	return false;
 }
 
 bool	RasterFile::GetDefaultSpatialRef (OGRSpatialReference	&srs, OGRSpatialReference  *p_tiling_srs)
 {
 
-  OGREnvelope envp;
-  double geotransform[6];
-  if (!p_gdal_ds_) return false;
+	OGREnvelope envp;
+	double geotransform[6];
+	if (!p_gdal_ds_) return false;
 
-  if (CE_None!=p_gdal_ds_->GetGeoTransform(geotransform)) return false;
-  int w,h;
-  this->GetPixelSize(w,h);
-  if ((fabs(geotransform[0])<200) && (fabs(geotransform[0] + w*geotransform[1])<200))
-	  srs.SetWellKnownGeogCS("WGS84"); 
-  else if (!p_tiling_srs) return false;
-  else
-  {
-    char* p_srs_proj4;
-    p_tiling_srs->exportToProj4(&p_srs_proj4);
-    srs.importFromProj4(p_srs_proj4);
-    OGRFree(p_srs_proj4);
+	if (CE_None!=p_gdal_ds_->GetGeoTransform(geotransform)) return false;
+	int w,h;
+	this->GetPixelSize(w,h);
+	if ((fabs(geotransform[0])<200) && (fabs(geotransform[0] + w*geotransform[1])<200))
+		srs.SetWellKnownGeogCS("WGS84"); 
+	else if (!p_tiling_srs) return false;
+	else
+	{
+		char* p_srs_proj4;
+		p_tiling_srs->exportToProj4(&p_srs_proj4);
+		srs.importFromProj4(p_srs_proj4);
+		OGRFree(p_srs_proj4);
 	}
 
 	return true;
@@ -298,8 +301,8 @@ int BundleTiler::CallRunChunk( BundleTiler* p_bundle,
                                 double* p_offset_values
                               )
 {
-  return p_bundle->RunChunk(p_tiling_params,p_tile_container,zoom,chunk_envp,tiles_expected,
-    p_tiles_generated,is_scalinig_needed,p_scale_values,p_offset_values);
+	return p_bundle->RunChunk(p_tiling_params,p_tile_container,zoom,chunk_envp,tiles_expected,
+		p_tiles_generated,is_scalinig_needed,p_scale_values,p_offset_values);
 }
 
 
@@ -396,7 +399,7 @@ void BundleTiler::Close(void)
 		delete((*iter).second);
 	}
 	item_list_.empty();
-  p_tile_mset_=0;
+	p_tile_mset_=0;
 }
 
 BundleTiler::~BundleTiler(void)
@@ -406,38 +409,38 @@ BundleTiler::~BundleTiler(void)
 
 bool BundleTiler::AdjustCutlinesForOverlapping180Degree()
 {
-  OGREnvelope bundle_envp = CalcEnvelope();
-  int min_x,min_y,max_x,max_y;
-  p_tile_mset_->CalcTileRange(bundle_envp,4,min_x,min_y,max_x,max_y);
+	OGREnvelope bundle_envp = CalcEnvelope();
+	int min_x,min_y,max_x,max_y;
+	p_tile_mset_->CalcTileRange(bundle_envp,4,min_x,min_y,max_x,max_y);
   
 
-  if ((bundle_envp.MaxX>0 && bundle_envp.MinX<0)&&(max_x-min_x>1<<3))
-  {
-    int min_x0,min_y0,max_x0,max_y0;
-    OGREnvelope zero_point_envp;
-    zero_point_envp.MinX = -0.001;zero_point_envp.MinY = -0.001;
-    zero_point_envp.MaxX = 0.001;zero_point_envp.MaxY = 0.001;
-    p_tile_mset_->CalcTileRange(zero_point_envp,5,min_x0,min_y0,max_x0,max_y0);
-    for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
-	  {
-      p_tile_mset_->CalcTileRange((*iter).second->tiling_srs_envp_,
-                                  5,min_x,min_y,max_x,max_y);
-      if (min_x<=max_x0 && max_x>=min_x0) return true;
-    }
+	if ((bundle_envp.MaxX>0 && bundle_envp.MinX<0)&&(max_x-min_x>1<<3))
+	{
+		int min_x0,min_y0,max_x0,max_y0;
+		OGREnvelope zero_point_envp;
+		zero_point_envp.MinX = -0.001;zero_point_envp.MinY = -0.001;
+		zero_point_envp.MaxX = 0.001;zero_point_envp.MaxY = 0.001;
+		p_tile_mset_->CalcTileRange(zero_point_envp,5,min_x0,min_y0,max_x0,max_y0);
+		for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
+		{
+			p_tile_mset_->CalcTileRange((*iter).second->tiling_srs_envp_,
+									5,min_x,min_y,max_x,max_y);
+			if (min_x<=max_x0 && max_x>=min_x0) return true;
+		}
     
-    for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
-	  {
-      OGRPolygon* p_poly_envp = 
-        VectorOperations::CreateOGRPolygonByOGREnvelope((*iter).second->tiling_srs_envp_);
-      p_tile_mset_->AdjustForOverlapping180Degree(p_poly_envp);
-      p_poly_envp->getEnvelope(&(*iter).second->tiling_srs_envp_);
-      delete(p_poly_envp);
-      if ((*iter).second->tiling_srs_cutline_)
-        p_tile_mset_->AdjustForOverlapping180Degree((*iter).second->tiling_srs_cutline_);
-    }
-  }
+		for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
+		{
+			OGRPolygon* p_poly_envp = 
+			VectorOperations::CreateOGRPolygonByOGREnvelope((*iter).second->tiling_srs_envp_);
+			p_tile_mset_->AdjustForOverlapping180Degree(p_poly_envp);
+			p_poly_envp->getEnvelope(&(*iter).second->tiling_srs_envp_);
+			delete(p_poly_envp);
+			if ((*iter).second->tiling_srs_cutline_)
+			p_tile_mset_->AdjustForOverlapping180Degree((*iter).second->tiling_srs_cutline_);
+		}
+	}
 
-  return true;
+	return true;
 }
 
 
@@ -448,40 +451,40 @@ int	BundleTiler::Init ( list<pair<string,string>> raster_vector,
 {
 	Close();
   
-  if (!p_tile_mset) return 0;
-  else
-  {
-    char  *p_srs_proj4;
-    if (OGRERR_NONE!=p_tile_mset->GetTilingSRSRef()->exportToProj4(&p_srs_proj4)) 
-      return 0;
-    p_tile_mset_=p_tile_mset;
-    OGRFree(p_srs_proj4);
-  }
+	if (!p_tile_mset) return 0;
+	else
+	{
+		char  *p_srs_proj4;
+		if (OGRERR_NONE!=p_tile_mset->GetTilingSRSRef()->exportToProj4(&p_srs_proj4)) 
+		  return 0;
+		p_tile_mset_=p_tile_mset;
+		OGRFree(p_srs_proj4);
+	}
 
 	if (raster_vector.size() == 0) return 0;
 
-  clip_offset_ = clip_offset;
-  set_srs_ = user_input_srs;
+	clip_offset_ = clip_offset;
+	set_srs_ = user_input_srs;
 
  	for (auto iter : raster_vector)
 	{
-    if (iter.second=="")
-      AddItemToBundle(iter.first,
+		if (iter.second=="")
+			AddItemToBundle(iter.first,
                       VectorOperations::GetVectorFileNameByRasterFileName(iter.first));
-    else AddItemToBundle(iter.first,iter.second);
+		else AddItemToBundle(iter.first,iter.second);
 	}
 
-  AdjustCutlinesForOverlapping180Degree();
+	AdjustCutlinesForOverlapping180Degree();
 
-  OGREnvelope oBundleEnvp = CalcEnvelope();
-  if ((oBundleEnvp.MaxX > -p_tile_mset_->ULX()) && 
+	OGREnvelope oBundleEnvp = CalcEnvelope();
+	if ((oBundleEnvp.MaxX > -p_tile_mset_->ULX()) && 
     (raster_vector.size()>1) && (raster_vector.begin()->second!="") &&
     (raster_vector.begin()->second == (raster_vector.begin()++)->second))
-  {
-    m_bUseWarpClipHack = true;
-  }
+	{
+		m_bUseWarpClipHack = true;
+	}
   
-  return item_list_.size();
+	return item_list_.size();
 }
 
 
@@ -508,11 +511,11 @@ bool	BundleTiler::AddItemToBundle (string raster_file, string vector_file)
 		return 0;
 	}
 
-  pair<string,RasterFileCutline*> p;
+	pair<string,RasterFileCutline*> p;
 	p.first			= raster_file;
-  p.second = image.GetRasterFileCutline(p_tile_mset_, vector_file, clip_offset_);
-  if (!p.second) return false;
-  item_list_.push_back(p);
+	p.second = image.GetRasterFileCutline(p_tile_mset_, vector_file, clip_offset_);
+	if (!p.second) return false;
+	item_list_.push_back(p);
 	return true;
 }
 
@@ -534,16 +537,16 @@ OGREnvelope BundleTiler::CalcEnvelope()
 
 	for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
 	{
-    if ((*iter).second->tiling_srs_cutline_ != 0)
-    {
-      OGREnvelope envp_cutline;
-      (*iter).second->tiling_srs_cutline_->getEnvelope(&envp_cutline);
-      envp = VectorOperations::MergeEnvelopes(envp, 
-                                              VectorOperations::InetersectEnvelopes(envp_cutline,
-                                                                                  (*iter).second->tiling_srs_envp_)
-                                              );
-    }
-    else envp = VectorOperations::MergeEnvelopes(envp,(*iter).second->tiling_srs_envp_);
+		if ((*iter).second->tiling_srs_cutline_ != 0)
+		{
+		  OGREnvelope envp_cutline;
+		  (*iter).second->tiling_srs_cutline_->getEnvelope(&envp_cutline);
+		  envp = VectorOperations::MergeEnvelopes(envp, 
+												  VectorOperations::InetersectEnvelopes(envp_cutline,
+																					  (*iter).second->tiling_srs_envp_)
+												  );
+		}
+		else envp = VectorOperations::MergeEnvelopes(envp,(*iter).second->tiling_srs_envp_);
 	}
 	return envp; 
 }
@@ -552,7 +555,7 @@ OGREnvelope BundleTiler::CalcEnvelope()
 int	BundleTiler::CalcNumberOfTiles (int zoom)
 {
 	int n = 0;
-  double		res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
+	double		res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
 
 	int minx,maxx,miny,maxy;
 	p_tile_mset_->CalcTileRange(CalcEnvelope(),zoom,minx,miny,maxx,maxy);
@@ -571,10 +574,10 @@ int	BundleTiler::CalcNumberOfTiles (int zoom)
 
 double BundleTiler::GetNodataValue(bool &nodata_defined)
 {
-  if (item_list_.size()==0) return 0;
-  RasterFile rf;
-  rf.Init((*item_list_.begin()).first);
-  return rf.get_nodata_value(nodata_defined);
+	if (item_list_.size()==0) return 0;
+	RasterFile rf;
+	rf.Init((*item_list_.begin()).first);
+	return rf.get_nodata_value(nodata_defined);
 }
 
 
@@ -585,15 +588,15 @@ int		BundleTiler::CalcAppropriateZoom()
 	if (item_list_.size()==0) return -1;
 
 	RasterFile rf;
-  rf.Init((*item_list_.begin()).first, set_srs_);
-  OGREnvelope envp;
+	rf.Init((*item_list_.begin()).first, set_srs_);
+	OGREnvelope envp;
 
-  if (!p_tile_mset_->GetRasterEnvelope(&rf, envp))
-  {
-    cout << "ERROR: BundleTiler::CalcAppropriateZoom: not valid raster file georeference: ";
-    cout<<(*item_list_.begin()).first<<endl;
-    return -1;
-  }
+	if (!p_tile_mset_->GetRasterEnvelope(&rf, envp))
+	{
+	cout << "ERROR: BundleTiler::CalcAppropriateZoom: not valid raster file georeference: ";
+	cout<<(*item_list_.begin()).first<<endl;
+	return -1;
+	}
 
 	int width_src = 0, height_src = 0;
 	rf.GetPixelSize(width_src,height_src);
@@ -602,7 +605,8 @@ int		BundleTiler::CalcAppropriateZoom()
 	if (res_def<=0) return -1;
 
 	for (int z=0; z<32; z++)
-	  if (((p_tile_mset_->CalcPixelSizeByZoom(z)-res_def)/p_tile_mset_->CalcPixelSizeByZoom(z))<0.2) return z;
+		if (((p_tile_mset_->CalcPixelSizeByZoom(z)-res_def)/p_tile_mset_->CalcPixelSizeByZoom(z))<0.2) return z;
+
 	return -1;
 }
 
@@ -779,13 +783,13 @@ return TRUE;
 
 
 bool BundleTiler::WarpChunkToBuffer (int zoom,	
-                                            OGREnvelope chunk_envp, 
-                                            RasterBuffer* p_dst_buffer, 
-                                            int output_bands_num,
-                                            map<string,int*>* p_band_mapping,
-                                            GDALResampleAlg resample_alg, 
-                                            int* p_ndval,
-                                            unsigned char* p_background_color)
+                                    OGREnvelope chunk_envp, 
+                                    RasterBuffer* p_dst_buffer, 
+                                    int output_bands_num,
+                                    map<string,int*>* p_band_mapping,
+                                    GDALResampleAlg resample_alg, 
+                                    int* p_ndval,
+                                    unsigned char* p_background_color)
 {
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return FALSE;
@@ -796,33 +800,34 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 		cout<<"ERROR: can't open raster file: "<<(*item_list_.begin()).first<<endl;
 		return FALSE;
 	}
-	GDALDataType	dt		= GetRasterFileType();
-	int       bands_num_src   = p_src_ds->GetRasterCount();
-	int				bands_num_dst	= (output_bands_num==0) ? bands_num_src : output_bands_num;
+	GDALDataType dt	= GetRasterFileType();
+	int bands_num_src = p_src_ds->GetRasterCount();
+	int	bands_num_dst = (output_bands_num==0) ? bands_num_src : output_bands_num;
  
 	bool nodata_val_from_file_defined;
-	double			nodata_val_from_file = GetNodataValue(nodata_val_from_file_defined);
+	double nodata_val_from_file = GetNodataValue(nodata_val_from_file_defined);
 
-	double		res			=  p_tile_mset_->CalcPixelSizeByZoom(zoom);
-	int				buf_width	= int(((chunk_envp.MaxX - chunk_envp.MinX)/res)+0.5);
-	int				buf_height	= int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
+	double res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
+	int	buf_width = int(((chunk_envp.MaxX - chunk_envp.MinX)/res)+0.5);
+	int	buf_height = int(((chunk_envp.MaxY - chunk_envp.MinY)/res)+0.5);
 
 	
-	string			tiff_in_mem = ("/vsimem/tiffinmem_" + 
-	GMXString::ConvertIntToString((int)chunk_envp.MinX) + "_" + GMXString::ConvertIntToString((int)chunk_envp.MaxY));
+	string tiff_in_mem = ("/vsimem/tiffinmem_" + 
+						GMXString::ConvertIntToString((int)chunk_envp.MinX) + 
+						"_" + GMXString::ConvertIntToString((int)chunk_envp.MaxY));
   
-	GDALDataset*	p_vrt_ds = (GDALDataset*)GDALCreate(
-								GDALGetDriverByName("GTiff"),
-								tiff_in_mem.c_str(),
-								buf_width,
-								buf_height,
-								bands_num_dst,
-								dt,
-								0
-								);
-  if (p_src_ds->GetRasterBand(1)->GetColorTable())
+	GDALDataset* p_vrt_ds = (GDALDataset*)GDALCreate(
+													GDALGetDriverByName("GTiff"),
+													tiff_in_mem.c_str(),
+													buf_width,
+													buf_height,
+													bands_num_dst,
+													dt,
+													0
+													);
+	if (p_src_ds->GetRasterBand(1)->GetColorTable())
 		p_vrt_ds->GetRasterBand(1)->SetColorTable(p_src_ds->GetRasterBand(1)->GetColorTable());
-  GDALClose(p_src_ds);
+	GDALClose(p_src_ds);
 
 	double			geotransform[6];
 	geotransform[0] = chunk_envp.MinX;
@@ -833,11 +838,11 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	geotransform[5] = -res;
 	p_vrt_ds->SetGeoTransform(geotransform);
 	char *p_dst_wkt = 0;
-  p_tile_mset_->GetTilingSRSRef()->exportToWkt( &p_dst_wkt );
+	p_tile_mset_->GetTilingSRSRef()->exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
   
-  if (p_background_color)
-    RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
+	if (p_background_color)
+		RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
   
    
   int file_num = -1;
