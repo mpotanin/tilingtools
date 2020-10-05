@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-const list<GMXOptionDescriptor> listDescriptors = {
+const list<MPLOptionDescriptor> listDescriptors = {
   { "-i", 0, 0, "input folder or file" },
   { "-o", 0, 0, "output folder or file" },
   { "-of", 0, 0, "output tile container type" },
@@ -31,6 +31,14 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 		MPLString::wstrToUtf8(strBuff, pastrArgsW[i]);
 		vecArgs.push_back(MPLString::ReplaceAll(strBuff, "\\", "/"));
 	}
+
+	if (!MPLGDALDelayLoader::Load(MPLFileSys::GetPath(vecArgs[0]) + "/tilingtools.config"))
+	{
+		cout << "ERROR: can't load GDAL" << endl;
+		return 1;
+	}
+
+	cout << endl;
 #else
 int main(int nArgs, char* argv[])
 {
@@ -39,13 +47,6 @@ int main(int nArgs, char* argv[])
 		vecArgs.push_back(argv[i]);
 #endif
 
-	if (!MPLGDALLoader::Load(MPLFileSys::GetPath(vecArgs[0])))
-	{
-		cout << "ERROR: can't load GDAL" << endl;
-		return 1;
-	}
-
-	cout << endl;
 
 	if (nArgs == 1)
 	{

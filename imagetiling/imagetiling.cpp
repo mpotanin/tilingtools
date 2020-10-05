@@ -229,7 +229,7 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
 
 
 
-const list<GMXOptionDescriptor> listDescriptors = {
+const list<MPLOptionDescriptor> listDescriptors = {
   { "-i", 0, 1, "input path" },
   { "-ap", 1, 0, "tiling input files apart" },
   { "-o", 0, 0, "output path" },
@@ -273,6 +273,7 @@ const list<string> listUsageExamples = {
 #ifdef WIN32
 int _tmain(int nArgs, wchar_t *pastrArgsW[])
 {
+	
 	std::vector<string> vecArgs;
 	for (int i = 0; i<nArgs; i++)
 	{
@@ -280,6 +281,14 @@ int _tmain(int nArgs, wchar_t *pastrArgsW[])
 		MPLString::wstrToUtf8(strBuff, pastrArgsW[i]);
 		vecArgs.push_back(MPLString::ReplaceAll(strBuff, "\\", "/"));
 	}
+	if (!MPLGDALDelayLoader::Load(MPLFileSys::GetPath(vecArgs[0]) + "tilingtools.config"))
+	{
+		cout << "ERROR: can't load GDAL" << endl;
+		return 1;
+	}
+
+	cout << endl;
+
 #else
 int main(int nArgs, char* argv[])
 {
@@ -287,14 +296,6 @@ int main(int nArgs, char* argv[])
   for (int i = 0; i<nArgs; i++)
     vecArgs.push_back(argv[i]);
 #endif
-
-	if (!MPLGDALLoader::Load(MPLFileSys::GetPath(vecArgs[0])))
-	{
-		cout << "ERROR: can't load GDAL" << endl;
-		return 1;
-	}
-
-	cout << endl;
 
 	if (nArgs == 1)
 	{
