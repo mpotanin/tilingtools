@@ -70,19 +70,20 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
 * requirements:
   * **x64 platform**
   * Visual Studio 2017
-* git clone tilingtools repository or download it as zip-archive 
+* ```git clone https://github.com/scanex/tilingtools tilingtools``` 
+* ```git clone https://github.com/scanex/cpp_common_utils```
 * [download gdal302.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal302.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal302/include/gdal.h)
-* [download gdal223.zip archive](https://github.com/mpotanin/binaries/blob/master/gdal223.zip). Unzip it into gitcloned tilingtools folder (e.g. after unzip there must be a path: tilingtools/gdal223/include/gdal.h)
 * open TilingTools.sln with Visual Studio 2017
 * compile TilingTools (set in Configuration Manager: configuration=**Release, platform=x64**)
-* if compilation succeed exe-files will be created by path /x64/Release/
+* if compilation succeed exe-files will be put into /x64/Release/
 
 ### Building on Linux
 * requirements:
   * x64 platform
   * gcc 4.9.0 or newer version
   * development x64 version of the libraries: gdal, sqlite3, gd (if git is installed you may run: ```apt-get install git make libgdal-dev sqlite3 libgd-dev```)
-* git clone tilingtools repository (```git clone https://github.com/scanex/tilingtools tilingtools```) or download it as zip-archive  
+* ```git clone https://github.com/scanex/tilingtools tilingtools``` 
+* ```git clone https://github.com/scanex/cpp_common_utils```  
 * open tilingtools dir and run ```make```
 
 ## Update gdal version on Windows
