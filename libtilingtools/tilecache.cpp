@@ -28,7 +28,7 @@ bool	TileCache::AddTile(int z, int x, int y, unsigned char* p_data, unsigned int
   if (cache_size_ + size> cache_max_size_)
   {
     addtile_mutex_.unlock();
-    return FALSE;
+    return false;
   }
 
 	string tile_key = MPLString::ConvertIntToString(z) + "_" + MPLString::ConvertIntToString(x) + "_" + MPLString::ConvertIntToString(y);
@@ -46,7 +46,7 @@ bool	TileCache::AddTile(int z, int x, int y, unsigned char* p_data, unsigned int
 	tile_size_map_[tile_key]=size;
   cache_size_+=size;
   addtile_mutex_.unlock();
-	return TRUE;
+	return true;
 }
 
 
@@ -58,7 +58,7 @@ bool	TileCache::GetTile(int z, int x, int y, unsigned char* &p_data, unsigned in
 	{
 		p_data	= NULL;
 		size	= 0;
-		return FALSE;
+		return false;
 	}
 	else
 	{
@@ -66,13 +66,13 @@ bool	TileCache::GetTile(int z, int x, int y, unsigned char* &p_data, unsigned in
 		p_data = new unsigned char[size];
 		memcpy(p_data,(*iter).second,size);
 	}
-	return TRUE;
+	return true;
 }
 
 bool	TileCache::FindTile(int z, int x, int y)
 {
   string tile_key = MPLString::ConvertIntToString(z) + "_" + MPLString::ConvertIntToString(x) + "_" + MPLString::ConvertIntToString(y);
-	return (tile_data_map_.find(tile_key) == tile_data_map_.end()) ? FALSE : TRUE;
+	return (tile_data_map_.find(tile_key) == tile_data_map_.end()) ? false : true;
 }
 
 

@@ -29,7 +29,7 @@ namespace ttx
 								int	y_size,
 								void* p_data_src = NULL,
 								GDALDataType data_type = GDT_Byte,
-								bool is_alpha_band = FALSE,
+								bool is_alpha_band = false,
 								GDALColorTable* p_color_table = NULL
 								);
 			//RasterBuffer* Clone();

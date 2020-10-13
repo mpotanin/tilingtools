@@ -91,7 +91,7 @@ public:
 		int i = 0;
 		for (i=0;i<32;i++)
 			if (( (((((int64_t)1)<<(2*i+2))-1)/3)<<1) > id) break;
-		if (i==32) return FALSE;
+		if (i==32) return false;
 		else z = i;
 		
 		int64_t n = (((((int64_t)1)<<(2*z))-1)/3)<<1;
@@ -99,7 +99,7 @@ public:
 		y = ((id-n)>>(z+1));
 		x = (id-n) % (1<<(z+1));
 
-		return TRUE;
+		return true;
 	};
 
 	

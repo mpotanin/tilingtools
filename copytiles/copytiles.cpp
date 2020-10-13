@@ -196,7 +196,7 @@ int main(int nArgs, char* argv[])
       cout << "ERROR: not valid value of \"-i_tnt\" parameter: " << strSrcTemplate << endl;
       return 1;
     }
-    poSrcTC = new ttx::TileFolder(poSrcTileName, eMercType, FALSE);
+    poSrcTC = new ttx::TileFolder(poSrcTileName, eMercType, false);
 
   }
 
@@ -243,7 +243,7 @@ int main(int nArgs, char* argv[])
       cout << "ERROR: not valid value of \"-o_tnt\" parameter: " << strDestTemplate << endl;
       return 1;
     }
-    poDestTC = new ttx::TileFolder(poDestTileName, eMercType, FALSE);
+    poDestTC = new ttx::TileFolder(poDestTileName, eMercType, false);
   }
   else
   {

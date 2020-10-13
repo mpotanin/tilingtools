@@ -10,7 +10,7 @@ bool TTXPrintTilingProgress (int tiles_expected, int tiles_generated)
 		cout<<(tiles_generated*10/tiles_expected)*10<<" ";
 		fflush(stdout);
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -31,7 +31,7 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
                           p_tiling_params->clip_offset_))
 	{
 		cout<<"ERROR: can't init raster bundle object"<<endl;
-		return FALSE;
+		return false;
 	}
 
 
@@ -40,7 +40,7 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 	if (base_zoom<=0)
 	{
 		cout<<"ERROR: can't calculate base zoom for tiling"<<endl;
-		return FALSE;
+		return false;
 	}
 
 	TileContainerOptions tc_params;
@@ -83,7 +83,7 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 								   	&merc_grid,
 								    tiles_expected,
 								    tiles_generated,
-								    TRUE,
+								    true,
 								    p_itile_pyramid,
 									p_tiling_params->gdal_resampling_==GRA_NearestNeighbour,
 									ndv_from_input_defined ? &ndv_val : 0,
@@ -99,7 +99,7 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 											&merc_grid,
 											tiles_expected,
 											tiles_generated,
-											FALSE,
+											false,
 											p_itile_pyramid,
 											p_tiling_params->gdal_resampling_ == GRA_NearestNeighbour,
 											ndv_from_input_defined ? &ndv_val : 0,
@@ -141,7 +141,7 @@ bool TTXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 {
 
 	RasterBuffer oBuffer;
-	bool was_error = FALSE;
+	bool was_error = false;
 	bool b;
 
 	int min_x,min_y,max_x,max_y;
@@ -158,9 +158,9 @@ bool TTXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 	if (was_error)
 	{
 		cout<<"ERROR: TTXMakePyramidTileRecursively"<<endl;
-		return FALSE;
+		return false;
 	}
-	else return TRUE;
+	else return true;
 }
 
 
@@ -186,19 +186,19 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 	if (zoom>base_zoom) return false;
 	else if (zoom==base_zoom)
 	{	
-		if (!p_itile_pyramid->TileExists(zoom,nX,nY)) return FALSE;
-		if (only_calculate) return TRUE;
+		if (!p_itile_pyramid->TileExists(zoom,nX,nY)) return false;
+		if (only_calculate) return true;
 
 		unsigned int size	= 0;
 		unsigned char* p_data	= NULL;
 	
 		p_itile_pyramid->GetTile(zoom,nX,nY,p_data,size);
-		if (size ==0) return FALSE;
+		if (size ==0) return false;
 
 		if (!tile_buffer.CreateBufferFromInMemoryData(p_data, size, p_itile_pyramid->GetTileType()))
 		{
 			cout << "ERROR: reading tile data" << endl;
-			return FALSE;
+			return false;
 		}
 
 		if (p_ndv) tile_buffer.CreateAlphaBandByNDV(p_ndv[0]);
@@ -206,7 +206,7 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		//p_tiling_params->
 
    		delete[]((unsigned char*)p_data);
-		return TRUE;
+		return true;
 	}
 	else
 	{
@@ -235,27 +235,27 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 															p_ndv,
 															quality,
 															p_background_color);
-					if ((*p_was_error)) return FALSE;
+					if ((*p_was_error)) return false;
 				}
-				else src_quarter_tile_buffers_def[i*2+j] = FALSE;
+				else src_quarter_tile_buffers_def[i*2+j] = false;
 			}
 		}
 		if ((!src_quarter_tile_buffers_def[0])&&
 			(!src_quarter_tile_buffers_def[1])&&
 			(!src_quarter_tile_buffers_def[2])&&
-			(!src_quarter_tile_buffers_def[3]) )	return FALSE;
+			(!src_quarter_tile_buffers_def[3]) )	return false;
 	
 		if (only_calculate)
 		{
      		tiles_expected++;
-			return TRUE;
+			return true;
 		}
 
 		if (!TTXZoomOutFourIntoOne(quarter_tile_buffer,
                               src_quarter_tile_buffers_def, 
                               tile_buffer,
                               use_nearest_resampling,
-                              p_background_color)) return FALSE;
+                              p_background_color)) return false;
 		void *p_data=NULL;
 		int size = 0;
 		tile_buffer.SerializeToInMemoryData(p_data, size, p_itile_pyramid->GetTileType(), 
@@ -263,12 +263,12 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		
 		(*p_was_error) =  (!p_itile_pyramid->AddTile(zoom,nX,nY,(unsigned char*)p_data,size));
 		delete[]((unsigned char*)p_data);
-		if (*p_was_error) return FALSE;
+		if (*p_was_error) return false;
 		tiles_generated++;
 		TTXPrintTilingProgress(tiles_expected,tiles_generated);
 	}
 
-	return TRUE;
+	return true;
 }
 
 
@@ -285,7 +285,7 @@ bool TTXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4],
 	int tile_size;
 	for (i = 0; i<4;i++)
     if (src_quarter_tile_buffers_def[i]) break;
-	if (i==4) return FALSE;
+	if (i==4) return false;
 	else tile_size = src_quarter_tile_buffers[i].get_x_size(); 
 	
 	zoomed_out_tile_buffer.CreateBuffer(src_quarter_tile_buffers[i].get_num_bands(),
@@ -316,6 +316,6 @@ bool TTXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4],
 		}
 	}
 
-	return TRUE;
+	return true;
 }
 

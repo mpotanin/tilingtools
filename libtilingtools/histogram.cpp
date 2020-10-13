@@ -319,7 +319,7 @@ int MetaHistogram::CalcNumOfExistingValues(int band)
 
 bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, int64_t *&freqs)
 {
-  if (band>=num_bands_) return FALSE;
+  if (band>=num_bands_) return false;
 
   min_val = min_val_;
   step = step_;
@@ -328,7 +328,7 @@ bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &n
   for (int i=0;i<num_vals_;i++)
     freqs[i]=freqs_[band][i];
   
-  return TRUE;
+  return true;
 }
 
 bool  MetaHistogram::GetSerializedText(int &size, char *&text)
@@ -692,7 +692,7 @@ int MetaHistogram::CalcNumOfExistingValues(int band)
 
 bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &num_vals, int64_t *&freqs)
 {
-  if (band>=num_bands_) return FALSE;
+  if (band>=num_bands_) return false;
 
   min_val = min_val_;
   step = step_;
@@ -701,6 +701,6 @@ bool MetaHistogram::GetHistogram(int band, double &min_val, double &step, int &n
   for (int i=0;i<num_vals_;i++)
     freqs[i]=freqs_[band][i];
   
-  return TRUE;
+  return true;
 }
 */

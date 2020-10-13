@@ -20,10 +20,10 @@ bool RasterFile::Close()
 	raster_file_="";
 	num_bands_= 0;
 	nodata_value_=0;
-	nodata_value_defined_=FALSE;
+	nodata_value_defined_=false;
 	set_srs_ = "";
 
-	return TRUE;
+	return true;
 }
 
 
@@ -33,23 +33,23 @@ bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char ba
   //p_ds->GetRasterBand(1)->GetHistogram(
   ////
 
-	if (!p_ds) return FALSE;
+	if (!p_ds) return false;
 	if (p_ds->GetRasterCount() == 0 || p_ds->GetRasterXSize() == 0 || p_ds->GetRasterYSize()==0 || 
 		p_ds->GetRasterBand(1) == 0 || p_ds->GetRasterBand(1)->GetRasterDataType() != GDT_Byte) return 0;
 
 	RasterBuffer rb;
 	if (!rb.CreateBuffer(p_ds->GetRasterCount(),p_ds->GetRasterXSize(),
 		p_ds->GetRasterYSize(),0,p_ds->GetRasterBand(1)->GetRasterDataType(),0,0))
-    return FALSE;
+    return false;
 
 	rb.InitByRGBColor(background);
 
 	if (!p_ds->RasterIO(GF_Write,0,0,p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
                       rb.get_pixel_data_ref(),p_ds->GetRasterXSize(),p_ds->GetRasterYSize(),
                       rb.get_data_type(),rb.get_num_bands(),0,0,0,0)) 
-                      return FALSE;
+                      return false;
   
-	return TRUE;
+	return true;
 }
 
 
@@ -63,7 +63,7 @@ bool RasterFile::Init(string raster_file, string set_srs)
 	{
 		cout<<"ERROR: RasterFile::init: can't open raster image"<<endl;
     Close();
-		return FALSE;
+		return false;
 	}
 
 	if (set_srs != "") set_srs_=set_srs; //p_gdal_ds_->SetProjection(set_srs.c_str());
@@ -76,7 +76,7 @@ bool RasterFile::Init(string raster_file, string set_srs)
 	this->nodata_value_defined_ = nodata_value_defined;
 	gdal_data_type_	= p_gdal_ds_->GetRasterBand(1)->GetRasterDataType();
   
-	return TRUE;
+	return true;
 }
 
 
@@ -144,8 +144,8 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
 
 bool	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
 {
-	if (this->p_gdal_ds_ == 0) return FALSE;
-	if (this->p_gdal_ds_->GetRasterCount()<band_num) return FALSE;
+	if (this->p_gdal_ds_ == 0) return false;
+	if (this->p_gdal_ds_->GetRasterCount()<band_num) return false;
 	if (p_nodata_val) this->p_gdal_ds_->GetRasterBand(band_num)->SetNoDataValue(*p_nodata_val);
 	return (CE_None==p_gdal_ds_->GetRasterBand(band_num)->ComputeStatistics(0,&min,&max,&mean,&std,0,0));
 }
@@ -164,7 +164,7 @@ RasterFile::RasterFile()
 	raster_file_="";
 	num_bands_= 0;
 	nodata_value_=0;
-	nodata_value_defined_=FALSE;
+	nodata_value_defined_=false;
 }
 
 
@@ -203,7 +203,7 @@ GDALDataset*	RasterFile::get_gdal_ds_ref()
 bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs)
 {
 	FILE *fp = MPLFileSys::OpenFile(tab_file,"r");
-	if (!fp) return FALSE;
+	if (!fp) return false;
 	fseek(fp, 0, SEEK_END);
 	long size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -212,15 +212,15 @@ bool RasterFile::ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialRe
 	fread(pchar_tab_file_data,sizeof(char),size,fp);
 	string str_tab_file_data(pchar_tab_file_data);
 	delete[]pchar_tab_file_data;
-	if (str_tab_file_data.find("CoordSys Earth Projection") == string::npos) return FALSE;
+	if (str_tab_file_data.find("CoordSys Earth Projection") == string::npos) return false;
 	int start_pos	= str_tab_file_data.find("CoordSys Earth Projection");
 	int end_pos		= (str_tab_file_data.find('\n',start_pos) != string::npos)		? 
 														str_tab_file_data.size() : 
 														str_tab_file_data.find('\n',start_pos);
 	string strMapinfoProj = str_tab_file_data.substr(start_pos, end_pos-start_pos+1);
-	if (OGRERR_NONE!=srs.importFromMICoordSys(strMapinfoProj.c_str())) return FALSE;
+	if (OGRERR_NONE!=srs.importFromMICoordSys(strMapinfoProj.c_str())) return false;
 	
-	return TRUE;
+	return true;
 }
 
 int RasterFile::GetBandsCount()
@@ -615,10 +615,10 @@ bool	BundleTiler::Intersects(OGREnvelope envp)
 {
 	for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
 	{
-		if ((*iter).second->Intersects(envp)) return TRUE;
+		if ((*iter).second->Intersects(envp)) return true;
   }
 	
-	return FALSE;
+	return false;
 }
 
 ///*ToDo!!!!!!!
@@ -628,7 +628,7 @@ bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
                                                   int      output_bands_num,
                                                   map<string,int*>*  p_band_mapping)
 {
-  if (this->item_list_.size()==0) return FALSE;
+  if (this->item_list_.size()==0) return false;
   p_scales = (p_offsets = 0);
   double min,max,mean,std;
   double nodata_val = (p_nodata_val) ? (*p_nodata_val) : 0;
@@ -636,7 +636,7 @@ bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
   if (output_bands_num==0)
   {
     RasterFile rf;
-    if (!rf.Init(*GetFileList().begin())) return FALSE;
+    if (!rf.Init(*GetFileList().begin())) return false;
     int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
     p_scales = new double[bands_num];
     p_offsets = new double[bands_num]; 
@@ -648,7 +648,7 @@ bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
       {
         delete[]p_scales;delete[]p_offsets;
         p_scales = (p_offsets = 0);
-        return FALSE;
+        return false;
       }
 
       if (((min>=0) && (max <= 255)) || (max==min))
@@ -686,7 +686,7 @@ bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
           {
             delete[]p_scales; delete[]p_offsets;
             p_scales = (p_offsets = 0);
-            return FALSE;
+            return false;
           }
           else
           {
@@ -706,7 +706,7 @@ bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
     }
   }
   
-  return TRUE;
+  return true;
 }
 //*/
 
@@ -719,14 +719,14 @@ double *p_nodata_val,
 int      output_bands_num,
 map<string,int*>*  p_band_mapping)
 {
-if (this->item_list_.size()==0) return FALSE;
+if (this->item_list_.size()==0) return false;
 p_min_values = (p_max_values = 0);
 double min,max,mean,std;
 
 if (output_bands_num==0)
 {
 RasterFile rf;
-if (!rf.Init(*GetFileList().begin())) return FALSE;
+if (!rf.Init(*GetFileList().begin())) return false;
 int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
 p_min_values = new double[bands_num];
 p_max_values = new double[bands_num];
@@ -736,7 +736,7 @@ if (!rf.CalcBandStatistics(b+1,min,max,mean,std,p_nodata_val))
 {
 delete[]p_min_values;delete[]p_max_values;
 p_min_values=0;p_max_values=0;
-return FALSE;
+return false;
 }
 p_min_values[b] = mean - 2*std;
 p_max_values[b] = mean + 2*std;
@@ -764,7 +764,7 @@ error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,p_nodata_val) ?
 if (error)
 {
 delete[]p_min_values;delete[]p_max_values;
-return FALSE;
+return false;
 }
 else
 {
@@ -777,7 +777,7 @@ break;
 }
 }
 
-return TRUE;
+return true;
 }
 */
 
@@ -792,13 +792,13 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
                                     unsigned char* p_background_color)
 {
   //initialize output vrt dataset warp to 
-	if (item_list_.size()==0) return FALSE;
+	if (item_list_.size()==0) return false;
   
 	GDALDataset	*p_src_ds = (GDALDataset*)GDALOpen((*item_list_.begin()).first.c_str(),GA_ReadOnly );
 	if (p_src_ds==0)
 	{
 		cout<<"ERROR: can't open raster file: "<<(*item_list_.begin()).first<<endl;
-		return FALSE;
+		return false;
 	}
 	GDALDataType dt	= GetRasterFileType();
 	int bands_num_src = p_src_ds->GetRasterCount();
@@ -988,12 +988,12 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
       delete(p_chunk_geom);
       OGRFree(p_dst_wkt);
 	    GDALClose(p_vrt_ds);
-      return FALSE;
+      return false;
     }
 	}
   delete(p_chunk_geom);
 
-	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,0,dt,FALSE,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,0,dt,false,p_vrt_ds->GetRasterBand(1)->GetColorTable());
 
   p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
@@ -1002,7 +1002,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
   OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());
-	return TRUE;
+	return true;
 }
 
 bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
@@ -1016,7 +1016,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 	cout<<"calculating number of tiles: ";
 	int tiles_expected	= CalcNumberOfTiles(zoom);	
 	cout<<tiles_expected<<endl;
-	if (tiles_expected == 0) return FALSE;
+	if (tiles_expected == 0) return false;
  
 	bool		is_scaling_needed = false;
 	double		*p_scale_values = 0, *p_offset_values = 0;
@@ -1042,7 +1042,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 										&band_mapping : 0))
 		{
 			cout<<"ERROR: can't calculate parameters of auto scaling to 8 bit"<<endl;
-			return FALSE;
+			return false;
 		}
 	}
   
@@ -1183,7 +1183,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 											tile_size_y,
 											p_tile_pixel_data,
 											p_buffer->get_data_type(),
-											FALSE,
+											false,
 											p_buffer->get_color_table_ref());
 			delete[]((unsigned char*)p_tile_pixel_data);
       
@@ -1205,7 +1205,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 				{
 				  if (p_data) delete[]((unsigned char*)p_data);
 				  cout<<"ERROR: AddTile: writing tile to container"<<endl;
-				  return FALSE;
+				  return false;
 				}
         
 					delete[]((unsigned char*)p_data);
@@ -1216,7 +1216,7 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 		}
 	}
 	
-	return TRUE;
+	return true;
 }
 
 

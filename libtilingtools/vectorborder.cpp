@@ -222,7 +222,7 @@ namespace ttx
   }
 
   delete[]pp_lr;
-  return TRUE;
+  return true;
   }
   */
 
@@ -298,11 +298,11 @@ namespace ttx
         poInputSRS = poInputSRS->Clone();
         char	*proj_ref = NULL;
         bool is_ogr_sr_valid = (OGRERR_NONE == poInputSRS->exportToProj4(&proj_ref))
-          ? TRUE
+          ? true
           : (OGRERR_NONE != poInputSRS->morphFromESRI())
-          ? FALSE
+          ? false
           : (OGRERR_NONE == poInputSRS->exportToProj4(&proj_ref))
-          ? TRUE : FALSE;
+          ? true : false;
         if (proj_ref != NULL) CPLFree(proj_ref);
       }
       else
@@ -494,7 +494,7 @@ namespace ttx
     OGRPolygon		**pp_ogr_poly = NULL;
 
     int	numPolygons = 0;
-    bool	inputIsRing = FALSE;
+    bool	inputIsRing = false;
     if ((wkbPolygon == p_ogr_geom->getGeometryType()) ||
       (wkbPolygon25D == p_ogr_geom->getGeometryType()))
     {
@@ -544,7 +544,7 @@ namespace ttx
   /*
   bool	VectorOperations::Intersects(OGREnvelope &envelope)
   {
-    if (p_ogr_geometry_ == NULL) return FALSE;
+    if (p_ogr_geometry_ == NULL) return false;
     OGRPolygon *p_poly_from_envp = CreateOGRPolygonByOGREnvelope(envelope);
 
     bool result = this->p_ogr_geometry_->Intersects(p_poly_from_envp);

@@ -54,32 +54,32 @@ bool	StandardTileName::ValidateTemplate	(string str_template)
 	if (str_template.find("{z}",0)==string::npos)
 	{
 		//cout<<"Error: bad tile name template: missing {z}"<<endl;
-		return FALSE;
+		return false;
 	}
 	if (str_template.find("{x}",0)==string::npos)
 	{
 		//cout<<"Error: bad tile name template: missing {x}"<<endl;
-		return FALSE;
+		return false;
 	}
 	if (str_template.find("{y}",0)==string::npos) 
 	{
 		//cout<<"Error: bad tile name template: missing {y}"<<endl;
-		return FALSE;
+		return false;
 	}
 
 	if (str_template.find(".",0)==string::npos) 
 	{
 		//cout<<"Error: bad tile name template: missing extension"<<endl;
-		return FALSE;
+		return false;
 	}
 		
   TileType tt;
   if (!TileName::TileTypeByExtension(MPLFileSys::GetExtension(str_template),tt))
   {
 		cout<<"ERROR: not valid tile type in template: "<<str_template<<endl;
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 string	StandardTileName::GetTileName (int zoom, int nX, int nY)
@@ -93,7 +93,7 @@ string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 
 bool StandardTileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 {
-	if (!regex_match(tile_name,rx_template_)) return FALSE;
+	if (!regex_match(tile_name,rx_template_)) return false;
 	match_results<string::const_iterator> mr;
 	regex_search(tile_name, mr, rx_template_);
   for (int i=0;i<mr.size();i++)
@@ -102,12 +102,12 @@ bool StandardTileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
     i=i;
   }
 
-	if ((mr.size()<=zxy_pos_[0])||(mr.size()<=zxy_pos_[1])||(mr.size()<=zxy_pos_[2])) return FALSE;
+	if ((mr.size()<=zxy_pos_[0])||(mr.size()<=zxy_pos_[1])||(mr.size()<=zxy_pos_[2])) return false;
 	z = atoi(mr[zxy_pos_[0]].str().c_str());
 	x = atoi(mr[zxy_pos_[1]].str().c_str());
 	y = atoi(mr[zxy_pos_[2]].str().c_str());
 		
-	return TRUE;
+	return true;
 }
 
 
@@ -118,10 +118,10 @@ bool StandardTileName::CreateFolder (int zoom, int x, int y)
 	while (tile_name.find("/",n)!=std::string::npos)
 	{
 		if (!MPLFileSys::FileExists(MPLFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
-			if (!MPLFileSys::CreateDir(MPLFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+			if (!MPLFileSys::CreateDir(MPLFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return false;	
 		n = (tile_name.find("/",n)) + 1;
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -132,10 +132,10 @@ bool ESRITileName::CreateFolder (int zoom, int x, int y)
 	while (tile_name.find("/",n)!=std::string::npos)
 	{
 		if (!MPLFileSys::FileExists(MPLFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n)))))
-			if (!MPLFileSys::CreateDir(MPLFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return FALSE;	
+			if (!MPLFileSys::CreateDir(MPLFileSys::GetAbsolutePath(base_folder_,tile_name.substr(0,tile_name.find("/",n))).c_str())) return false;	
 		n = (tile_name.find("/",n)) + 1;
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -145,32 +145,32 @@ bool	ESRITileName::ValidateTemplate	(string str_template)
 	if (str_template.find("{l}",0)==string::npos)
 	{
 		//cout<<"Error: bad tile name template: missing {L}"<<endl;
-		return FALSE;
+		return false;
 	}
 	if (str_template.find("{c}",0)==string::npos)
 	{
 		//cout<<"Error: bad tile name template: missing {C}"<<endl;
-		return FALSE;
+		return false;
 	}
 	if (str_template.find("{r}",0)==string::npos) 
 	{
 		//cout<<"Error: bad tile name template: missing {R}"<<endl;
-		return FALSE;
+		return false;
 	}
 
 	if (str_template.find(".",0)==string::npos) 
 	{
 		//cout<<"Error: bad tile name template: missing extension"<<endl;
-		return FALSE;
+		return false;
 	}
 		
 	TileType tt;
   if (!TileName::TileTypeByExtension(MPLFileSys::GetExtension(str_template),tt))
   {
 		cout<<"ERROR: not valid tile type in template: "<<str_template<<endl;
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -205,9 +205,9 @@ ESRITileName::ESRITileName (string base_folder, string str_template)
 string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	tile_name = MPLString::ReplaceAll(tile_name,"{L}","L"+MPLString::ConvertIntToString(zoom,FALSE,2));
-	tile_name = MPLString::ReplaceAll(tile_name,"{C}","C"+MPLString::ConvertIntToString(nX,TRUE,8));
-	tile_name = MPLString::ReplaceAll(tile_name,"{R}","R"+MPLString::ConvertIntToString(nY,TRUE,8));
+	tile_name = MPLString::ReplaceAll(tile_name,"{L}","L"+MPLString::ConvertIntToString(zoom,false,2));
+	tile_name = MPLString::ReplaceAll(tile_name,"{C}","C"+MPLString::ConvertIntToString(nX,true,8));
+	tile_name = MPLString::ReplaceAll(tile_name,"{R}","R"+MPLString::ConvertIntToString(nY,true,8));
 
 	return tile_name;
 }
@@ -215,7 +215,7 @@ string	ESRITileName::GetTileName (int zoom, int nX, int nY)
 
 bool ESRITileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 {
-	if (!regex_match(tile_name,rx_template_)) return FALSE;
+	if (!regex_match(tile_name,rx_template_)) return false;
 	match_results<string::const_iterator> mr;
 	regex_search(tile_name, mr, rx_template_);
   
@@ -226,7 +226,7 @@ bool ESRITileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
     if (mr[i].str()[0] == 'C') x = strtol(mr[i].str().substr(1).c_str(), 0, 16);
   }
 
- 	return TRUE;
+ 	return true;
 }
 
 
@@ -258,7 +258,7 @@ bool KosmosnimkiTileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 	regex pattern("[0-9]{1,2}_-{0,1}[0-9]{1,7}_-{0,1}[0-9]{1,7}");
 	//wregex pattern("(\d+)_-?(\d+)_-{0,1}[0-9]{1,7}");
 
-	if (!regex_match(tile_name,pattern)) return FALSE;
+	if (!regex_match(tile_name,pattern)) return false;
 
 	z = atoi(tile_name.substr(0,tile_name.find('_')).c_str());
 	tile_name = tile_name.substr(tile_name.find('_')+1);
@@ -272,7 +272,7 @@ bool KosmosnimkiTileName::ExtractXYZ (string tile_name, int &z, int &x, int &y)
 		y=(1<<(z-1))-y-1;
 	}
 
-	return TRUE;
+	return true;
 }
 
 
@@ -288,17 +288,17 @@ bool KosmosnimkiTileName::CreateFolder (int zoom, int x, int y)
 	string str = MPLFileSys::GetAbsolutePath(base_folder_, buf);
 	if (!MPLFileSys::FileExists(str))
 	{
-		if (!MPLFileSys::CreateDir(str.c_str())) return FALSE;	
+		if (!MPLFileSys::CreateDir(str.c_str())) return false;	
 	}
 
 	sprintf(buf,"%d",x);
 	str = MPLFileSys::GetAbsolutePath(str,buf);
 	if (!MPLFileSys::FileExists(str))
 	{
-		if (!MPLFileSys::CreateDir(str.c_str())) return FALSE;	
+		if (!MPLFileSys::CreateDir(str.c_str())) return false;	
 	}
 		
-	return TRUE;
+	return true;
 }
 
 

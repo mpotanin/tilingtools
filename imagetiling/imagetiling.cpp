@@ -147,7 +147,7 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
       if (!MPLString::ConvertStringToRGB(strNodata, oTilingParams.p_nd_rgbcolors_[i]))
       {
         cout << "ERROR: not valid value of \"-nd\" parameter: " << strNodata << endl;
-        return FALSE;
+        return false;
       }
       i++;
     }
@@ -164,7 +164,7 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
     if (!MPLString::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"), pabyRGB))
     {
       cout << "ERROR: not valid value of \"-bgc\" parameter: " << oOptionParser.GetOptionValue("-bgc") << endl;
-      return FALSE;
+      return false;
     }
     oTilingParams.p_background_color_ = new unsigned char[3];
     memcpy(oTilingParams.p_background_color_, pabyRGB, 3);
@@ -177,7 +177,7 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
     if (!oRF.Init(*listRasters.begin()))
     {
       cout << "ERROR: can't open file: " << (*listRasters.begin()) << endl;
-      return FALSE;
+      return false;
     }
     oTilingParams.gdal_resampling_ = ( oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable() ||
                                       oOptionParser.GetValueList("-nd").size()) 
