@@ -1570,8 +1570,8 @@ namespace ttx
 	{
 		OPJStreamData *p_stream_obj = (OPJStreamData*)p_stream_data;
 		if (n_seek <= p_stream_obj->size) p_stream_obj->offset = n_seek;
-		else return OPJ_FALSE;
-		return OPJ_TRUE;
+		else return OPJ_false;
+		return OPJ_true;
 	}
 
 
@@ -1662,7 +1662,7 @@ namespace ttx
 		unsigned int i, num_images, imageno;
 
 		OPJ_BOOL bSuccess;
-		OPJ_BOOL bUseTiles = OPJ_FALSE;
+		OPJ_BOOL bUseTiles = OPJ_false;
 		OPJ_UINT32 l_nb_tiles = 4;
 
 		opj_set_default_encoder_parameters(&parameters);
@@ -1686,7 +1686,7 @@ namespace ttx
 		opj_stream_data.max_size = 10000000;
 		opj_stream_data.offset = (opj_stream_data.size = 0);
 		opj_stream_data.p_data = new BYTE[opj_stream_data.max_size];
-		l_stream = OPJStreamCreate(&opj_stream_data, 10000000, FALSE);
+		l_stream = OPJStreamCreate(&opj_stream_data, 10000000, false);
 
 		bSuccess = opj_start_compress(l_codec, image, l_stream);
 		if (!bSuccess) fprintf(stderr, "failed to encode image: opj_start_compress\n");
@@ -1706,19 +1706,19 @@ namespace ttx
 		if (parameters.cp_comment)   free(parameters.cp_comment);
 		if (parameters.cp_matrice)   free(parameters.cp_matrice);
 
-		return TRUE;
+		return true;
 	}
 
 	bool RasterBuffer::CreateFromJP2Data(void *p_data_src, int size)
 	{
 		ClearBuffer();
-		if (size > 10000000) return FALSE;
+		if (size > 10000000) return false;
 		OPJStreamData opj_stream_data;
 		opj_stream_data.max_size = (opj_stream_data.size = size);
 		opj_stream_data.offset = 0;
 		opj_stream_data.p_data = new BYTE[size];
 		memcpy(opj_stream_data.p_data, p_data_src, size);
-		opj_stream_t *l_stream = OPJStreamCreate(&opj_stream_data, 10000000, TRUE);
+		opj_stream_t *l_stream = OPJStreamCreate(&opj_stream_data, 10000000, true);
 
 
 		opj_dparameters_t parameters;   // decompression parameters //
@@ -1837,7 +1837,7 @@ namespace ttx
 		}
 		opj_image_destroy(image);
 
-		return TRUE;
+		return true;
 	}
 
 
