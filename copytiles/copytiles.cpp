@@ -1,16 +1,16 @@
 #include "stdafx.h"
 
 const list<MPLOptionDescriptor> listDescriptors = {
-  { "-i", 0, 0, "input folder or file" },
-  { "-o", 0, 0, "output folder or file" },
-  { "-of", 0, 0, "output tile container type" },
-  { "-b", 0, 0, "vector clip mask: shp,tab,mif,kml,geojson" },
-  { "-tt", 0, 0, "tile type: jpg,png" },
-  { "-z", 0, 0, "min-max zoom" },
-  { "-co", 0, 2, "creation options" },
-  { "-tsrs", 0, 0, "tiling srs" },
-  { "-i_tnt", 0, 0, "input tile name template" },
-  { "-o_tnt", 0, 0, "output tile name template" }
+  { "-i", 0, 0, 1, "input folder or file" },
+  { "-o", 0, 0, 1, "output folder or file" },
+  { "-of", 0, 0, 0, "output tile container type" },
+  { "-b", 0, 0, 0, "vector clip mask: shp,tab,mif,kml,geojson" },
+  { "-tt", 0, 0, 0, "tile type: jpg,png" },
+  { "-z", 0, 0, 0, "min-max zoom" },
+  { "-co", 0, 2, 0, "creation options" },
+  { "-tsrs", 0, 0, 0, "tiling srs" },
+  { "-i_tnt", 0, 0, 0,  "input tile name template" },
+  { "-o_tnt", 0, 0, 0, "output tile name template" }
 };
 
 const list<string> listUsageExamples = {
