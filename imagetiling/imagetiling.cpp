@@ -292,9 +292,13 @@ int _tmain(int nArgs, wchar_t *pastrArgsW[])
 #else
 int main(int nArgs, char* argv[])
 {
-  std::vector<string> vecArgs;
-  for (int i = 0; i<nArgs; i++)
-    vecArgs.push_back(argv[i]);
+	std::vector<string> vecArgs;
+	for (int i = 0; i<nArgs; i++)
+		vecArgs.push_back(argv[i]);
+
+	GDALAllRegister();
+	OGRRegisterAll();
+	CPLSetConfigOption("OGR_ENABLE_PARTIAL_REPROJECTION", "YES");
 #endif
 
 	if (nArgs == 1)
