@@ -919,15 +919,18 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
     if (p_ndval || nodata_val_from_file_defined)
     {
-      p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
-      p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
-      for (int i=0;i<bands_num_dst;i++)
-      {
-        p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file_defined ? 
-                                                nodata_val_from_file : (*p_ndval);
-        p_warp_options->padfSrcNoDataImag[i] = nodata_val_from_file_defined ?
-                                                nodata_val_from_file : 0;
-      }
+		p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
+		p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
+		p_warp_options->padfDstNoDataImag= new double[bands_num_dst];
+		p_warp_options->padfDstNoDataReal = new double[bands_num_dst];
+
+		for (int i=0;i<bands_num_dst;i++)
+		{
+			p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file_defined ? nodata_val_from_file : (*p_ndval);
+			p_warp_options->padfSrcNoDataImag[i] = nodata_val_from_file_defined ? nodata_val_from_file : 0;
+			p_warp_options->padfDstNoDataImag[i] = nodata_val_from_file_defined ? nodata_val_from_file : 0;
+			p_warp_options->padfDstNoDataReal[i] = nodata_val_from_file_defined ? nodata_val_from_file : (*p_ndval);
+		}
     }
         
     p_warp_options->pfnProgress = TTXPrintProgressStub;
@@ -967,11 +970,15 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
     if (p_warp_options->padfSrcNoDataReal)
     {
-      delete[]p_warp_options->padfSrcNoDataReal;
-      delete[]p_warp_options->padfSrcNoDataImag;
+		delete[]p_warp_options->padfSrcNoDataReal;
+		delete[]p_warp_options->padfSrcNoDataImag;
+		delete[]p_warp_options->padfDstNoDataReal;
+		delete[]p_warp_options->padfDstNoDataImag;
       
-      p_warp_options->padfSrcNoDataReal = 0;
-      p_warp_options->padfSrcNoDataImag = 0;
+		p_warp_options->padfSrcNoDataReal = 0;
+		p_warp_options->padfSrcNoDataImag = 0;
+		p_warp_options->padfDstNoDataReal = 0;
+		p_warp_options->padfDstNoDataImag = 0;
     }
 
     delete[]p_warp_options->panSrcBands;
