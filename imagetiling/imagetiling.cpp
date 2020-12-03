@@ -291,6 +291,8 @@ int _tmain(int nArgs, wchar_t *pastrArgsW[])
 #else
 int main(int nArgs, char* argv[])
 {
+	std::cout << " ";
+
 	std::vector<string> vecArgs;
 	for (int i = 0; i<nArgs; i++)
 		vecArgs.push_back(argv[i]);
