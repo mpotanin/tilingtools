@@ -51,6 +51,7 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
 
   list<string> listRasters = oBundleConsoleInput.GetRasterFiles();
 
+
   if (oOptionParser.GetOptionValue("-pseudo_png") != "")
     oTilingParams.tile_type_ = ttx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
   else if (oOptionParser.GetOptionValue("-tt") != "")

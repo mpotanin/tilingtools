@@ -1276,100 +1276,102 @@ bool  BundleConsoleInput::InitByConsoleParams (  list<string> listInputParam,
                                               list<string> listBorderParam, 
                                               list<string> listBandParam)
 {
-  list<string>::iterator iterBand;
-  list<string>::iterator iterBorder;
-  int*  panBands = 0;
+	list<string>::iterator iterBand;
+	list<string>::iterator iterBorder;
+	int*  panBands = 0;
 
-  bands_num_=0;
-  if (listBandParam.size()>0 && listBandParam.size()!=listInputParam.size())
-  {
-    cout<<"ERROR: not valid option \"-bnd\" count. Option \"-bnd\" count must be zero or equal to option \"-i\" count"<<endl;
-    return false;
-  }
-  else   if (listBorderParam.size()>0 && listBorderParam.size()!=listInputParam.size())
-  {
-    cout<<"ERROR: not valid option \"-b\" count. Option \"-b\" count must be zero or equal to option \"-i\" count"<<endl;
-    return false;
-  }
-  else if (listBandParam.size()!=0)
-  {
-    if (!(bands_num_ = MPLString::SplitCommaSeparatedText(*listBandParam.begin()).size()))
-    {
-      cout<<"ERROR: not valid option \"-bnd\" value: "<<*listBandParam.begin()<<endl;
-      return false;
-    }
-    for (iterBand=(listBandParam.begin()++);iterBand!=listBandParam.end();iterBand++)
-    {
-      if (bands_num_ != MPLString::SplitCommaSeparatedText(*iterBand).size())
-      {
-        cout<<"ERROR: not valid option \"-bnd\" value: "<<*iterBand<<endl;
-        return false;
-      }
-    }
-  }
+	bands_num_=0;
+	if (listBandParam.size()>0 && listBandParam.size()!=listInputParam.size())
+	{
+		cout<<"ERROR: not valid option \"-bnd\" count. Option \"-bnd\" count must be zero or equal to option \"-i\" count"<<endl;
+		return false;
+	}
+	else   if (listBorderParam.size()>0 && listBorderParam.size()!=listInputParam.size())
+	{
+		cout<<"ERROR: not valid option \"-b\" count. Option \"-b\" count must be zero or equal to option \"-i\" count"<<endl;
+		return false;
+	}
+	else if (listBandParam.size()!=0)
+	{
+		if (!(bands_num_ = MPLString::SplitCommaSeparatedText(*listBandParam.begin()).size()))
+		{
+			cout<<"ERROR: not valid option \"-bnd\" value: "<<*listBandParam.begin()<<endl;
+			return false;
+		}
+		for (iterBand=(listBandParam.begin()++);iterBand!=listBandParam.end();iterBand++)
+		{
+			if (bands_num_ != MPLString::SplitCommaSeparatedText(*iterBand).size())
+			{
+			cout<<"ERROR: not valid option \"-bnd\" value: "<<*iterBand<<endl;
+			return false;
+			}
+		}
+	}
   
 
-  if (bands_num_!=0) iterBand=listBandParam.begin();
-  if (listBorderParam.size()>0) iterBorder=listBorderParam.begin();
+	if (bands_num_!=0) iterBand=listBandParam.begin();
+	if (listBorderParam.size()>0) iterBorder=listBorderParam.begin();
   
-  for (list<string>::iterator iterInput=listInputParam.begin();iterInput!=listInputParam.end();iterInput++)
-  {
-    list<string> listRasterFiles;
-    if (!MPLFileSys::FindFilesByPattern(listRasterFiles,(*iterInput)))
-    {
-      ClearAll();
-      cout<<"ERROR: can't find files by path: "<<*iterInput<<endl;
-      return false;
-    }
+	for (list<string>::iterator iterInput=listInputParam.begin();iterInput!=listInputParam.end();iterInput++)
+	{
+		list<string> listRasterFiles;
+
+		if (!MPLFileSys::FindFilesByPattern(listRasterFiles,(*iterInput)))
+		{
+			ClearAll();
+			cout<<"ERROR: can't find files by path: "<<*iterInput<<endl;
+			return false;
+		}
         
-    list<string> listVectorFiles;
-    if (listBorderParam.size()>0 && (*iterBorder)!="")
-    {
-      if (!MPLFileSys::FindFilesByPattern(listVectorFiles,(*iterBorder)))
-      {
-        ClearAll();
-        cout<<"ERROR: can't find files by path: "<<*iterBorder<<endl;
-        return false;
-      }
-      if (listVectorFiles.size()>1 && listVectorFiles.size()!=listRasterFiles.size())
-      {
-         ClearAll();
-         cout<<"ERROR: vector files count doesn't equal to raster file count"<<endl;
-         return false;
-      }
-    }
+		list<string> listVectorFiles;
+		if (listBorderParam.size()>0 && (*iterBorder)!="")
+		{
+			if (!MPLFileSys::FindFilesByPattern(listVectorFiles,(*iterBorder)))
+			{
+				ClearAll();
+				cout<<"ERROR: can't find files by path: "<<*iterBorder<<endl;
+				return false;
+			}
+			if (listVectorFiles.size()>1 && listVectorFiles.size()!=listRasterFiles.size())
+			{
+				ClearAll();
+				cout<<"ERROR: vector files count doesn't equal to raster file count"<<endl;
+				return false;
+			}
+		}
        
-    if (bands_num_>0)
-    {
-      list<string> listBands = MPLString::SplitCommaSeparatedText(*iterBand);
-      panBands = new int[bands_num_];
-      int i=0;
-      for (string strBand : listBands)
-      {
-        if (strBand[0] == ' ') strBand = strBand.substr(1);
-        if (strBand != "")
-          strBand = strBand[strBand.size() - 1] == ' ' ? strBand.substr(0, strBand.size()-1) : strBand;
-        panBands[i] = strBand == "" ? 0 : atoi(strBand.c_str());
-        i++;
-      }
-    }
+		if (bands_num_>0)
+		{
+			list<string> listBands = MPLString::SplitCommaSeparatedText(*iterBand);
+			panBands = new int[bands_num_];
+			int i=0;
+			for (string strBand : listBands)
+			{
+				if (strBand[0] == ' ') strBand = strBand.substr(1);
+				if (strBand != "")
+					strBand = strBand[strBand.size() - 1] == ' ' ? strBand.substr(0, strBand.size()-1) : strBand;
+				panBands[i] = strBand == "" ? 0 : atoi(strBand.c_str());
+				i++;
+			}
+		}
     
-    list<string>::iterator vectorFile = listVectorFiles.begin();
+		list<string>::iterator vectorFile = listVectorFiles.begin();
 
-    for (auto rasterFile : listRasterFiles)
-    {
-      pair<string, pair<string, int*>> pairNewElem;
-      pairNewElem.first = rasterFile;
-      pairNewElem.second.first = listBorderParam.size()==0 ? "" : *vectorFile;
-      if (listVectorFiles.size()>1) vectorFile++;
-      pairNewElem.second.second = (bands_num_>0) ? panBands : 0;
-      m_listInputData.push_back(pairNewElem);
-    }
+		for (auto rasterFile : listRasterFiles)
+		{
+			pair<string, pair<string, int*>> pairNewElem;
+			pairNewElem.first = rasterFile;
+			pairNewElem.second.first = listBorderParam.size()==0 ? "" : *vectorFile;
+			if (listVectorFiles.size()>1) vectorFile++;
+			pairNewElem.second.second = (bands_num_>0) ? panBands : 0;
+			m_listInputData.push_back(pairNewElem);
+		}
 
-    if (bands_num_!=0) iterBand++;
-    if (listBorderParam.size()>0) iterBorder++;
-  }
-  return true;
+		if (bands_num_!=0) iterBand++;
+
+		if (listBorderParam.size()>0) iterBorder++;
+	}
+	return true;
 }
 
 

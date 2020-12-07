@@ -32,7 +32,7 @@ int _tmain(int nArgs, wchar_t* pastrArgsW[])
 		vecArgs.push_back(MPLString::ReplaceAll(strBuff, "\\", "/"));
 	}
 
-	if (!MPLGDALDelayLoader::Load(MPLFileSys::GetPath(vecArgs[0]) + "/tilingtools.config"))
+	if (!MPLGDALDelayLoader::Load(MPLFileSys::GetPath(vecArgs[0]) + "tilingtools.config"))
 	{
 		cout << "ERROR: can't load GDAL" << endl;
 		return 1;

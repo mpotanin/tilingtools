@@ -1395,13 +1395,8 @@ int 		TileFolder::GetTileList(list<pair<int,pair<int,int>>> &tile_list, int min_
 	list<string> file_list;
 	MPLFileSys::FindFilesByExtensionRecursive(file_list,p_tile_name_->GetBaseFolder(),TileName::ExtensionByTileType(p_tile_name_->tile_type_));
   
-  //debug
-//  cout << "FindFilesByExtensionRecursive done " << file_list.size()<<endl;
-//  int l;
- // cin>>l;
-  //end-debug
 
-  pair<int,pair<int,int>> p;
+	pair<int,pair<int,int>> p;
 	for (list<string>::iterator iter = file_list.begin(); iter!=file_list.end();iter++)
 	{
 		int x,y,z;
