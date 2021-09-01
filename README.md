@@ -84,7 +84,8 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
   * development x64 version of the libraries: gdal, sqlite3, gd (if git is installed you may run: ```apt-get install git make libgdal-dev sqlite3 libgd-dev```)
 * ```git clone https://github.com/mpotanin/tilingtools tilingtools``` 
 * ```git clone https://github.com/mpotanin/cpp_common_utils```  
-* open tilingtools dir and run ```make```
+* ```cd tilingtools```
+* ```make```
 
 ## Update gdal version on Windows
 * download from https://www.gisinternals.com/
