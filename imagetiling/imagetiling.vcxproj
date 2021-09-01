@@ -22,7 +22,7 @@
     <ProjectGuid>{EDE7ED09-BCF3-4A00-91B6-ECF5655BC300}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>imagetiling</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -34,7 +34,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -47,7 +47,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -101,15 +101,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../gdal302/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../gdal330/include;</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../../gdal302/x64/lib;../x64/Debug;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;libtilingtools.lib;cairo.lib;cfitsio.lib;clientlib.lib;expat.lib;fontconfig.lib;freetype.lib;freexl.lib;freexl_i.lib;fribidi.lib;gd.lib;gdal_i.lib;geos.lib;geos_c.lib;giflib.lib;harfbuzz.lib;hdf5.lib;hdf5_cpp.lib;hdf5_hl.lib;hdf5_hl_cpp.lib;hdfdll.lib;iconv.lib;libcurl_imp.lib;libeay32.lib;libecwj2.lib;libfcgi.lib;libjbig.lib;cairo.lib;libkea.lib;libkmlbase.lib;libkmlconvenience.lib;libkmldom.lib;libkmlengine.lib;libkmlregionator.lib;libkmlxsd.lib;libmysql.lib;libpng.lib;libpq.lib;libpqdll.lib;libsvg-cairo.lib;libsvg.lib;libtiff_i.lib;libxml2.lib;mapserver.lib;mfhdfdll.lib;minizip.lib;zdll.lib;msplugin_mssql2008.lib;msplugin_oracle.lib;netcdf.lib;openjp2.lib;pixman-1.lib;libjpeg.lib;poppler.lib;proj.lib;proj_6_1.lib;proj_i.lib;protobuf-c.lib;spatialite.lib;spatialite_i.lib;sqlite3_i.lib;ssleay32.lib;szip.lib;tiff.lib;xdrdll.lib;xerces-c_3.lib;zlib.lib;</AdditionalDependencies>
-      <DelayLoadDLLs>fribidi.dll;freexl.dll;expat.dll;gdal300.dll;geos.dll;geos_c.dll;hdf5.dll;hdf5_cpp.dll;hdf5_hl.dll;hdf5_hl_cpp.dll;hdfdll.dll;iconv.dll;libcurl.dll;cfitsio.dll;libecwj2.dll;libfcgi.dll;libkea.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk_9.5.dll;lti_lidar_dsdk_1.1.dll;mapserver.dll;mfhdfdll.dll;cairo.dll;msplugin_mssql2008.dll;msplugin_oracle.dll;netcdf.dll;openjp2.dll;xerces-c_3_2.dll;proj.dll;libeay32.dll;proj_6_1.dll;xdrdll.dll;vcruntime140.dll;spatialite.dll;sqlite3.dll;tiffxx.dll;ssleay32.dll;szip.dll;tbb.dll;tiff.dll;zlib1.dll;</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>../../gdal330/x64/lib;../x64/Debug;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;libtilingtools.lib;apr-1.lib;aprapp-1.lib;aprutil-1.lib;apr_dbd_odbc-1.lib;apr_ldap-1.lib;cairo.lib;cfitsio.lib;fontconfig.lib;freetype.lib;freexl.lib;freexl_i.lib;fribidi.lib;gdal_i.lib;geos.lib;geos_c.lib;giflib.lib;harfbuzz.lib;hdf.lib;hdf5.lib;hdf5_cpp.lib;hdf5_hl.lib;hdf5_hl_cpp.lib;iconv.lib;kmlbase.lib;kmlconvenience.lib;kmldom.lib;kmlengine.lib;kmlregionator.lib;kmlxsd.lib;libapr-1.lib;libaprapp-1.lib;libaprutil-1.lib;libcrypto.lib;libcrypto_static.lib;libcurl_imp.lib;libexpat.lib;libfcgi.lib;libhdf.lib;libhdf5.lib;libhdf5_cpp.lib;libhdf5_hl.lib;libhdf5_hl_cpp.lib;libhttpd.lib;libjpeg.lib;libkea.lib;libmfhdf.lib;libmysql.lib;libpng16.lib;libpng16_static.lib;libpq.lib;libprotobuf-lite.lib;libprotobuf.lib;libprotoc.lib;librttopo.lib;libsqlite3.lib;libssl.lib;libssl_static.lib;libsvg-cairo.lib;libsvg.lib;libszip.lib;libxdr.lib;libxml2.lib;mapcache.lib;mapserver.lib;mfhdf.lib;minizip.lib;netcdf.lib;ogdi.lib;openjp2.lib;pcre.lib;pcrecpp.lib;pcreposix.lib;pixman-1.lib;poppler.lib;proj.lib;proj_4_9.lib;proj_i.lib;protobuf-c.lib;spatialite.lib;spatialite_i.lib;sqlite3.lib;sqlite3_i.lib;szip.lib;tiff.lib;uriparser.lib;xdr.lib;xerces-c_3.lib;zlib.lib;zlibstatic.lib;</AdditionalDependencies>
+      <DelayLoadDLLs>adrg.dll;apr_dbd_odbc-1.dll;apr_ldap-1.dll;cairo.dll;cfitsio.dll;concrt140.dll;FileGDBAPI.dll;freexl.dll;fribidi-0.dll;gdal303.dll;geos.dll;geos_c.dll;hdf.dll;hdf5.dll;hdf5_cpp.dll;hdf5_hl.dll;hdf5_hl_cpp.dll;iconv-2.dll;libapr-1.dll;libaprutil-1.dll;libcrypto-1_1-x64.dll;libcurl.dll;libexpat.dll;libfcgi.dll;libhttpd.dll;libkea.dll;libmysql.dll;libpng16.dll;libpq.dll;librttopo.dll;libssl-1_1-x64.dll;libxml2.dll;lti_dsdk_9.5.dll;lti_lidar_dsdk_1.1.dll;mapcache.dll;mapserver.dll;mfhdf.dll;mod_mapcache.dll;msplugin_mssql2008.dll;msplugin_oracle.dll;msvcp140_1.dll;msvcp140_2.dll;NCSEcw.dll;netcdf.dll;ogdi.dll;openjp2.dll;pcre.dll;pcrecpp.dll;pcreposix.dll;proj_4_9.dll;proj_7_2.dll;remote.dll;rpf.dll;skeleton.dll;spatialite.dll;sqlite3.dll;szip.dll;tbb.dll;tiff.dll;tiffxx.dll;vcruntime140.dll;vcruntime140_1.dll;vrf.dll;xdr.dll;xerces-c_3_2.dll;zlib.dll;</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -138,16 +138,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../gdal302/include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../gdal330/include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>../../gdal302/x64/lib; ../x64/Release;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;libtilingtools.lib;cairo.lib;cfitsio.lib;clientlib.lib;expat.lib;fontconfig.lib;freetype.lib;freexl.lib;freexl_i.lib;fribidi.lib;gd.lib;gdal_i.lib;geos.lib;geos_c.lib;giflib.lib;harfbuzz.lib;hdf5.lib;hdf5_cpp.lib;hdf5_hl.lib;hdf5_hl_cpp.lib;hdfdll.lib;iconv.lib;libcurl_imp.lib;libeay32.lib;libecwj2.lib;libfcgi.lib;libjbig.lib;cairo.lib;libkea.lib;libkmlbase.lib;libkmlconvenience.lib;libkmldom.lib;libkmlengine.lib;libkmlregionator.lib;libkmlxsd.lib;libmysql.lib;libpng.lib;libpq.lib;libpqdll.lib;libsvg-cairo.lib;libsvg.lib;libtiff_i.lib;libxml2.lib;mapserver.lib;mfhdfdll.lib;minizip.lib;zdll.lib;msplugin_mssql2008.lib;msplugin_oracle.lib;netcdf.lib;openjp2.lib;pixman-1.lib;libjpeg.lib;poppler.lib;proj.lib;proj_6_1.lib;proj_i.lib;protobuf-c.lib;spatialite.lib;spatialite_i.lib;sqlite3_i.lib;ssleay32.lib;szip.lib;tiff.lib;xdrdll.lib;xerces-c_3.lib;zlib.lib;</AdditionalDependencies>
-      <DelayLoadDLLs>fribidi.dll;freexl.dll;expat.dll;gdal300.dll;geos.dll;geos_c.dll;hdf5.dll;hdf5_cpp.dll;hdf5_hl.dll;hdf5_hl_cpp.dll;hdfdll.dll;iconv.dll;libcurl.dll;cfitsio.dll;libecwj2.dll;libfcgi.dll;libkea.dll;libmysql.dll;libpq.dll;libtiff.dll;libxml2.dll;lti_dsdk_9.5.dll;lti_lidar_dsdk_1.1.dll;mapserver.dll;mfhdfdll.dll;cairo.dll;msplugin_mssql2008.dll;msplugin_oracle.dll;netcdf.dll;openjp2.dll;xerces-c_3_2.dll;proj.dll;libeay32.dll;proj_6_1.dll;xdrdll.dll;vcruntime140.dll;spatialite.dll;sqlite3.dll;tiffxx.dll;ssleay32.dll;szip.dll;tbb.dll;tiff.dll;zlib1.dll;</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>../../gdal330/x64/lib; ../x64/Release;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;libtilingtools.lib;apr-1.lib;aprapp-1.lib;aprutil-1.lib;apr_dbd_odbc-1.lib;apr_ldap-1.lib;cairo.lib;cfitsio.lib;fontconfig.lib;freetype.lib;freexl.lib;freexl_i.lib;fribidi.lib;gdal_i.lib;geos.lib;geos_c.lib;giflib.lib;harfbuzz.lib;hdf.lib;hdf5.lib;hdf5_cpp.lib;hdf5_hl.lib;hdf5_hl_cpp.lib;iconv.lib;kmlbase.lib;kmlconvenience.lib;kmldom.lib;kmlengine.lib;kmlregionator.lib;kmlxsd.lib;libapr-1.lib;libaprapp-1.lib;libaprutil-1.lib;libcrypto.lib;libcrypto_static.lib;libcurl_imp.lib;libexpat.lib;libfcgi.lib;libhdf.lib;libhdf5.lib;libhdf5_cpp.lib;libhdf5_hl.lib;libhdf5_hl_cpp.lib;libhttpd.lib;libjpeg.lib;libkea.lib;libmfhdf.lib;libmysql.lib;libpng16.lib;libpng16_static.lib;libpq.lib;libprotobuf-lite.lib;libprotobuf.lib;libprotoc.lib;librttopo.lib;libsqlite3.lib;libssl.lib;libssl_static.lib;libsvg-cairo.lib;libsvg.lib;libszip.lib;libxdr.lib;libxml2.lib;mapcache.lib;mapserver.lib;mfhdf.lib;minizip.lib;netcdf.lib;ogdi.lib;openjp2.lib;pcre.lib;pcrecpp.lib;pcreposix.lib;pixman-1.lib;poppler.lib;proj.lib;proj_4_9.lib;proj_i.lib;protobuf-c.lib;spatialite.lib;spatialite_i.lib;sqlite3.lib;sqlite3_i.lib;szip.lib;tiff.lib;uriparser.lib;xdr.lib;xerces-c_3.lib;zlib.lib;zlibstatic.lib;</AdditionalDependencies>
+      <DelayLoadDLLs>adrg.dll;apr_dbd_odbc-1.dll;apr_ldap-1.dll;cairo.dll;cfitsio.dll;concrt140.dll;FileGDBAPI.dll;freexl.dll;fribidi-0.dll;gdal303.dll;geos.dll;geos_c.dll;hdf.dll;hdf5.dll;hdf5_cpp.dll;hdf5_hl.dll;hdf5_hl_cpp.dll;iconv-2.dll;libapr-1.dll;libaprutil-1.dll;libcrypto-1_1-x64.dll;libcurl.dll;libexpat.dll;libfcgi.dll;libhttpd.dll;libkea.dll;libmysql.dll;libpng16.dll;libpq.dll;librttopo.dll;libssl-1_1-x64.dll;libxml2.dll;lti_dsdk_9.5.dll;lti_lidar_dsdk_1.1.dll;mapcache.dll;mapserver.dll;mfhdf.dll;mod_mapcache.dll;msplugin_mssql2008.dll;msplugin_oracle.dll;msvcp140_1.dll;msvcp140_2.dll;NCSEcw.dll;netcdf.dll;ogdi.dll;openjp2.dll;pcre.dll;pcrecpp.dll;pcreposix.dll;proj_4_9.dll;proj_7_2.dll;remote.dll;rpf.dll;skeleton.dll;spatialite.dll;sqlite3.dll;szip.dll;tbb.dll;tiff.dll;tiffxx.dll;vcruntime140.dll;vcruntime140_1.dll;vrf.dll;xdr.dll;xerces-c_3_2.dll;zlib.dll;</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>

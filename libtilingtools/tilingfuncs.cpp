@@ -58,10 +58,10 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 		return false;
 	}
  
-	bool no_run_tiling_error = true;
+	bool bNoErrorStatus = true;
+
 	cout<<"Base zoom "<<base_zoom<<": ";
-	if ((no_run_tiling_error=raster_bundle.RunBaseZoomTiling( p_tiling_params,
-                              p_itile_pyramid))) 
+	if ( bNoErrorStatus = raster_bundle.RunBaseZoomTiling( p_tiling_params,p_itile_pyramid) ) 
 	{
 		cout<<" done."<<endl;
     
@@ -86,14 +86,12 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 								    true,
 								    p_itile_pyramid,
 									p_tiling_params->gdal_resampling_==GRA_NearestNeighbour,
-									ndv_from_input_defined ? &ndv_val : 0,
-									p_tiling_params->quality_,
-									p_tiling_params->p_background_color_);
+									p_tiling_params->quality_);
 			cout<<tiles_expected<<endl;
 			if (tiles_expected > 0) 
 			{
 				cout<<"0% ";
-				if ((no_run_tiling_error *= TTXMakePyramidFromBaseZoom(	raster_bundle.CalcEnvelope(),
+				if ((bNoErrorStatus *= TTXMakePyramidFromBaseZoom(	raster_bundle.CalcEnvelope(),
 											base_zoom,
 											min_zoom,
 											&merc_grid,
@@ -102,22 +100,20 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 											false,
 											p_itile_pyramid,
 											p_tiling_params->gdal_resampling_ == GRA_NearestNeighbour,
-											ndv_from_input_defined ? &ndv_val : 0,
-											p_tiling_params->quality_,
-											p_tiling_params->p_background_color_))) 
+											p_tiling_params->quality_))) 
 					cout<<" done."<<endl;
 			}
 		}
 	}
 
-	if (no_run_tiling_error)
-		no_run_tiling_error*=p_itile_pyramid->ExtractAndStoreMetadata(p_tiling_params);
+	if (bNoErrorStatus)
+		bNoErrorStatus*=p_itile_pyramid->ExtractAndStoreMetadata(p_tiling_params);
 
 	if (!p_itile_pyramid->Close())
 		cout<<"ERROR: can't save tile container to disk"<<endl;
 	delete(p_itile_pyramid);
 
-	return no_run_tiling_error;
+	return bNoErrorStatus;
 }
 
 //ToDO:
@@ -135,9 +131,8 @@ bool TTXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 								bool only_calculate, 
 								ITileContainer* p_itile_pyramid,
 								bool nearest_resampling,
-								int* p_ndv,
-								int quality,
-								unsigned char* p_background_color)
+								//int* p_ndv,
+								int quality)
 {
 
 	RasterBuffer oBuffer;
@@ -152,7 +147,7 @@ bool TTXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 			TTXMakePyramidTileRecursively(tiles_envp,min_zoom,x,y,base_zoom,
 											p_tile_mset,oBuffer,tiles_expected,tiles_generated,
 											only_calculate,p_itile_pyramid,&was_error,
-											nearest_resampling,p_ndv,quality,p_background_color);
+											nearest_resampling,quality);
 	}
 
 	if (was_error)
@@ -177,13 +172,14 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 									ITileContainer* p_itile_pyramid, 
 									bool* p_was_error,
 									bool use_nearest_resampling,
-									int* p_ndv,
-									int quality,
-									unsigned char* p_background_color
+									//int* p_ndv,
+									int quality
+									//unsigned char* p_background_color
 									)
 {
 
-	if (zoom>base_zoom) return false;
+	if (zoom>base_zoom) 
+		return false;
 	else if (zoom==base_zoom)
 	{	
 		if (!p_itile_pyramid->TileExists(zoom,nX,nY)) return false;
@@ -201,7 +197,7 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 			return false;
 		}
 
-		if (p_ndv) tile_buffer.CreateAlphaBandByNDV(p_ndv[0]);
+		//if (p_ndv) tile_buffer.CreateAlphaBandByNDV(p_ndv[0]);
 		
 		//p_tiling_params->
 
@@ -232,9 +228,10 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 															p_itile_pyramid,
 															p_was_error,
 															use_nearest_resampling,
-															p_ndv,
-															quality,
-															p_background_color);
+															//p_ndv,
+															quality
+															//p_background_color
+															);
 					if ((*p_was_error)) return false;
 				}
 				else src_quarter_tile_buffers_def[i*2+j] = false;
@@ -254,8 +251,7 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 		if (!TTXZoomOutFourIntoOne(quarter_tile_buffer,
                               src_quarter_tile_buffers_def, 
                               tile_buffer,
-                              use_nearest_resampling,
-                              p_background_color)) return false;
+                              use_nearest_resampling)) return false;
 		void *p_data=NULL;
 		int size = 0;
 		tile_buffer.SerializeToInMemoryData(p_data, size, p_itile_pyramid->GetTileType(), 
@@ -278,27 +274,34 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 bool TTXZoomOutFourIntoOne ( RasterBuffer src_quarter_tile_buffers[4], 
                             bool src_quarter_tile_buffers_def[4], 
                             RasterBuffer& zoomed_out_tile_buffer, 
-							bool use_nearest_resampling, 
-                            unsigned char* p_background) 
+							bool use_nearest_resampling) 
 {
 	int i;
 	int tile_size;
-	for (i = 0; i<4;i++)
-    if (src_quarter_tile_buffers_def[i]) break;
-	if (i==4) return false;
-	else tile_size = src_quarter_tile_buffers[i].get_x_size(); 
+	for (i = 0; i < 4; i++)
+	{
+		if (src_quarter_tile_buffers_def[i]) break;
+	}
+
+	if (i==4) 
+		return false;
+	else 
+		tile_size = src_quarter_tile_buffers[i].get_x_size(); 
 	
 	zoomed_out_tile_buffer.CreateBuffer(src_quarter_tile_buffers[i].get_num_bands(),
 										tile_size,
 										tile_size,
-										NULL,
+										0,
 										src_quarter_tile_buffers[i].get_data_type(),
-										src_quarter_tile_buffers[i].IsAlphaBand(),
 										src_quarter_tile_buffers[i].get_color_table_ref());
-
+	if (src_quarter_tile_buffers[i].IsNDVDefined())
+	{
+		zoomed_out_tile_buffer.SetNDV(src_quarter_tile_buffers[i].GetNDV());
+		zoomed_out_tile_buffer.InitByValue(src_quarter_tile_buffers[i].GetNDV());
+	}
   
-	if (p_background && src_quarter_tile_buffers[i].get_data_type() == GDT_Byte)
-		zoomed_out_tile_buffer.InitByRGBColor(p_background);
+	//if (p_background && src_quarter_tile_buffers[i].get_data_type() == GDT_Byte)
+	//	zoomed_out_tile_buffer.InitByRGBColor(p_background);
 
 	for (int n=0;n<4;n++)
 	{

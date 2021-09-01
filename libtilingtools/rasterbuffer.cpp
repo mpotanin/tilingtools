@@ -13,7 +13,9 @@ namespace ttx
 	{
 		p_pixel_data_ = NULL;
 		p_color_table_ = NULL;
-		alpha_band_defined_ = false;
+		m_bNDVDefined = false;
+		m_fNDV = 0.0;
+		//alpha_band_defined_ = false;
 	}
 
 	/*
@@ -67,7 +69,6 @@ namespace ttx
 		int			y_size,
 		void			*p_pixel_data_src,
 		GDALDataType	data_type,
-		bool			alpha_band_defined,
 		GDALColorTable *p_color_table
 	)
 	{
@@ -77,7 +78,8 @@ namespace ttx
 		x_size_ = x_size;
 		y_size_ = y_size;
 		data_type_ = data_type;
-		alpha_band_defined_ = alpha_band_defined;
+		m_bNDVDefined = false;
+		//alpha_band_defined_ = alpha_band_defined;
 		p_color_table_ = (p_color_table) ? p_color_table->Clone() : NULL;
 
 		switch (data_type_)
@@ -129,14 +131,33 @@ namespace ttx
 			poSrcBuffer->get_y_size(),
 			poSrcBuffer->get_pixel_data_ref(),
 			poSrcBuffer->get_data_type(),
-			poSrcBuffer->alpha_band_defined_,
+			//poSrcBuffer->alpha_band_defined_,
 			poSrcBuffer->p_color_table_
 		)) return false;
+
+		if (poSrcBuffer->IsNDVDefined())
+			SetNDV(poSrcBuffer->GetNDV());
 		return true;
 	}
 
+	bool RasterBuffer::IsNDVDefined()
+	{
+		return m_bNDVDefined;
+	}
 
+	float RasterBuffer::GetNDV()
+	{
+		return m_fNDV;
+	}
 
+	void RasterBuffer::SetNDV(float fNDV, bool bInitAllNDV)
+	{
+		m_bNDVDefined = true;
+		m_fNDV = fNDV;
+		if (bInitAllNDV) InitByValue(m_fNDV);
+	}
+
+	/*
 	bool RasterBuffer::InitByRGBColor(unsigned char rgb[3])
 	{
 		if (data_type_ != GDT_Byte) return false;
@@ -162,17 +183,29 @@ namespace ttx
 		return true;
 	}
 
-
+	*/
 
 	bool	RasterBuffer::CreateBufferFromTiffData(void *p_data_src, int size)
 	{
 
 		//ToDo - if nodata defined must create alphaband
 		VSIFileFromMemBuffer("/vsimem/tiffinmem", (GByte*)p_data_src, size, 0);
+
 		GDALDataset *p_ds = (GDALDataset*)GDALOpen("/vsimem/tiffinmem", GA_ReadOnly);
 
-		CreateBuffer(p_ds->GetRasterCount(), p_ds->GetRasterXSize(), p_ds->GetRasterYSize(), NULL, p_ds->GetRasterBand(1)->GetRasterDataType());
+
+		CreateBuffer(p_ds->GetRasterCount(), 
+					p_ds->GetRasterXSize(), 
+					p_ds->GetRasterYSize(), 
+					0, 
+					p_ds->GetRasterBand(1)->GetRasterDataType());
 		p_ds->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+		
+		int nNDVDefined = false;
+		float fNDV = p_ds->GetRasterBand(1)->GetNoDataValue(&nNDVDefined);
+		if (nNDVDefined) SetNDV(fNDV);
+		
+		
 		GDALClose(p_ds);
 		VSIUnlink("/vsimem/tiffinmem");
 		return true;
@@ -197,7 +230,48 @@ namespace ttx
 		return true;
 	}
 
+	bool	RasterBuffer::CreateBufferFromJpegData(void* p_data_src, int size)
+	{
 
+	
+		string strInMemName = "/vsimem/jpeginmem" + MPLString::ConvertIntToString(rand());
+		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
+		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
+
+		CreateBuffer(p_ds->GetRasterCount(), p_ds->GetRasterXSize(), p_ds->GetRasterYSize(), NULL, p_ds->GetRasterBand(1)->GetRasterDataType());
+		p_ds->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+		GDALClose(p_ds);
+		VSIUnlink(strInMemName.c_str());
+		return true;
+	}
+
+	bool	RasterBuffer::CreateBufferFromPseudoPngData(void* p_data_src, int size)
+	{
+		//TODO
+		return true;
+	}
+
+	bool	RasterBuffer::CreateBufferFromPngData(void* p_data_src, int size)
+	{
+		//ToDo - if nodata defined must create alphaband
+		string strInMemName = "/vsimem/pnginmem" + MPLString::ConvertIntToString(rand());
+		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
+		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
+
+		CreateBuffer(p_ds->GetRasterCount(), p_ds->GetRasterXSize(), p_ds->GetRasterYSize(), NULL, p_ds->GetRasterBand(1)->GetRasterDataType());
+		p_ds->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+		
+		int nNDVDefined = false;
+		float fNDV = p_ds->GetRasterBand(1)->GetNoDataValue(&nNDVDefined);
+		if (nNDVDefined) SetNDV(fNDV);
+
+		GDALClose(p_ds);
+		VSIUnlink(strInMemName.c_str());
+		return true;
+
+	}
+
+	/*
 	bool	RasterBuffer::CreateBufferFromJpegData(void *p_data_src, int size)
 	{
 		gdImagePtr im;
@@ -226,7 +300,7 @@ namespace ttx
 		return true;
 
 	}
-
+	
 
 	bool	RasterBuffer::CreateBufferFromPseudoPngData(void *p_data_src, int size)
 	{
@@ -332,7 +406,7 @@ namespace ttx
 		return true;
 
 	}
-
+	*/
 
 	bool RasterBuffer::SaveBufferToFile(string file_name, 
 										int quality, 
@@ -391,7 +465,40 @@ namespace ttx
 		return true;
 	}
 
+	bool RasterBuffer::SaveToJpegData(void*& p_data_dst, int& size, int quality)
+	{
+		string	strTiffInMem;
 
+		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
+
+		
+
+		string strJPEGInMem = ("/vsimem/jpeginmem" + MPLString::ConvertIntToString(rand()));
+		char** papszOptions = 0;
+		string strQuality = to_string(quality == 0 ? 85 : quality);
+
+		papszOptions = CSLSetNameValue(papszOptions, "QUALITY", strQuality.c_str());
+	
+		GDALDatasetH poJPEGDS = GDALCreateCopy(GDALGetDriverByName("JPEG"),
+			strJPEGInMem.c_str(),
+			poTiffDS, 0, papszOptions, 0, 0);
+
+		GDALFlushCache(poJPEGDS);
+		GDALClose(poJPEGDS);
+		GDALClose(poTiffDS);
+		CSLDestroy(papszOptions);
+
+		vsi_l_offset length;
+		unsigned char* pabDataBuf = VSIGetMemFileBuffer(strJPEGInMem.c_str(), &length, false);
+		size = length;
+		memcpy((p_data_dst = new unsigned char[size]), pabDataBuf, size);
+		VSIUnlink(strJPEGInMem.c_str());
+		VSIUnlink(strTiffInMem.c_str());
+
+		return true;
+	}
+
+	/*
 	bool RasterBuffer::SaveToJpegData(void* &p_data_dst, int &size, int quality)
 	{
 
@@ -429,6 +536,7 @@ namespace ttx
 		gdImageDestroy(im);
 		return true;
 	}
+	*/
 
 	//sample error debug callback expecting no client object
 
@@ -451,9 +559,14 @@ namespace ttx
 
 	}
 
+	bool RasterBuffer::SaveToPseudoPngData(void*& p_data_dst, int& size)
+	{
+		//TODO
+		return true;
+	}
 
 
-
+	/*
 	bool RasterBuffer::SaveToPseudoPngData(void* &p_data_dst, int &size)
 	{
 		if (x_size_ == 0 || y_size_ == 0) return false;
@@ -499,7 +612,7 @@ namespace ttx
 		return true;
 	}
 
-
+	
 	bool RasterBuffer::SaveToPng24Data(void* &p_data_dst, int &size)
 	{
 		if ((x_size_ == 0) || (y_size_ == 0) || (data_type_ != GDT_Byte)) return false;
@@ -568,7 +681,7 @@ namespace ttx
 		gdImageDestroy(im);
 		return true;
 	}
-
+	*/
 	bool RasterBuffer::SerializeToInMemoryData(void* &p_data_src, int &size, TileType oRasterFormat, int nQuality)
 	{
 		switch (oRasterFormat)
@@ -587,7 +700,36 @@ namespace ttx
 		return true;
 	}
 
+	bool RasterBuffer::SaveToPngData(void*& p_data_dst, int& size)
+	{
+		//ToDo: alphaband support 
 
+
+		string	strTiffInMem;
+		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
+		
+		string strPNGInMem = ("/vsimem/pnginmem" + MPLString::ConvertIntToString(rand()));
+		char** papszOptions = 0;
+		GDALDatasetH poPNGDS = GDALCreateCopy(GDALGetDriverByName("PNG"),
+												strPNGInMem.c_str(), poTiffDS, 0, papszOptions, 0, 0);
+
+		GDALFlushCache(poPNGDS);
+		GDALClose(poPNGDS);
+		GDALClose(poTiffDS);
+		CSLDestroy(papszOptions);
+
+		vsi_l_offset length;
+		unsigned char* pabDataBuf = VSIGetMemFileBuffer(strPNGInMem.c_str(), &length, false);
+		size = length;
+		memcpy((p_data_dst = new unsigned char[size]), pabDataBuf, size);
+		VSIUnlink(strTiffInMem.c_str());
+		VSIUnlink(strPNGInMem.c_str());
+	
+		return true;
+
+	}
+
+	/*
 	bool RasterBuffer::SaveToPngData(void* &p_data_dst, int &size)
 	{
 
@@ -638,31 +780,53 @@ namespace ttx
 		gdImageDestroy(im);
 		return true;
 	}
+	*/
 
+	GDALDataset* RasterBuffer::SaveToInMemGTiff(string& strInMemGTiff)
+	{
+		srand(999);
+		strInMemGTiff = "/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand());
+
+		GDALDataset* poInMemDS = (GDALDataset*)GDALCreate(
+			GDALGetDriverByName("GTiff"),
+			strInMemGTiff.c_str(),
+			x_size_,
+			y_size_,
+			num_bands_,
+			data_type_,
+			NULL
+		);
+
+		if (!poInMemDS) return 0;
+
+		if (CE_None!=poInMemDS->RasterIO(GF_Write, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_,
+			data_type_, num_bands_, NULL, 0, 0, 0))
+			return 0;
+
+		if (p_color_table_ && num_bands_ < 3)
+			poInMemDS->GetRasterBand(1)->SetColorTable(p_color_table_);
+
+		if (m_bNDVDefined)
+		{
+			for (int b = 1; b <= poInMemDS->GetRasterCount(); b++)
+				poInMemDS->GetRasterBand(b)->SetNoDataValue(m_fNDV);
+		}
+
+		GDALFlushCache(poInMemDS);
+
+		return poInMemDS;
+	}
 
 	bool	RasterBuffer::SaveToTiffData(void* &p_data_dst, 
 										int &size, 
 										OGRSpatialReference* poSRS, 
 										double*	padblGeoTransform)
 	{
-		srand(999);
-		string	tiff_in_mem = ("/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand()));
+		string	tiff_in_mem;
 
-		int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
+		//int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
 
-		GDALDataset* p_ds = (GDALDataset*)GDALCreate(
-			GDALGetDriverByName("GTiff"),
-			tiff_in_mem.c_str(),
-			x_size_,
-			y_size_,
-			num_bands,
-			data_type_,
-			NULL
-		);
-		p_ds->RasterIO(GF_Write, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, 
-					data_type_, num_bands, NULL, 0, 0, 0);
-		if (p_color_table_ && num_bands < 3)
-			p_ds->GetRasterBand(1)->SetColorTable(p_color_table_);
+		GDALDataset* p_ds = SaveToInMemGTiff(tiff_in_mem);
 
 		if (poSRS)
 		{
@@ -691,61 +855,50 @@ namespace ttx
 	}
 
 
-	bool RasterBuffer::InitByValue(int value)
+	bool RasterBuffer::InitByValue(float value)
 	{
-		if (p_pixel_data_ == NULL) return false;
+		if (p_pixel_data_ == 0) return false;
 
 		switch (data_type_)
 		{
-		case GDT_Byte:
-		{
-			unsigned char t = 1;
-			return InitByValue(t, value);
-		}
-		case GDT_UInt16:
-		{
-			uint16_t t = 257;
-			return InitByValue(t, value);
-		}
-		case GDT_Int16:
-		{
-			int16_t t = -257;
-			return InitByValue(t, value);
-		}
-		case GDT_Float32:
-		{
-			float t = 1.1;
-			return InitByValue(t, value);
-		}
-		default:
-			return NULL;
+			case GDT_Byte:
+			{
+				unsigned char t = 1;
+				return InitByValue(t, value);
+			}
+			case GDT_UInt16:
+			{
+				uint16_t t = 257;
+				return InitByValue(t, value);
+			}
+			case GDT_Int16:
+			{
+				int16_t t = -257;
+				return InitByValue(t, value);
+			}
+			case GDT_Float32:
+			{
+				float t = 1.1;
+				return InitByValue(t, value);
+			}
+			default:
+				return 0;
 		}
 		return true;
 	}
 
 
 	template <typename T>
-	bool RasterBuffer::InitByValue(T type, int value)
+	bool RasterBuffer::InitByValue(T type, float value)
 	{
 		if (p_pixel_data_ == NULL) return false;
 
 		T *p_pixel_data_t = (T*)p_pixel_data_;
-		if (!alpha_band_defined_)
-		{
-			uint64_t n = num_bands_ * x_size_*y_size_;
-			for (uint64_t i = 0; i < n; i++)
-				p_pixel_data_t[i] = value;
-		}
-		else
-		{
-			uint64_t n = (num_bands_ - 1)*x_size_*y_size_;
-			for (uint64_t i = 0; i < n; i++)
-				p_pixel_data_t[i] = value;
-			n = num_bands_ * x_size_*y_size_;
-			for (uint64_t i = (num_bands_ - 1)*x_size_*y_size_; i < n; i++)
-				p_pixel_data_t[i] = 0;
-
-		}
+		uint64_t n = num_bands_ * x_size_*y_size_;
+		for (uint64_t i = 0; i < n; i++)
+			p_pixel_data_t[i] = value;
+		
+		
 		return true;
 	}
 
@@ -792,33 +945,42 @@ namespace ttx
 		int n = x_size_ * y_size_;
 		int m, d;
 
-		int _num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
+		//int _num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
 
-		for (int b = 0; b < _num_bands; b++)
+		for (int b = 0; b < num_bands_; b++)
 		{
 			m = b * n;
 			if ((fabs(p_scales[b] - 1.) < 1e-5) && (p_offsets[b] == 0.))
 			{
 				for (int i = m; i < m + n; i++)
-					p_pixel_stretched_data[i] = p_pixel_data_t[i];
+					
+					p_pixel_stretched_data[i] = !m_bNDVDefined ? p_pixel_data_t[i]
+												: m_fNDV == p_pixel_data_t[i] ? 0 : p_pixel_data_t[i];
 			}
 			else
 			{
 				for (int i = m; i < m + n; i++)
 				{
-					d = (int)(0.5 + (((double)p_pixel_data_t[i])*p_scales[b] + p_offsets[b]));
-					p_pixel_stretched_data[i] = min(max(d, 0), 255);
+					if ((!m_bNDVDefined) || (p_pixel_data_t[i] != m_fNDV))
+					{
+						d = (int)(0.5 + (((double)p_pixel_data_t[i]) * p_scales[b] + p_offsets[b]));
+						p_pixel_stretched_data[i] = min(max(d, 0), 255);
+					}
+					else
+						p_pixel_stretched_data[i] = 0;
 				}
 			}
 
 		}
 
+		/*
 		if (IsAlphaBand())
 		{
 			m = x_size_ * y_size_*(num_bands_ - 1);
 			for (int i = m; i < m + n; i++)
 				p_pixel_stretched_data[i] = p_pixel_data_t[i];
 		}
+		*/
 
 		delete[]p_pixel_data_t;
 		p_pixel_data_ = p_pixel_stretched_data;
@@ -1010,7 +1172,7 @@ namespace ttx
 	/*
 	* This method resamples pixel data, shrinks its sizes twice, returns pointer to
 	* resampled data. Resampling algorithm depends on: 
-	*	- whether alphaband is defined
+	*	- whether nodata value is defined
 	*	- resampling method that was defined in CMD call to imagetiling
 	*/
 	template<typename T>
@@ -1018,110 +1180,85 @@ namespace ttx
 	{
 		int n = x_size_ * y_size_;
 		int n_4 = x_size_ * y_size_ / 4;
+		int all_4 = n_4 * num_bands_;
 		int w = x_size_ / 2;
 		int h = y_size_ / 2;
-		T* p_pixel_data_zoomedout = NULL;
+		T* p_pixel_data_zoomedout = 0;
 
 		// create output array
 		if (!(p_pixel_data_zoomedout = new T[num_bands_*n_4]))
 		{
-			return NULL;
+			return 0;
 		}
 
 		int num_valid_pixels; 
 		int m, k, q, l, i, j, b;
 		T* p_pixel_data_t = (T*)p_pixel_data_;
+		std::vector<T> vec;
 
-		int _num_bands = (IsAlphaBand()) ? num_bands_ - 1 : num_bands_;
+		//int _num_bands = (IsAlphaBand()) ? num_bands_ - 1 : num_bands_;
 
-		int r[4], pixel_sum[100];
+		int r[4];
+		float pixel_sum;
 		int min, dist, l_min, _dist;
 
 		//loop through indexes of output pixels and calculate their values 
-		for (i = 0; i < h; i++)
+		for (q = 0; q < all_4; q++)
 		{
-			for (j = 0; j < w; j++)
+			b = q / n_4;
+			i = (q % n_4) / w;
+			j = (q % n_4) % w;
+			
+			if (!m_bNDVDefined)
 			{
-				m = i * w;
-
-				//calculate:
-				//  num_valid_pixels - number valid pixels (0-4) ("valid" means - not no data)
-				//  r[4] - indexes of input pixels for resampling
-				//  alpha band ouput value if there alpha band is defined
-				if (!IsAlphaBand()) 
+				for (l = 0; l < 4; l++)
+					//b * n +  (2*i + {0-1})*x_size_ + (2*j + {0-1})
+					//4*q - 2*j + {0-1} *x_size + {0-1}
+					//r[l] = b*n + (j << 1) + l % 2 + (l >> 1) * x_size_;
+					r[l] = (q << 2) - (j << 1) + (l >> 1) * x_size_ + (l % 2);
+				num_valid_pixels = 4;
+			}
+			else
+			{
+				num_valid_pixels = 0;
+				for (l = 0; l < 4; l++)
 				{
-
-					for (l = 0; l < 4; l++)
-						r[l] = (m << 2) + (j << 1) + l % 2 + (l >> 1)*x_size_;
-					num_valid_pixels = 4;
+					//k = (q << 2) + (j << 1) + l % 2 + (l >> 1) * x_size_;
+					k = (q << 2) - (j << 1) + (l >> 1) * x_size_ + (l % 2);
+					if (p_pixel_data_t[k] != m_fNDV)
+					{
+						r[num_valid_pixels] = k;
+						num_valid_pixels++;
+					}
 				}
+			}
+
+			if (!use_nearest_resampling)
+			{
+				if (num_valid_pixels < 2) 
+					p_pixel_data_zoomedout[q] = m_fNDV;
 				else
 				{
-					num_valid_pixels = 0;
-					k = n_4 * (num_bands_ - 1);
-
-					for (l = 0; l < 4; l++)
-					{
-						q = (m << 2) + (j << 1) + l % 2 + (l >> 1)*x_size_;
-						//if pixel is valid (alpha band value !=0) save index and increment valid pixels count
-						if (p_pixel_data_t[q + (k << 2)] != 0)
-						{
-							r[num_valid_pixels] = q;
-							num_valid_pixels++;
-						}
-					}
-
-					//set output pixel as no data
-					if (num_valid_pixels == 0 ||
-						( (num_valid_pixels == 1) &&  (!use_nearest_resampling))
-						)
-					{
-						p_pixel_data_zoomedout[m + j + k] = 0;
-						for (b = 0; b < _num_bands; b++)
-							p_pixel_data_zoomedout[m + j + n_4 * b] = p_pixel_data_t[(m << 2) + (j << 1) + b * n];
-						continue;
-					}
-					//set output pixel as valid
-					else p_pixel_data_zoomedout[m + j + k] = 255;
-				}
-
-				//calculate sum of input pixels for resampling 
-				//wherein number of input pixels equals to num_valid_pixels
-				for (b = 0; b < _num_bands; b++)
-				{
-					pixel_sum[b] = 0;
+					pixel_sum = 0;
 					for (l = 0; l < num_valid_pixels; l++)
-						pixel_sum[b] += p_pixel_data_t[r[l] + b * n];
-				}
+						pixel_sum += p_pixel_data_t[r[l]];
 
-				//calculate output pixel as average of input pixels 
-				//with some tricky correction 
-				if (!use_nearest_resampling)
-				{
-					for (b = 0; b < _num_bands; b++)
-						p_pixel_data_zoomedout[m + j + b * n_4] = 
-						(pixel_sum[b] / num_valid_pixels) + (((pixel_sum[b] % num_valid_pixels) << 1) > num_valid_pixels);
+					p_pixel_data_zoomedout[q] = (pixel_sum / num_valid_pixels)
+									 + ((((int)pixel_sum % num_valid_pixels) << 1) > num_valid_pixels);
 				}
-				//if GRA_NearestNeighbour output value equals to the closest value of input pixels
+			}
+			else
+			{
+				if (num_valid_pixels == 0) 
+					p_pixel_data_zoomedout[q] = m_fNDV;
 				else
 				{
-					min = 1000000;
-					l_min = 0;
-
+					vec.clear();
 					for (l = 0; l < num_valid_pixels; l++)
-					{
-						dist = 0;
-						for (b = 0; b < _num_bands; b++)
-							dist += ((_dist = pixel_sum[b] - p_pixel_data_t[r[l] + b * n] * num_valid_pixels) > 0) ?
-							_dist : -_dist;
-						if (dist < min)
-						{
-							l_min = l;
-							min = dist;
-						}
-					}
-					for (b = 0; b < _num_bands; b++)
-						p_pixel_data_zoomedout[m + j + b * n_4] = p_pixel_data_t[r[l_min] + b * n];
+						vec.push_back(p_pixel_data_t[r[l]]);
+					auto el = vec.begin() + (vec.size() / 2);
+					std::nth_element(vec.begin(), el, vec.end());
+					p_pixel_data_zoomedout[q] = vec[vec.size() / 2];
 				}
 			}
 		}
@@ -1129,99 +1266,12 @@ namespace ttx
 		return p_pixel_data_zoomedout;
 	}
 
-
+	/*
 	bool	RasterBuffer::IsAlphaBand()
 	{
 		return alpha_band_defined_;
 	}
-
-
-	/*
-	bool  RasterBuffer::CreateAlphaBandByPixelLinePolygon (VectorOperations *p_vb)
-	{
-
-	  if (x_size_==0 || y_size_==0 || num_bands_==0) return false;
-	  unsigned char *vector_mask = new unsigned char[x_size_*y_size_];
-
-	  //OGRGeometry *p_ogr_geom = p_vb->get_ogr_geometry_ref();
-	  for (int j=0;j<y_size_;j++)
-	  {
-		int num_points = 0;
-		int* p_x = 0;
-
-		int n = j*x_size_;
-		for (int i = 0; i<x_size_; i++)
-			vector_mask[n+i]=0;
-
-		//ToDo
-		if ((!VectorOperations::IntersectYLineWithPixelLineGeometry(j,p_vb->get_ogr_geometry_ref(),num_points,p_x)) ||
-			(num_points == 0) || ((num_points%2)==1))
-		  continue;
-
-		for (int k=0;k<num_points;k+=2)
-		{
-		  for (int i=p_x[k];i<=p_x[k+1];i++)
-		  {
-			if (i<0) continue;
-			if (i>=x_size_) break;
-			vector_mask[n+i]=255;
-		  }
-		}
-
-		delete[]p_x;
-	  }
-
-	  RasterBuffer temp_buffer;
-	  if (!temp_buffer.CreateBuffer(num_bands_+1,x_size_,y_size_,0,data_type_,1,p_color_table_)) return false;
-
-	  int n = x_size_*y_size_*num_bands_;
-	  int m = x_size_*y_size_;
-
-	  unsigned char* p_new_pixel_data = new unsigned char[(n + m)*data_size_];
-	  memcpy(p_new_pixel_data,p_pixel_data_,n);
-
-	  switch (data_type_)
-		{
-			case GDT_Byte:
-			{
-		  unsigned char *p_new_pixel_data_B = (unsigned char*)p_new_pixel_data;
-		  for (int i=0;i<m;i++)
-			 p_new_pixel_data_B[i+n]=vector_mask[i];
-		}
-
-		case GDT_UInt16:
-			{
-		  uint16_t *p_new_pixel_data_UInt16 = (uint16_t*)p_new_pixel_data;
-		  for (int i=0;i<m;i++)
-			 p_new_pixel_data_UInt16[i+n]=vector_mask[i];
-		}
-
-		case GDT_Int16:
-			{
-		  int16_t *p_new_pixel_data_Int16 = (int16_t*)p_new_pixel_data;
-		  for (int i=0;i<m;i++)
-			 p_new_pixel_data_Int16[i+n]=vector_mask[i];
-		}
-
-		case GDT_Float32:
-			{
-		  float *p_new_pixel_data_F32 = (float*)p_new_pixel_data;
-		  for (int i=0;i<m;i++)
-			 p_new_pixel_data_F32[i+n]=vector_mask[i];
-		}
-	  }
-
-	  delete[]((unsigned char*)p_pixel_data_);
-	  delete[]vector_mask;
-
-	  p_pixel_data_=p_new_pixel_data;
-	  num_bands_++;
-	  alpha_band_defined_ = true;
-
-	  return true;
-	}
-	*/
-
+	
 	bool RasterBuffer::CreateAlphaBandByNDV(int nNDV)
 	{
 		if (alpha_band_defined_) return true;
@@ -1290,7 +1340,10 @@ namespace ttx
 		alpha_band_defined_ = true;
 		return true;
 	}
+	*/
 
+
+	/*
 	template<typename T>
 	bool RasterBuffer::CreateAlphaBandByNDV(T type, int nNDV)
 	{
@@ -1326,7 +1379,7 @@ namespace ttx
 		p_pixel_data_ = p_pixel_data_new;
 		return true;
 	}
-
+	*/
 
 	bool RasterBuffer::SetPixelDataBlock(int left,
 										int top,
@@ -1464,23 +1517,13 @@ namespace ttx
 
 	bool RasterBuffer::SaveToJP2Data(void* &pabData, int &nSize, int nQuality)
 	{
-		string	strTiffInMem = ("/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand()));
+		string	strTiffInMem;
 
-		int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
+		//int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
 
-		GDALDataset* poTiffDS = (GDALDataset*)GDALCreate(
-			GDALGetDriverByName("GTiff"),
-			strTiffInMem.c_str(),
-			x_size_,
-			y_size_,
-			num_bands,
-			data_type_,
-			NULL
-		);
-		poTiffDS->RasterIO(GF_Write, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, 
-							y_size_, data_type_, num_bands, NULL, 0, 0, 0);
-		GDALFlushCache(poTiffDS);
-
+		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
+	
+		
 		string strJP2DriverName = JP2000DriverFactory::GetDriverName();
 		string strJP2InMem = ("/vsimem/jp2inmem" + MPLString::ConvertIntToString(rand()));
 		char **papszOptions = NULL;
@@ -1492,6 +1535,12 @@ namespace ttx
 		GDALDatasetH poJP2DS = GDALCreateCopy(GDALGetDriverByName(strJP2DriverName.c_str()),
 			strJP2InMem.c_str(),
 			poTiffDS, 0, papszOptions, 0, 0);
+		
+		if (m_bNDVDefined)
+		{
+			for (int b = 1; b <= ((GDALDataset*)poJP2DS)->GetRasterCount(); b++)
+				((GDALDataset*)poJP2DS)->GetRasterBand(b)->SetNoDataValue(m_fNDV);
+		}
 
 		GDALFlushCache(poJP2DS);
 		GDALClose(poJP2DS);
@@ -1517,6 +1566,10 @@ namespace ttx
 
 		CreateBuffer(poJP2DS->GetRasterCount(), poJP2DS->GetRasterXSize(), poJP2DS->GetRasterYSize(), NULL, poJP2DS->GetRasterBand(1)->GetRasterDataType());
 		poJP2DS->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+
+		int nNDVDefined = false;
+		float fNDV = poJP2DS->GetRasterBand(1)->GetNoDataValue(&nNDVDefined);
+		if (nNDVDefined) SetNDV(fNDV);
 
 		GDALClose(poJP2DS);
 		VSIUnlink("/vsimem/jp2inmem");

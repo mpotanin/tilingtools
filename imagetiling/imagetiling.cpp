@@ -19,188 +19,156 @@ void Exit()
 
 int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
 {
-  ttx::TilingParameters oTilingParams;
+    ttx::TilingParameters oTilingParams;
 
   
 
-  if (oOptionParser.GetValueList("-i").size() == 0)
-  {
+    if (oOptionParser.GetValueList("-i").size() == 0)
+    {
     cout << "ERROR: missing \"-i\" parameter" << endl;
     return 1;
-  }
+    }
 
-  ttx::BundleConsoleInput oBundleConsoleInput;
-  if (!oBundleConsoleInput.InitByConsoleParams(oOptionParser.GetValueList("-i"),
+    ttx::BundleConsoleInput oBundleConsoleInput;
+    if (!oBundleConsoleInput.InitByConsoleParams(oOptionParser.GetValueList("-i"),
     oOptionParser.GetValueList("-b"),
     oOptionParser.GetValueList("-bnd")))
     return 1;
 
-  oTilingParams.p_bundle_input_ = &oBundleConsoleInput;
+    oTilingParams.p_bundle_input_ = &oBundleConsoleInput;
 
 
-  if (!ttx::TileContainerFactory::GetTileContainerType(oOptionParser.GetOptionValue("-of"), oTilingParams.container_type_))
-  {
+    if (!ttx::TileContainerFactory::GetTileContainerType(oOptionParser.GetOptionValue("-of"), oTilingParams.container_type_))
+    {
     cout << "ERROR: not valid value of \"-of\" parameter: " << oOptionParser.GetOptionValue("-of") << endl;
     return 1;
-  }
+    }
 
 
-  string strProjType = oOptionParser.GetOptionValue("-tsrs");
-  oTilingParams.merc_type_ = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ?
+    string strProjType = oOptionParser.GetOptionValue("-tsrs");
+    oTilingParams.merc_type_ = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ?
     ttx::WORLD_MERCATOR : ttx::WEB_MERCATOR;
 
-  list<string> listRasters = oBundleConsoleInput.GetRasterFiles();
+    list<string> listRasters = oBundleConsoleInput.GetRasterFiles();
 
 
-  if (oOptionParser.GetOptionValue("-pseudo_png") != "")
+    if (oOptionParser.GetOptionValue("-pseudo_png") != "")
     oTilingParams.tile_type_ = ttx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
-  else if (oOptionParser.GetOptionValue("-tt") != "")
-  {
+    else if (oOptionParser.GetOptionValue("-tt") != "")
+    {
     if (!ttx::TileName::TileTypeByExtension(oOptionParser.GetOptionValue("-tt"),
-      oTilingParams.tile_type_))
+        oTilingParams.tile_type_))
     {
-      cout << "ERROR: not valid value of \"-tt\" parameter: " << oOptionParser.GetOptionValue("-tt") << endl;
-      return 1;
+        cout << "ERROR: not valid value of \"-tt\" parameter: " << oOptionParser.GetOptionValue("-tt") << endl;
+        return 1;
     }
-  }
-  else if (MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) != "")
-  {
+    }
+    else if (MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) != "")
+    {
     if (!ttx::TileName::TileTypeByExtension(MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
-      oTilingParams.tile_type_))
+        oTilingParams.tile_type_))
     {
-      cout << "ERROR: not valid value of \"-tnt\" parameter: " << MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
-      return 1;
+        cout << "ERROR: not valid value of \"-tnt\" parameter: " << MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
+        return 1;
     }
-  }
-  else
-  {
+    }
+    else
+    {
     oTilingParams.tile_type_ = MPLString::MakeLower(MPLFileSys::GetExtension(*listRasters.begin())) == "png" ?
-      ttx::TileType::PNG_TILE : ttx::TileType::JPEG_TILE;
-  }
+        ttx::TileType::PNG_TILE : ttx::TileType::JPEG_TILE;
+    }
 
 
-  //ToDo - should refactor move to this logic inside ITileContainer subclasses
-  if (oOptionParser.GetOptionValue("-o") != "")
+    //ToDo - should refactor move to this logic inside ITileContainer subclasses
+    if (oOptionParser.GetOptionValue("-o") != "")
     oTilingParams.output_path_ = oOptionParser.GetOptionValue("-o");
-  else
+    else
     oTilingParams.output_path_ = oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER ?
     MPLFileSys::RemoveExtension(*listRasters.begin()) + "_tiles" :
     oTilingParams.output_path_ = MPLFileSys::RemoveExtension(*listRasters.begin()) + "." +
     ttx::TileContainerFactory::GetExtensionByTileContainerType(oTilingParams.container_type_);
-  if ((oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER) &&
+    if ((oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER) &&
     (!MPLFileSys::FileExists(oTilingParams.output_path_)))
-  {
+    {
     if (!MPLFileSys::CreateDir(oTilingParams.output_path_))
     {
-      cout << "ERROR: can't create folder: " << oTilingParams.output_path_ << endl;
-      return 1;
+        cout << "ERROR: can't create folder: " << oTilingParams.output_path_ << endl;
+        return 1;
     }
-  }
+    }
 
-  //ToDo - should refactor move to this logic inside ITileContainer::TileFolder subclasses
-  if (oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER)
-  {
-    if ((oOptionParser.GetOptionValue("-tnt") == "standard") ||
-      (oOptionParser.GetOptionValue("-tnt") == ""))
+    //ToDo - should refactor move to this logic inside ITileContainer::TileFolder subclasses
+    if (oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER)
     {
-      oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
+    if ((oOptionParser.GetOptionValue("-tnt") == "standard") ||
+        (oOptionParser.GetOptionValue("-tnt") == ""))
+    {
+        oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
         "{z}/{x}/{y}." + ttx::TileName::ExtensionByTileType(oTilingParams.tile_type_));
     }
     else if (oOptionParser.GetOptionValue("-tnt") == "kosmosnimki")
     {
-      oTilingParams.p_tile_name_ = new ttx::KosmosnimkiTileName(oTilingParams.output_path_,
+        oTilingParams.p_tile_name_ = new ttx::KosmosnimkiTileName(oTilingParams.output_path_,
         oTilingParams.tile_type_);
     }
     else
-      oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
-      oOptionParser.GetOptionValue("-tnt"));
-  }
+        oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
+        oOptionParser.GetOptionValue("-tnt"));
+    }
 
 
-  if (oOptionParser.GetOptionValue("-z") != "")
+    if (oOptionParser.GetOptionValue("-z") != "")
     oTilingParams.base_zoom_ = atoi(oOptionParser.GetOptionValue("-z").c_str());
 
 
-  if (oOptionParser.GetOptionValue("-minz") != "")
+    if (oOptionParser.GetOptionValue("-minz") != "")
     oTilingParams.min_zoom_ = atoi(oOptionParser.GetOptionValue("-minz").c_str());
 
 
-  if (oOptionParser.GetOptionValue("-b") != "")
+    if (oOptionParser.GetOptionValue("-b") != "")
     oTilingParams.vector_file_ = oOptionParser.GetOptionValue("-b");
 
 
-  if (oOptionParser.GetOptionValue("-q") != "")
+    if (oOptionParser.GetOptionValue("-q") != "")
     oTilingParams.quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
 
 
-  if (oOptionParser.GetValueList("-nd").size() != 0)
-  {
-    list<string> listNodataValues = oOptionParser.GetValueList("-nd");
-    oTilingParams.nd_num_ = listNodataValues.size();
-    oTilingParams.p_nd_rgbcolors_ = new unsigned char*[oTilingParams.nd_num_];
-    for (int i = 0; i<oTilingParams.nd_num_;i ++)
-      oTilingParams.p_nd_rgbcolors_[i] = 0;
+    if (oOptionParser.GetOptionValue("-nd").size() != 0)
+    {
+        oTilingParams.m_bNDVDefined = true;
+        oTilingParams.m_fNDV = stof(oOptionParser.GetOptionValue("-nd"));
+        
+    }
     
-    int i=0;
-    for (string strNodata : listNodataValues)
+    if (oOptionParser.GetOptionValue("-r") == "")
     {
-      oTilingParams.p_nd_rgbcolors_[i] = new unsigned char[3];
-      if (!MPLString::ConvertStringToRGB(strNodata, oTilingParams.p_nd_rgbcolors_[i]))
-      {
-        cout << "ERROR: not valid value of \"-nd\" parameter: " << strNodata << endl;
-        return false;
-      }
-      i++;
+        ttx::RasterFile oRF;
+        if (!oRF.Init(*listRasters.begin()))
+        {
+            cout << "ERROR: can't open file: " << (*listRasters.begin()) << endl;
+            return false;
+        }
+        oTilingParams.gdal_resampling_ = ( oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable() ||
+                                            oOptionParser.GetOptionValue("-nd").size()) 
+                                            ? GRA_NearestNeighbour : GRA_Cubic;
+        oRF.Close();
     }
-  }
-
-
-  if (oOptionParser.GetOptionValue("-ndt") != "")
-    oTilingParams.nodata_tolerance_ = atoi(oOptionParser.GetOptionValue("-ndt").c_str());
-
-
-  if (oOptionParser.GetOptionValue("-bgc") != "")
-  {
-    unsigned char        pabyRGB[3];
-    if (!MPLString::ConvertStringToRGB(oOptionParser.GetOptionValue("-bgc"), pabyRGB))
-    {
-      cout << "ERROR: not valid value of \"-bgc\" parameter: " << oOptionParser.GetOptionValue("-bgc") << endl;
-      return false;
-    }
-    oTilingParams.p_background_color_ = new unsigned char[3];
-    memcpy(oTilingParams.p_background_color_, pabyRGB, 3);
-  }
-
-
-  if (oOptionParser.GetOptionValue("-r") == "")
-  {
-    ttx::RasterFile oRF;
-    if (!oRF.Init(*listRasters.begin()))
-    {
-      cout << "ERROR: can't open file: " << (*listRasters.begin()) << endl;
-      return false;
-    }
-    oTilingParams.gdal_resampling_ = ( oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable() ||
-                                      oOptionParser.GetValueList("-nd").size()) 
-                                      ? GRA_NearestNeighbour : GRA_Cubic;
-    oRF.Close();
-  }
-  else
-  {
-    string strResampling = oOptionParser.GetOptionValue("-r");
-    if (strResampling == "near" || strResampling == "nearest")
-      oTilingParams.gdal_resampling_ = GRA_NearestNeighbour;
-    else if (strResampling == "bilinear")
-      oTilingParams.gdal_resampling_ = GRA_Bilinear;
-    else if (strResampling == "cubic")
-      oTilingParams.gdal_resampling_ = GRA_Cubic;
-    else if (strResampling == "lanczos")
-      oTilingParams.gdal_resampling_ = GRA_Lanczos;
-    else if (strResampling == "cubicspline")
-      oTilingParams.gdal_resampling_ = GRA_CubicSpline;
     else
-      oTilingParams.gdal_resampling_ = GRA_Cubic;
-  }
+    {
+        string strResampling = oOptionParser.GetOptionValue("-r");
+        if (strResampling == "near" || strResampling == "nearest")
+            oTilingParams.gdal_resampling_ = GRA_NearestNeighbour;
+        else if (strResampling == "bilinear")
+            oTilingParams.gdal_resampling_ = GRA_Bilinear;
+        else if (strResampling == "cubic")
+            oTilingParams.gdal_resampling_ = GRA_Cubic;
+        else if (strResampling == "lanczos")
+            oTilingParams.gdal_resampling_ = GRA_Lanczos;
+        else if (strResampling == "cubicspline")
+            oTilingParams.gdal_resampling_ = GRA_CubicSpline;
+        else
+            oTilingParams.gdal_resampling_ = GRA_Cubic;
+    }
 
   if (oOptionParser.GetOptionValue("-tsz") != "")
 	  oTilingParams.tile_px_size_ = atoi(oOptionParser.GetOptionValue("-tsz").c_str());
@@ -245,12 +213,11 @@ const list<MPLOptionDescriptor> listDescriptors = {
   { "-isrs", 0, 0, 0, "input files srs WKT or PROJ.4 format" },
   { "-tsrs", 0, 0, 0, "tiling srs" },
   { "-tnt", 0, 0, 0, "tile name template" },
-  { "-nd", 0, 1, 0, "nodata value/rgb color" },
+  { "-nd", 0, 0, 0, "nodata value" },
   { "-ndt", 0, 0, 0, "nodata tolerance" },
-  { "-bgc", 0, 0, 0, "background color" },
   { "-bnd", 0, 1, 0, "raster band list" },
   { "-wt", 0, 0, 0, "work threads num." },
-  { "-tsz", 0, 0, 0, "tile seize (default 256)" },
+  { "-tsz", 0, 0, 0, "tile size (default 256)" },
   { "-pseudo_png", 1, 0, 0, "" },
   {"-bmarg", 0, 0, 0, "border margin in tiling srs units"},
   {"-wc",0, 0, 0, "warp chunk size in tiles"}
@@ -274,6 +241,8 @@ const list<string> listUsageExamples = {
 #ifdef WIN32
 int _tmain(int nArgs, wchar_t *pastrArgsW[])
 {
+     
+
 	std::vector<string> vecArgs;
 	for (int i = 0; i<nArgs; i++)
 	{

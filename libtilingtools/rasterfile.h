@@ -71,11 +71,11 @@ public:
 	GDALDataset*	get_gdal_ds_ref();
 
 	bool CalcBandStatistics	(int band_num, double &min, double &max, 
-							double &mean, double &std, double *p_nodata_val =0);
+							double &mean, double &std, float *p_nodata_val =0);
 	double get_nodata_value	(bool &nodata_defined);
 
 	static bool ReadSpatialRefFromMapinfoTabFile (string tab_file, OGRSpatialReference &srs);
-	static bool SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3]); 
+	//static bool SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3]); 
 
 protected:
 	bool GetDefaultSpatialRef(OGRSpatialReference	&srs, OGRSpatialReference *p_tiling_srs);
@@ -151,8 +151,7 @@ protected:
                                 int output_bands_num = 0,
                                 map<string,int*>* p_band_mapping = 0,
                                 GDALResampleAlg resample_alg = GRA_Cubic,
-                                int* p_ndval = NULL,
-                                unsigned char* p_background_color = NULL);
+                                float* pfNDV = 0);
 
   bool RunTilingFromBuffer (TilingParameters	*p_tiling_params, 
 						  RasterBuffer	*p_buffer,
@@ -162,11 +161,11 @@ protected:
 						  int *p_tiles_generated,
 						  ITileContainer *p_tile_container);
 
-  bool          CalclScalingTo8BitParams   (  double* &scales,
-                                                 double*  &offsets,
-                                                 int*  p_nodata_val=0,
-                                                 int      output_bands_num = 0,
-                                                 map<string,int*>*  p_band_mapping=0);
+bool CalclScalingTo8BitParams (  double* &scales,
+                                double*  &offsets,
+                                float* pfNDV,
+                                int      output_bands_num = 0,
+                                map<string,int*>*  p_band_mapping=0);
   list<string>	GetFileList();
 	bool			    Intersects(OGREnvelope envp);
   ITileMatrixSet* tile_matrix_set(){return p_tile_mset_;};

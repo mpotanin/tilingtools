@@ -26,7 +26,7 @@ bool RasterFile::Close()
 	return true;
 }
 
-
+/*
 bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char background[3])
 {
   ///
@@ -51,7 +51,7 @@ bool RasterFile::SetBackgroundToGDALDataset (GDALDataset *p_ds, unsigned char ba
   
 	return true;
 }
-
+*/
 
 bool RasterFile::Init(string raster_file, string set_srs)
 {
@@ -142,7 +142,12 @@ RasterFileCutline*  RasterFile::GetRasterFileCutline(ITileMatrixSet *p_tile_mset
 
 
 
-bool	RasterFile::CalcBandStatistics(int band_num, double &min, double &max, double &mean, double &std,  double *p_nodata_val)
+bool	RasterFile::CalcBandStatistics(int band_num, 
+										double &min, 
+										double &max, 
+										double &mean, 
+										double &std,  
+										float *p_nodata_val)
 {
 	if (this->p_gdal_ds_ == 0) return false;
 	if (this->p_gdal_ds_->GetRasterCount()<band_num) return false;
@@ -324,6 +329,7 @@ int BundleTiler::RunChunk (ttx::TilingParameters* p_tiling_params,
 	int bands_num=p_tiling_params->p_bundle_input_->GetBandsNum();
 	map<string,int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
 
+	/*
 	int* p_ndval = 0;
 	unsigned char* p_background_color = 0;
 
@@ -340,7 +346,10 @@ int BundleTiler::RunChunk (ttx::TilingParameters* p_tiling_params,
 		p_ndval = new int;
 		p_ndval[0] = p_tiling_params->p_nd_rgbcolors_[0][0];
 	}
+	*/
 
+	float* pfNDV = p_tiling_params->m_bNDVDefined ? new float[1] : 0;
+	if (pfNDV) *pfNDV = p_tiling_params->m_fNDV;
   
 
 	bool warp_result = WarpChunkToBuffer(zoom,
@@ -349,11 +358,8 @@ int BundleTiler::RunChunk (ttx::TilingParameters* p_tiling_params,
 										bands_num,
 										bands_num == 0 ? 0 : &band_mapping,
 										p_tiling_params->gdal_resampling_,
-										p_ndval,
-										p_background_color);
-
-	delete(p_ndval);
-	delete(p_background_color);
+										pfNDV);
+	delete(pfNDV);
     
 	if (!warp_result)	
 	{
@@ -623,90 +629,90 @@ bool	BundleTiler::Intersects(OGREnvelope envp)
 
 ///*ToDo!!!!!!!
 bool BundleTiler::CalclScalingTo8BitParams (double* &p_scales,
-                                                  double* &p_offsets,
-                                                  int* p_nodata_val,
-                                                  int      output_bands_num,
-                                                  map<string,int*>*  p_band_mapping)
+                                            double* &p_offsets,
+											float* pfNDV,
+                                            int      output_bands_num,
+                                            map<string,int*>*  p_band_mapping)
 {
-  if (this->item_list_.size()==0) return false;
-  p_scales = (p_offsets = 0);
-  double min,max,mean,std;
-  double nodata_val = (p_nodata_val) ? (*p_nodata_val) : 0;
+	if (this->item_list_.size()==0) return false;
+	p_scales = (p_offsets = 0);
+	double min,max,mean,std;
+
    
-  if (output_bands_num==0)
-  {
-    RasterFile rf;
-    if (!rf.Init(*GetFileList().begin())) return false;
-    int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
-    p_scales = new double[bands_num];
-    p_offsets = new double[bands_num]; 
+	if (output_bands_num==0)
+	{
+		RasterFile rf;
+		if (!rf.Init(*GetFileList().begin())) return false;
+		int bands_num = rf.get_gdal_ds_ref()->GetRasterCount();
+		p_scales = new double[bands_num];
+		p_offsets = new double[bands_num]; 
 
 
-    for (int b=0;b<bands_num;b++)
-    {
-      if (!rf.CalcBandStatistics(b + 1, min, max, mean, std, (p_nodata_val) ? &nodata_val : 0))
-      {
-        delete[]p_scales;delete[]p_offsets;
-        p_scales = (p_offsets = 0);
-        return false;
-      }
+	for (int b=0;b<bands_num;b++)
+	{
+		if (!rf.CalcBandStatistics(b + 1, min, max, mean, std, pfNDV))
+		{
+		delete[]p_scales;delete[]p_offsets;
+		p_scales = (p_offsets = 0);
+		return false;
+		}
 
-      if (((min>=0) && (max <= 255)) || (max==min))
-      {
-        p_scales[b] = 1.;
-        p_offsets[b] = 0.;
-      }
-      else
-      {
-        p_scales[b] = 255. / (4 * std);
-        p_offsets[b] = -255.*(mean-(2*std)) / (4 * std);
-      }
+		if (((min>=0) && (max <= 255)) || (max==min))
+		{
+		p_scales[b] = 1.;
+		p_offsets[b] = 0.;
+		}
+		else
+		{
+		p_scales[b] = 255. / (4 * std);
+		p_offsets[b] = -255.*(mean-(2*std)) / (4 * std);
+		}
     
-    }
-  }
-  else
-  {
-    p_scales = new double[output_bands_num];
-    p_offsets = new double[output_bands_num]; 
+	}
+	}
+	else
+	{
+	p_scales = new double[output_bands_num];
+	p_offsets = new double[output_bands_num]; 
     
-    for (int b=0;b<output_bands_num;b++)
-      p_scales[b]=(p_offsets[b]=0);
+	for (int b=0;b<output_bands_num;b++)
+		p_scales[b]=(p_offsets[b]=0);
 
-    for (int b=0;b<output_bands_num;b++)
-    {
-      for (map<string,int*>::iterator iter=p_band_mapping->begin();iter!=p_band_mapping->end();iter++)
-      {
-        if ((*iter).second[b]>0)
-        {
-          RasterFile rf;
-          bool error= rf.Init((*iter).first) ? false : true;
-          if (!error)
-            error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,&nodata_val) ? false : true;
-          if (error)
-          {
-            delete[]p_scales; delete[]p_offsets;
-            p_scales = (p_offsets = 0);
-            return false;
-          }
-          else
-          {
-            if (((min >= 0) && (max <= 255)) || (max == min))
-            {
-              p_scales[b] = 1.;
-              p_offsets[b] = 0.;
-            }
-            else
-            {
-              p_scales[b] = 255. / (4*std);
-              p_offsets[b] = -255.*(mean - (2 * std)) / (4 * std);
-            }
-          }
-        }  
-      }
-    }
-  }
+	for (int b=0;b<output_bands_num;b++)
+	{
+		for (map<string,int*>::iterator iter=p_band_mapping->begin();iter!=p_band_mapping->end();iter++)
+		{
+		if ((*iter).second[b]>0)
+		{
+			RasterFile rf;
+			bool error= rf.Init((*iter).first) ? false : true;
+			if (!error)
+			error = rf.CalcBandStatistics((*iter).second[b],min,max,mean,std,pfNDV) ? false : true;
+			if (error)
+			{
+			delete[]p_scales; delete[]p_offsets;
+			p_scales = (p_offsets = 0);
+			return false;
+			}
+			else
+			{
+			if (((min >= 0) && (max <= 255)) || (max == min))
+			{
+				p_scales[b] = 1.;
+				p_offsets[b] = 0.;
+			}
+			else
+			{
+				p_scales[b] = 255. / (4*std);
+				p_offsets[b] = -255.*(mean - (2 * std)) / (4 * std);
+			}
+			}
+		}  
+		}
+	}
+	}
   
-  return true;
+	return true;
 }
 //*/
 
@@ -788,8 +794,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
                                     int output_bands_num,
                                     map<string,int*>* p_band_mapping,
                                     GDALResampleAlg resample_alg, 
-                                    int* p_ndval,
-                                    unsigned char* p_background_color)
+                                    float* pfNDV)
 {
   //initialize output vrt dataset warp to 
 	if (item_list_.size()==0) return false;
@@ -804,8 +809,15 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	int bands_num_src = p_src_ds->GetRasterCount();
 	int	bands_num_dst = (output_bands_num==0) ? bands_num_src : output_bands_num;
  
-	bool nodata_val_from_file_defined;
-	double nodata_val_from_file = GetNodataValue(nodata_val_from_file_defined);
+	bool bNDVDefined;
+	float fNDV_gen = GetNodataValue(bNDVDefined);
+
+	if (pfNDV)
+	{
+		bNDVDefined = true;
+		fNDV_gen = *pfNDV;
+	}
+
 
 	double res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
 	int	buf_width = int(((chunk_envp.MaxX - chunk_envp.MinX)/res)+0.5);
@@ -815,7 +827,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	string tiff_in_mem = ("/vsimem/tiffinmem_" + 
 						MPLString::ConvertIntToString((int)chunk_envp.MinX) + 
 						"_" + MPLString::ConvertIntToString((int)chunk_envp.MaxY));
-  
+
+	  
 	GDALDataset* p_vrt_ds = (GDALDataset*)GDALCreate(
 													GDALGetDriverByName("GTiff"),
 													tiff_in_mem.c_str(),
@@ -825,6 +838,12 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 													dt,
 													0
 													);
+	if (bNDVDefined)
+	{
+		for (int b = 0; b<p_vrt_ds->GetRasterCount(); b++)
+		p_vrt_ds->GetRasterBand(b+1)->SetNoDataValue(fNDV_gen);
+	}
+
 	if (p_src_ds->GetRasterBand(1)->GetColorTable())
 		p_vrt_ds->GetRasterBand(1)->SetColorTable(p_src_ds->GetRasterBand(1)->GetColorTable());
 	GDALClose(p_src_ds);
@@ -841,172 +860,151 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	p_tile_mset_->GetTilingSRSRef()->exportToWkt( &p_dst_wkt );
 	p_vrt_ds->SetProjection(p_dst_wkt);
   
-	if (p_background_color)
-		RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
+	//if (p_background_color)
+	//	RasterFile::SetBackgroundToGDALDataset(p_vrt_ds,p_background_color);
   
    
-  int file_num = -1;
-  OGRGeometry *p_chunk_geom = VectorOperations::CreateOGRPolygonByOGREnvelope(chunk_envp);
+	int file_num = -1;
+	OGRGeometry *p_chunk_geom = VectorOperations::CreateOGRPolygonByOGREnvelope(chunk_envp);
 	for (list<pair<string,RasterFileCutline*>>::iterator iter = item_list_.begin(); iter!=item_list_.end();iter++)
 	{
-    file_num++;
+		file_num++;
 		
-    //check if image envelope Intersects destination buffer envelope
-    if (!(*iter).second->tiling_srs_envp_.Intersects(chunk_envp)) continue;
+		//check if image envelope Intersects destination buffer envelope
+		if (!(*iter).second->tiling_srs_envp_.Intersects(chunk_envp)) continue;
 			
-    if ((*iter).second->tiling_srs_cutline_ != 0)
+		if ((*iter).second->tiling_srs_cutline_ != 0)
 		{
 			if (!(*iter).second->tiling_srs_cutline_->Intersects(p_chunk_geom)) continue;
 		}
 
-		// Open input raster and create source dataset
-    RasterFile	input_rf;
-    input_rf.Init((*iter).first,set_srs_);
-    p_src_ds = input_rf.get_gdal_ds_ref();
+			// Open input raster and create source dataset
+		RasterFile	input_rf;
+		input_rf.Init((*iter).first,set_srs_);
+		p_src_ds = input_rf.get_gdal_ds_ref();
     			
-		// Get Source coordinate system and set destination  
+			// Get Source coordinate system and set destination  
 		char *p_src_wkt	= 0;
-    OGRSpatialReference input_rf_srs;
-    bool input_srs_defined = input_rf.GetSRS(input_rf_srs,this->p_tile_mset_) ? true : false;
-    if (input_srs_defined)
-    {
-      input_rf_srs.exportToWkt(&p_src_wkt);
-      CPLAssert(p_src_wkt != 0 && strlen(p_src_wkt) > 0);
-    }
-    else p_src_wkt = 0;   
-  
-    GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
-    p_warp_options->papszWarpOptions = 0;
-  
-   	p_warp_options->hSrcDS = p_src_ds;
-		p_warp_options->hDstDS = p_vrt_ds;
-
-    p_warp_options->dfWarpMemoryLimit = 250000000; 
-    
-    double			error_threshold = 0.125;
-    
-    p_warp_options->panSrcBands = new int[bands_num_dst];
-    p_warp_options->panDstBands = new int[bands_num_dst];
-		if (p_band_mapping)
-    {
-      int warp_bands_num =0;
-      for (int i=0; i<bands_num_dst; i++)
-      {
-        if ((*p_band_mapping)[(*iter).first][i]>0)
-        {
-          p_warp_options->panSrcBands[warp_bands_num] = (*p_band_mapping)[(*iter).first][i];
-          p_warp_options->panDstBands[warp_bands_num] = i+1;
-          warp_bands_num++;
-        }
-      }
-      p_warp_options->nBandCount = warp_bands_num;
-    }
-    else
-    {
-      p_warp_options->nBandCount = bands_num_dst;
-      for( int i = 0; i < bands_num_dst; i++ )
-        p_warp_options->panSrcBands[i] = (p_warp_options->panDstBands[i] = i+1);
-    }
-    
-    //debug
-    //p_warp_options->hCutline = 0;
-    if (m_bUseWarpClipHack)
-      p_warp_options->hCutline = 0;
-    else
-      p_warp_options->hCutline = (*iter).second->p_pixel_line_cutline_ ?
-                               (*iter).second->p_pixel_line_cutline_->clone() : 0;
-    //end-debug
-
-    if (p_ndval || nodata_val_from_file_defined)
-    {
-		p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
-		p_warp_options->padfSrcNoDataImag = new double[bands_num_dst];
-		p_warp_options->padfDstNoDataImag= new double[bands_num_dst];
-		p_warp_options->padfDstNoDataReal = new double[bands_num_dst];
-
-		for (int i=0;i<bands_num_dst;i++)
+		OGRSpatialReference input_rf_srs;
+		bool input_srs_defined = input_rf.GetSRS(input_rf_srs,this->p_tile_mset_) ? true : false;
+		if (input_srs_defined)
 		{
-			p_warp_options->padfSrcNoDataReal[i] = nodata_val_from_file_defined ? nodata_val_from_file : (*p_ndval);
-			p_warp_options->padfSrcNoDataImag[i] = nodata_val_from_file_defined ? nodata_val_from_file : 0;
-			p_warp_options->padfDstNoDataImag[i] = nodata_val_from_file_defined ? nodata_val_from_file : 0;
-			p_warp_options->padfDstNoDataReal[i] = nodata_val_from_file_defined ? nodata_val_from_file : (*p_ndval);
+			input_rf_srs.exportToWkt(&p_src_wkt);
+			CPLAssert(p_src_wkt != 0 && strlen(p_src_wkt) > 0);
 		}
-    }
-        
-    p_warp_options->pfnProgress = TTXPrintProgressStub;
-    //p_warp_options->pfnProgress = 0;
+		else p_src_wkt = 0;   
+  
+		GDALWarpOptions *p_warp_options = GDALCreateWarpOptions();
+		p_warp_options->papszWarpOptions = 0;
+  
+   		p_warp_options->hSrcDS = p_src_ds;
+			p_warp_options->hDstDS = p_vrt_ds;
 
-    p_warp_options->pTransformerArg = p_src_wkt ?
-				GDALCreateApproxTransformer( GDALGenImgProjTransform, 
-											               GDALCreateGenImgProjTransformer(  p_src_ds, 
-																				              p_src_wkt, 
-																				              p_vrt_ds,
-																				              p_dst_wkt,
-																				              false, 0.0, 1),
-                                     error_threshold ) :
-        GDALCreateApproxTransformer(GDALGenImgProjTransform,
-                                     GDALCreateGenImgProjTransformer(p_src_ds,
-                                     0,
-                                     p_vrt_ds,
-                                     p_dst_wkt,
-                                     true, 0.0, 1),
-                                     error_threshold);
+		p_warp_options->dfWarpMemoryLimit = 250000000; 
+    
+		double			error_threshold = 0.125;
+    
+		p_warp_options->panSrcBands = new int[bands_num_dst];
+		p_warp_options->panDstBands = new int[bands_num_dst];
+		if (p_band_mapping)
+		{
+			int warp_bands_num =0;
+			for (int i=0; i<bands_num_dst; i++)
+			{
+				if ((*p_band_mapping)[(*iter).first][i]>0)
+				{
+					p_warp_options->panSrcBands[warp_bands_num] = (*p_band_mapping)[(*iter).first][i];
+					p_warp_options->panDstBands[warp_bands_num] = i+1;
+					warp_bands_num++;
+				}
+			}
+			p_warp_options->nBandCount = warp_bands_num;
+		}
+		else
+		{
+			p_warp_options->nBandCount = bands_num_dst;
+			for( int i = 0; i < bands_num_dst; i++ )
+				p_warp_options->panSrcBands[i] = (p_warp_options->panDstBands[i] = i+1);
+		}
+    
+	
+		if (m_bUseWarpClipHack) p_warp_options->hCutline = 0;
+		else 
+			p_warp_options->hCutline = (*iter).second->p_pixel_line_cutline_ ?
+								   (*iter).second->p_pixel_line_cutline_->clone() : 0;
+		
+		if (bNDVDefined)
+		{
+			p_warp_options->padfSrcNoDataReal = new double[bands_num_dst];
+			p_warp_options->padfDstNoDataReal = new double[bands_num_dst];
+			p_warp_options->padfSrcNoDataImag = 0;
+			p_warp_options->padfDstNoDataImag= 0;
+
+			for (int i=0;i<bands_num_dst;i++)
+			{
+				p_warp_options->padfSrcNoDataReal[i] = fNDV_gen;
+				p_warp_options->padfDstNoDataReal[i] = p_warp_options->padfSrcNoDataReal[i];
+			}
+		}
+        
+		p_warp_options->pfnProgress = TTXPrintProgressStub;
+		p_warp_options->pTransformerArg = GDALCreateApproxTransformer(
+												GDALGenImgProjTransform,
+												GDALCreateGenImgProjTransformer(
+													p_src_ds,p_src_wkt, p_vrt_ds, p_dst_wkt,false, 0.0, 1),
+												error_threshold);
 
 		p_warp_options->pfnTransformer = GDALApproxTransform;
-    p_warp_options->eResampleAlg =  resample_alg; 
+		p_warp_options->eResampleAlg =  resample_alg; 
     
-     // Initialize and execute the warp operation. 
+		 // Initialize and execute the warp operation. 
 		GDALWarpOperation gdal_warp_operation;
 		gdal_warp_operation.Initialize( p_warp_options );
 		   
-    bool  warp_error=(CE_None!=gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));  
+		bool  warp_error=(CE_None!=gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));  
 
-    GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
-    if (p_warp_options->hCutline)
-    {
-      delete((OGRGeometry*)p_warp_options->hCutline);
-      p_warp_options->hCutline = 0;
-    }
+		GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
+		if (p_warp_options->hCutline)
+		{
+			delete((OGRGeometry*)p_warp_options->hCutline);
+			p_warp_options->hCutline = 0;
+		}
 
-    if (p_warp_options->padfSrcNoDataReal)
-    {
-		delete[]p_warp_options->padfSrcNoDataReal;
-		delete[]p_warp_options->padfSrcNoDataImag;
-		delete[]p_warp_options->padfDstNoDataReal;
-		delete[]p_warp_options->padfDstNoDataImag;
-      
-		p_warp_options->padfSrcNoDataReal = 0;
-		p_warp_options->padfSrcNoDataImag = 0;
-		p_warp_options->padfDstNoDataReal = 0;
-		p_warp_options->padfDstNoDataImag = 0;
-    }
+		if (p_warp_options->padfSrcNoDataReal)
+		{
+			delete[]p_warp_options->padfSrcNoDataReal;
+			delete[]p_warp_options->padfDstNoDataReal;
+			p_warp_options->padfSrcNoDataReal = 0;
+			p_warp_options->padfDstNoDataReal = 0;
+		}
 
-    delete[]p_warp_options->panSrcBands;
-    delete[]p_warp_options->panDstBands;
-    p_warp_options->panSrcBands = 0;
-    p_warp_options->panDstBands = 0;
+		delete[]p_warp_options->panSrcBands;
+		delete[]p_warp_options->panDstBands;
+		p_warp_options->panSrcBands = 0;
+		p_warp_options->panDstBands = 0;
    
 		GDALDestroyWarpOptions( p_warp_options );
 		OGRFree(p_src_wkt);
 		input_rf.Close();
 		if (warp_error) 
-    {
-      cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
-      delete(p_chunk_geom);
-      OGRFree(p_dst_wkt);
-	    GDALClose(p_vrt_ds);
-      return false;
-    }
+		{
+			cout<<"ERROR: warping raster block of image: "<<(*iter).first<<endl;
+			delete(p_chunk_geom);
+			OGRFree(p_dst_wkt);
+			GDALClose(p_vrt_ds);
+			return false;
+		}
 	}
-  delete(p_chunk_geom);
+	delete(p_chunk_geom);
 
-	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,0,dt,false,p_vrt_ds->GetRasterBand(1)->GetColorTable());
+	p_dst_buffer->CreateBuffer(bands_num_dst,buf_width,buf_height,0,dt,p_vrt_ds->GetRasterBand(1)->GetColorTable() );
+	if (bNDVDefined) p_dst_buffer->SetNDV(fNDV_gen);
 
-  p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
+	p_vrt_ds->RasterIO(	GF_Read,0,0,buf_width,buf_height,p_dst_buffer->get_pixel_data_ref(),
 						buf_width,buf_height,p_dst_buffer->get_data_type(),
 						p_dst_buffer->get_num_bands(),0,0,0,0);
 
-  OGRFree(p_dst_wkt);
+	OGRFree(p_dst_wkt);
 	GDALClose(p_vrt_ds);
 	VSIUnlink(tiff_in_mem.c_str());
 	return true;
@@ -1017,7 +1015,7 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 {
 	srand(0);
 	int	tiles_generated = 0;
-	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcAppropriateZoom() : p_tiling_params->base_zoom_;
+ 	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcAppropriateZoom() : p_tiling_params->base_zoom_;
 	double res = p_tile_mset_->CalcPixelSizeByZoom(zoom);
 
 	cout<<"calculating number of tiles: ";
@@ -1038,19 +1036,23 @@ bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params,
 		is_scaling_needed = true;
 		cout<<"WARNING: input raster doesn't match 8 bit/band. Auto scaling to 8 bit will be performed"<<endl;
 
-		int nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
+		//int nodata_val = (p_tiling_params->nd_num_) ? p_tiling_params->p_nd_rgbcolors_[0][0] : 0;
+		float* pfNDV = p_tiling_params->m_bNDVDefined ? new float[1] : 0;
+		if (pfNDV) pfNDV[0] = p_tiling_params->m_fNDV;
+
 		map<string, int*> band_mapping = p_tiling_params->p_bundle_input_->GetBandMapping();
 		if (!CalclScalingTo8BitParams(p_scale_values,
                                       p_offset_values,
-                                      (p_tiling_params->nd_num_) ?
-                                       &nodata_val : 0,
-										p_tiling_params->p_bundle_input_->GetBandsNum(),
-										p_tiling_params->p_bundle_input_->GetBandsNum() ?
-										&band_mapping : 0))
+                                    pfNDV,
+									p_tiling_params->p_bundle_input_->GetBandsNum(),
+									p_tiling_params->p_bundle_input_->GetBandsNum() ?
+									&band_mapping : 0))
 		{
 			cout<<"ERROR: can't calculate parameters of auto scaling to 8 bit"<<endl;
 			return false;
 		}
+
+		delete(pfNDV);
 	}
   
 	cout<<"0% ";
@@ -1155,13 +1157,13 @@ bool BundleTiler::TerminateTilingThreads(list<future<int>> &tiling_threads)
 
 
 
-bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params, 
-						                             RasterBuffer					*p_buffer, 
-						                             OGREnvelope      buffer_envelope,
-						                             int							zoom,
-						                             int							tiles_expected, 
-						                             int							*p_tiles_generated,
-						                             ITileContainer					*p_tile_container)
+bool BundleTiler::RunTilingFromBuffer (TilingParameters *p_tiling_params, 
+						                RasterBuffer *p_buffer, 
+						                OGREnvelope buffer_envelope,
+						                int zoom,
+						                int tiles_expected, 
+						                int *p_tiles_generated,
+						                ITileContainer *p_tile_container)
 {  
   int min_x,max_x,min_y,max_y;
   if (!p_tile_mset_->CalcTileRange(buffer_envelope,zoom,min_x,min_y,max_x,max_y))
@@ -1190,14 +1192,17 @@ bool BundleTiler::RunTilingFromBuffer (TilingParameters			*p_tiling_params,
 											tile_size_y,
 											p_tile_pixel_data,
 											p_buffer->get_data_type(),
-											false,
 											p_buffer->get_color_table_ref());
 			delete[]((unsigned char*)p_tile_pixel_data);
       
+			/*
 			if (p_tiling_params->nd_num_ && (p_tiling_params->tile_type_ == PNG_TILE))
 				  tile_buffer.CreateAlphaBandByNodataValues(p_tiling_params->p_nd_rgbcolors_,
 														  p_tiling_params->nd_num_,
 														  p_tiling_params->nodata_tolerance_);
+			*/
+			if (p_buffer->IsNDVDefined()) tile_buffer.SetNDV(p_buffer->GetNDV());
+			
 
 			if (p_tile_container != 0)
 			{

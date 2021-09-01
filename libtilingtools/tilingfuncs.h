@@ -20,10 +20,8 @@ bool TTXMakePyramidFromBaseZoom (OGREnvelope tiles_envp,
 								bool only_calculate, 
 								ttx::ITileContainer	*p_itile_pyramid,
 								bool nearest_resampling = false,
-								int* p_ndv = 0,
-								int quality = 0,
-								unsigned char* p_background_color = 0
-								);
+								//int* p_ndv = 0,
+								int quality = 0);
 
 bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 								int	zoom,
@@ -38,14 +36,10 @@ bool TTXMakePyramidTileRecursively (OGREnvelope tiles_envp,
 								ttx::ITileContainer	*p_itile_pyramid,
 								bool* p_was_error,
 								bool use_nearest_resampling = false,
-								int* p_ndv = 0,
-								int quality = 0,
-								unsigned char* p_background_color = 0
-								);
+								int quality = 0);
 
 
 bool TTXZoomOutFourIntoOne	(	ttx::RasterBuffer src_quarter_tile_buffers[4], 
 								bool src_quarter_tile_buffers_def[4], 
 								ttx::RasterBuffer& zoomed_out_tile_buffer,
-								bool use_nearest_resampling = false,
-								unsigned char* p_background = NULL); 
+								bool use_nearest_resampling = false); 

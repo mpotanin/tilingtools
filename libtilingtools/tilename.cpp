@@ -369,7 +369,7 @@ void MercatorTileMatrixSet::CalcTileByPoint(double merc_x, double merc_y, int z,
 
 bool MercatorTileMatrixSet::CalcTileRange(OGREnvelope envp, int z, int &min_x, int &min_y, int &max_x, int &max_y)
 {
-  double E = 1e-6;
+  double E = 1e-5;
   CalcTileByPoint(envp.MinX + E, envp.MaxY - E, z, min_x, min_y);
   CalcTileByPoint(envp.MaxX - E, envp.MinY + E, z, max_x, max_y);
   return true;
