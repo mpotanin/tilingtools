@@ -217,7 +217,7 @@ int main(int nArgs, char* argv[])
   if (tile_list.size()==0) return 0;
 
  
-  if (!ttx::TileContainerFactory::GetTileContainerType(strOutputFormat, eDestTCType))
+  if (!ttx::TileContainerFactory::GetType(strOutputFormat, eDestTCType))
   {
     cout << "ERROR: not valid value of \"-of\" parameter: " << strOutputFormat << endl;
     return 1;

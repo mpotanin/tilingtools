@@ -4,135 +4,148 @@
 
 void Exit()
 {
-  cout << "Tiling finished - press any key" << endl;
-  char c;
-  cin >> c;
+    cout << "Tiling finished - press any key" << endl;
+    char c;
+    cin >> c;
 }
 
 
-//
-//cases:
-//1. one vector for bundle
-//2. single explicitly defined vector for each raster
-//3. single vector defined by name for each raster - BundleTiler.Init (raster_file_list, vector_file_list)
 
 
+/*
+* Parses command line arguments, inits TilingParameters instance and launches tiling
+*/
 int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
 {
     ttx::TilingParameters oTilingParams;
-
-  
-
+      
+    //Parse main input parameters:
+    //  -i - raster file(s)
+    //  -b - vector cutline(s)
+    //  -bnd - band order
     if (oOptionParser.GetValueList("-i").size() == 0)
     {
-    cout << "ERROR: missing \"-i\" parameter" << endl;
-    return 1;
+        cout << "ERROR: missing \"-i\" parameter" << endl;
+        return 1;
     }
-
     ttx::BundleConsoleInput oBundleConsoleInput;
     if (!oBundleConsoleInput.InitByConsoleParams(oOptionParser.GetValueList("-i"),
-    oOptionParser.GetValueList("-b"),
-    oOptionParser.GetValueList("-bnd")))
-    return 1;
-
+                                                oOptionParser.GetValueList("-b"),
+                                                oOptionParser.GetValueList("-bnd")))
+        return 1;
     oTilingParams.p_bundle_input_ = &oBundleConsoleInput;
 
 
-    if (!ttx::TileContainerFactory::GetTileContainerType(oOptionParser.GetOptionValue("-of"), oTilingParams.container_type_))
+    //Define output tile container type: gmxtiles, mbtiles, tile folder, etc
+    if (!ttx::TileContainerFactory::GetType(oOptionParser.GetOptionValue("-of"), 
+                                                         oTilingParams.container_type_))
     {
-    cout << "ERROR: not valid value of \"-of\" parameter: " << oOptionParser.GetOptionValue("-of") << endl;
-    return 1;
-    }
-
-
-    string strProjType = oOptionParser.GetOptionValue("-tsrs");
-    oTilingParams.merc_type_ = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) ?
-    ttx::WORLD_MERCATOR : ttx::WEB_MERCATOR;
-
-    list<string> listRasters = oBundleConsoleInput.GetRasterFiles();
-
-
-    if (oOptionParser.GetOptionValue("-pseudo_png") != "")
-    oTilingParams.tile_type_ = ttx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
-    else if (oOptionParser.GetOptionValue("-tt") != "")
-    {
-    if (!ttx::TileName::TileTypeByExtension(oOptionParser.GetOptionValue("-tt"),
-        oTilingParams.tile_type_))
-    {
-        cout << "ERROR: not valid value of \"-tt\" parameter: " << oOptionParser.GetOptionValue("-tt") << endl;
+        cout << "ERROR: not valid value of \"-of\" parameter: " << oOptionParser.GetOptionValue("-of") << endl;
         return 1;
     }
+
+    //Define output SRS from of two possible: EPSG:3857 (WEB_MERCATOR), EPSG:3395 (WORLD_MERCATOR)
+    string strProjType = oOptionParser.GetOptionValue("-tsrs");
+    oTilingParams.merc_type_ = ((strProjType == "0") || (strProjType == "world_mercator") || (strProjType == "epsg:3395")) 
+                            ? ttx::WORLD_MERCATOR : ttx::WEB_MERCATOR;
+
+
+    //Get one of input rasters to extract some needed parameters further
+    string strSampledRaster = *oBundleConsoleInput.GetRasterFiles().begin();
+
+    //Define tile type: png, jpeg, jp2, tif, pseudo png. Some special cases are considered...
+    if (oOptionParser.GetOptionValue("-pseudo_png") != "")
+        oTilingParams.tile_type_ = ttx::TileType::PSEUDO_PNG_TILE; //ToDo - move to creation options
+    else if (oOptionParser.GetOptionValue("-tt") != "")
+    {
+        if (!ttx::TileName::TileTypeByExtension(oOptionParser.GetOptionValue("-tt"),
+            oTilingParams.tile_type_))
+        {
+            cout << "ERROR: not valid value of \"-tt\" parameter: " << oOptionParser.GetOptionValue("-tt") << endl;
+            return 1;
+        }
     }
     else if (MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) != "")
     {
-    if (!ttx::TileName::TileTypeByExtension(MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
+        if (!ttx::TileName::TileTypeByExtension(MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")),
         oTilingParams.tile_type_))
-    {
-        cout << "ERROR: not valid value of \"-tnt\" parameter: " << MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
-        return 1;
-    }
+        {
+            cout << "ERROR: not valid value of \"-tnt\" parameter: " 
+                << MPLFileSys::GetExtension(oOptionParser.GetOptionValue("-tnt")) << endl;
+            return 1;
+        }
     }
     else
     {
-    oTilingParams.tile_type_ = MPLString::MakeLower(MPLFileSys::GetExtension(*listRasters.begin())) == "png" ?
-        ttx::TileType::PNG_TILE : ttx::TileType::JPEG_TILE;
+        oTilingParams.tile_type_ = MPLString::MakeLower(MPLFileSys::GetExtension(strSampledRaster)) == "png" ?
+            ttx::TileType::PNG_TILE : ttx::TileType::JPEG_TILE;
     }
 
 
+    //Define output path: take it from "-o" option if it was specified 
+    // or set by default depending on output tile container type
     //ToDo - should refactor move to this logic inside ITileContainer subclasses
     if (oOptionParser.GetOptionValue("-o") != "")
-    oTilingParams.output_path_ = oOptionParser.GetOptionValue("-o");
+        oTilingParams.output_path_ = oOptionParser.GetOptionValue("-o");
     else
-    oTilingParams.output_path_ = oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER ?
-    MPLFileSys::RemoveExtension(*listRasters.begin()) + "_tiles" :
-    oTilingParams.output_path_ = MPLFileSys::RemoveExtension(*listRasters.begin()) + "." +
-    ttx::TileContainerFactory::GetExtensionByTileContainerType(oTilingParams.container_type_);
-    if ((oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER) &&
-    (!MPLFileSys::FileExists(oTilingParams.output_path_)))
+        oTilingParams.output_path_ = oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER 
+            ? MPLFileSys::RemoveExtension(strSampledRaster) + "_tiles"
+            : MPLFileSys::RemoveExtension(strSampledRaster) + "." 
+                + ttx::TileContainerFactory::GetExtensionByType(oTilingParams.container_type_);
+    
+    
+    //Create folder if output tile container type is TILEFOLDER
+    if ((oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER) 
+        && (!MPLFileSys::FileExists(oTilingParams.output_path_)))
     {
-    if (!MPLFileSys::CreateDir(oTilingParams.output_path_))
-    {
-        cout << "ERROR: can't create folder: " << oTilingParams.output_path_ << endl;
-        return 1;
-    }
+        if (!MPLFileSys::CreateDir(oTilingParams.output_path_))
+        {
+            cout << "ERROR: can't create folder: " << oTilingParams.output_path_ << endl;
+            return 1;
+        }
     }
 
-    //ToDo - should refactor move to this logic inside ITileContainer::TileFolder subclasses
+
+    //Define tile name template if output tile container type is TILEFOLDER
     if (oTilingParams.container_type_ == ttx::TileContainerType::TILEFOLDER)
     {
-    if ((oOptionParser.GetOptionValue("-tnt") == "standard") ||
-        (oOptionParser.GetOptionValue("-tnt") == ""))
-    {
-        oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
-        "{z}/{x}/{y}." + ttx::TileName::ExtensionByTileType(oTilingParams.tile_type_));
-    }
-    else if (oOptionParser.GetOptionValue("-tnt") == "kosmosnimki")
-    {
-        oTilingParams.p_tile_name_ = new ttx::KosmosnimkiTileName(oTilingParams.output_path_,
-        oTilingParams.tile_type_);
-    }
-    else
-        oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
-        oOptionParser.GetOptionValue("-tnt"));
+        if ((oOptionParser.GetOptionValue("-tnt") == "standard") ||
+            (oOptionParser.GetOptionValue("-tnt") == ""))
+        {
+            oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
+            "{z}/{x}/{y}." + ttx::TileName::ExtensionByTileType(oTilingParams.tile_type_));
+        }
+        else if (oOptionParser.GetOptionValue("-tnt") == "kosmosnimki")
+        {
+            oTilingParams.p_tile_name_ = new ttx::KosmosnimkiTileName(oTilingParams.output_path_,
+            oTilingParams.tile_type_);
+        }
+        else
+            oTilingParams.p_tile_name_ = new ttx::StandardTileName(oTilingParams.output_path_,
+            oOptionParser.GetOptionValue("-tnt"));
     }
 
 
+    //Base zoom  parameter (=max zoom)
     if (oOptionParser.GetOptionValue("-z") != "")
-    oTilingParams.base_zoom_ = atoi(oOptionParser.GetOptionValue("-z").c_str());
+        oTilingParams.base_zoom_ = atoi(oOptionParser.GetOptionValue("-z").c_str());
 
 
+    //min z
     if (oOptionParser.GetOptionValue("-minz") != "")
-    oTilingParams.min_zoom_ = atoi(oOptionParser.GetOptionValue("-minz").c_str());
+        oTilingParams.min_zoom_ = atoi(oOptionParser.GetOptionValue("-minz").c_str());
 
 
+    //vector border or cutline 
     if (oOptionParser.GetOptionValue("-b") != "")
-    oTilingParams.vector_file_ = oOptionParser.GetOptionValue("-b");
+        oTilingParams.vector_file_ = oOptionParser.GetOptionValue("-b");
 
-
+    //quality parameter for tile formats with compression: jpg, jp2
     if (oOptionParser.GetOptionValue("-q") != "")
-    oTilingParams.quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
+        oTilingParams.quality_ = atoi(oOptionParser.GetOptionValue("-q").c_str());
 
 
+    //nodata value parameter
     if (oOptionParser.GetOptionValue("-nd").size() != 0)
     {
         oTilingParams.m_bNDVDefined = true;
@@ -140,12 +153,15 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
         
     }
     
+
+    //Resampling algorithm is defined. It will be applied for
+    //warping from input raster SRS to output tiling SRS (EPSG:3857 or EPSG:3395)
     if (oOptionParser.GetOptionValue("-r") == "")
     {
         ttx::RasterFile oRF;
-        if (!oRF.Init(*listRasters.begin()))
+        if (!oRF.Init(strSampledRaster))
         {
-            cout << "ERROR: can't open file: " << (*listRasters.begin()) << endl;
+            cout << "ERROR: can't open file: " << (strSampledRaster) << endl;
             return false;
         }
         oTilingParams.gdal_resampling_ = ( oRF.get_gdal_ds_ref()->GetRasterBand(1)->GetColorTable() ||
@@ -170,30 +186,40 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
             oTilingParams.gdal_resampling_ = GRA_Cubic;
     }
 
-  if (oOptionParser.GetOptionValue("-tsz") != "")
-	  oTilingParams.tile_px_size_ = atoi(oOptionParser.GetOptionValue("-tsz").c_str());
+    
+    
+    if (oOptionParser.GetOptionValue("-tsz") != "")
+	    oTilingParams.tile_px_size_ = atoi(oOptionParser.GetOptionValue("-tsz").c_str());
 
-  if (oOptionParser.GetOptionValue("-wt") != "")
+
+    //Maximum working threads is set
+    if (oOptionParser.GetOptionValue("-wt") != "")
     oTilingParams.max_work_threads_ = atoi(oOptionParser.GetOptionValue("-wt").c_str());
 
-  if (oOptionParser.GetOptionValue("-bmarg") != "")
+
+
+    if (oOptionParser.GetOptionValue("-bmarg") != "")
     oTilingParams.clip_offset_ = atof(oOptionParser.GetOptionValue("-bmarg").c_str());
 
-  if (oOptionParser.GetKeyValueCollection("-co").size() != 0)
+
+    if (oOptionParser.GetKeyValueCollection("-co").size() != 0)
     oTilingParams.options_ = oOptionParser.GetKeyValueCollection("-co");
 
 
-  if (oOptionParser.GetOptionValue("-isrs") != "")
+    //Input rasters SRS can be set manually in case it isn't defined 
+    if (oOptionParser.GetOptionValue("-isrs") != "")
     oTilingParams.user_input_srs_ = oOptionParser.GetOptionValue("-isrs");
 
-  if (oOptionParser.GetOptionValue("-wc") != "")
-	  oTilingParams.tile_chunk_size_ = atoi(oOptionParser.GetOptionValue("-wc").c_str());
 
-  oTilingParams.calculate_histogram_ = true;   //TODO - replace by default value in GMXTileContainer init
+    if (oOptionParser.GetOptionValue("-wc") != "")
+	    oTilingParams.tile_chunk_size_ = atoi(oOptionParser.GetOptionValue("-wc").c_str());
+
+  
+    oTilingParams.calculate_histogram_ = false;   //TODO - replace by default value in GMXTileContainer init
 
  
 
-  return TTXMakeTiling(&oTilingParams) ? 0 : 2;
+    return TTXMakeTiling(&oTilingParams) ? 0 : 2;
 }
 
 
@@ -231,8 +257,6 @@ const list<string> listUsageExamples = {
   "imagetiling -i image.tif -b zone.shp -nd 0 -of mbtiles -o image.mbtiles -tt png",
   "imagetiling -i image.jpg -isrs \"+proj=longlat +datum=WGS84\""
 };
-
-
 
 
 
@@ -297,83 +321,15 @@ int main(int nArgs, char* argv[])
 		wcout << endl;
 		if (oOptionParser.GetOptionValue("-ap") != "") //ToDo - file_list.size>1;
 		{
-      /*
-      ttx::BundleConsoleInput oBundleConsoleInput;
-      if (!oBundleConsoleInput.InitByConsoleParams(mapConsoleParams.at("-file"),
-      mapConsoleParams.at("-bands")))
-      {
-      //ToDo -
-      cout<<"Error: can't parse \"-file\" parameter"<<endl;
-      return 1;
-      }
-
-      std::list<string> lstInputFiles = oBundleConsoleInput.GetFileList();
-
-      bool bUseContainer = (mapConsoleParams.at("-gmxtiles")!="" || mapConsoleParams.at("-mbtiles")!="");
-
-      for (std::list<string>::iterator iter = lstInputFiles.begin(); iter!=lstInputFiles.end();iter++)
-      {
-      cout<<"Tiling file: "<<(*iter)<<endl;
-      map<string,string> mapConsoleParamsFix = mapConsoleParams;
-      mapConsoleParamsFix.at("-file") = (*iter);
-
-      int nBands = 0;
-      int *panBands = 0;
-      if (!oBundleConsoleInput.GetBands(*iter,nBands,panBands))
-      {
-      //ToDo - Error
-      }
-      else if (panBands!=0)
-      {
-      string strBands = ttx::ConvertIntToString(panBands[0]);
-      for (int i=1;i<nBands;i++)
-      {
-      strBands+=",";
-      strBands+=ttx::ConvertIntToString(panBands[i]);
-      }
-      mapConsoleParamsFix.at("-bands") = strBands;
-      delete[]panBands;
-      }
-
-      if ((lstInputFiles.size()>1) && (mapConsoleParams.at("-border")==""))
-      mapConsoleParamsFix.at("-border") = ttx::VectorOperations::GetVectorFileNameByRasterFileName(*iter);
-
-      if ((lstInputFiles.size()>1)&&(mapConsoleParams.at("-tiles")!=""))
-      {
-      if (!ttx::MPLFileSys::FileExists(mapConsoleParams.at("-tiles")))
-      {
-      if (!ttx::MPLFileSys::CreateDir(mapConsoleParams.at("-tiles").c_str()))
-      {
-      cout<<"Error: can't create directory: "<<mapConsoleParams.at("-tiles")<<endl;
-      return 1;
-      }
-      }
-
-      if (bUseContainer)
-      {
-      mapConsoleParamsFix.at("-tiles") = (mapConsoleParams.at("-mbtiles") != "") ?
-      ttx::MPLFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + MPLFileSys::RemovePath(ttx::MPLFileSys::RemoveExtension(*iter)) +".mbtiles" :
-      ttx::MPLFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + MPLFileSys::RemovePath(ttx::MPLFileSys::RemoveExtension(*iter)) +".tiles";
-      }
-      else
-      {
-      mapConsoleParamsFix.at("-tiles") = ttx::MPLFileSys::RemoveEndingSlash(mapConsoleParams.at("-tiles")) + "/" + MPLFileSys::RemovePath(ttx::MPLFileSys::RemoveExtension(*iter)) +"_tiles";
-      }
-      }
-
-      if ((!ParseCmdLineAndCallTiling(mapConsoleParamsFix)) && lstInputFiles.size()==1)
-      return 2;
-      wcout<<endl;
-      }
-      */
+      
 		}
 		else return ParseCmdLineAndCallTiling(oOptionParser);
 	}
 	catch (...)
-	 {
-		cout << "ERROR: unknown error occured" << endl;
-		return 101;
-	 }
+	{
+	    cout << "ERROR: unknown error occured" << endl;
+	    return 101;
+	}
 
 }
 

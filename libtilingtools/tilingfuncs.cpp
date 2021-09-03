@@ -73,10 +73,6 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 			int tiles_generated = 0;
 			int tiles_expected = 0;
 
-			bool ndv_from_input_defined = false;
-			int ndv_val = raster_bundle.GetNodataValue(ndv_from_input_defined);
-
-
 			TTXMakePyramidFromBaseZoom(raster_bundle.CalcEnvelope(),
 								    base_zoom,
 								    min_zoom,

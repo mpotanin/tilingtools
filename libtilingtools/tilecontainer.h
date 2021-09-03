@@ -317,10 +317,10 @@ class TileContainerFactory
 {
 public:
 
-  static  bool GetTileContainerType (string strName,TileContainerType &eType);
+  static  bool GetType (string strName,TileContainerType &eType);
   static ITileContainer* OpenForWriting(TileContainerType container_type, TileContainerOptions *p_params);
   static ITileContainer* OpenForReading (string file_name); //ToDo - move to TileContainerFactory
-  static string GetExtensionByTileContainerType (TileContainerType container_type);
+  static string GetExtensionByType (TileContainerType container_type);
 
 };
 

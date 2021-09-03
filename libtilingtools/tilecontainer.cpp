@@ -1012,6 +1012,7 @@ MBTilesContainer* MBTilesContainer::OpenForWriting (TileContainerOptions *p_para
 
 MBTilesContainer::MBTilesContainer (string file_name, TileType tile_type,MercatorProjType merc_type, OGREnvelope merc_envp)
 {
+	this->tile_type_ = tile_type;
 	p_sql3_db_ = NULL;
 	if (MPLFileSys::FileExists(file_name)) MPLFileSys::FileDelete(file_name.c_str());
 	if (SQLITE_OK != sqlite3_open(file_name.c_str(),&p_sql3_db_)) return;
@@ -1463,7 +1464,7 @@ bool	TileFolder::ReadTileFromFile (int z,int x, int y, unsigned char *&p_data, u
 	return result;
  };
 
-bool TileContainerFactory::GetTileContainerType (string strName, TileContainerType &eType)
+bool TileContainerFactory::GetType (string strName, TileContainerType &eType)
 {
   strName = MPLString::MakeLower(strName);
   if (strName=="")
@@ -1496,7 +1497,7 @@ ITileContainer* TileContainerFactory::OpenForWriting(TileContainerType container
   }
 };
 
-string TileContainerFactory::GetExtensionByTileContainerType (TileContainerType container_type)
+string TileContainerFactory::GetExtensionByType (TileContainerType container_type)
 {
   switch (container_type)
   {
