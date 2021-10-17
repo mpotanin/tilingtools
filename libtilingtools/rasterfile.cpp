@@ -900,7 +900,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
    		p_warp_options->hSrcDS = p_src_ds;
 			p_warp_options->hDstDS = p_vrt_ds;
 
-		p_warp_options->dfWarpMemoryLimit = 250000000; 
+		p_warp_options->dfWarpMemoryLimit = 500000000; 
     
 		double			error_threshold = 0.125;
     
