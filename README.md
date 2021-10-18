@@ -81,7 +81,7 @@ imagetiling -i image.jpg -isrs "+proj=longlat +datum=wgs84"
 * requirements:
   * x64 platform
   * gcc 4.9.0 or newer version
-  * development x64 version of the libraries: gdal, sqlite3, gd (if git is installed you may run: ```apt-get install git make libgdal-dev sqlite3 libgd-dev```)
+  * development x64 version of the libraries: gdal, sqlite3 (if git is installed you may run: ```apt-get install git make libgdal-dev sqlite3 ```)
 * ```git clone https://github.com/mpotanin/tilingtools tilingtools``` 
 * ```git clone https://github.com/mpotanin/cpp_common_utils```  
 * ```cd tilingtools```
