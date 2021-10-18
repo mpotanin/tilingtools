@@ -784,7 +784,6 @@ namespace ttx
 
 	GDALDataset* RasterBuffer::SaveToInMemGTiff(string& strInMemGTiff)
 	{
-		srand(999);
 		strInMemGTiff = "/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand());
 
 		GDALDataset* poInMemDS = (GDALDataset*)GDALCreate(
