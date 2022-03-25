@@ -270,7 +270,6 @@ const list<string> listUsageExamples = {
 #ifdef WIN32
 int _tmain(int nArgs, wchar_t *pastrArgsW[])
 {
-     
 
 	std::vector<string> vecArgs;
 	for (int i = 0; i<nArgs; i++)

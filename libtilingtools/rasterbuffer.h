@@ -98,7 +98,7 @@ namespace ttx
 		bool CreateFromJP2Data(void *pabData, int nSize);
 		bool CreateBufferFromTiffData(void *p_data_src, int size);
 		
-		GDALDataset* SaveToInMemGTiff(string &strInMemGTiff);
+		string SaveToInMemGTiff();
 
 
 		//template <typename T> bool CreateAlphaBandByNDV(T type, int nNDV = 0);

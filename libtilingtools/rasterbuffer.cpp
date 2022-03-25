@@ -189,9 +189,11 @@ namespace ttx
 	{
 
 		//ToDo - if nodata defined must create alphaband
-		VSIFileFromMemBuffer("/vsimem/tiffinmem", (GByte*)p_data_src, size, 0);
+		string strInMemName = "/vsimem/tiffinmem" + std::to_string(rand());
 
-		GDALDataset *p_ds = (GDALDataset*)GDALOpen("/vsimem/tiffinmem", GA_ReadOnly);
+		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
+
+		GDALDataset *p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
 
 		CreateBuffer(p_ds->GetRasterCount(), 
@@ -207,7 +209,7 @@ namespace ttx
 		
 		
 		GDALClose(p_ds);
-		VSIUnlink("/vsimem/tiffinmem");
+		VSIUnlink(strInMemName.c_str());
 		return true;
 	}
 
@@ -216,24 +218,22 @@ namespace ttx
 		ClearBuffer();
 		switch (oRasterFormat)
 		{
-		case JPEG_TILE:
-			return CreateBufferFromJpegData(p_data_src, size);
-		case PSEUDO_PNG_TILE:
-			return CreateBufferFromPseudoPngData(p_data_src, size);
-		case PNG_TILE:
-			return CreateBufferFromPngData(p_data_src, size);
-		case JP2_TILE:
-			return CreateFromJP2Data(p_data_src, size);
-		default:
-			return CreateBufferFromTiffData(p_data_src, size);
+			case JPEG_TILE:
+				return CreateBufferFromJpegData(p_data_src, size);
+			case PSEUDO_PNG_TILE:
+				return CreateBufferFromPseudoPngData(p_data_src, size);
+			case PNG_TILE:
+				return CreateBufferFromPngData(p_data_src, size);
+			case JP2_TILE:
+				return CreateFromJP2Data(p_data_src, size);
+			default:
+				return CreateBufferFromTiffData(p_data_src, size);
 		}
 		return true;
 	}
 
 	bool	RasterBuffer::CreateBufferFromJpegData(void* p_data_src, int size)
 	{
-
-	
 		string strInMemName = "/vsimem/jpeginmem" + std::to_string(rand());
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
@@ -467,12 +467,10 @@ namespace ttx
 
 	bool RasterBuffer::SaveToJpegData(void*& p_data_dst, int& size, int quality)
 	{
-		string	strTiffInMem;
-
-		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
+		string	strTiffInMem = SaveToInMemGTiff();
+		GDALDataset* poTiffDS = (GDALDataset*)GDALOpen(strTiffInMem.c_str(), GA_ReadOnly);
 
 		
-
 		string strJPEGInMem = ("/vsimem/jpeginmem" + std::to_string(rand()));
 		char** papszOptions = 0;
 		string strQuality = to_string(quality == 0 ? 85 : quality);
@@ -702,11 +700,8 @@ namespace ttx
 
 	bool RasterBuffer::SaveToPngData(void*& p_data_dst, int& size)
 	{
-		//ToDo: alphaband support 
-
-
-		string	strTiffInMem;
-		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
+		string	strTiffInMem = SaveToInMemGTiff();
+		GDALDataset* poTiffDS = (GDALDataset*)GDALOpen(strTiffInMem.c_str(), GA_ReadOnly);
 		
 		string strPNGInMem = ("/vsimem/pnginmem" + std::to_string(rand()));
 		char** papszOptions = 0;
@@ -782,9 +777,9 @@ namespace ttx
 	}
 	*/
 
-	GDALDataset* RasterBuffer::SaveToInMemGTiff(string& strInMemGTiff)
+	string RasterBuffer::SaveToInMemGTiff()
 	{
-		strInMemGTiff = "/vsimem/tiffinmem" + std::to_string(rand());
+		string strInMemGTiff = "/vsimem/tiffinmem" + std::to_string(rand());
 
 		GDALDataset* poInMemDS = (GDALDataset*)GDALCreate(
 			GDALGetDriverByName("GTiff"),
@@ -810,10 +805,10 @@ namespace ttx
 			for (int b = 1; b <= poInMemDS->GetRasterCount(); b++)
 				poInMemDS->GetRasterBand(b)->SetNoDataValue(m_fNDV);
 		}
-
 		GDALFlushCache(poInMemDS);
+		GDALClose(poInMemDS);
 
-		return poInMemDS;
+		return strInMemGTiff;
 	}
 
 	bool	RasterBuffer::SaveToTiffData(void* &p_data_dst, 
@@ -821,11 +816,8 @@ namespace ttx
 										OGRSpatialReference* poSRS, 
 										double*	padblGeoTransform)
 	{
-		string	tiff_in_mem;
-
-		//int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
-
-		GDALDataset* p_ds = SaveToInMemGTiff(tiff_in_mem);
+		string	tiff_in_mem = SaveToInMemGTiff();
+		GDALDataset* p_ds = (GDALDataset*)GDALOpen(tiff_in_mem.c_str(), GA_ReadOnly);
 
 		if (poSRS)
 		{
@@ -1203,7 +1195,6 @@ namespace ttx
 		
 		bool is_float_type = std::is_same<T, float>::value;
 
-
 		//loop through indexes of output pixels and calculate their values 
 		for (q = 0; q < all_4; q++)
 		{
@@ -1535,28 +1526,9 @@ namespace ttx
 
 	bool RasterBuffer::SaveToJP2Data(void* &pabData, int &nSize, int nQuality)
 	{
-		string	strTiffInMem;
+		string	strTiffInMem = SaveToInMemGTiff();
+		GDALDataset* poTiffDS = (GDALDataset*)GDALOpen(strTiffInMem.c_str(), GA_ReadOnly);
 
-		//int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
-
-		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
-		//this->
-		//debug
-		//std::stringstream strm;
-
-		//string* sp = static_cast<std::string*>(this->get_pixel_data_ref());
-		//string str = *sp;
-		
-		//char* pachData = static_cast<char*>(this->get_pixel_data_ref());
-		//size_t len = *static_cast<int*>(pachData);
-		//std::string tempName(data, len)
-
-		//string str(pach);
-		//ss << *static_cast<int*>(test);
-		//ss >> str;
-
-		//std::cout << (unsigned long int)this->get_pixel_data_ref()<<endl;
-		//end-debug
 	
 		
 		string strJP2DriverName = JP2000DriverFactory::GetDriverName();
