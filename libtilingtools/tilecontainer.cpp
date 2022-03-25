@@ -572,7 +572,7 @@ uint64_t  GMXTileContainer::GetTileOffsetInVolume (uint64_t tile_container_offse
 
 string GMXTileContainer::GetVolumeName (int num)
 {
-  return (num == 0) ? container_file_name_ : container_file_name_ + "." + MPLString::ConvertIntToString(num+1);
+  return (num == 0) ? container_file_name_ : container_file_name_ + "." + std::to_string(num+1);
 }
 
 
@@ -1271,9 +1271,9 @@ bool MBTilesContainer::Close ()
   else if (! read_only_)
   {
     char	*p_err_msg = NULL;
-    string str_sql = "INSERT INTO metadata VALUES ('maxzoom','" + MPLString::ConvertIntToString(GetMaxZoom())+"')";
+    string str_sql = "INSERT INTO metadata VALUES ('maxzoom','" + std::to_string(GetMaxZoom())+"')";
     sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
-    str_sql = "INSERT INTO metadata VALUES ('minzoom','" + MPLString::ConvertIntToString(GetMinZoom())+"')";
+    str_sql = "INSERT INTO metadata VALUES ('minzoom','" + std::to_string(GetMinZoom())+"')";
     sqlite3_exec(p_sql3_db_, str_sql.c_str(), NULL, 0, &p_err_msg);
   }
   

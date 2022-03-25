@@ -15,6 +15,7 @@
 #include "../../cpp_common_utils/filesystemfuncs.h"
 #include "../../cpp_common_utils/stringfuncs.h"
 
+#include <type_traits>
 #include <stdint.h>
 #include <thread>
 #include <mutex>

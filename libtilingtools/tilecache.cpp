@@ -31,7 +31,7 @@ bool	TileCache::AddTile(int z, int x, int y, unsigned char* p_data, unsigned int
     return false;
   }
 
-	string tile_key = MPLString::ConvertIntToString(z) + "_" + MPLString::ConvertIntToString(x) + "_" + MPLString::ConvertIntToString(y);
+	string tile_key = std::to_string(z) + "_" + std::to_string(x) + "_" + std::to_string(y);
 	if (tile_data_map_.find(tile_key)!=tile_data_map_.end())
 	{
     delete[](*tile_data_map_.find(tile_key)).second;
@@ -52,7 +52,7 @@ bool	TileCache::AddTile(int z, int x, int y, unsigned char* p_data, unsigned int
 
 bool	TileCache::GetTile(int z, int x, int y, unsigned char* &p_data, unsigned int &size)
 {
-	string tile_key = MPLString::ConvertIntToString(z) + "_" + MPLString::ConvertIntToString(x) + "_" + MPLString::ConvertIntToString(y);
+	string tile_key = std::to_string(z) + "_" + std::to_string(x) + "_" + std::to_string(y);
 	map<string,unsigned char*>::const_iterator iter;
 	if ((iter=tile_data_map_.find(tile_key)) == tile_data_map_.end())
 	{
@@ -71,7 +71,7 @@ bool	TileCache::GetTile(int z, int x, int y, unsigned char* &p_data, unsigned in
 
 bool	TileCache::FindTile(int z, int x, int y)
 {
-  string tile_key = MPLString::ConvertIntToString(z) + "_" + MPLString::ConvertIntToString(x) + "_" + MPLString::ConvertIntToString(y);
+  string tile_key = std::to_string(z) + "_" + std::to_string(x) + "_" + std::to_string(y);
 	return (tile_data_map_.find(tile_key) == tile_data_map_.end()) ? false : true;
 }
 

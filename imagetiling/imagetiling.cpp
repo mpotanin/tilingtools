@@ -184,8 +184,12 @@ int ParseCmdLineAndCallTiling(MPLOptionParser &oOptionParser)
             oTilingParams.gdal_resampling_ = GRA_CubicSpline;
         else
             oTilingParams.gdal_resampling_ = GRA_Cubic;
+
+        if (oOptionParser.GetOptionValue("-rp") != "near" || oOptionParser.GetOptionValue("-rp") != "average")
+            oTilingParams.pyramid_resampling_ = oOptionParser.GetOptionValue("-rp");
     }
 
+   
     
     
     if (oOptionParser.GetOptionValue("-tsz") != "")
@@ -232,7 +236,8 @@ const list<MPLOptionDescriptor> listDescriptors = {
   { "-b", 0, 1, 0, "vector clip mask" },
   { "-minz", 0, 0, 0, "min zoom" },
   { "-tt", 0, 0, 0, "tile type: png, jpg, jp2, tif" },
-  { "-r", 0, 0, 0, "resampling method" },
+  { "-r", 0, 0, 0, "resampling method for max zoom tiles: near, bilinear, cubic (defult=cubic)"},
+  { "-rp", 0, 0, 0, "resampling method for pyramid tiles: near, average (by deault is calculated based on other parameters)" },
   { "-q", 0, 0, 0, "compression quality" },
   { "-of", 0, 0, 0, "tile container format" },
   { "-co", 0, 2, 0, "creation options" },
@@ -243,7 +248,7 @@ const list<MPLOptionDescriptor> listDescriptors = {
   { "-ndt", 0, 0, 0, "nodata tolerance" },
   { "-bnd", 0, 1, 0, "raster band list" },
   { "-wt", 0, 0, 0, "work threads num." },
-  { "-tsz", 0, 0, 0, "tile size (default 256)" },
+  { "-tsz", 0, 0, 0, "tile size (default=256)" },
   { "-pseudo_png", 1, 0, 0, "" },
   {"-bmarg", 0, 0, 0, "border margin in tiling srs units"},
   {"-wc",0, 0, 0, "warp chunk size in tiles"}

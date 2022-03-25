@@ -67,6 +67,7 @@ public:
 		calculate_histogram_=false;
 		clip_offset_ = 0;
 		tile_px_size_ = 0;
+		pyramid_resampling_ = "";
 	};		
 	~TilingParameters ()
 	{
@@ -89,7 +90,8 @@ public:
 	float m_fNDV;				//nodata value
 	float m_fNDVTolerance;     //radius for nodata value
 
-	GDALResampleAlg gdal_resampling_;	      //название фильтра для ресемплинга			
+	GDALResampleAlg gdal_resampling_;	      //название фильтра для ресемплинга
+	string pyramid_resampling_;	 //тип ресемплинга для пирамидных тайлов
 
 	bool calculate_histogram_;    //рассчитывать гистограмму
 

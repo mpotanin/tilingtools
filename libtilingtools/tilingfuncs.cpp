@@ -73,6 +73,10 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 			int tiles_generated = 0;
 			int tiles_expected = 0;
 
+			bool b_use_nearest_resampling = p_tiling_params->pyramid_resampling_ == "" ?
+				p_tiling_params->gdal_resampling_ == GRA_NearestNeighbour :
+				p_tiling_params->pyramid_resampling_ == "near" ? true : false;
+
 			TTXMakePyramidFromBaseZoom(raster_bundle.CalcEnvelope(),
 								    base_zoom,
 								    min_zoom,
@@ -81,7 +85,7 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 								    tiles_generated,
 								    true,
 								    p_itile_pyramid,
-									p_tiling_params->gdal_resampling_==GRA_NearestNeighbour,
+									b_use_nearest_resampling,
 									p_tiling_params->quality_);
 			cout<<tiles_expected<<endl;
 			if (tiles_expected > 0) 
@@ -95,7 +99,7 @@ bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 											tiles_generated,
 											false,
 											p_itile_pyramid,
-											p_tiling_params->gdal_resampling_ == GRA_NearestNeighbour,
+											b_use_nearest_resampling,
 											p_tiling_params->quality_))) 
 					cout<<" done."<<endl;
 			}

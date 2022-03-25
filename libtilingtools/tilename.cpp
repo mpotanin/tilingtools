@@ -85,9 +85,9 @@ bool	StandardTileName::ValidateTemplate	(string str_template)
 string	StandardTileName::GetTileName (int zoom, int nX, int nY)
 {
 	string tile_name = str_template_;
-	tile_name = MPLString::ReplaceAll(tile_name,"{z}",MPLString::ConvertIntToString(zoom));
-	tile_name = MPLString::ReplaceAll(tile_name,"{x}",MPLString::ConvertIntToString(nX));
-	tile_name = MPLString::ReplaceAll(tile_name,"{y}",MPLString::ConvertIntToString(nY));
+	tile_name = MPLString::ReplaceAll(tile_name,"{z}",std::to_string(zoom));
+	tile_name = MPLString::ReplaceAll(tile_name,"{x}",std::to_string(nX));
+	tile_name = MPLString::ReplaceAll(tile_name,"{y}",std::to_string(nY));
 	return tile_name;
 }
 

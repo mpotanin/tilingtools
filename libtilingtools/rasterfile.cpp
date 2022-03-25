@@ -825,8 +825,8 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 
 	
 	string tiff_in_mem = ("/vsimem/tiffinmem_" + 
-						MPLString::ConvertIntToString((int)chunk_envp.MinX) + 
-						"_" + MPLString::ConvertIntToString((int)chunk_envp.MaxY));
+						std::to_string((int)chunk_envp.MinX) + 
+						"_" + std::to_string((int)chunk_envp.MaxY));
 
 	  
 	GDALDataset* p_vrt_ds = (GDALDataset*)GDALCreate(
@@ -847,7 +847,6 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 	if (p_src_ds->GetRasterBand(1)->GetColorTable())
 		p_vrt_ds->GetRasterBand(1)->SetColorTable(p_src_ds->GetRasterBand(1)->GetColorTable());
 	GDALClose(p_src_ds);
-
 	double			geotransform[6];
 	geotransform[0] = chunk_envp.MinX;
 	geotransform[1] = res;
@@ -962,6 +961,7 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 		gdal_warp_operation.Initialize( p_warp_options );
 		   
 		bool  warp_error=(CE_None!=gdal_warp_operation.ChunkAndWarpImage( 0,0,buf_width,buf_height));  
+		
 
 		GDALDestroyApproxTransformer(p_warp_options->pTransformerArg );
 		if (p_warp_options->hCutline)

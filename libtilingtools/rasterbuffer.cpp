@@ -234,7 +234,7 @@ namespace ttx
 	{
 
 	
-		string strInMemName = "/vsimem/jpeginmem" + MPLString::ConvertIntToString(rand());
+		string strInMemName = "/vsimem/jpeginmem" + std::to_string(rand());
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
@@ -254,7 +254,7 @@ namespace ttx
 	bool	RasterBuffer::CreateBufferFromPngData(void* p_data_src, int size)
 	{
 		//ToDo - if nodata defined must create alphaband
-		string strInMemName = "/vsimem/pnginmem" + MPLString::ConvertIntToString(rand());
+		string strInMemName = "/vsimem/pnginmem" + std::to_string(rand());
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
@@ -473,7 +473,7 @@ namespace ttx
 
 		
 
-		string strJPEGInMem = ("/vsimem/jpeginmem" + MPLString::ConvertIntToString(rand()));
+		string strJPEGInMem = ("/vsimem/jpeginmem" + std::to_string(rand()));
 		char** papszOptions = 0;
 		string strQuality = to_string(quality == 0 ? 85 : quality);
 
@@ -708,7 +708,7 @@ namespace ttx
 		string	strTiffInMem;
 		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
 		
-		string strPNGInMem = ("/vsimem/pnginmem" + MPLString::ConvertIntToString(rand()));
+		string strPNGInMem = ("/vsimem/pnginmem" + std::to_string(rand()));
 		char** papszOptions = 0;
 		GDALDatasetH poPNGDS = GDALCreateCopy(GDALGetDriverByName("PNG"),
 												strPNGInMem.c_str(), poTiffDS, 0, papszOptions, 0, 0);
@@ -784,7 +784,7 @@ namespace ttx
 
 	GDALDataset* RasterBuffer::SaveToInMemGTiff(string& strInMemGTiff)
 	{
-		strInMemGTiff = "/vsimem/tiffinmem" + MPLString::ConvertIntToString(rand());
+		strInMemGTiff = "/vsimem/tiffinmem" + std::to_string(rand());
 
 		GDALDataset* poInMemDS = (GDALDataset*)GDALCreate(
 			GDALGetDriverByName("GTiff"),
@@ -1200,6 +1200,9 @@ namespace ttx
 		int r[4];
 		float pixel_sum;
 		int min, dist, l_min, _dist;
+		
+		bool is_float_type = std::is_same<T, float>::value;
+
 
 		//loop through indexes of output pixels and calculate their values 
 		for (q = 0; q < all_4; q++)
@@ -1207,13 +1210,24 @@ namespace ttx
 			b = q / n_4;
 			i = (q % n_4) / w;
 			j = (q % n_4) % w;
-			
+			/*
+			!m_bNDVDefined && !use_nearest
+				linear
+			m_bNDVDefined && !use_nearest
+				sum through valid pixels / num_valid_pixels
+
+			!m_bNDVDefined && use_nearest
+				majority vote
+
+			m_bNDVDefined && use_nearest
+				majority vote through valid pixels
+
+			*/
+
+			//list valid pixels
 			if (!m_bNDVDefined)
 			{
 				for (l = 0; l < 4; l++)
-					//b * n +  (2*i + {0-1})*x_size_ + (2*j + {0-1})
-					//4*q - 2*j + {0-1} *x_size + {0-1}
-					//r[l] = b*n + (j << 1) + l % 2 + (l >> 1) * x_size_;
 					r[l] = (q << 2) - (j << 1) + (l >> 1) * x_size_ + (l % 2);
 				num_valid_pixels = 4;
 			}
@@ -1222,7 +1236,6 @@ namespace ttx
 				num_valid_pixels = 0;
 				for (l = 0; l < 4; l++)
 				{
-					//k = (q << 2) + (j << 1) + l % 2 + (l >> 1) * x_size_;
 					k = (q << 2) - (j << 1) + (l >> 1) * x_size_ + (l % 2);
 					if (p_pixel_data_t[k] != m_fNDV)
 					{
@@ -1241,23 +1254,29 @@ namespace ttx
 					pixel_sum = 0;
 					for (l = 0; l < num_valid_pixels; l++)
 						pixel_sum += p_pixel_data_t[r[l]];
-
-					p_pixel_data_zoomedout[q] = (pixel_sum / num_valid_pixels)
-									 + ((((int)pixel_sum % num_valid_pixels) << 1) > num_valid_pixels);
+					
+					p_pixel_data_zoomedout[q] = is_float_type ?
+						pixel_sum / num_valid_pixels :
+						floor((pixel_sum / num_valid_pixels) + 0.5);
+					//p_pixel_data_zoomedout[q] = (pixel_sum / num_valid_pixels) + ((((int)pixel_sum % num_valid_pixels) << 1) > num_valid_pixels);
 				}
 			}
 			else
 			{
-				if (num_valid_pixels == 0) 
+				if (num_valid_pixels == 0)
 					p_pixel_data_zoomedout[q] = m_fNDV;
+				else if (num_valid_pixels < 3)
+					p_pixel_data_zoomedout[q] = p_pixel_data_t[r[0]];
 				else
 				{
 					vec.clear();
 					for (l = 0; l < num_valid_pixels; l++)
 						vec.push_back(p_pixel_data_t[r[l]]);
-					auto el = vec.begin() + (vec.size() / 2);
-					std::nth_element(vec.begin(), el, vec.end());
-					p_pixel_data_zoomedout[q] = vec[vec.size() / 2];
+					std::sort(vec.begin(), vec.end());
+					for (l = 1; l < num_valid_pixels; l++)
+						if (vec[l] == vec[l - 1]) break;
+					p_pixel_data_zoomedout[q] = l < num_valid_pixels ?
+						p_pixel_data_zoomedout[l] : vec[vec.size() / 2];
 				}
 			}
 		}
@@ -1521,10 +1540,27 @@ namespace ttx
 		//int num_bands = IsAlphaBand() ? num_bands_ - 1 : num_bands_;
 
 		GDALDataset* poTiffDS = SaveToInMemGTiff(strTiffInMem);
+		//this->
+		//debug
+		//std::stringstream strm;
+
+		//string* sp = static_cast<std::string*>(this->get_pixel_data_ref());
+		//string str = *sp;
+		
+		//char* pachData = static_cast<char*>(this->get_pixel_data_ref());
+		//size_t len = *static_cast<int*>(pachData);
+		//std::string tempName(data, len)
+
+		//string str(pach);
+		//ss << *static_cast<int*>(test);
+		//ss >> str;
+
+		//std::cout << (unsigned long int)this->get_pixel_data_ref()<<endl;
+		//end-debug
 	
 		
 		string strJP2DriverName = JP2000DriverFactory::GetDriverName();
-		string strJP2InMem = ("/vsimem/jp2inmem" + MPLString::ConvertIntToString(rand()));
+		string strJP2InMem = ("/vsimem/jp2inmem" + std::to_string(rand()));
 		char **papszOptions = NULL;
 		string strQuality = to_string(nQuality == 0 ? 40 : nQuality);
 
