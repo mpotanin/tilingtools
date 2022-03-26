@@ -30,7 +30,11 @@ namespace ttx
 		ClearBuffer();
 	}
 
-
+	
+	string  RasterBuffer::GetGDALVirtualRandomFileName(int nRand)
+	{
+		return "/vsimem/" + std::to_string(rand()) + std::to_string((int)p_pixel_data_) + std::to_string(nRand);
+	}
 
 	void RasterBuffer::ClearBuffer()
 	{
@@ -189,7 +193,7 @@ namespace ttx
 	{
 
 		//ToDo - if nodata defined must create alphaband
-		string strInMemName = "/vsimem/tiffinmem" + std::to_string(rand());
+		string strInMemName = GetGDALVirtualRandomFileName((int)p_data_src);
 
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 
@@ -234,7 +238,7 @@ namespace ttx
 
 	bool	RasterBuffer::CreateBufferFromJpegData(void* p_data_src, int size)
 	{
-		string strInMemName = "/vsimem/jpeginmem" + std::to_string(rand());
+		string strInMemName = GetGDALVirtualRandomFileName((int)p_data_src);
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
@@ -254,7 +258,7 @@ namespace ttx
 	bool	RasterBuffer::CreateBufferFromPngData(void* p_data_src, int size)
 	{
 		//ToDo - if nodata defined must create alphaband
-		string strInMemName = "/vsimem/pnginmem" + std::to_string(rand());
+		string strInMemName = GetGDALVirtualRandomFileName((int)p_data_src);
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
@@ -471,7 +475,7 @@ namespace ttx
 		GDALDataset* poTiffDS = (GDALDataset*)GDALOpen(strTiffInMem.c_str(), GA_ReadOnly);
 
 		
-		string strJPEGInMem = ("/vsimem/jpeginmem" + std::to_string(rand()));
+		string strJPEGInMem = GetGDALVirtualRandomFileName();
 		char** papszOptions = 0;
 		string strQuality = to_string(quality == 0 ? 85 : quality);
 
@@ -703,7 +707,7 @@ namespace ttx
 		string	strTiffInMem = SaveToInMemGTiff();
 		GDALDataset* poTiffDS = (GDALDataset*)GDALOpen(strTiffInMem.c_str(), GA_ReadOnly);
 		
-		string strPNGInMem = ("/vsimem/pnginmem" + std::to_string(rand()));
+		string strPNGInMem = GetGDALVirtualRandomFileName();
 		char** papszOptions = 0;
 		GDALDatasetH poPNGDS = GDALCreateCopy(GDALGetDriverByName("PNG"),
 												strPNGInMem.c_str(), poTiffDS, 0, papszOptions, 0, 0);
@@ -779,7 +783,7 @@ namespace ttx
 
 	string RasterBuffer::SaveToInMemGTiff()
 	{
-		string strInMemGTiff = "/vsimem/tiffinmem" + std::to_string(rand());
+		string strInMemGTiff = GetGDALVirtualRandomFileName();
 
 		GDALDataset* poInMemDS = (GDALDataset*)GDALCreate(
 			GDALGetDriverByName("GTiff"),
@@ -1529,26 +1533,18 @@ namespace ttx
 		string	strTiffInMem = SaveToInMemGTiff();
 		GDALDataset* poTiffDS = (GDALDataset*)GDALOpen(strTiffInMem.c_str(), GA_ReadOnly);
 
-	
-		
-		string strJP2DriverName = JP2000DriverFactory::GetDriverName();
-		string strJP2InMem = ("/vsimem/jp2inmem" + std::to_string(rand()));
+		string strJP2InMem = GetGDALVirtualRandomFileName();
 		char **papszOptions = NULL;
 		string strQuality = to_string(nQuality == 0 ? 40 : nQuality);
 
 		papszOptions = CSLSetNameValue(papszOptions, "REVERSIBLE", "YES");
 		papszOptions = CSLSetNameValue(papszOptions, "QUALITY", strQuality.c_str());
 		papszOptions = CSLSetNameValue(papszOptions, "RESOLUTIONS", "1");
-		GDALDatasetH poJP2DS = GDALCreateCopy(GDALGetDriverByName(strJP2DriverName.c_str()),
+		GDALDatasetH poJP2DS = GDALCreateCopy(GDALGetDriverByName(JP2000DriverFactory::GetDriverName().c_str()),
 			strJP2InMem.c_str(),
 			poTiffDS, 0, papszOptions, 0, 0);
 		
-		if (m_bNDVDefined)
-		{
-			for (int b = 1; b <= ((GDALDataset*)poJP2DS)->GetRasterCount(); b++)
-				((GDALDataset*)poJP2DS)->GetRasterBand(b)->SetNoDataValue(m_fNDV);
-		}
-
+	
 		GDALFlushCache(poJP2DS);
 		GDALClose(poJP2DS);
 		GDALClose(poTiffDS);
@@ -1568,18 +1564,21 @@ namespace ttx
 	bool RasterBuffer::CreateFromJP2Data(void *pabData, int nSize)
 	{
 		//ToDo - if nodata defined must create alphaband
-		VSIFileFromMemBuffer("/vsimem/jp2inmem", (GByte*)pabData, nSize, 0);
-		GDALDataset *poJP2DS = (GDALDataset*)GDALOpen("/vsimem/jp2inmem", GA_ReadOnly);
+		string strVirtJP2File = GetGDALVirtualRandomFileName((int)pabData);
+		VSIFileFromMemBuffer(strVirtJP2File.c_str(), (GByte*)pabData, nSize, 0);
+		GDALDataset *poJP2DS = (GDALDataset*)GDALOpen(strVirtJP2File.c_str(), GA_ReadOnly);
 
-		CreateBuffer(poJP2DS->GetRasterCount(), poJP2DS->GetRasterXSize(), poJP2DS->GetRasterYSize(), NULL, poJP2DS->GetRasterBand(1)->GetRasterDataType());
-		poJP2DS->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, num_bands_, NULL, 0, 0, 0);
+		CreateBuffer(poJP2DS->GetRasterCount(), poJP2DS->GetRasterXSize(), poJP2DS->GetRasterYSize(), 
+					NULL, poJP2DS->GetRasterBand(1)->GetRasterDataType());
+		poJP2DS->RasterIO(GF_Read, 0, 0, x_size_, y_size_, p_pixel_data_, x_size_, y_size_, data_type_, 
+					num_bands_, NULL, 0, 0, 0);
 
 		int nNDVDefined = false;
 		float fNDV = poJP2DS->GetRasterBand(1)->GetNoDataValue(&nNDVDefined);
 		if (nNDVDefined) SetNDV(fNDV);
 
 		GDALClose(poJP2DS);
-		VSIUnlink("/vsimem/jp2inmem");
+		VSIUnlink(strVirtJP2File.c_str());
 
 		return true;
 	}

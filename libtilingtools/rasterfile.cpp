@@ -1013,7 +1013,6 @@ bool BundleTiler::WarpChunkToBuffer (int zoom,
 bool BundleTiler::RunBaseZoomTiling	(	TilingParameters		*p_tiling_params, 
 								        ITileContainer			*p_tile_container)
 {
-	srand(0);
 	int	tiles_generated = 0;
  	int zoom = (p_tiling_params->base_zoom_ == 0) ? CalcAppropriateZoom() : p_tiling_params->base_zoom_;
 	double res = p_tile_mset_->CalcPixelSizeByZoom(zoom);

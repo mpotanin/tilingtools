@@ -17,8 +17,7 @@ bool TTXPrintTilingProgress (int tiles_expected, int tiles_generated)
 
 bool TTXMakeTiling		(TilingParameters		*p_tiling_params)
 {
-	long t_ = time(0);
-	srand(t_%10000);
+	srand(time(0) % 10000);
 	BundleTiler		raster_bundle;
 
 	if (p_tiling_params->tile_px_size_ != 0)

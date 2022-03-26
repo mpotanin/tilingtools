@@ -22,6 +22,8 @@ namespace ttx
 			RasterBuffer(void);
 			~RasterBuffer(void);
 
+			string GetGDALVirtualRandomFileName(int nRand = 0);
+
 			void ClearBuffer();
 
 			bool CreateBuffer(int num_bands,
@@ -117,9 +119,9 @@ namespace ttx
 		//bool			alpha_band_defined_;
 		float m_fNDV;
 		bool m_bNDVDefined;
-		void			*p_pixel_data_;
-		GDALDataType	data_type_;
-		int				data_size_;
+		void *p_pixel_data_;
+		GDALDataType data_type_;
+		int	data_size_;
 
 
 		int				num_bands_;
