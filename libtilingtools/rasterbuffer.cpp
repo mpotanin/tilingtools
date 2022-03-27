@@ -821,28 +821,28 @@ namespace ttx
 										double*	padblGeoTransform)
 	{
 		string	tiff_in_mem = SaveToInMemGTiff();
-		GDALDataset* p_ds = (GDALDataset*)GDALOpen(tiff_in_mem.c_str(), GA_ReadOnly);
-
-		if (poSRS)
+		
+		if (poSRS || padblGeoTransform)
 		{
-			char* pachWKT;
-			poSRS->exportToWkt(&pachWKT);
-			p_ds->SetProjection(pachWKT);
-			OGRFree(pachWKT);
+			GDALDataset* p_ds = (GDALDataset*)GDALOpen(tiff_in_mem.c_str(), GA_ReadOnly);
+			if (poSRS)
+			{
+				char* pachWKT;
+				poSRS->exportToWkt(&pachWKT);
+				p_ds->SetProjection(pachWKT);
+				OGRFree(pachWKT);
+			}
+			if (padblGeoTransform)
+				p_ds->SetGeoTransform(padblGeoTransform);
+
+			GDALFlushCache(p_ds);
+			GDALClose(p_ds);
 		}
 
-		if (padblGeoTransform)
-		{
-			p_ds->SetGeoTransform(padblGeoTransform);
-		}
-
-		GDALFlushCache(p_ds);
-		GDALClose(p_ds);
+		
 		vsi_l_offset length;
-
 		unsigned char * p_data_dstBuf = VSIGetMemFileBuffer(tiff_in_mem.c_str(), &length, false);
 		size = length;
-		//GDALClose(p_ds);
 		memcpy((p_data_dst = new unsigned char[size]), p_data_dstBuf, size);
 		VSIUnlink(tiff_in_mem.c_str());
 
