@@ -16,6 +16,7 @@
 #include "../../cpp_common_utils/stringfuncs.h"
 
 #include <type_traits>
+#include <cstdint>
 #include <stdint.h>
 #include <thread>
 #include <mutex>

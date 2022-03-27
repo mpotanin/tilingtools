@@ -22,7 +22,7 @@ namespace ttx
 			RasterBuffer(void);
 			~RasterBuffer(void);
 
-			string GetGDALVirtualRandomFileName(int nRand = 0);
+			string GetGDALVirtualRandomFileName(int nAdditionalRandSuffix = 0);
 
 			void ClearBuffer();
 

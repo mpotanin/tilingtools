@@ -31,9 +31,10 @@ namespace ttx
 	}
 
 	
-	string  RasterBuffer::GetGDALVirtualRandomFileName(int nRand)
+	string  RasterBuffer::GetGDALVirtualRandomFileName(int nAdditionalRandSuffix)
 	{
-		return "/vsimem/" + std::to_string(rand()) + std::to_string((int)p_pixel_data_) + std::to_string(nRand);
+		return ("/vsimem/" + std::to_string(rand()) + std::to_string((intptr_t)p_pixel_data_)
+				+ std::to_string(nAdditionalRandSuffix));
 	}
 
 	void RasterBuffer::ClearBuffer()
@@ -193,7 +194,7 @@ namespace ttx
 	{
 
 		//ToDo - if nodata defined must create alphaband
-		string strInMemName = GetGDALVirtualRandomFileName((int)p_data_src);
+		string strInMemName = GetGDALVirtualRandomFileName((intptr_t)p_data_src);
 
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 
@@ -238,7 +239,7 @@ namespace ttx
 
 	bool	RasterBuffer::CreateBufferFromJpegData(void* p_data_src, int size)
 	{
-		string strInMemName = GetGDALVirtualRandomFileName((int)p_data_src);
+		string strInMemName = GetGDALVirtualRandomFileName((intptr_t)p_data_src);
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
@@ -258,7 +259,7 @@ namespace ttx
 	bool	RasterBuffer::CreateBufferFromPngData(void* p_data_src, int size)
 	{
 		//ToDo - if nodata defined must create alphaband
-		string strInMemName = GetGDALVirtualRandomFileName((int)p_data_src);
+		string strInMemName = GetGDALVirtualRandomFileName((intptr_t)p_data_src);
 		VSIFileFromMemBuffer(strInMemName.c_str(), (GByte*)p_data_src, size, 0);
 		GDALDataset* p_ds = (GDALDataset*)GDALOpen(strInMemName.c_str(), GA_ReadOnly);
 
@@ -1563,7 +1564,7 @@ namespace ttx
 	bool RasterBuffer::CreateFromJP2Data(void *pabData, int nSize)
 	{
 		//ToDo - if nodata defined must create alphaband
-		string strVirtJP2File = GetGDALVirtualRandomFileName((int)pabData);
+		string strVirtJP2File = GetGDALVirtualRandomFileName((intptr_t)pabData);
 		VSIFileFromMemBuffer(strVirtJP2File.c_str(), (GByte*)pabData, nSize, 0);
 		GDALDataset *poJP2DS = (GDALDataset*)GDALOpen(strVirtJP2File.c_str(), GA_ReadOnly);
 
