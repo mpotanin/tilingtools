@@ -1270,8 +1270,7 @@ namespace ttx
 					std::sort(vec.begin(), vec.end());
 					for (l = 1; l < num_valid_pixels; l++)
 						if (vec[l] == vec[l - 1]) break;
-					p_pixel_data_zoomedout[q] = l < num_valid_pixels ?
-						p_pixel_data_zoomedout[l] : vec[vec.size() / 2];
+					p_pixel_data_zoomedout[q] = l < num_valid_pixels ? vec[l] : vec[vec.size() / 2];
 				}
 			}
 		}
